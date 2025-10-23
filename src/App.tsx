@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { Toaster } from 'react-hot-toast'
 import { useDispatch, useSelector } from 'react-redux'
 import Header, { type User } from './components/Header'
 import Nav, { type NavLink } from './components/Nav'
 import AbstractsPage from './pages/AbstractsPage'
+import DashboardPage from './pages/DashboardPage'
 import Footer from './components/Footer'
 import SignInPage, { type SignInCredentials } from './pages/SignInPage'
 import { type AppDispatch } from './store'
@@ -57,7 +59,15 @@ function App() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col bg-gray-50 dark:bg-gray-950">
+    <div className="h-dvh overflow-hidden flex flex-col bg-gray-50 dark:bg-gray-950">
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          duration: 2500,
+          style: { fontSize: '0.875rem' },
+          success: { iconTheme: { primary: '#16a34a', secondary: 'white' } },
+        }}
+      />
       <Header
         user={user}
         onLogout={handleLogout}
@@ -66,7 +76,7 @@ function App() {
         onToggleTheme={() => dispatch(toggleTheme())}
       />
 
-      <div className="flex flex-1">
+      <div className="flex flex-1 pt-16 pb-12 overflow-hidden">
         {/* Sidebar */}
         <Nav
           links={links}
@@ -77,7 +87,7 @@ function App() {
         />
 
         {/* Main content area */}
-        <div className="flex-1">
+        <div className="flex-1 overflow-hidden">
           {/* Overlay for mobile when sidebar open */}
           {sidebarOpen && (
             <div
@@ -85,26 +95,16 @@ function App() {
               onClick={() => setSidebarOpen(false)}
             />
           )}
-          <main className="w-full px-4 sm:px-6 lg:px-8 py-6">
-            <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm text-left">
+          <main className="w-full h-full px-4 sm:px-6 lg:px-8 py-6 overflow-hidden">
+            <div className="h-full overflow-hidden flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm text-left">
               {activeId === 'abstracts' ? (
                 isAdmin ? (
                   <AbstractsPage />
                 ) : (
-                  <div>
-                    <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Dashboard</h1>
-                    <p className="mt-2 text-gray-600 dark:text-gray-300">You do not have access to Abstracts.</p>
-                  </div>
+                  <DashboardPage />
                 )
               ) : (
-                <div>
-                  <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                    {links.find((l) => l.id === activeId)?.label}
-                  </h1>
-                  <p className="mt-2 text-gray-600 dark:text-gray-300">
-                    This is a placeholder for the "{activeId}" page.
-                  </p>
-                </div>
+                <DashboardPage />
               )}
             </div>
           </main>

@@ -21,8 +21,8 @@ export default function Nav({ links, activeId, onNavigate, headerSlot, isOpen, o
       <aside
         className={
           [
-            'fixed inset-y-0 left-0 z-30 w-64 transform border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 transition-transform duration-200 ease-in-out',
-            'md:static md:translate-x-0 md:z-10',
+            'fixed top-16 bottom-12 left-0 z-30 w-64 transform border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 transition-transform duration-200 ease-in-out',
+            'md:static md:top-auto md:bottom-auto md:h-auto md:translate-x-0 md:z-10',
             isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
           ].join(' ')
         }
@@ -43,7 +43,7 @@ export default function Nav({ links, activeId, onNavigate, headerSlot, isOpen, o
           </div>
         </div>
 
-        <nav className="px-3 py-4 md:pt-4 md:pb-6 md:px-4">
+        <nav className="px-3 py-4 md:pt-4 md:pb-6 md:px-4 overflow-y-auto h-[calc(100%-4rem)] md:h-auto">
           <ul className="space-y-1">
             {links.map((link) => {
               const isActive = link.id === activeId

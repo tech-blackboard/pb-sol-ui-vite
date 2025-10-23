@@ -32,7 +32,7 @@ export default function Header({ user, onLogout, onToggleSidebar, theme = 'light
   }, [isOpen])
 
   return (
-    <header className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-800">
+    <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-800">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button
@@ -45,7 +45,8 @@ export default function Header({ user, onLogout, onToggleSidebar, theme = 'light
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
           </button>
-          <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">My App</div>
+          <img src="/logo-min.png" alt="Logo" className="h-8 w-auto" />
+          <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">APT</div>
         </div>
         <div className="flex items-center gap-2">
           {/* <button
