@@ -1,4 +1,4 @@
-import axios from 'axios'
+import { api } from '../lib/api';
 
 export type AbstractRole = { id: number | string; name: string }
 
@@ -43,18 +43,20 @@ export type AbstractItem = {
   status?: AbstractStatus
   website?: AbstractWebsite
   originalId?: number | string
+  isEmailSent?: boolean
+
   now?: string
 }
 
 const ABSTRACT_BASE = (import.meta as any).env?.VITE_ABSTRACT_BASE || 'http://localhost:3000/abstract'
 
-function getAuthHeaders(): Record<string, string> {
+export function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
 export async function getAllAbstracts(): Promise<AbstractItem[]> {
-  const { data } = await axios.get<
+  const { data } = await api.get<
     AbstractItem[] | { data?: AbstractItem[]; items?: AbstractItem[]; results?: AbstractItem[] }
   >(`${ABSTRACT_BASE}/all`, {
     headers: {
@@ -64,11 +66,12 @@ export async function getAllAbstracts(): Promise<AbstractItem[]> {
     withCredentials: true,
   })
   const list = Array.isArray(data) ? data : data?.data ?? data?.items ?? data?.results ?? []
+  console.log(list)
   return Array.isArray(list) ? list : []
 }
 
 export async function getAbstractById(id: string | number): Promise<AbstractItem> {
-  const { data } = await axios.get<AbstractItem>(`${ABSTRACT_BASE}/${id}`, {
+  const { data } = await api.get<AbstractItem>(`${ABSTRACT_BASE}/${id}`, {
     headers: {
       'Content-Type': 'application/json',
       ...getAuthHeaders(),
@@ -79,7 +82,7 @@ export async function getAbstractById(id: string | number): Promise<AbstractItem
 }
 
 export async function createAbstract(body: Partial<AbstractItem>): Promise<AbstractItem> {
-  const { data } = await axios.post<AbstractItem>(`${ABSTRACT_BASE}`, body, {
+  const { data } = await api.post<AbstractItem>(`${ABSTRACT_BASE}`, body, {
     headers: {
       'Content-Type': 'application/json',
       ...getAuthHeaders(),
@@ -90,7 +93,7 @@ export async function createAbstract(body: Partial<AbstractItem>): Promise<Abstr
 }
 
 export async function updateAbstract(id: string | number, body: Partial<AbstractItem>): Promise<AbstractItem> {
-  const { data } = await axios.put<AbstractItem>(`${ABSTRACT_BASE}/${id}`, body, {
+  const { data } = await api.put<AbstractItem>(`${ABSTRACT_BASE}/${id}`, body, {
     headers: {
       'Content-Type': 'application/json',
       ...getAuthHeaders(),
@@ -109,7 +112,7 @@ export async function updateAbstractStatus(
     ...getAuthHeaders(),
   }
   const numericId = typeof id === 'string' && /^\d+$/.test(id) ? Number(id) : id
-  const { data } = await axios.patch<AbstractItem>(
+  const { data } = await api.patch<AbstractItem>(
     `${ABSTRACT_BASE}/${numericId}/status`,
     { status_id: statusId },
     { headers, withCredentials: true },
@@ -118,7 +121,7 @@ export async function updateAbstractStatus(
 }
 
 export async function deleteAbstract(id: string | number): Promise<void> {
-  await axios.delete(`${ABSTRACT_BASE}/${id}`, {
+  await api.delete(`${ABSTRACT_BASE}/${id}`, {
     headers: {
       'Content-Type': 'application/json',
       ...getAuthHeaders(),
@@ -140,6 +143,7 @@ export type AbstractSearchParams = {
   organization?: string
   title?: string
   search?: string
+  isEmailSent?: boolean
   sortBy?: string
   sortOrder?: 'ASC' | 'DESC'
 }
@@ -153,14 +157,7 @@ export type AbstractSearchResult = {
 }
 
 export async function searchAbstracts(params: AbstractSearchParams = {}): Promise<AbstractSearchResult> {
-  const { data } = await axios.get<any>(`${ABSTRACT_BASE}/search`, {
-    params,
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeaders(),
-    },
-    withCredentials: true,
-  })
+  const { data } = await api.get<any>(`${ABSTRACT_BASE}/search`, { params })
 
   const list = Array.isArray(data)
     ? data

@@ -13,6 +13,7 @@ export type AbstractRecord = {
   university?: string
   presentationType?: 'Oral' | 'Poster' | 'Virtual'
   status: 'Under Review' | 'Accepted' | 'Out of Scope' | 'Rejected' | 'Registered'
+  isEmailSent: boolean
 }
 
 type StatusAction = 'Under Review' | 'Accepted' | 'Out of Scope' | 'Rejected'
@@ -84,6 +85,7 @@ export default function AbstractsPage() {
       university: item?.organization ?? undefined,
       presentationType: toPresentationType(item?.intrested),
       status,
+      isEmailSent: item?.isEmailSent ?? false,
     }
   }
 
@@ -105,10 +107,10 @@ export default function AbstractsPage() {
 
   useEffect(() => {
     let mounted = true
-    ;(async () => {
-      await fetchAll()
-      if (!mounted) return
-    })()
+      ; (async () => {
+        await fetchAll()
+        if (!mounted) return
+      })()
     return () => {
       mounted = false
     }
@@ -175,7 +177,7 @@ export default function AbstractsPage() {
   const startIndex = (page - 1) * pageSize
   const endIndex = Math.min(startIndex + rows.length, total)
 
-  
+
 
   function sendAcceptance(id: string) {
     // TODO: trigger backend to send acceptance letter PDF attachment
@@ -191,7 +193,7 @@ export default function AbstractsPage() {
     // TODO: trigger backend payment reminder email
     alert(`Payment reminder sent for ID ${id}`)
   }
-
+  console.log(viewItem)
   return (
     <div className="space-y-3 text-left h-full flex flex-col overflow-hidden">
       <div className="flex items-center justify-between">
@@ -210,115 +212,126 @@ export default function AbstractsPage() {
 
       <div className="relative flex-1 min-h-0 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
         <div className="overflow-x-auto overflow-y-auto h-full scrollbar-thin">
-        <table className="min-w-full text-left text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300">
-            <tr>
-              <th className="px-4 py-3 font-medium min-w-[14rem]">Name</th>
-              <th className="px-4 py-3 font-medium">Email</th>
-              <th className="px-4 py-3 font-medium">Alternate Email</th>
-              <th className="px-4 py-3 font-medium min-w-[10rem]">Phone</th>
-              <th className="px-4 py-3 font-medium min-w-[10rem]">WhatsApp</th>
-              <th className="px-4 py-3 font-medium">Country</th>
-              <th className="px-4 py-3 font-medium min-w-[14rem]">University</th>
-              <th className="px-4 py-3 font-medium">Presentation</th>
-              <th className="px-4 py-3 font-medium min-w-[10rem]">Status</th>
-              <th className="px-4 py-3 font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="align-top">
-            {loading && (
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300">
               <tr>
-                <td className="px-4 py-6 text-gray-500" colSpan={10}>
-                  Loading...
-                </td>
+                <th className="px-4 py-3 font-medium min-w-[14rem]">Name</th>
+                <th className="px-4 py-3 font-medium">Email</th>
+                <th className="px-4 py-3 font-medium">Alternate Email</th>
+                <th className="px-4 py-3 font-medium min-w-[10rem]">Phone</th>
+                <th className="px-4 py-3 font-medium min-w-[10rem]">WhatsApp</th>
+                <th className="px-4 py-3 font-medium">Country</th>
+                <th className="px-4 py-3 font-medium min-w-[14rem]">University</th>
+                <th className="px-4 py-3 font-medium">Presentation</th>
+                <th className="px-4 py-3 font-medium">Email Sent</th>
+                <th className="px-4 py-3 font-medium min-w-[10rem]">Status</th>
+                <th className="px-4 py-3 font-medium">Actions</th>
               </tr>
-            )}
-            {!loading && error && (
-              <tr>
-                <td className="px-4 py-6" colSpan={10}>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div className="text-red-600">{error}</div>
-                    <button
-                      className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs hover:bg-gray-50"
-                      onClick={fetchAll}
-                    >
-                      Retry
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            )}
-            {!loading && !error && rows.length === 0 && (
-              <tr>
-                <td className="px-4 py-6 text-gray-500" colSpan={10}>
-                  No records found
-                </td>
-              </tr>
-            )}
-            {!loading &&
-              !error &&
-              rows.map((r: AbstractRecord) => (
-              <tr key={r.id} className="border-t border-gray-100 dark:border-gray-800">
-                <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
-                  <div className="max-w-[16rem] truncate">{r.name}</div>
-                </td>
-                <td className="px-4 py-3">
-                  <a href={`mailto:${r.email}`} className="text-blue-600 hover:underline">
-                    {r.email}
-                  </a>
-                </td>
-                <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                  <div className="max-w-[12rem] truncate">{r.altEmail ?? '—'}</div>
-                </td>
-                <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                  <div className="max-w-[12rem] truncate">{r.phone ?? '—'}</div>
-                </td>
-                <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                  <div className="max-w-[12rem] truncate">{r.whatsapp ?? '—'}</div>
-                </td>
-                <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{r.country ?? '—'}</td>
-                <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                  <div className="max-w-[16rem] truncate">{r.university ?? '—'}</div>
-                </td>
-                <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{r.presentationType ?? '—'}</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={
-                      [
-                        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
-                        r.status === 'Accepted'
-                          ? 'bg-green-50 text-green-700'
-                          : r.status === 'Under Review'
-                          ? 'bg-yellow-50 text-yellow-800'
-                          : r.status === 'Rejected'
-                          ? 'bg-red-50 text-red-700'
-                          : r.status === 'Out of Scope'
-                          ? 'bg-gray-100 text-gray-700'
-                          : 'bg-blue-50 text-blue-700',
-                      ].join(' ')
-                    }
-                  >
-                    {r.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex flex-wrap gap-2">
+            </thead>
+            <tbody className="align-top">
+              {loading && (
+                <tr>
+                  <td className="px-4 py-6 text-gray-500" colSpan={11}>
+                    Loading...
+                  </td>
+                </tr>
+              )}
+              {!loading && error && (
+                <tr>
+                  <td className="px-4 py-6" colSpan={11}>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="text-red-600">{error}</div>
                       <button
-                        onClick={() => setViewItem(rawRows.find((x) => String(x.id ?? x._id) === r.id) ?? null)}
-                        className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50"
-                        title="Edit"
-                        aria-label="Edit"
+                        className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs hover:bg-gray-50"
+                        onClick={fetchAll}
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor" className="h-4 w-4">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 3.487a2.25 2.25 0 0 1 3.182 3.182L7.125 19.588l-3.682.409.409-3.682L16.862 3.487z" />
-                        </svg>
+                        Retry
                       </button>
                     </div>
                   </td>
                 </tr>
-              ))}
-          </tbody>
-        </table>
+              )}
+              {!loading && !error && rows.length === 0 && (
+                <tr>
+                  <td className="px-4 py-6 text-gray-500" colSpan={11}>
+                    No records found
+                  </td>
+                </tr>
+              )}
+              {!loading &&
+                !error &&
+                rows.map((r: AbstractRecord) => (
+                  <tr key={r.id} className="border-t border-gray-100 dark:border-gray-800">
+                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
+                      <div className="max-w-[16rem] truncate">{r.name}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <a href={`mailto:${r.email}`} className="text-blue-600 hover:underline">
+                        {r.email}
+                      </a>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                      <div className="max-w-[12rem] truncate">{r.altEmail ?? '—'}</div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                      <div className="max-w-[12rem] truncate">{r.phone ?? '—'}</div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                      <div className="max-w-[12rem] truncate">{r.whatsapp ?? '—'}</div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{r.country ?? '—'}</td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                      <div className="max-w-[16rem] truncate">{r.university ?? '—'}</div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{r.presentationType ?? '—'}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={[
+                          'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
+                          r.isEmailSent ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700',
+                        ].join(' ')}
+                      >
+                        {r.isEmailSent ? 'Yes' : 'No'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={
+                          [
+                            'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
+                            r.status === 'Accepted'
+                              ? 'bg-green-50 text-green-700'
+                              : r.status === 'Under Review'
+                                ? 'bg-yellow-50 text-yellow-800'
+                                : r.status === 'Rejected'
+                                  ? 'bg-red-50 text-red-700'
+                                  : r.status === 'Out of Scope'
+                                    ? 'bg-gray-100 text-gray-700'
+                                    : 'bg-blue-50 text-blue-700',
+                          ].join(' ')
+                        }
+                      >
+                        {r.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => setViewItem(rawRows.find((x) => String(x.id ?? x._id) === r.id) ?? null)}
+                          className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50"
+                          title="Edit"
+                          aria-label="Edit"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor" className="h-4 w-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 3.487a2.25 2.25 0 0 1 3.182 3.182L7.125 19.588l-3.682.409.409-3.682L16.862 3.487z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
         </div>
         {/* Pagination */}
         {!loading && !error && rows.length > 0 && (
@@ -437,6 +450,25 @@ export default function AbstractsPage() {
                   <option value="DESC">DESC</option>
                   <option value="ASC">ASC</option>
                 </select>
+
+                <select
+                  className="rounded-md border border-gray-300 bg-white px-2.5 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={filters.isEmailSent === undefined ? '' : String(filters.isEmailSent)}
+                  onChange={(e) =>
+                    setFilters((f) => ({
+                      ...f,
+                      isEmailSent:
+                        e.target.value === ''
+                          ? undefined
+                          : e.target.value === 'true',
+                    }))
+                  }
+                >
+                  <option value="">All</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+
               </div>
             </div>
             <div className="shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-end gap-2">
@@ -507,6 +539,10 @@ export default function AbstractsPage() {
                   <dt className="text-gray-500 dark:text-gray-400">Status</dt>
                   <dd className="text-gray-900 dark:text-gray-100">{viewItem.status?.actionType ?? 'Under Review'}</dd>
                 </div>
+                <div>
+                  <dt className="text-gray-500 dark:text-gray-400">isEmailSent</dt>
+                  <dd className="text-gray-900 dark:text-gray-100">{viewItem.isEmailSent ?? false ? 'Yes' : 'No'}</dd>
+                </div>
                 <div className="sm:col-span-2">
                   <dt className="text-gray-500 dark:text-gray-400">Title</dt>
                   <dd className="text-gray-900 dark:text-gray-100">{viewItem.title ?? '—'}</dd>
@@ -536,17 +572,17 @@ export default function AbstractsPage() {
             <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-800 flex flex-wrap gap-2 justify-between items-center">
               <div className="flex items-center gap-2">
                 <label className="text-sm text-gray-700 dark:text-gray-300">Status</label>
-                      <select
-                        className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <select
+                  className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={modalStatus}
                   onChange={(e) => setModalStatus(e.target.value as StatusAction)}
-                      >
-                        <option>Under Review</option>
-                        <option>Accepted</option>
-                        <option>Out of Scope</option>
-                        <option>Rejected</option>
-                      </select>
-                    </div>
+                >
+                  <option>Under Review</option>
+                  <option>Accepted</option>
+                  <option>Out of Scope</option>
+                  <option>Rejected</option>
+                </select>
+              </div>
 
               <div className="flex items-center gap-2">
                 {updateError && <span className="text-xs text-red-600 mr-2">{updateError}</span>}
@@ -557,33 +593,33 @@ export default function AbstractsPage() {
                 >
                   {updating ? 'Updating...' : 'Update'}
                 </button>
-                    <button
+                <button
                   onClick={() => {
                     const norm = normalize(viewItem)
                     sendAcceptance(norm.id)
                   }}
-                      className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50"
-                    >
-                      Acceptance PDF
-                    </button>
-                    <button
+                  className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50"
+                >
+                  Acceptance PDF
+                </button>
+                <button
                   onClick={() => {
                     const norm = normalize(viewItem)
                     sendInvoice(norm.id)
                   }}
-                      className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50"
-                    >
-                      Invoice
-                    </button>
-                    <button
+                  className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50"
+                >
+                  Invoice
+                </button>
+                <button
                   onClick={() => {
                     const norm = normalize(viewItem)
                     remindPayment(norm.id)
                   }}
-                      className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50"
-                    >
-                      Payment Reminder
-                    </button>
+                  className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50"
+                >
+                  Payment Reminder
+                </button>
                 <button
                   onClick={() => setViewItem(null)}
                   className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
@@ -592,8 +628,8 @@ export default function AbstractsPage() {
                 </button>
               </div>
             </div>
-                  </div>
-      </div>
+          </div>
+        </div>
       )}
 
 

@@ -39,6 +39,7 @@ export const loginThunk = createAsyncThunk(
 			const hasAdminRole = roles.map((r) => r.toLowerCase()).includes('admin')
 			const isAdmin = resp.isAdmin === true || hasAdminRole
 			const token = (resp as any).access_token || (resp as any).accessToken || (resp as any).token || null
+			const refreshToken = (resp as any).refresh_token || (resp as any).refreshToken || null
 			const user: AuthUser = {
 				name: resp.user.email.split('@')[0] || 'User',
 				role: isAdmin ? 'Administrator' : 'User',
@@ -46,7 +47,9 @@ export const loginThunk = createAsyncThunk(
 			}
 			const storage = remember ? localStorage : sessionStorage
 			if (token) storage.setItem('accessToken', String(token))
+			if (refreshToken) storage.setItem('refreshToken', String(refreshToken))
 			storage.setItem('authUser', JSON.stringify(user))
+		    storage.setItem('userData', JSON.stringify(resp.user))
 			return { user, token }
 		} catch (e: any) {
 			return rejectWithValue(e?.message || 'Failed to sign in')
@@ -57,14 +60,18 @@ export const loginThunk = createAsyncThunk(
 export const logoutThunk = createAsyncThunk('auth/logout', async (_, { rejectWithValue }) => {
 	try {
 		await apiLogout()
+		localStorage.removeItem('accessToken')
+		localStorage.removeItem('refreshToken')
+		localStorage.removeItem('authUser')
+		sessionStorage.removeItem('accessToken')
+		sessionStorage.removeItem('refreshToken')
+		sessionStorage.removeItem('authUser')
+		sessionStorage.removeItem('userData')
+		localStorage.removeItem('userData')
+		return { success: true }
 	} catch (e: any) {
-		// ignore
+		return rejectWithValue(e?.message || 'Failed to logout')
 	}
-	localStorage.removeItem('accessToken')
-	localStorage.removeItem('authUser')
-	sessionStorage.removeItem('accessToken')
-	sessionStorage.removeItem('authUser')
-	return true
 })
 
 const slice = createSlice({
