@@ -1,4 +1,4 @@
-import axios from 'axios'
+import { api } from '../lib/api';
 
 export type LoginRequest = { useremail: string; userpassword: string }
 export type LoginResponse = {
@@ -10,10 +10,11 @@ export type LoginResponse = {
   isAdmin?: boolean
 }
 
+
 const AUTH_BASE = (import.meta as any).env?.VITE_AUTH_BASE || '/auth'
 
 export async function login(body: LoginRequest): Promise<LoginResponse> {
-  const { data } = await axios.post<LoginResponse>(`${AUTH_BASE}/login`, body, {
+  const { data } = await api.post<LoginResponse>(`${AUTH_BASE}/login`, body, {
     headers: { 'Content-Type': 'application/json' },
     withCredentials: true,
   })
@@ -22,18 +23,16 @@ export async function login(body: LoginRequest): Promise<LoginResponse> {
 }
 
 export async function logout(): Promise<void> {
-  const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
-  await axios.post(
-    `${AUTH_BASE}/logout`,
-    {},
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      withCredentials: true,
-    },
-  )
+  await api.post(`${AUTH_BASE}/logout`, null)
 }
 
-
+export async function refreshToken(): Promise<string> {
+  const { data } = await api.post(
+    `${(import.meta as any).env?.VITE_AUTH_BASE || import.meta.env.VITE_AUTH_BASE}/refresh-token`,
+    {},
+    { withCredentials: true, headers: { 'Content-Type': 'application/json' } },
+  )
+  const token = data?.access_token || data?.accessToken || data?.token
+  if (token) localStorage.setItem('accessToken', token)
+  return token
+}
