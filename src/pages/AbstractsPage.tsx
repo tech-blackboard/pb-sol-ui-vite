@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { searchAbstracts, updateAbstractStatus, type AbstractSearchParams } from '../services/abstracts'
+import { listWebsites, type SourceWebsite } from '../services/sourcedb'
 
 export type AbstractRecord = {
   id: string
@@ -31,6 +32,8 @@ export default function AbstractsPage() {
   const [updateError, setUpdateError] = useState<string | null>(null)
   const [serverTotal, setServerTotal] = useState<number>(0)
   const [serverTotalPages, setServerTotalPages] = useState<number>(1)
+  const [websites, setWebsites] = useState<SourceWebsite[]>([])
+  const [webLoading, setWebLoading] = useState(false)
 
   const [filters, setFilters] = useState<AbstractSearchParams>({
     search: '',
@@ -95,7 +98,11 @@ export default function AbstractsPage() {
       setError(null)
       const { items, total, totalPages } = await searchAbstracts({ ...appliedFilters, page, limit: pageSize })
       setRawRows(items)
-      setRows(items.map(normalize))
+      let normalized = items.map(normalize)
+      if (typeof appliedFilters.isEmailSent === 'boolean') {
+        normalized = normalized.filter(r => !!r.isEmailSent === appliedFilters.isEmailSent)
+      }
+      setRows(normalized)
       setServerTotal(typeof total === 'number' ? total : items.length)
       setServerTotalPages(typeof totalPages === 'number' ? totalPages : Math.max(1, Math.ceil((total ?? items.length) / pageSize)))
     } catch (e: any) {
@@ -193,7 +200,26 @@ export default function AbstractsPage() {
     // TODO: trigger backend payment reminder email
     alert(`Payment reminder sent for ID ${id}`)
   }
-  console.log(viewItem)
+  useEffect(() => {
+    if (!filtersOpen) return
+    let mounted = true
+      ; (async () => {
+        try {
+          setWebLoading(true)
+          const ws = await listWebsites()
+          if (!mounted) return
+          setWebsites(ws)
+        } finally {
+          setWebLoading(false)
+        }
+      })()
+    return () => {
+      mounted = false
+    }
+  }, [filtersOpen])
+
+
+
   return (
     <div className="space-y-3 text-left h-full flex flex-col overflow-hidden">
       <div className="flex items-center justify-between">
@@ -432,14 +458,26 @@ export default function AbstractsPage() {
                   <option value={3}>Out of Scope</option>
                   <option value={4}>Rejected</option>
                 </select>
-                <input
-                  type="number"
-                  min={1}
-                  value={filters.website_id ?? ''}
-                  onChange={(e) => setFilters((f) => ({ ...f, website_id: e.target.value ? Number(e.target.value) : undefined }))}
-                  placeholder="Website ID"
-                  className="w-40 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <div className="flex items-center gap-2">
+                  <select
+                    className="w-full rounded-md border border-gray-300 bg-white px-2.5 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={filters.website_id ?? ''}
+                    onChange={(e) =>
+                      setFilters((f) => ({
+                        ...f,
+                        website_id: e.target.value ? Number(e.target.value) : undefined,
+                      }))
+                    }
+                    disabled={webLoading}
+                  >
+                    <option value="">{webLoading ? 'Loading websites…' : 'Website'}</option>
+                    {websites.map((w) => (
+                      <option key={w.id} value={Number(w.id)}>
+                        {w.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <select className="rounded-md border border-gray-300 bg-white px-2.5 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value={filters.sortBy ?? 'now'} onChange={(e) => setFilters((f) => ({ ...f, sortBy: e.target.value }))}>
