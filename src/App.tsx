@@ -19,14 +19,10 @@ function App() {
   const { user: authUser, loading: authLoading, error: authError } = useSelector(selectAuth)
   const isAdmin = Boolean((authUser as any)?.isAdmin)
   const themeMode = useSelector(selectTheme)
-  const links: NavLink[] = isAdmin
-    ? [
-        { id: 'dashboard', label: 'Dashboard' },
-        { id: 'abstracts', label: 'Abstracts' },
-      ]
-    : [
-        { id: 'dashboard', label: 'Dashboard' },
-      ]
+  const links: NavLink[] = [
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'abstracts', label: 'Abstracts' },
+  ];
 
   const user: User | null = (authUser as unknown as User) ?? null
 
@@ -101,7 +97,7 @@ function App() {
                 isAdmin ? (
                   <AbstractsPage />
                 ) : (
-                  <DashboardPage />
+                  <AbstractsPage />
                 )
               ) : (
                 <DashboardPage />
