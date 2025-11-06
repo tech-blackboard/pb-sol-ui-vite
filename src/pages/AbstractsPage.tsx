@@ -178,6 +178,7 @@ export default function AbstractsPage() {
       setModalStatus(normalize(viewItem).status as StatusAction)
     }
   }, [viewItem])
+  console.log(viewItem)
 
   const total = serverTotal || rows.length
   const totalPages = serverTotalPages || Math.max(1, Math.ceil(total / pageSize))
@@ -443,7 +444,7 @@ export default function AbstractsPage() {
               <input type="text" value={filters.email ?? ''} onChange={(e) => setFilters((f) => ({ ...f, email: e.target.value }))} placeholder="Email" className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               <input type="text" value={filters.organization ?? ''} onChange={(e) => setFilters((f) => ({ ...f, organization: e.target.value }))} placeholder="Organization" className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               <input type="text" value={filters.country ?? ''} onChange={(e) => setFilters((f) => ({ ...f, country: e.target.value }))} placeholder="Country" className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              <input type="text" value={filters.city ?? ''} onChange={(e) => setFilters((f) => ({ ...f, city: e.target.value }))} placeholder="City" className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              {/* <input type="text" value={filters.city ?? ''} onChange={(e) => setFilters((f) => ({ ...f, city: e.target.value }))} placeholder="City" className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /> */}
               <input type="text" value={filters.title ?? ''} onChange={(e) => setFilters((f) => ({ ...f, title: e.target.value }))} placeholder="Title" className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
 
               <div className="flex items-center gap-2">
