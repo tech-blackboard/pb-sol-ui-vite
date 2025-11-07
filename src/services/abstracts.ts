@@ -159,8 +159,8 @@ export type AbstractSearchResult = {
 export async function searchAbstracts(params: AbstractSearchParams = {}): Promise<AbstractSearchResult> {
   const q: any = { ...params }
   if (typeof q.isEmailSent === 'boolean') {
-    q.is_email_sent = q.isEmailSent ? 1 : 0
-    delete q.isEmailSent
+    q.isEmailSent = q.isEmailSent === true ? 1 : 0
+    // delete q.isEmailSent
   }
   console.log(q)
   const { data } = await api.get(`${ABSTRACT_BASE}/search`, {
