@@ -318,7 +318,7 @@ export default function AbstractsPage() {
                           r.isEmailSent ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700',
                         ].join(' ')}
                       >
-                        {r.isEmailSent ? 'Yes' : 'No'}
+                        {r.isEmailSent === true ? 'Yes' : r.isEmailSent === false ? 'No' : '—'}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -373,9 +373,10 @@ export default function AbstractsPage() {
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
               >
-                <option value={10}>10</option>
                 <option value={25}>25</option>
                 <option value={50}>50</option>
+                <option value={100}>100</option>
+
               </select>
               <div className="ml-2 flex items-center gap-1">
                 <button
@@ -499,7 +500,7 @@ export default function AbstractsPage() {
                       isEmailSent:
                         e.target.value === ''
                           ? undefined
-                          : e.target.value === 'true',
+                          : e.target.value === 'true' ? true : e.target.value === 'false' ? false : undefined,
                     }))
                   }
                 >
@@ -604,7 +605,7 @@ export default function AbstractsPage() {
                 </div>
                 <div>
                   <dt className="text-gray-500 dark:text-gray-400">User Role</dt>
-                  <dd className="text-gray-900 dark:text-gray-100">{viewItem.user?.roles?.[0]?.name ?? '—'}</dd>
+                  <dd className="text-gray-900 dark:text-gray-100">{viewItem.roles?.map((r: any) => r.name).join(', ') ?? '—'}</dd>
                 </div>
               </dl>
             </div>
