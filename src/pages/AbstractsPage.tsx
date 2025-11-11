@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import { searchAbstracts, updateAbstractStatus, type AbstractSearchParams } from '../services/abstracts'
 import { listWebsites, type SourceWebsite } from '../services/sourcedb'
 
+// adjust if your export name differs
 export type AbstractRecord = {
   id: string
   name: string
@@ -13,6 +14,7 @@ export type AbstractRecord = {
   country?: string
   university?: string
   presentationType?: 'Oral' | 'Poster' | 'Virtual'
+  file?: string
   status: 'Under Review' | 'Accepted' | 'Out of Scope' | 'Rejected' | 'Registered'
   isEmailSent: boolean
 }
@@ -34,6 +36,7 @@ export default function AbstractsPage() {
   const [serverTotalPages, setServerTotalPages] = useState<number>(1)
   const [websites, setWebsites] = useState<SourceWebsite[]>([])
   const [webLoading, setWebLoading] = useState(false)
+  const [errKind, setErrKind] = useState<'none' | 'generic'>('none')
 
   const [filters, setFilters] = useState<AbstractSearchParams>({
     search: '',
@@ -87,6 +90,7 @@ export default function AbstractsPage() {
       country: item?.country ?? undefined,
       university: item?.organization ?? undefined,
       presentationType: toPresentationType(item?.intrested),
+      file: item?.file ?? undefined,
       status,
       isEmailSent: item?.isEmailSent ?? false,
     }
@@ -106,6 +110,7 @@ export default function AbstractsPage() {
       setServerTotal(typeof total === 'number' ? total : items.length)
       setServerTotalPages(typeof totalPages === 'number' ? totalPages : Math.max(1, Math.ceil((total ?? items.length) / pageSize)))
     } catch (e: any) {
+      setErrKind('none')
       setError(e?.message ?? 'Failed to load abstracts')
     } finally {
       setLoading(false)
@@ -179,7 +184,6 @@ export default function AbstractsPage() {
     }
   }, [viewItem])
   console.log(viewItem)
-
   const total = serverTotal || rows.length
   const totalPages = serverTotalPages || Math.max(1, Math.ceil(total / pageSize))
   const startIndex = (page - 1) * pageSize
@@ -219,7 +223,15 @@ export default function AbstractsPage() {
     }
   }, [filtersOpen])
 
-
+  const modalFile = (() => {
+    const f = typeof viewItem?.file === 'string' ? viewItem.file : ''
+    if (!f) return null
+    const isAbs = /^https?:\/\//i.test(f)
+    const name = f.split('/').pop() || ''
+    const base = (viewItem?.website?.link || '').replace(/\/$/, '/')
+    const href = isAbs ? f : `${base}${f.startsWith('uploads') ? '' : 'uploads/'}${f}`
+    return { href, name }
+  })()
 
   return (
     <div className="space-y-3 text-left h-full flex flex-col overflow-hidden">
@@ -239,6 +251,7 @@ export default function AbstractsPage() {
 
       <div className="relative flex-1 min-h-0 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
         <div className="overflow-x-auto overflow-y-auto h-full scrollbar-thin">
+
           <table className="min-w-full text-left text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300">
               <tr>
@@ -250,11 +263,13 @@ export default function AbstractsPage() {
                 <th className="px-4 py-3 font-medium">Country</th>
                 <th className="px-4 py-3 font-medium min-w-[14rem]">University</th>
                 <th className="px-4 py-3 font-medium">Presentation</th>
+                <th className="px-4 py-3 font-medium">Abstract File</th>
                 <th className="px-4 py-3 font-medium">Email Sent</th>
                 <th className="px-4 py-3 font-medium min-w-[10rem]">Status</th>
                 <th className="px-4 py-3 font-medium">Actions</th>
               </tr>
             </thead>
+          
             <tbody className="align-top">
               {loading && (
                 <tr>
@@ -263,7 +278,9 @@ export default function AbstractsPage() {
                   </td>
                 </tr>
               )}
-              {!loading && error && (
+
+            
+              {!loading && error && errKind === 'generic' && (
                 <tr>
                   <td className="px-4 py-6" colSpan={11}>
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -278,85 +295,103 @@ export default function AbstractsPage() {
                   </td>
                 </tr>
               )}
-              {!loading && !error && rows.length === 0 && (
+              {!loading && !error && rows.length === 0 && errKind === 'none' && (
                 <tr>
                   <td className="px-4 py-6 text-gray-500" colSpan={11}>
                     No records found
                   </td>
                 </tr>
               )}
+
               {!loading &&
                 !error &&
-                rows.map((r: AbstractRecord) => (
-                  <tr key={r.id} className="border-t border-gray-100 dark:border-gray-800">
-                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
-                      <div className="max-w-[16rem] truncate">{r.name}</div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <a href={`mailto:${r.email}`} className="text-blue-600 hover:underline">
-                        {r.email}
-                      </a>
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                      <div className="max-w-[12rem] truncate">{r.altEmail ?? '—'}</div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                      <div className="max-w-[12rem] truncate">{r.phone ?? '—'}</div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                      <div className="max-w-[12rem] truncate">{r.whatsapp ?? '—'}</div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{r.country ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                      <div className="max-w-[16rem] truncate">{r.university ?? '—'}</div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{r.presentationType ?? '—'}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={[
-                          'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
-                          r.isEmailSent ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700',
-                        ].join(' ')}
-                      >
-                        {r.isEmailSent === true ? 'Yes' : r.isEmailSent === false ? 'No' : '—'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={
-                          [
+                rows.map((r: AbstractRecord) => {
+                  const raw = rawRows.find((x) => String(x.id ?? x._id) === r.id)
+                  const f: string | undefined = raw?.file
+                  const isAbs = !!(f && /^https?:\/\//i.test(f))
+                  const name = f ? (f.split('/').pop() || '') : ''
+                  const base = (raw?.website?.link as string) || ''
+                  const baseUrl = base.replace(/\/$/, '/')
+                  const href = f ? (isAbs ? f : `${baseUrl}${f.startsWith('uploads') ? '' : 'uploads/'}${f}`) : undefined
+
+                  return (
+                    <tr key={r.id} className="border-t border-gray-100 dark:border-gray-800">
+                      <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
+                        <div className="max-w-[16rem] truncate">{r.name}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <a href={`mailto:${r.email}`} className="text-blue-600 hover:underline">
+                          {r.email}
+                        </a>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        <div className="max-w-[12rem] truncate">{r.altEmail ?? '—'}</div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        <div className="max-w-[12rem] truncate">{r.phone ?? '—'}</div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        <div className="max-w-[12rem] truncate">{r.whatsapp ?? '—'}</div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{r.country ?? '—'}</td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        <div className="max-w-[16rem] truncate">{r.university ?? '—'}</div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{r.presentationType ?? '—'}</td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        {href ? (
+                          <a href={href} target="_blank" rel="noopener" className="text-blue-600 hover:underline">
+                            {name}
+                          </a>
+                        ) : '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={[
                             'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
-                            r.status === 'Accepted'
-                              ? 'bg-green-50 text-green-700'
-                              : r.status === 'Under Review'
-                                ? 'bg-yellow-50 text-yellow-800'
-                                : r.status === 'Rejected'
-                                  ? 'bg-red-50 text-red-700'
-                                  : r.status === 'Out of Scope'
-                                    ? 'bg-gray-100 text-gray-700'
-                                    : 'bg-blue-50 text-blue-700',
-                          ].join(' ')
-                        }
-                      >
-                        {r.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={() => setViewItem(rawRows.find((x) => String(x.id ?? x._id) === r.id) ?? null)}
-                          className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50"
-                          title="Edit"
-                          aria-label="Edit"
+                            r.isEmailSent ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700',
+                          ].join(' ')}
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor" className="h-4 w-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 3.487a2.25 2.25 0 0 1 3.182 3.182L7.125 19.588l-3.682.409.409-3.682L16.862 3.487z" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {r.isEmailSent === true ? 'Yes' : r.isEmailSent === false ? 'No' : '—'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={
+                            [
+                              'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
+                              r.status === 'Accepted'
+                                ? 'bg-green-50 text-green-700'
+                                : r.status === 'Under Review'
+                                  ? 'bg-yellow-50 text-yellow-800'
+                                  : r.status === 'Rejected'
+                                    ? 'bg-red-50 text-red-700'
+                                    : r.status === 'Out of Scope'
+                                      ? 'bg-gray-100 text-gray-700'
+                                      : 'bg-blue-50 text-blue-700',
+                            ].join(' ')
+                          }
+                        >
+                          {r.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => setViewItem(rawRows.find((x) => String(x.id ?? x._id) === r.id) ?? null)}
+                            className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50"
+                            title="Edit"
+                            aria-label="Edit"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor" className="h-4 w-4">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 3.487a2.25 2.25 0 0 1 3.182 3.182L7.125 19.588l-3.682.409.409-3.682L16.862 3.487z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
             </tbody>
           </table>
         </div>
@@ -593,7 +628,17 @@ export default function AbstractsPage() {
                 </div>
                 <div>
                   <dt className="text-gray-500 dark:text-gray-400">File</dt>
-                  <dd className="text-gray-900 dark:text-gray-100">{viewItem.file ?? '—'}</dd>
+                  <dd className="text-gray-900 dark:text-gray-100">
+                    {modalFile ? (
+                      <span>
+                        <a href={modalFile.href} target="_blank" rel="noopener" className="text-blue-600 hover:underline">
+                          {modalFile.name}
+                        </a>
+                      </span>
+                    ) : (
+                      '—'
+                    )}
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-gray-500 dark:text-gray-400">Website</dt>
@@ -605,7 +650,12 @@ export default function AbstractsPage() {
                 </div>
                 <div>
                   <dt className="text-gray-500 dark:text-gray-400">User Role</dt>
-                  <dd className="text-gray-900 dark:text-gray-100">{viewItem.roles?.map((r: any) => r.name).join(', ') ?? '—'}</dd>
+                  <dd className="text-gray-900 dark:text-gray-100">
+                    {(viewItem?.user?.roles ?? [])
+                      .map((r: any) => (typeof r === 'string' ? r : r?.name))
+                      .filter(Boolean)
+                      .join(', ') || '—'}
+                  </dd>
                 </div>
               </dl>
             </div>

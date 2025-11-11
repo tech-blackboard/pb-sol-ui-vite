@@ -85,6 +85,19 @@ api.interceptors.response.use(
   async (err) => {
     const status = err?.response?.status
     const original = err?.config || {}
+    const code = err?.code
+
+    // global UX hooks
+    if (typeof status === 'number' && status >= 500) {
+      // Server error (5xx)
+      window.dispatchEvent(new CustomEvent('app:server-error'))
+    } else if (!status && (code === 'ECONNREFUSED' || code === 'ERR_CONNECTION_REFUSED' || code === 'ERR_NETWORK')) {
+      // Server stopped/unreachable
+      window.dispatchEvent(new CustomEvent('app:server-unavailable'))
+    } else if ((code === 'ERR_NETWORK' && !status) || !navigator.onLine) {
+      // True network/offline issue
+      window.dispatchEvent(new CustomEvent('app:network-error'))
+    } 
 
     const isAuthFailure = [401, 403, 419, 498].includes(status as number)
     const isRefreshCall = String(original?.url || '').includes('/refresh-token')

@@ -11,5 +11,6 @@ export async function listWebsites(): Promise<SourceWebsite[]> {
   return (Array.isArray(list) ? list : []).map((w: any) => ({
     id: w?.id ?? w?._id,
     name: w?.name ?? w?.title ?? '',
+    link: w?.link ?? '',
   }))
 }

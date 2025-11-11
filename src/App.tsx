@@ -10,19 +10,43 @@ import SignInPage, { type SignInCredentials } from './pages/SignInPage'
 import { type AppDispatch } from './store'
 import { selectAuth, loginThunk, logoutThunk } from './store/slices/authSlice'
 import { selectTheme, toggleTheme } from './store/slices/themeSlice'
+import NetworkErrorAlert from './alerts/NetworkErrorAlert'
+import ServerIssueAlert from './alerts/ServerIssueAlert'
+import ServerUnavailableAlert from './alerts/ServerUnavailableAlert'
 
 function App() {
   const dispatch = useDispatch<AppDispatch>()
   const [activeId, setActiveId] = useState<string>('abstracts')
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false)
+  const [showNetwork, setShowNetwork] = useState(false)
+  const [showServer, setShowServer] = useState(false)
+  const [showServerUnavailable, setShowServerUnavailable] = useState(false)
+  useEffect(() => {
+    const onNet = () => setShowNetwork(true)
+    const onSrv = () => setShowServer(true)
+    const onUnavail = () => setShowServerUnavailable(true)
+    
+    window.addEventListener('app:network-error', onNet as any)
+    window.addEventListener('app:server-error', onSrv as any)
+    window.addEventListener('app:server-unavailable', onUnavail as any)
+    
+    return () => {
+      window.removeEventListener('app:network-error', onNet as any)
+      window.removeEventListener('app:server-error', onSrv as any)
+      window.removeEventListener('app:server-unavailable', onUnavail as any)
+    }
+  }, [])
+
   // Theme managed by Redux
   const { user: authUser, loading: authLoading, error: authError } = useSelector(selectAuth)
   const isAdmin = Boolean((authUser as any)?.isAdmin)
   const themeMode = useSelector(selectTheme)
   const links: NavLink[] = [
     { id: 'dashboard', label: 'Dashboard' },
-    { id: 'abstracts', label: 'Abstracts' },
+    { id: 'abstracts', label: 'Abstracts'},
   ];
+
+
 
   const user: User | null = (authUser as unknown as User) ?? null
 
@@ -53,6 +77,18 @@ function App() {
   if (!user) {
     return <SignInPage onSignIn={handleSignIn} isLoading={authLoading} error={authError} />
   }
+  
+  if (showServerUnavailable) {
+    return <ServerUnavailableAlert />
+  }
+
+  if (showNetwork) {
+    return <NetworkErrorAlert />
+  }
+  
+  if (showServer) {
+    return <ServerIssueAlert />
+  }
 
   return (
     <div className="h-dvh overflow-hidden flex flex-col bg-gray-50 dark:bg-gray-950">
@@ -71,6 +107,7 @@ function App() {
         theme={themeMode}
         onToggleTheme={() => dispatch(toggleTheme())}
       />
+     
 
       <div className="flex flex-1 pt-16 pb-12 overflow-hidden">
         {/* Sidebar */}
@@ -94,20 +131,22 @@ function App() {
           <main className="w-full h-full px-4 sm:px-6 lg:px-8 py-6 overflow-hidden">
             <div className="h-full overflow-hidden flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm text-left">
               {activeId === 'abstracts' ? (
-                isAdmin ? (
-                  <AbstractsPage />
+                  isAdmin ? (
+                    <AbstractsPage />
+                  ) : (
+                    <AbstractsPage />
+                  )
                 ) : (
-                  <AbstractsPage />
-                )
-              ) : (
-                <DashboardPage />
-              )}
+                  <DashboardPage />
+                )}
             </div>
           </main>
         </div>
+
       </div>
 
       <Footer />
+
     </div>
   )
 }
