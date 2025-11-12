@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { searchAbstracts, updateAbstractStatus, type AbstractSearchParams } from '../services/abstracts'
 import { listWebsites, type SourceWebsite } from '../services/sourcedb'
-
+import AbstractForm from '../components/AbstractForm';
 // adjust if your export name differs
 export type AbstractRecord = {
   id: string
@@ -50,7 +50,7 @@ export default function AbstractsPage() {
   })
   const [filtersOpen, setFiltersOpen] = useState<boolean>(false)
   // local toast state removed in favor of react-hot-toast
-
+  const [showForm, setShowForm] = useState(false);
   const STATUS_TO_ID: Record<StatusAction, number> = {
     'Under Review': 1,
     Accepted: 2,
@@ -71,7 +71,7 @@ export default function AbstractsPage() {
     if (map.includes('oral')) return 'Oral'
     if (map.includes('poster')) return 'Poster'
     if (map.includes('virtual')) return 'Virtual'
-    return undefined
+    return undefined;
   }
 
   function normalize(item: any): AbstractRecord {
@@ -235,19 +235,35 @@ export default function AbstractsPage() {
 
   return (
     <div className="space-y-3 text-left h-full flex flex-col overflow-hidden">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-100">All Conferences — Abstracts</h2>
-        <button
-          onClick={() => setFiltersOpen(true)}
-          className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
-          aria-label="Open filters"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor" className="h-5 w-5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h14M3 12h10M3 18h6" />
-          </svg>
-          Filters
-        </button>
-      </div>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+  <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-100">All Conferences — Abstracts</h2>
+  
+  {/* Button Group - Right Aligned */}
+  <div className="flex items-center gap-2 w-full sm:w-auto">
+    <button
+      onClick={() => setShowForm(true)}
+      className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-md border border-purple-600 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 text-sm font-medium transition-colors"
+      aria-label="Add abstract"
+    >
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+      </svg>
+      <span className="hidden sm:inline">Add Abstract</span>
+      <span className="sm:hidden">Add</span>
+    </button>
+    
+    <button
+      onClick={() => setFiltersOpen(true)}
+      className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors"
+      aria-label="Open filters"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor" className="h-5 w-5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h14M3 12h10M3 18h6" />
+      </svg>
+      Filters
+    </button>
+  </div>
+</div>
 
       <div className="relative flex-1 min-h-0 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
         <div className="overflow-x-auto overflow-y-auto h-full scrollbar-thin">
@@ -726,6 +742,7 @@ export default function AbstractsPage() {
       <p className="text-xs text-gray-500">
         Notes: Email alerts should trigger automatically for "Under Review" status; acceptance letters must include a PDF attachment. Add invoice and payment reminder integrations here. This UI is ready for wiring to backend APIs.
       </p>
+      {showForm && <AbstractForm onClose={() => setShowForm(false)} onSuccess={fetchAll} />}
     </div>
   )
 }
