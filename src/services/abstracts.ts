@@ -92,6 +92,35 @@ export async function createAbstract(body: Partial<AbstractItem>): Promise<Abstr
   return data
 }
 
+export async function createAbstractWithFormDataFileUpload(body: Partial<AbstractItem> | FormData): Promise<AbstractItem> {
+  const isFormData = body instanceof FormData
+  
+  // For FormData, we need to handle headers differently
+  const config: any = {
+    withCredentials: true,
+  }
+  
+  if (isFormData) {
+    // Don't set Content-Type for FormData - let browser set it with boundary
+    // Only add Authorization header
+    const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
+    if (token) {
+      config.headers = {
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  } else {
+    // For JSON requests
+    config.headers = {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    }
+  }
+  
+  const { data } = await api.post<AbstractItem>(`${ABSTRACT_BASE}`, body, config)
+  return data
+}
+
 export async function updateAbstract(id: string | number, body: Partial<AbstractItem>): Promise<AbstractItem> {
   const { data } = await api.put<AbstractItem>(`${ABSTRACT_BASE}/${id}`, body, {
     headers: {
