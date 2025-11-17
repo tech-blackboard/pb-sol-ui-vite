@@ -4,7 +4,7 @@ export default function ServerIssueAlert() {
     const [isRetrying, setIsRetrying] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
     const [lastChecked, setLastChecked] = useState(new Date());
-    const [estimatedTime, setEstimatedTime] = useState('15-30 minutes');
+    const [estimatedTime] = useState('15-30 minutes');
   
     const checkServer = async () => {
       setIsRetrying(true);

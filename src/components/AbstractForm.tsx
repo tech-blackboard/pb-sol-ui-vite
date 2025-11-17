@@ -1,6 +1,9 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { X, Upload, CheckCircle, AlertCircle } from 'lucide-react'
-import { createAbstract, createAbstractWithFormDataFileUpload } from '../services/abstracts'
+import { 
+  createAbstract, 
+  // createAbstractWithFormDataFileUpload 
+} from '../services/abstracts'
 import { listWebsites, type SourceWebsite } from '../services/sourcedb'
 import toast from 'react-hot-toast';
 
@@ -139,56 +142,56 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmitWithFileUpload = async (e: FormEvent) => {
-    e.preventDefault()
+  // const handleSubmitWithFileUpload = async (e: FormEvent) => {
+  //   e.preventDefault()
   
-    if (!validate()) {
-      toast.error('Please fix all errors before submitting')
-      return
-    }
+  //   if (!validate()) {
+  //     toast.error('Please fix all errors before submitting')
+  //     return
+  //   }
   
-    setSubmitting(true)
+  //   setSubmitting(true)
   
-    try {
-        // Create FormData for file upload
-        const formDataToSend = new FormData()
-        formDataToSend.append('name', `${formData.caption} ${formData.name}`)
-        formDataToSend.append('phone', formData.phone)
-        formDataToSend.append('wphone', formData.whatsapp || formData.phone)
-        formDataToSend.append('country', formData.country)
-        formDataToSend.append('city', formData.city)
-        formDataToSend.append('organization', formData.organization)
-        formDataToSend.append('intrested', formData.interestedIn)
-        formDataToSend.append('title', formData.title)
-        formDataToSend.append('message', formData.message)
-        if (formData.websiteId) formDataToSend.append('website_id', String(formData.websiteId))
-        if (formData.file) formDataToSend.append('file', formData.file)
+  //   try {
+  //       // Create FormData for file upload
+  //       const formDataToSend = new FormData()
+  //       formDataToSend.append('name', `${formData.caption} ${formData.name}`)
+  //       formDataToSend.append('phone', formData.phone)
+  //       formDataToSend.append('wphone', formData.whatsapp || formData.phone)
+  //       formDataToSend.append('country', formData.country)
+  //       formDataToSend.append('city', formData.city)
+  //       formDataToSend.append('organization', formData.organization)
+  //       formDataToSend.append('intrested', formData.interestedIn)
+  //       formDataToSend.append('title', formData.title)
+  //       formDataToSend.append('message', formData.message)
+  //       if (formData.websiteId) formDataToSend.append('website_id', String(formData.websiteId))
+  //       if (formData.file) formDataToSend.append('file', formData.file)
       
-        await createAbstractWithFormDataFileUpload(formDataToSend as any)
+  //       await createAbstractWithFormDataFileUpload(formDataToSend as any)
         
-        toast.success('Abstract submitted successfully!')
-        onSuccess?.()
-        onClose()
-      }  catch (err: any) {
-        console.error('Submit error:', err)
-        console.error('Error details:', {
-          status: err?.response?.status,
-          statusText: err?.response?.statusText,
-          data: err?.response?.data,
-          message: err?.message
-        })
+  //       toast.success('Abstract submitted successfully!')
+  //       onSuccess?.()
+  //       onClose()
+  //     }  catch (err: any) {
+  //       console.error('Submit error:', err)
+  //       console.error('Error details:', {
+  //         status: err?.response?.status,
+  //         statusText: err?.response?.statusText,
+  //         data: err?.response?.data,
+  //         message: err?.message
+  //       })
         
-        const errorMsg = err?.response?.data?.message 
-          || err?.response?.data?.error 
-          || (err?.response?.status === 500 ? 'Internal Server Error. Please check the server logs.' : '')
-          || err?.message 
-          || 'Failed to submit abstract'
+  //       const errorMsg = err?.response?.data?.message 
+  //         || err?.response?.data?.error 
+  //         || (err?.response?.status === 500 ? 'Internal Server Error. Please check the server logs.' : '')
+  //         || err?.message 
+  //         || 'Failed to submit abstract'
           
-        toast.error(errorMsg, { duration: 5000 })
-      } finally {
-        setSubmitting(false)
-      }
-  }
+  //       toast.error(errorMsg, { duration: 5000 })
+  //     } finally {
+  //       setSubmitting(false)
+  //     }
+  // }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
