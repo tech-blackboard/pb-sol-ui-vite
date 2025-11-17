@@ -48,7 +48,7 @@ export type AbstractItem = {
   now?: string
 }
 
-const ABSTRACT_BASE = (import.meta as any).env?.VITE_ABSTRACT_BASE || 'http://localhost:3000/abstract'
+const ABSTRACT_BASE = import.meta.env.VITE_ABSTRACT_BASE;
 
 export function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
