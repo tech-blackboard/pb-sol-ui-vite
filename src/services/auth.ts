@@ -11,7 +11,7 @@ export type LoginResponse = {
 }
 
 
-const AUTH_BASE = (import.meta as any).env?.VITE_AUTH_BASE || '/auth'
+const AUTH_BASE = import.meta.env.VITE_AUTH_BASE;
 
 export async function login(body: LoginRequest): Promise<LoginResponse> {
   const { data } = await api.post<LoginResponse>(`${AUTH_BASE}/login`, body, {
