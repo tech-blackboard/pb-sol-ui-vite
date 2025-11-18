@@ -13,7 +13,7 @@ type HeaderProps = {
   onToggleTheme?: () => void
 }
 
-export default function Header({ user, onLogout, onToggleSidebar, theme = 'light', onToggleTheme }: HeaderProps) {
+export default function Header({ user, onLogout, onToggleSidebar }: HeaderProps) {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
 
