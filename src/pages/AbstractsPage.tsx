@@ -13,7 +13,7 @@ export type AbstractRecord = {
   whatsapp?: string
   country?: string
   university?: string
-  presentationType?: 'Oral' | 'Poster' | 'Virtual'
+  presentationType?: 'Oral' | 'Poster' | 'Virtual' | 'Delegate'
   file?: string
   status: 'Under Review' | 'Accepted' | 'Out of Scope' | 'Rejected' | 'Registered'
   isEmailSent: boolean
@@ -71,6 +71,7 @@ export default function AbstractsPage() {
     if (map.includes('oral')) return 'Oral'
     if (map.includes('poster')) return 'Poster'
     if (map.includes('virtual')) return 'Virtual'
+    if (map.includes('delegate')) return 'Delegate'
     return undefined;
   }
 
@@ -278,6 +279,7 @@ export default function AbstractsPage() {
                 <th className="px-4 py-3 font-medium min-w-[10rem]">WhatsApp</th>
                 <th className="px-4 py-3 font-medium">Country</th>
                 <th className="px-4 py-3 font-medium min-w-[14rem]">University</th>
+                <th className="px-4 py-3 font-medium min-w-[14rem]">Website</th>
                 <th className="px-4 py-3 font-medium">Presentation</th>
                 <th className="px-4 py-3 font-medium">Abstract File</th>
                 <th className="px-4 py-3 font-medium">Email Sent</th>
@@ -352,6 +354,9 @@ export default function AbstractsPage() {
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{r.country ?? '—'}</td>
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                         <div className="max-w-[16rem] truncate">{r.university ?? '—'}</div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        <div className="max-w-[16rem] truncate">{raw?.website?.name ?? '—'}</div>
                       </td>
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{r.presentationType ?? '—'}</td>
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
@@ -621,6 +626,10 @@ export default function AbstractsPage() {
                 <div className="sm:col-span-2">
                   <dt className="text-gray-500 dark:text-gray-400">Organization</dt>
                   <dd className="text-gray-900 dark:text-gray-100">{viewItem.organization ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500 dark:text-gray-400">Website</dt>
+                  <dd className="text-gray-900 dark:text-gray-100">{viewItem.website?.name ?? '—'}</dd>
                 </div>
                 <div>
                   <dt className="text-gray-500 dark:text-gray-400">Interested</dt>
