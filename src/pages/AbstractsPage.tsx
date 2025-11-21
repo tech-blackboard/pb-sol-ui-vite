@@ -11,6 +11,9 @@ export type AbstractRecord = {
   altEmail?: string
   phone?: string
   whatsapp?: string
+  city?: string
+  title?: string
+  message?: string
   country?: string
   university?: string
   presentationType?: 'Oral' | 'Poster' | 'Virtual' | 'Delegate'
@@ -277,9 +280,12 @@ export default function AbstractsPage() {
                 <th className="px-4 py-3 font-medium">Alternate Email</th>
                 <th className="px-4 py-3 font-medium min-w-[10rem]">Phone</th>
                 <th className="px-4 py-3 font-medium min-w-[10rem]">WhatsApp</th>
+                <th className="px-4 py-3 font-medium">City</th>
                 <th className="px-4 py-3 font-medium">Country</th>
                 <th className="px-4 py-3 font-medium min-w-[14rem]">University</th>
                 <th className="px-4 py-3 font-medium min-w-[14rem]">Website</th>
+                <th className="px-4 py-3 font-medium">Title</th>
+                <th className="px-4 py-3 font-medium">Message</th>
                 <th className="px-4 py-3 font-medium">Presentation</th>
                 <th className="px-4 py-3 font-medium">Abstract File</th>
                 <th className="px-4 py-3 font-medium">Email Sent</th>
@@ -349,16 +355,30 @@ export default function AbstractsPage() {
                         <div className="max-w-[12rem] truncate">{r.phone ?? '—'}</div>
                       </td>
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                        <div className="max-w-[12rem] truncate">{r.whatsapp ?? '—'}</div>
+                        <div className="max-w-[12rem] truncate">{raw?.wphone ?? '—'}</div>
                       </td>
-                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{r.country ?? '—'}</td>
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                        <div className="max-w-[16rem] truncate">{r.university ?? '—'}</div>
+                        <div className="max-w-[12rem] truncate">{raw?.city ?? '—'}</div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        <div className="max-w-[12rem] truncate">{raw?.country ?? '—'}</div>
+                      </td>
+                      
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        <div className="max-w-[12rem] truncate">{raw?.organization ?? '—'}</div>
                       </td>
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                         <div className="max-w-[16rem] truncate">{raw?.website?.name ?? '—'}</div>
                       </td>
-                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{r.presentationType ?? '—'}</td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        <div className="max-w-[16rem] truncate">{raw?.title ?? '—'}</div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        <div className="max-w-[16rem] truncate">{raw?.message ?? '—'}</div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        <div className="max-w-[12rem] truncate">{raw?.intrested ?? '—'}</div>
+                      </td>
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                         {href ? (
                           <a href={href} target="_blank" rel="noopener" className="text-blue-600 hover:underline">
@@ -373,7 +393,7 @@ export default function AbstractsPage() {
                             r.isEmailSent ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700',
                           ].join(' ')}
                         >
-                          {r.isEmailSent === true ? 'Yes' : r.isEmailSent === false ? 'No' : '—'}
+                          {raw?.isEmailSent === true ? 'Yes' : raw?.isEmailSent === false ? 'No' : '—'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -616,12 +636,12 @@ export default function AbstractsPage() {
                   <dd className="text-gray-900 dark:text-gray-100">{viewItem.wphone ?? '—'}</dd>
                 </div>
                 <div>
-                  <dt className="text-gray-500 dark:text-gray-400">Country</dt>
-                  <dd className="text-gray-900 dark:text-gray-100">{viewItem.country ?? '—'}</dd>
-                </div>
-                <div>
                   <dt className="text-gray-500 dark:text-gray-400">City</dt>
                   <dd className="text-gray-900 dark:text-gray-100">{viewItem.city ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500 dark:text-gray-400">Country</dt>
+                  <dd className="text-gray-900 dark:text-gray-100">{viewItem.country ?? '—'}</dd>
                 </div>
                 <div className="sm:col-span-2">
                   <dt className="text-gray-500 dark:text-gray-400">Organization</dt>
@@ -630,6 +650,14 @@ export default function AbstractsPage() {
                 <div>
                   <dt className="text-gray-500 dark:text-gray-400">Website</dt>
                   <dd className="text-gray-900 dark:text-gray-100">{viewItem.website?.name ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500 dark:text-gray-400">Title</dt>
+                  <dd className="text-gray-900 dark:text-gray-100">{viewItem.title ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500 dark:text-gray-400">Message</dt>
+                  <dd className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{viewItem.message ?? '—'}</dd>
                 </div>
                 <div>
                   <dt className="text-gray-500 dark:text-gray-400">Interested</dt>
