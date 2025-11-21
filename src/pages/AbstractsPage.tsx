@@ -275,6 +275,7 @@ export default function AbstractsPage() {
           <table className="min-w-full text-left text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300">
               <tr>
+                <th className="px-4 py-3 font-medium min-w-[14rem]">Website</th>
                 <th className="px-4 py-3 font-medium min-w-[14rem]">Name</th>
                 <th className="px-4 py-3 font-medium">Email</th>
                 <th className="px-4 py-3 font-medium">Alternate Email</th>
@@ -283,7 +284,6 @@ export default function AbstractsPage() {
                 <th className="px-4 py-3 font-medium">City</th>
                 <th className="px-4 py-3 font-medium">Country</th>
                 <th className="px-4 py-3 font-medium min-w-[14rem]">University</th>
-                <th className="px-4 py-3 font-medium min-w-[14rem]">Website</th>
                 <th className="px-4 py-3 font-medium">Title</th>
                 <th className="px-4 py-3 font-medium">Message</th>
                 <th className="px-4 py-3 font-medium">Presentation</th>
@@ -340,6 +340,9 @@ export default function AbstractsPage() {
 
                   return (
                     <tr key={r.id} className="border-t border-gray-100 dark:border-gray-800">
+                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        <div className="max-w-[16rem] truncate">{raw?.website?.name ?? '—'}</div>
+                      </td>
                       <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
                         <div className="max-w-[16rem] truncate">{r.name}</div>
                       </td>
@@ -366,9 +369,6 @@ export default function AbstractsPage() {
                       
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                         <div className="max-w-[12rem] truncate">{raw?.organization ?? '—'}</div>
-                      </td>
-                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                        <div className="max-w-[16rem] truncate">{raw?.website?.name ?? '—'}</div>
                       </td>
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                         <div className="max-w-[16rem] truncate">{raw?.title ?? '—'}</div>
@@ -616,6 +616,10 @@ export default function AbstractsPage() {
                   <dd className="text-gray-900 dark:text-gray-100">{String(viewItem.id ?? viewItem._id)}</dd>
                 </div>
                 <div>
+                  <dt className="text-gray-500 dark:text-gray-400">Website</dt>
+                  <dd className="text-gray-900 dark:text-gray-100">{viewItem.website?.name ?? '—'}</dd>
+                </div>
+                <div>
                   <dt className="text-gray-500 dark:text-gray-400">Name</dt>
                   <dd className="text-gray-900 dark:text-gray-100">{viewItem.name}</dd>
                 </div>
@@ -646,10 +650,6 @@ export default function AbstractsPage() {
                 <div className="sm:col-span-2">
                   <dt className="text-gray-500 dark:text-gray-400">Organization</dt>
                   <dd className="text-gray-900 dark:text-gray-100">{viewItem.organization ?? '—'}</dd>
-                </div>
-                <div>
-                  <dt className="text-gray-500 dark:text-gray-400">Website</dt>
-                  <dd className="text-gray-900 dark:text-gray-100">{viewItem.website?.name ?? '—'}</dd>
                 </div>
                 <div>
                   <dt className="text-gray-500 dark:text-gray-400">Title</dt>
