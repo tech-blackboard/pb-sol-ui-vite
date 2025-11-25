@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import { searchAbstracts, updateAbstractStatus, type AbstractSearchParams } from '../services/abstracts'
 import { listWebsites, type SourceWebsite } from '../services/sourcedb'
 import AbstractForm from '../components/AbstractForm';
+import { formatDate } from '../utils/utils';
 // adjust if your export name differs
 export type AbstractRecord = {
   id: string
@@ -237,6 +238,11 @@ export default function AbstractsPage() {
     return { href, name }
   })()
 
+  // const  formatDate = (isoString: string) => {
+  //   const date = new Date(isoString).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+  //   return date;
+  // }
+  
   return (
     <div className="space-y-3 text-left h-full flex flex-col overflow-hidden">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -288,6 +294,7 @@ export default function AbstractsPage() {
                 <th className="px-4 py-3 font-medium">Message</th>
                 <th className="px-4 py-3 font-medium">Presentation</th>
                 <th className="px-4 py-3 font-medium">Abstract File</th>
+                <th className="px-4 py-3 font-medium">Submitted On</th>
                 <th className="px-4 py-3 font-medium">Email Sent</th>
                 <th className="px-4 py-3 font-medium min-w-[10rem]">Status</th>
                 <th className="px-4 py-3 font-medium">Actions</th>
@@ -385,6 +392,9 @@ export default function AbstractsPage() {
                             {name}
                           </a>
                         ) : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        <div className="max-w-[12rem] truncate">{raw?.now ? formatDate(raw?.now) : '—'}</div>
                       </td>
                       <td className="px-4 py-3">
                         <span
@@ -630,6 +640,10 @@ export default function AbstractsPage() {
                 <div>
                   <dt className="text-gray-500 dark:text-gray-400">Alternate Email</dt>
                   <dd className="text-gray-900 dark:text-gray-100">{viewItem.aemail ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500 dark:text-gray-400">Submitted On</dt>
+                  <dd className="text-gray-900 dark:text-gray-100">{formatDate(viewItem.now ?? '—')}</dd>
                 </div>
                 <div>
                   <dt className="text-gray-500 dark:text-gray-400">Phone</dt>

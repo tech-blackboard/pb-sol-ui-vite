@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { searchAbstracts, type AbstractSearchParams } from '../services/abstracts'
+import { formatDate } from '../utils/utils'
 
 type StatCard = {
   label: string
@@ -108,6 +109,7 @@ export default function DashboardPage() {
                 <th className="px-4 py-3 font-medium">Email</th>
                 <th className="px-4 py-3 font-medium">Organization</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Submitted On</th>
               </tr>
             </thead>
             <tbody>
@@ -156,6 +158,7 @@ export default function DashboardPage() {
                       {r.status?.actionType ?? 'Under Review'}
                     </span>
                   </td>
+                  <td className="px-4 py-3 text-gray-900 dark:text-gray-100">{r.now ? formatDate(r.now ?? '') : '—'}</td>
                 </tr>
               ))}
             </tbody>
