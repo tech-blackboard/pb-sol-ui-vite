@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { searchAbstracts, updateAbstractStatus, type AbstractSearchParams } from '../services/abstracts'
+import { searchAbstracts, updateAbstractStatus, sendInvoice as sendInvoiceAPI, type AbstractSearchParams, type InvoiceData } from '../services/abstracts'
 import { listWebsites, type SourceWebsite } from '../services/sourcedb'
 import AbstractForm from '../components/AbstractForm';
+import { InvoiceForm } from '../components/InvoiceForm';
 import { formatDate } from '../utils/utils';
 // adjust if your export name differs
 export type AbstractRecord = {
@@ -41,6 +42,10 @@ export default function AbstractsPage() {
   const [websites, setWebsites] = useState<SourceWebsite[]>([])
   const [webLoading, setWebLoading] = useState(false)
   const [errKind, setErrKind] = useState<'none' | 'generic'>('none')
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
+  const [invoiceAbstractId, setInvoiceAbstractId] = useState<string | null>(null)
+  const [invoiceAbstractName, setInvoiceAbstractName] = useState<string>('')
+  const [sendingInvoice, setSendingInvoice] = useState(false)
 
   const [filters, setFilters] = useState<AbstractSearchParams>({
     search: '',
@@ -201,9 +206,29 @@ export default function AbstractsPage() {
     alert(`Sent acceptance letter for ID ${id}`)
   }
 
-  function sendInvoice(id: string) {
-    // TODO: trigger backend invoice creation
-    alert(`Invoice generated for ID ${id}`)
+  function openInvoiceModal(id: string, name: string) {
+    setInvoiceAbstractId(id)
+    setInvoiceAbstractName(name)
+    setInvoiceModalOpen(true)
+  }
+
+  async function handleSendInvoice(invoiceData: InvoiceData) {
+    if (!invoiceAbstractId) return
+
+    setSendingInvoice(true)
+    try {
+      const result = await sendInvoiceAPI(invoiceAbstractId, invoiceData)
+      toast.success(result.message || 'Invoice sent successfully!')
+      setInvoiceModalOpen(false)
+      setInvoiceAbstractId(null)
+      setInvoiceAbstractName('')
+    } catch (err: any) {
+      console.error('Failed to send invoice:', err)
+      const errorMsg = err?.response?.data?.message || err?.message || 'Failed to send invoice'
+      toast.error(errorMsg)
+    } finally {
+      setSendingInvoice(false)
+    }
   }
 
   function remindPayment(id: string) {
@@ -762,7 +787,7 @@ export default function AbstractsPage() {
                 <button
                   onClick={() => {
                     const norm = normalize(viewItem)
-                    sendInvoice(norm.id)
+                    openInvoiceModal(norm.id, norm.name)
                   }}
                   className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50"
                 >
@@ -794,6 +819,17 @@ export default function AbstractsPage() {
         Notes: Email alerts should trigger automatically for "Under Review" status; acceptance letters must include a PDF attachment. Add invoice and payment reminder integrations here. This UI is ready for wiring to backend APIs.
       </p>
       {showForm && <AbstractForm onClose={() => setShowForm(false)} onSuccess={fetchAll} />}
+      <InvoiceForm
+        isOpen={invoiceModalOpen}
+        onClose={() => {
+          setInvoiceModalOpen(false)
+          setInvoiceAbstractId(null)
+          setInvoiceAbstractName('')
+        }}
+        onSubmit={handleSendInvoice}
+        abstractName={invoiceAbstractName}
+        isLoading={sendingInvoice}
+      />
     </div>
   )
 }

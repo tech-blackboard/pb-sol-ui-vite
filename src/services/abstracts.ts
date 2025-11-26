@@ -216,4 +216,40 @@ export async function searchAbstracts(params: AbstractSearchParams = {}): Promis
   }
 }
 
+export type InvoiceData = {
+  invoiceAmount: number
+  description: string
+  quantity?: number
+  price?: number
+  paymentLink?: string
+}
+
+export type SendInvoiceResponse = {
+  success: boolean
+  message: string
+  abstract: {
+    id: number | string
+    name?: string
+    email?: string
+  }
+}
+
+export async function sendInvoice(
+  id: string | number,
+  invoiceData: InvoiceData
+): Promise<SendInvoiceResponse> {
+  const { data } = await api.post<SendInvoiceResponse>(
+    `${ABSTRACT_BASE}/${id}/send-invoice`,
+    invoiceData,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      withCredentials: true,
+    }
+  )
+  return data
+}
+
 
