@@ -216,12 +216,28 @@ export async function searchAbstracts(params: AbstractSearchParams = {}): Promis
   }
 }
 
+export type InvoiceOrderItem = {
+  serialNumber: number
+  description: string
+  quantity: number
+  price: number
+}
+
 export type InvoiceData = {
   invoiceAmount: number
-  description: string
-  quantity?: number
-  price?: number
+  orderItems: InvoiceOrderItem[]
   paymentLink?: string
+  interestedIn?: string
+  note?: string
+  // Additional data for context
+  registrationFee?: number
+  numberOfParticipants?: number
+  accommodationFee?: number
+  numberOfNights?: number
+  occupancyType?: string
+  internetHandlingFees?: number
+  checkIn?: string
+  checkOut?: string
 }
 
 export type SendInvoiceResponse = {

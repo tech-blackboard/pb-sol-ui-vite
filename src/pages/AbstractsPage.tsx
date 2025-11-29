@@ -710,14 +710,6 @@ export default function AbstractsPage() {
                   <dt className="text-gray-500 dark:text-gray-400">isEmailSent</dt>
                   <dd className="text-gray-900 dark:text-gray-100">{viewItem.isEmailSent ?? false ? 'Yes' : 'No'}</dd>
                 </div>
-                <div className="sm:col-span-2">
-                  <dt className="text-gray-500 dark:text-gray-400">Title</dt>
-                  <dd className="text-gray-900 dark:text-gray-100">{viewItem.title ?? '—'}</dd>
-                </div>
-                <div className="sm:col-span-2">
-                  <dt className="text-gray-500 dark:text-gray-400">Message</dt>
-                  <dd className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{viewItem.message ?? '—'}</dd>
-                </div>
                 <div>
                   <dt className="text-gray-500 dark:text-gray-400">File</dt>
                   <dd className="text-gray-900 dark:text-gray-100">
