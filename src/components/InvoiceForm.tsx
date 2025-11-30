@@ -298,13 +298,6 @@ export function InvoiceForm({
     return Object.keys(newErrors).length === 0
   }
 
-  function handleSubmit(e: React.MouseEvent) {
-    e.preventDefault()
-    if (validate()) {
-      onSubmit(formData)
-    }
-  }
-
   function handleClose() {
     setFormData({
       invoiceAmount: 0,
