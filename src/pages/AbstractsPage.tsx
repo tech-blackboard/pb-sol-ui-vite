@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { searchAbstracts, updateAbstractStatus, type AbstractSearchParams } from '../services/abstracts'
+import { searchAbstracts, updateAbstractStatus, sendInvoice as sendInvoiceAPI, sendConfirmationEmail as sendConfirmationEmailAPI, type AbstractSearchParams, type InvoiceData } from '../services/abstracts'
 import { listWebsites, type SourceWebsite } from '../services/sourcedb'
 import AbstractForm from '../components/AbstractForm';
+import { InvoiceForm } from '../components/InvoiceForm';
 import { formatDate } from '../utils/utils';
 // adjust if your export name differs
 export type AbstractRecord = {
@@ -41,6 +42,11 @@ export default function AbstractsPage() {
   const [websites, setWebsites] = useState<SourceWebsite[]>([])
   const [webLoading, setWebLoading] = useState(false)
   const [errKind, setErrKind] = useState<'none' | 'generic'>('none')
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
+  const [invoiceAbstractId, setInvoiceAbstractId] = useState<string | null>(null)
+  const [invoiceAbstractName, setInvoiceAbstractName] = useState<string>('')
+  const [sendingInvoice, setSendingInvoice] = useState(false)
+  const [sendingConfirmation, setSendingConfirmation] = useState(false)
 
   const [filters, setFilters] = useState<AbstractSearchParams>({
     search: '',
@@ -201,9 +207,57 @@ export default function AbstractsPage() {
     alert(`Sent acceptance letter for ID ${id}`)
   }
 
-  function sendInvoice(id: string) {
-    // TODO: trigger backend invoice creation
-    alert(`Invoice generated for ID ${id}`)
+  function openInvoiceModal(id: string, name: string) {
+    setInvoiceAbstractId(id)
+    setInvoiceAbstractName(name)
+    setInvoiceModalOpen(true)
+  }
+
+  async function handleSendInvoice(invoiceData: InvoiceData) {
+    if (!invoiceAbstractId) return
+
+    setSendingInvoice(true)
+    try {
+      const result = await sendInvoiceAPI(invoiceAbstractId, invoiceData)
+      toast.success(result.message || 'Invoice sent successfully!')
+      setInvoiceModalOpen(false)
+      setInvoiceAbstractId(null)
+      setInvoiceAbstractName('')
+    } catch (err: any) {
+      console.error('Failed to send invoice:', err)
+      const errorMsg = err?.response?.data?.message || err?.message || 'Failed to send invoice'
+      toast.error(errorMsg)
+    } finally {
+      setSendingInvoice(false)
+    }
+  }
+
+  async function handleSendConfirmation() {
+    if (!viewItem) return
+    const norm = normalize(viewItem)
+    
+    setSendingConfirmation(true)
+    try {
+      const result = await sendConfirmationEmailAPI(norm.id)
+      toast.success(result.message || 'Confirmation email sent successfully!')
+      
+      // Update the isEmailSent flag in the UI
+      setRawRows((prev) => {
+        const idx = prev.findIndex((x) => String(x.id ?? x._id) === String(norm.id))
+        if (idx === -1) return prev
+        const next = prev.slice()
+        next[idx] = { ...next[idx], isEmailSent: true }
+        return next
+      })
+      setViewItem({ ...viewItem, isEmailSent: true })
+      
+    } catch (err: any) {
+      console.error('Failed to send confirmation email:', err)
+      const errorMsg = err?.response?.data?.message || err?.message || 'Failed to send confirmation email'
+      toast.error(errorMsg)
+    } finally {
+      setSendingConfirmation(false)
+    }
   }
 
   function remindPayment(id: string) {
@@ -738,6 +792,18 @@ export default function AbstractsPage() {
                 >
                   {updating ? 'Updating...' : 'Update'}
                 </button>
+                
+                {/* Show Send Confirmation Email button only if email not sent */}
+                {!viewItem.isEmailSent && (
+                  <button
+                    onClick={handleSendConfirmation}
+                    disabled={sendingConfirmation}
+                    className="rounded-md border border-blue-600 bg-blue-600 text-white px-2.5 py-1.5 text-xs hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {sendingConfirmation ? 'Sending...' : 'Send Confirmation Email'}
+                  </button>
+                )}
+                
                 <button
                   onClick={() => {
                     const norm = normalize(viewItem)
@@ -750,7 +816,7 @@ export default function AbstractsPage() {
                 <button
                   onClick={() => {
                     const norm = normalize(viewItem)
-                    sendInvoice(norm.id)
+                    openInvoiceModal(norm.id, norm.name)
                   }}
                   className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50"
                 >
@@ -782,6 +848,17 @@ export default function AbstractsPage() {
         Notes: Email alerts should trigger automatically for "Under Review" status; acceptance letters must include a PDF attachment. Add invoice and payment reminder integrations here. This UI is ready for wiring to backend APIs.
       </p>
       {showForm && <AbstractForm onClose={() => setShowForm(false)} onSuccess={fetchAll} />}
+      <InvoiceForm
+        isOpen={invoiceModalOpen}
+        onClose={() => {
+          setInvoiceModalOpen(false)
+          setInvoiceAbstractId(null)
+          setInvoiceAbstractName('')
+        }}
+        onSubmit={handleSendInvoice}
+        abstractName={invoiceAbstractName}
+        isLoading={sendingInvoice}
+      />
     </div>
   )
 }

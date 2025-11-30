@@ -216,4 +216,73 @@ export async function searchAbstracts(params: AbstractSearchParams = {}): Promis
   }
 }
 
+export type InvoiceOrderItem = {
+  serialNumber: number
+  description: string
+  quantity: number
+  price: number
+}
+
+export type InvoiceData = {
+  invoiceAmount: number
+  orderItems: InvoiceOrderItem[]
+  paymentLink?: string
+  interestedIn?: string
+  note?: string
+  // Additional data for context
+  registrationFee?: number
+  numberOfParticipants?: number
+  accommodationFee?: number
+  numberOfNights?: number
+  occupancyType?: string
+  internetHandlingFees?: number
+  checkIn?: string
+  checkOut?: string
+}
+
+export type SendInvoiceResponse = {
+  success: boolean
+  message: string
+  abstract: {
+    id: number | string
+    name?: string
+    email?: string
+  }
+}
+
+export async function sendInvoice(
+  id: string | number,
+  invoiceData: InvoiceData
+): Promise<SendInvoiceResponse> {
+  const { data } = await api.post<SendInvoiceResponse>(
+    `${ABSTRACT_BASE}/${id}/send-invoice`,
+    invoiceData,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      withCredentials: true,
+    }
+  )
+  return data
+}
+
+export async function sendConfirmationEmail(
+  id: string | number
+): Promise<SendInvoiceResponse> {
+  const { data } = await api.post<SendInvoiceResponse>(
+    `${ABSTRACT_BASE}/${id}/send-confirmation`,
+    {},
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      withCredentials: true,
+    }
+  )
+  return data
+}
+
 
