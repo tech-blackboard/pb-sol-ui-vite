@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { searchAbstracts, updateAbstractStatus, sendInvoice as sendInvoiceAPI, type AbstractSearchParams, type InvoiceData } from '../services/abstracts'
+import { searchAbstracts, updateAbstractStatus, sendInvoice as sendInvoiceAPI, sendConfirmationEmail as sendConfirmationEmailAPI, type AbstractSearchParams, type InvoiceData } from '../services/abstracts'
 import { listWebsites, type SourceWebsite } from '../services/sourcedb'
 import AbstractForm from '../components/AbstractForm';
 import { InvoiceForm } from '../components/InvoiceForm';
@@ -46,6 +46,7 @@ export default function AbstractsPage() {
   const [invoiceAbstractId, setInvoiceAbstractId] = useState<string | null>(null)
   const [invoiceAbstractName, setInvoiceAbstractName] = useState<string>('')
   const [sendingInvoice, setSendingInvoice] = useState(false)
+  const [sendingConfirmation, setSendingConfirmation] = useState(false)
 
   const [filters, setFilters] = useState<AbstractSearchParams>({
     search: '',
@@ -228,6 +229,34 @@ export default function AbstractsPage() {
       toast.error(errorMsg)
     } finally {
       setSendingInvoice(false)
+    }
+  }
+
+  async function handleSendConfirmation() {
+    if (!viewItem) return
+    const norm = normalize(viewItem)
+    
+    setSendingConfirmation(true)
+    try {
+      const result = await sendConfirmationEmailAPI(norm.id)
+      toast.success(result.message || 'Confirmation email sent successfully!')
+      
+      // Update the isEmailSent flag in the UI
+      setRawRows((prev) => {
+        const idx = prev.findIndex((x) => String(x.id ?? x._id) === String(norm.id))
+        if (idx === -1) return prev
+        const next = prev.slice()
+        next[idx] = { ...next[idx], isEmailSent: true }
+        return next
+      })
+      setViewItem({ ...viewItem, isEmailSent: true })
+      
+    } catch (err: any) {
+      console.error('Failed to send confirmation email:', err)
+      const errorMsg = err?.response?.data?.message || err?.message || 'Failed to send confirmation email'
+      toast.error(errorMsg)
+    } finally {
+      setSendingConfirmation(false)
     }
   }
 
@@ -767,6 +796,18 @@ export default function AbstractsPage() {
                 >
                   {updating ? 'Updating...' : 'Update'}
                 </button>
+                
+                {/* Show Send Confirmation Email button only if email not sent */}
+                {!viewItem.isEmailSent && (
+                  <button
+                    onClick={handleSendConfirmation}
+                    disabled={sendingConfirmation}
+                    className="rounded-md border border-blue-600 bg-blue-600 text-white px-2.5 py-1.5 text-xs hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {sendingConfirmation ? 'Sending...' : 'Send Confirmation Email'}
+                  </button>
+                )}
+                
                 <button
                   onClick={() => {
                     const norm = normalize(viewItem)

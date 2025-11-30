@@ -268,4 +268,21 @@ export async function sendInvoice(
   return data
 }
 
+export async function sendConfirmationEmail(
+  id: string | number
+): Promise<SendInvoiceResponse> {
+  const { data } = await api.post<SendInvoiceResponse>(
+    `${ABSTRACT_BASE}/${id}/send-confirmation`,
+    {},
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      withCredentials: true,
+    }
+  )
+  return data
+}
+
 
