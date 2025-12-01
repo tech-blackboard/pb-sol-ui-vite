@@ -384,7 +384,7 @@ export function InvoiceForm({
                     <option value="">-- Select Option --</option>
                     {INTERESTED_IN_OPTIONS.map((option) => (
                       <option key={option} value={option}>
-                        {option} (${REGISTRATION_FEES[option]})
+                        {option}
                       </option>
                     ))}
                   </select>
