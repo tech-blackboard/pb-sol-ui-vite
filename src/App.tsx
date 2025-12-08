@@ -13,6 +13,7 @@ import { selectTheme, toggleTheme } from './store/slices/themeSlice'
 import NetworkErrorAlert from './alerts/NetworkErrorAlert'
 import ServerIssueAlert from './alerts/ServerIssueAlert'
 import ServerUnavailableAlert from './alerts/ServerUnavailableAlert'
+import ReplyManagementPage from './pages/ReplyManagementPage'
 
 function App() {
   const dispatch = useDispatch<AppDispatch>()
@@ -44,6 +45,7 @@ function App() {
   const links: NavLink[] = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'abstracts', label: 'Abstracts'},
+    { id: 'reply-management', label: 'Reply Management'},
   ];
 
 
@@ -130,7 +132,10 @@ function App() {
           )}
           <main className="w-full h-full px-4 sm:px-6 lg:px-8 py-6 overflow-hidden">
             <div className="h-full overflow-hidden flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm text-left">
-              {activeId === 'abstracts' ? (
+              {
+                activeId === 'reply-management' ? (
+                  <ReplyManagementPage />
+                ) : activeId === 'abstracts' ? (
                   isAdmin ? (
                     <AbstractsPage />
                   ) : (
@@ -139,6 +144,7 @@ function App() {
                 ) : (
                   <DashboardPage />
                 )}
+             
             </div>
           </main>
         </div>
