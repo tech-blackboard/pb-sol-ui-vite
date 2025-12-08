@@ -20,11 +20,11 @@ export type AbstractRecord = {
   university?: string
   presentationType?: 'Oral' | 'Poster' | 'Virtual' | 'Delegate'
   file?: string
-  status: 'Under Review' | 'Accepted' | 'Out of Scope' | 'Rejected' | 'Registered'
+  status: 'Under Review' | 'Accepted' | 'Out of Scope' | 'Rejected' | 'Registered' | 'Sent Invoice'
   isEmailSent: boolean
 }
 
-type StatusAction = 'Under Review' | 'Accepted' | 'Out of Scope' | 'Rejected'
+type StatusAction = 'Under Review' | 'Accepted' | 'Out of Scope' | 'Rejected' | 'Registered' | 'Sent Invoice'
 
 export default function AbstractsPage() {
   const [rows, setRows] = useState<AbstractRecord[]>([])
@@ -66,6 +66,8 @@ export default function AbstractsPage() {
     Accepted: 2,
     'Out of Scope': 3,
     Rejected: 4,
+    Registered: 5,
+    'Sent Invoice': 6,
   }
 
   const allowedStatuses: AbstractRecord['status'][] = [
@@ -74,6 +76,7 @@ export default function AbstractsPage() {
     'Out of Scope',
     'Rejected',
     'Registered',
+    'Sent Invoice',
   ]
 
   function toPresentationType(v: any): AbstractRecord['presentationType'] {
@@ -599,6 +602,8 @@ export default function AbstractsPage() {
                   <option value={2}>Accepted</option>
                   <option value={3}>Out of Scope</option>
                   <option value={4}>Rejected</option>
+                  <option value={5}>Registered</option>
+                  <option value={6}>Sent Invoice</option>
                 </select>
                 <div className="flex items-center gap-2">
                   <select
@@ -780,6 +785,10 @@ export default function AbstractsPage() {
                   <option>Accepted</option>
                   <option>Out of Scope</option>
                   <option>Rejected</option>
+                  <option>Registered</option>
+                  {/* <option>Payment Reminder</option> */}
+                  <option>Sent Invoice</option>
+                
                 </select>
               </div>
 
