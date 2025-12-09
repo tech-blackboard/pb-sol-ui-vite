@@ -285,4 +285,18 @@ export async function sendConfirmationEmail(
   return data
 }
 
+export type PaymentReminderResponse = {  status?: 'success' | 'error'; message?: string }
+
+export async function sendPaymentReminder(id: string | number): Promise<PaymentReminderResponse> {
+  const { data } = await api.post(
+    `${ABSTRACT_BASE}/${id}/payment-reminder`,
+    { id:Number(id) },
+    {
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      withCredentials: true,
+    },
+  )
+  return data
+}
+
 
