@@ -199,6 +199,29 @@ export default function AbstractsPage() {
       setModalStatus(normalize(viewItem).status as StatusAction)
     }
   }, [viewItem])
+  
+  useEffect(() => {
+    if (!filtersOpen) return
+    let mounted = true
+      ; (async () => {
+        try {
+          setWebLoading(true)
+          const ws = await listWebsites()
+          if (!mounted) return
+          setWebsites(ws)
+        } catch (err) {
+          console.error('Failed to load websites:', err)
+        } finally {
+          if (mounted) {
+            setWebLoading(false)
+          }
+        }
+      })()
+    return () => {
+      mounted = false
+    }
+  }, [filtersOpen])
+  
   console.log(viewItem)
   const total = serverTotal || rows.length
   const totalPages = serverTotalPages || Math.max(1, Math.ceil(total / pageSize))
@@ -293,7 +316,7 @@ export default function AbstractsPage() {
     }
   }
 
- async function remindPayment(id: string) {
+ async function remindPayment() {
   if (!viewItem) return
   const norm = normalize(viewItem)
   setSendingPaymentReminder(true)
@@ -889,8 +912,8 @@ export default function AbstractsPage() {
                 {modalStatus === 'Sent Invoice' && (
                   <button
                   onClick={() => {
-                    const norm = normalize(viewItem)
-                    remindPayment(norm.id)
+                    normalize(viewItem)
+                    remindPayment()
                   }}
                   disabled={sendingPaymentReminder}
                   className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
