@@ -20,11 +20,11 @@ export type AbstractRecord = {
   university?: string
   presentationType?: 'Oral' | 'Poster' | 'Virtual' | 'Delegate'
   file?: string
-  status: 'Under Review' | 'Accepted' | 'Out of Scope' | 'Rejected' | 'Registered'
+  status: 'Under Review' | 'Accepted' | 'Out of Scope' | 'Rejected' | 'Registered' | 'Sent Invoice'
   isEmailSent: boolean
 }
 
-type StatusAction = 'Under Review' | 'Accepted' | 'Out of Scope' | 'Rejected'
+type StatusAction = 'Under Review' | 'Accepted' | 'Out of Scope' | 'Rejected' | 'Registered' | 'Sent Invoice'
 
 export default function AbstractsPage() {
   const [rows, setRows] = useState<AbstractRecord[]>([])
@@ -66,6 +66,8 @@ export default function AbstractsPage() {
     Accepted: 2,
     'Out of Scope': 3,
     Rejected: 4,
+    Registered: 5,
+    'Sent Invoice': 6,
   }
 
   const allowedStatuses: AbstractRecord['status'][] = [
@@ -74,6 +76,7 @@ export default function AbstractsPage() {
     'Out of Scope',
     'Rejected',
     'Registered',
+    'Sent Invoice',
   ]
 
   function toPresentationType(v: any): AbstractRecord['presentationType'] {
@@ -220,6 +223,34 @@ export default function AbstractsPage() {
     try {
       const result = await sendInvoiceAPI(invoiceAbstractId, invoiceData)
       toast.success(result.message || 'Invoice sent successfully!')
+      
+      // Update status to "Sent Invoice" after successful invoice send
+      const norm = normalize(viewItem || rawRows.find((x) => String(x.id ?? x._id) === invoiceAbstractId))
+      if (norm) {
+        try {
+          const statusId = STATUS_TO_ID['Sent Invoice']
+          const updated = await updateAbstractStatus(norm.id, statusId)
+          // Update raw rows
+          setRawRows((prev) => {
+            const idx = prev.findIndex((x) => String(x.id ?? x._id) === String(norm.id))
+            if (idx === -1) return prev
+            const next = prev.slice()
+            next[idx] = updated
+            return next
+          })
+          // Update normalized rows
+          setRows((prev) => prev.map((r) => (r.id === norm.id ? normalize(updated) : r)))
+          // Reflect in modal if open
+          if (viewItem && String(viewItem.id ?? viewItem._id) === norm.id) {
+            setViewItem(updated)
+          }
+          toast.success('Status updated to Sent Invoice')
+        } catch (statusErr) {
+          console.error('Failed to update status:', statusErr)
+          // Don't show error toast for status update failure, invoice was sent successfully
+        }
+      }
+      
       setInvoiceModalOpen(false)
       setInvoiceAbstractId(null)
       setInvoiceAbstractName('')
@@ -262,7 +293,7 @@ export default function AbstractsPage() {
 
   function remindPayment(id: string) {
     // TODO: trigger backend payment reminder email
-    alert(`Payment reminder sent for ID ${id}`)
+    alert(`Payment reminder sent is under development for ID #${id}`)
   }
   useEffect(() => {
     if (!filtersOpen) return
@@ -599,6 +630,8 @@ export default function AbstractsPage() {
                   <option value={2}>Accepted</option>
                   <option value={3}>Out of Scope</option>
                   <option value={4}>Rejected</option>
+                  <option value={5}>Registered</option>
+                  <option value={6}>Sent Invoice</option>
                 </select>
                 <div className="flex items-center gap-2">
                   <select
@@ -733,7 +766,24 @@ export default function AbstractsPage() {
                 </div>
                 <div>
                   <dt className="text-gray-500 dark:text-gray-400">Status</dt>
-                  <dd className="text-gray-900 dark:text-gray-100">{viewItem.status?.actionType ?? 'Under Review'}</dd>
+                  <dd className="text-gray-900 dark:text-gray-100">
+                    <span
+                      className={[
+                        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
+                        (viewItem.status?.actionType ?? 'Under Review') === 'Accepted'
+                          ? 'bg-green-50 text-green-700'
+                          : (viewItem.status?.actionType ?? 'Under Review') === 'Under Review'
+                            ? 'bg-yellow-50 text-yellow-800'
+                            : (viewItem.status?.actionType ?? 'Under Review') === 'Rejected'
+                              ? 'bg-red-50 text-red-700'
+                              : (viewItem.status?.actionType ?? 'Under Review') === 'Out of Scope'
+                                ? 'bg-gray-100 text-gray-700'
+                                : 'bg-blue-50 text-blue-700',
+                      ].join(' ')}
+                    >
+                      {viewItem.status?.actionType ?? 'Under Review'}
+                    </span>
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-gray-500 dark:text-gray-400">isEmailSent</dt>
@@ -776,22 +826,41 @@ export default function AbstractsPage() {
                   value={modalStatus}
                   onChange={(e) => setModalStatus(e.target.value as StatusAction)}
                 >
-                  <option>Under Review</option>
-                  <option>Accepted</option>
-                  <option>Out of Scope</option>
-                  <option>Rejected</option>
+                  {(() => {
+                    const currentStatus = normalize(viewItem).status;
+                    const isUnderReview = currentStatus === 'Under Review';
+                    const isAccepted = currentStatus === 'Accepted';
+                    const isSentInvoice = currentStatus === 'Sent Invoice';
+                    const isRegistered = currentStatus === 'Registered';
+                    
+                    return (
+                      <>
+                        <option disabled={isAccepted || isSentInvoice || isRegistered}>Under Review</option>
+                        <option disabled={isAccepted || isSentInvoice || isRegistered}>Accepted</option>
+                        <option disabled={isAccepted || isUnderReview || isSentInvoice || isRegistered}>Out of Scope</option>
+                        <option disabled={isAccepted || isUnderReview || isSentInvoice || isRegistered}>Rejected</option>
+                        <option disabled={isUnderReview} value="Registered">Registered</option>
+                        {/* <option>Payment Reminder</option> */}
+                        <option disabled={isUnderReview || isSentInvoice || isRegistered} value="Sent Invoice">Sent Invoice</option>
+                      </>
+                    );
+                  })()}
                 </select>
               </div>
 
               <div className="flex items-center gap-2">
                 {updateError && <span className="text-xs text-red-600 mr-2">{updateError}</span>}
-                <button
-                  onClick={handleUpdateStatus}
-                  disabled={updating || modalStatus === (normalize(viewItem).status as StatusAction)}
-                  className={`rounded-md border px-2.5 py-1.5 text-xs ${updating || modalStatus === (normalize(viewItem).status as StatusAction) ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-500-700'}`}
-                >
-                  {updating ? 'Updating...' : 'Update'}
-                </button>
+                
+                {/* Hide Update button when status is "Sent Invoice" */}
+                {modalStatus !== 'Sent Invoice' && (
+                  <button
+                    onClick={handleUpdateStatus}
+                    disabled={updating || modalStatus === (normalize(viewItem).status as StatusAction)}
+                    className={`rounded-md border px-2.5 py-1.5 text-xs ${updating || modalStatus === (normalize(viewItem).status as StatusAction) ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-500-700'}`}
+                  >
+                    {updating ? 'Updating...' : 'Update'}
+                  </button>
+                )}
                 
                 {/* Show Send Confirmation Email button only if email not sent */}
                 {!viewItem.isEmailSent && (
@@ -804,33 +873,34 @@ export default function AbstractsPage() {
                   </button>
                 )}
                 
-                <button
-                  onClick={() => {
-                    const norm = normalize(viewItem)
-                    sendAcceptance(norm.id)
-                  }}
-                  className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50"
-                >
-                  Acceptance PDF
-                </button>
-                <button
-                  onClick={() => {
-                    const norm = normalize(viewItem)
-                    openInvoiceModal(norm.id, norm.name)
-                  }}
-                  className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50"
-                >
-                  Invoice
-                </button>
-                <button
-                  onClick={() => {
-                    const norm = normalize(viewItem)
-                    remindPayment(norm.id)
-                  }}
-                  className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50"
-                >
-                  Payment Reminder
-                </button>
+                {/* Acceptance PDF button removed - hidden for all statuses */}
+                
+                {/* Show Invoice button when status is "Sent Invoice" */}
+                {modalStatus === 'Sent Invoice' && (
+                  <button
+                    onClick={() => {
+                      const norm = normalize(viewItem)
+                      openInvoiceModal(norm.id, norm.name)
+                    }}
+                    className="rounded-md border border-blue-600 bg-blue-600 text-white px-2.5 py-1.5 text-xs hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Invoice
+                  </button>
+                )}
+                
+                {/* Show Payment Reminder button only when status is "Sent Invoice" */}
+                {normalize(viewItem).status === 'Sent Invoice' && (
+                  <button
+                    onClick={() => {
+                      const norm = normalize(viewItem)
+                      remindPayment(norm.id)
+                    }}
+                    className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50"
+                  >
+                    Payment Reminder
+                  </button>
+                )}
+                
                 <button
                   onClick={() => setViewItem(null)}
                   className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
