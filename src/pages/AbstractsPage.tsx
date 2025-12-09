@@ -68,8 +68,8 @@ export default function AbstractsPage() {
     Accepted: 2,
     'Out of Scope': 3,
     Rejected: 4,
-    Registered: 5,
-    'Sent Invoice': 6,
+    'Sent Invoice': 5,  // Changed from 6 to 5
+    Registered: 6,      // Changed from 5 to 6
   }
 
   const allowedStatuses: AbstractRecord['status'][] = [
