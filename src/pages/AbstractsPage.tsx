@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import { searchAbstracts, updateAbstractStatus, sendInvoice as sendInvoiceAPI, sendConfirmationEmail as sendConfirmationEmailAPI, type AbstractSearchParams, type InvoiceData } from '../services/abstracts'
 import { listWebsites, type SourceWebsite } from '../services/sourcedb'
 import AbstractForm from '../components/AbstractForm';
+import { sendPaymentReminder } from '../services/abstracts';
 import { InvoiceForm } from '../components/InvoiceForm';
 import { formatDate } from '../utils/utils';
 // adjust if your export name differs
@@ -46,6 +47,7 @@ export default function AbstractsPage() {
   const [invoiceAbstractId, setInvoiceAbstractId] = useState<string | null>(null)
   const [invoiceAbstractName, setInvoiceAbstractName] = useState<string>('')
   const [sendingInvoice, setSendingInvoice] = useState(false)
+  const [sendingPaymentReminder, setSendingPaymentReminder] = useState(false)
   const [sendingConfirmation, setSendingConfirmation] = useState(false)
 
   const [filters, setFilters] = useState<AbstractSearchParams>({
@@ -291,27 +293,23 @@ export default function AbstractsPage() {
     }
   }
 
-  function remindPayment(id: string) {
-    // TODO: trigger backend payment reminder email
-    alert(`Payment reminder sent is under development for ID #${id}`)
+ async function remindPayment(id: string) {
+  if (!viewItem) return
+  const norm = normalize(viewItem)
+  setSendingPaymentReminder(true)
+  try {
+    const result = await sendPaymentReminder(norm.id)
+    toast.success(result.message || 'Payment reminder sent successfully!')
   }
-  useEffect(() => {
-    if (!filtersOpen) return
-    let mounted = true
-      ; (async () => {
-        try {
-          setWebLoading(true)
-          const ws = await listWebsites()
-          if (!mounted) return
-          setWebsites(ws)
-        } finally {
-          setWebLoading(false)
-        }
-      })()
-    return () => {
-      mounted = false
-    }
-  }, [filtersOpen])
+  catch (err: any) {
+    console.error('Failed to send payment reminder:', err)
+    const errorMsg = err?.response?.data?.message || err?.message || 'Failed to send payment reminder'
+    toast.error(errorMsg)
+  }
+  finally {
+    setSendingPaymentReminder(false)
+  }
+ }
 
   const modalFile = (() => {
     const f = typeof viewItem?.file === 'string' ? viewItem.file : ''
@@ -888,19 +886,18 @@ export default function AbstractsPage() {
                   </button>
                 )}
                 
-                {/* Show Payment Reminder button only when status is "Sent Invoice" */}
-                {normalize(viewItem).status === 'Sent Invoice' && (
+               
                   <button
-                    onClick={() => {
-                      const norm = normalize(viewItem)
-                      remindPayment(norm.id)
-                    }}
-                    className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50"
-                  >
-                    Payment Reminder
-                  </button>
-                )}
-                
+                  onClick={() => {
+                    const norm = normalize(viewItem)
+                    remindPayment(norm.id)
+                  }}
+                  disabled={sendingPaymentReminder}
+                  className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {sendingPaymentReminder ? 'Sending...' : 'Payment Reminder'}
+                </button>
+    
                 <button
                   onClick={() => setViewItem(null)}
                   className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
