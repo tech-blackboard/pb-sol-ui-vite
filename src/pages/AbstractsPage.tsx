@@ -835,8 +835,8 @@ export default function AbstractsPage() {
                       <>
                         <option disabled={isAccepted || isSentInvoice || isRegistered}>Under Review</option>
                         <option disabled={isAccepted || isSentInvoice || isRegistered}>Accepted</option>
-                        <option disabled={isAccepted || isUnderReview || isSentInvoice || isRegistered}>Out of Scope</option>
-                        <option disabled={isAccepted || isUnderReview || isSentInvoice || isRegistered}>Rejected</option>
+                        <option disabled={isAccepted || isSentInvoice || isRegistered}>Out of Scope</option>
+                        <option disabled={isAccepted || isSentInvoice || isRegistered}>Rejected</option>
                         {/* <option>Payment Reminder</option> */}
                         <option disabled={isUnderReview || isSentInvoice || isRegistered} value="Sent Invoice">Send Invoice</option>
                         <option disabled={isUnderReview || isSentInvoice || isRegistered}>Registered</option>
@@ -886,7 +886,7 @@ export default function AbstractsPage() {
                   </button>
                 )}
                 
-               
+                {modalStatus === 'Sent Invoice' && (
                   <button
                   onClick={() => {
                     const norm = normalize(viewItem)
@@ -897,6 +897,7 @@ export default function AbstractsPage() {
                 >
                   {sendingPaymentReminder ? 'Sending...' : 'Payment Reminder'}
                 </button>
+                )}
     
                 <button
                   onClick={() => setViewItem(null)}
