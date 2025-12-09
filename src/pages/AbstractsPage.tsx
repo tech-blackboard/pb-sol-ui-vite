@@ -630,8 +630,8 @@ export default function AbstractsPage() {
                   <option value={2}>Accepted</option>
                   <option value={3}>Out of Scope</option>
                   <option value={4}>Rejected</option>
-                  <option value={5}>Registered</option>
-                  <option value={6}>Sent Invoice</option>
+                  <option value={5}>Send Invoice</option>
+                  <option value={6}>Registered</option>
                 </select>
                 <div className="flex items-center gap-2">
                   <select
@@ -839,9 +839,9 @@ export default function AbstractsPage() {
                         <option disabled={isAccepted || isSentInvoice || isRegistered}>Accepted</option>
                         <option disabled={isAccepted || isUnderReview || isSentInvoice || isRegistered}>Out of Scope</option>
                         <option disabled={isAccepted || isUnderReview || isSentInvoice || isRegistered}>Rejected</option>
-                        <option disabled={isUnderReview} value="Registered">Registered</option>
                         {/* <option>Payment Reminder</option> */}
-                        <option disabled={isUnderReview || isSentInvoice || isRegistered} value="Sent Invoice">Sent Invoice</option>
+                        <option disabled={isUnderReview || isSentInvoice || isRegistered} value="Sent Invoice">Send Invoice</option>
+                        <option disabled={isUnderReview || isSentInvoice || isRegistered}>Registered</option>
                       </>
                     );
                   })()}
