@@ -205,10 +205,10 @@ export default function AbstractsPage() {
 
 
 
-  function sendAcceptance(id: string) {
-    // TODO: trigger backend to send acceptance letter PDF attachment
-    alert(`Sent acceptance letter for ID ${id}`)
-  }
+  // function sendAcceptance(id: string) {
+  //   // TODO: trigger backend to send acceptance letter PDF attachment
+  //   alert(`Sent acceptance letter for ID ${id}`)
+  // }
 
   function openInvoiceModal(id: string, name: string) {
     setInvoiceAbstractId(id)
