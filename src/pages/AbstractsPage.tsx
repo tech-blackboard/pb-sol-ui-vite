@@ -853,16 +853,19 @@ export default function AbstractsPage() {
                     const isAccepted = currentStatus === 'Accepted';
                     const isSentInvoice = currentStatus === 'Sent Invoice';
                     const isRegistered = currentStatus === 'Registered';
+                    const isOutOfScope = currentStatus === 'Out of Scope';
+                    const isRejected = currentStatus === 'Rejected';
+                    const isTerminalStatus = isOutOfScope || isRejected;
                     
                     return (
                       <>
-                        <option disabled={isAccepted || isSentInvoice || isRegistered}>Under Review</option>
-                        <option disabled={isAccepted || isSentInvoice || isRegistered}>Accepted</option>
-                        <option disabled={isAccepted || isSentInvoice || isRegistered}>Out of Scope</option>
-                        <option disabled={isAccepted || isSentInvoice || isRegistered}>Rejected</option>
+                        <option disabled={isAccepted || isSentInvoice || isRegistered || isTerminalStatus}>Under Review</option>
+                        <option disabled={isAccepted || isSentInvoice || isRegistered || isTerminalStatus}>Accepted</option>
+                        <option disabled={isAccepted || isSentInvoice || isRegistered || isTerminalStatus}>Out of Scope</option>
+                        <option disabled={isAccepted || isSentInvoice || isRegistered || isTerminalStatus}>Rejected</option>
                         {/* <option>Payment Reminder</option> */}
-                        <option disabled={isUnderReview || isSentInvoice || isRegistered} value="Sent Invoice">Send Invoice</option>
-                        <option disabled={isUnderReview || isSentInvoice || isRegistered}>Registered</option>
+                        <option disabled={isUnderReview || isSentInvoice || isRegistered || isTerminalStatus} value="Sent Invoice">Send Invoice</option>
+                        <option disabled={isUnderReview || isSentInvoice || isRegistered || isTerminalStatus}>Registered</option>
                       </>
                     );
                   })()}
