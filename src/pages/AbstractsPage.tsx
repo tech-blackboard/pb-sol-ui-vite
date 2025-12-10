@@ -865,7 +865,7 @@ export default function AbstractsPage() {
                         <option disabled={isAccepted || isSentInvoice || isRegistered || isTerminalStatus}>Rejected</option>
                         {/* <option>Payment Reminder</option> */}
                         <option disabled={isUnderReview || isSentInvoice || isRegistered || isTerminalStatus} value="Sent Invoice">Send Invoice</option>
-                        <option disabled={isUnderReview || isSentInvoice || isRegistered || isTerminalStatus}>Registered</option>
+                        <option disabled={isUnderReview || isRegistered || isTerminalStatus}>Registered</option>
                       </>
                     );
                   })()}
