@@ -744,7 +744,7 @@ export function PaymentReceiptForm({
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-4 py-4 dark:border-gray-700">
+            <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-4 py-2 dark:border-gray-700">
               <button
                 type="button"
                 onClick={handleClose}
