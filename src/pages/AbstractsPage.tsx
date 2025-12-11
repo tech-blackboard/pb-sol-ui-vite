@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { searchAbstracts, updateAbstractStatus, sendInvoice as sendInvoiceAPI, sendConfirmationEmail as sendConfirmationEmailAPI, type AbstractSearchParams, type InvoiceData } from '../services/abstracts'
+import { searchAbstracts, updateAbstractStatus, sendInvoice as sendInvoiceAPI, sendConfirmationEmail as sendConfirmationEmailAPI, type AbstractSearchParams, type InvoiceData, type PaymentReceiptData, sendPaymentReceipt  } from '../services/abstracts'
 import { listWebsites, type SourceWebsite } from '../services/sourcedb'
 import AbstractForm from '../components/AbstractForm';
 import { sendPaymentReminder } from '../services/abstracts';
 import { InvoiceForm } from '../components/InvoiceForm';
 import { formatDate } from '../utils/utils';
+import { PaymentReceiptForm } from '../components/PaymentReceipt';
 // adjust if your export name differs
 export type AbstractRecord = {
   id: string
@@ -49,7 +50,10 @@ export default function AbstractsPage() {
   const [sendingInvoice, setSendingInvoice] = useState(false)
   const [sendingPaymentReminder, setSendingPaymentReminder] = useState(false)
   const [sendingConfirmation, setSendingConfirmation] = useState(false)
-
+  const [paymentReceiptModalOpen, setPaymentReceiptModalOpen] = useState(false)
+  const [paymentReceiptAbstractId, setPaymentReceiptAbstractId] = useState<string | null>(null)
+  const [paymentReceiptAbstractName, setPaymentReceiptAbstractName] = useState<string>('')
+  const [sendingPaymentReceipt, setSendingPaymentReceipt] = useState(false)
   const [filters, setFilters] = useState<AbstractSearchParams>({
     search: '',
     sortBy: 'now',
@@ -240,6 +244,11 @@ export default function AbstractsPage() {
     setInvoiceAbstractName(name)
     setInvoiceModalOpen(true)
   }
+  function openPaymentReceiptModal(id: string, name: string) {
+    setPaymentReceiptAbstractId(id)
+    setPaymentReceiptAbstractName(name)
+    setPaymentReceiptModalOpen(true)
+  }
 
   async function handleSendInvoice(invoiceData: InvoiceData) {
     if (!invoiceAbstractId) return
@@ -287,7 +296,54 @@ export default function AbstractsPage() {
       setSendingInvoice(false)
     }
   }
+   
+  async function handleSendPaymentReceipt(paymentReceiptData: PaymentReceiptData) {
+    if (!paymentReceiptAbstractId) return
 
+    setSendingPaymentReceipt(true)
+    try {
+      const result = await sendPaymentReceipt(paymentReceiptAbstractId, paymentReceiptData)
+      toast.success(result.message || 'Payment receipt sent successfully!')
+      
+      // Update status to "Sent Invoice" after successful invoice send
+      const norm = normalize(viewItem || rawRows.find((x) => String(x.id ?? x._id) === paymentReceiptAbstractId))
+      if (norm) {
+        try {
+          const statusId = STATUS_TO_ID['Registered']
+          const updated = await updateAbstractStatus(norm.id, statusId)
+          // Update raw rows
+          setRawRows((prev) => {
+            const idx = prev.findIndex((x) => String(x.id ?? x._id) === String(norm.id))
+            if (idx === -1) return prev
+            const next = prev.slice()
+            next[idx] = updated
+            return next
+          })
+          // Update normalized rows
+          setRows((prev) => prev.map((r) => (r.id === norm.id ? normalize(updated) : r)))
+          // Reflect in modal if open
+          if (viewItem && String(viewItem.id ?? viewItem._id) === norm.id) {
+            setViewItem(updated)
+          }
+          toast.success('Status updated to Registered')
+        } catch (statusErr) {
+          console.error('Failed to update status:', statusErr)
+          // Don't show error toast for status update failure, invoice was sent successfully
+        }
+      }
+      
+      setPaymentReceiptModalOpen(false)
+      setPaymentReceiptAbstractId(null)
+      setPaymentReceiptAbstractName('')
+    } catch (err: any) {
+      console.error('Failed to send payment receipt:', err)
+      const errorMsg = err?.response?.data?.message || err?.message || 'Failed to send payment receipt'
+      toast.error(errorMsg)
+    } finally {
+      setSendingPaymentReceipt(false)
+    }
+  }
+   
   async function handleSendConfirmation() {
     if (!viewItem) return
     const norm = normalize(viewItem)
@@ -911,7 +967,19 @@ export default function AbstractsPage() {
                     Invoice
                   </button>
                 )}
-                
+
+                {modalStatus === 'Registered' && (
+                  <button
+                    onClick={() => {
+                      const norm = normalize(viewItem)
+                      openPaymentReceiptModal(norm.id, norm.name)
+                    }}
+                    className="rounded-md border border-blue-600 bg-blue-600 text-white px-2.5 py-1.5 text-xs hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Payment Receipt
+                  </button>
+                )}
+
                 {modalStatus === 'Sent Invoice' && (
                   <button
                   onClick={() => {
@@ -952,6 +1020,17 @@ export default function AbstractsPage() {
         onSubmit={handleSendInvoice}
         abstractName={invoiceAbstractName}
         isLoading={sendingInvoice}
+      />
+      <PaymentReceiptForm
+        isOpen={paymentReceiptModalOpen}
+        onClose={() => {
+          setPaymentReceiptModalOpen(false)
+          setPaymentReceiptAbstractId(null)
+          setPaymentReceiptAbstractName('')
+        }}
+        onSubmit={handleSendPaymentReceipt}
+        abstractName={paymentReceiptAbstractName}
+        isLoading={sendingPaymentReceipt}
       />
     </div>
   )

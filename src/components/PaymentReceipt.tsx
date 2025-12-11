@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react'
 
-interface InvoiceOrderItem {
+interface PaymentReceiptOrderItem {
   serialNumber: number
   description: string
   quantity: number
   price: number
 }
 
-interface InvoiceData {
+interface PaymentReceiptData {
   invoiceAmount: number
-  orderItems: InvoiceOrderItem[]
+  orderItems: PaymentReceiptOrderItem[]
   paymentLink?: string
   interestedIn?: string
   note?: string
@@ -27,10 +27,10 @@ interface InvoiceData {
   price?: number
 }
 
-interface InvoiceFormProps {
+interface PaymentReceiptFormProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (data: InvoiceData) => void
+  onSubmit: (data: PaymentReceiptData) => void
   abstractName?: string
   isLoading?: boolean
 }
@@ -67,17 +67,17 @@ const OCCUPANCY_OPTIONS: Record<string, number> = {
   'Triple Occupancy': 290,
 }
 
-export function InvoiceForm({
+export function PaymentReceiptForm({
   isOpen,
   onClose,
   onSubmit,
   abstractName,
   isLoading = false,
-}: InvoiceFormProps) {
+}: PaymentReceiptFormProps) {
   // Read default payment link from environment variable
   const DEFAULT_PAYMENT_LINK = import.meta.env.VITE_DEFAULT_PAYMENT_LINK || ''
 
-  const [formData, setFormData] = useState<InvoiceData>({
+  const [formData, setFormData] = useState<PaymentReceiptData>({
     invoiceAmount: 0,
     orderItems: [],
     quantity: 1,
@@ -87,7 +87,7 @@ export function InvoiceForm({
     note: '',
   })
 
-  const [errors, setErrors] = useState<Partial<Record<keyof InvoiceData, string>>>({})
+  const [errors, setErrors] = useState<Partial<Record<keyof PaymentReceiptData, string>>>({})
   const [registrationFee, setRegistrationFee] = useState(699)
   const [showAccommodation, setShowAccommodation] = useState(false)
   const [occupancyType, setOccupancyType] = useState<string>('')
@@ -112,7 +112,7 @@ export function InvoiceForm({
     }
   }, [formData.interestedIn])
 
-  function handleChange(field: keyof InvoiceData, value: string | number) {
+  function handleChange(field: keyof PaymentReceiptData, value: string | number) {
     setFormData((prev) => ({ ...prev, [field]: value }))
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }))
@@ -183,7 +183,7 @@ export function InvoiceForm({
     return Math.max(0, diff)
   }
 
-  function handleregistrationFeeChange(field: keyof InvoiceData, value: string | number) {
+  function handleregistrationFeeChange(field: keyof PaymentReceiptData, value: string | number) {
     setFormData((prev) => ({ ...prev, [field]: value }))
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }))
@@ -212,7 +212,7 @@ export function InvoiceForm({
     setShowConfirmModal(false)
     
     // Calculate order items
-    const orderItems: InvoiceOrderItem[] = []
+    const orderItems: PaymentReceiptOrderItem[] = []
     const totalRegistrationValue = (formData.registrationFee || registrationFee) * (formData.quantity || 1)
     const totalAccommodationValue = accommodationFee * numberOfNights
     
@@ -253,7 +253,7 @@ export function InvoiceForm({
     const invoiceAmount = totalRegistrationValue + totalAccommodationValue + internetHandlingFees
     
     // Prepare invoice data
-    const invoiceData: InvoiceData = {
+    const paymentReceiptData: PaymentReceiptData = {
       invoiceAmount,
       orderItems,
       paymentLink: formData.paymentLink,
@@ -269,11 +269,11 @@ export function InvoiceForm({
       checkOut: checkOut || undefined
     }
     
-    onSubmit(invoiceData)
+    onSubmit(paymentReceiptData)
   }
 
   function validate(): boolean {
-    const newErrors: Partial<Record<keyof InvoiceData, string>> = {}
+    const newErrors: Partial<Record<keyof PaymentReceiptData, string>> = {}
 
     // Validate Interested In
     if (!formData.interestedIn) {
@@ -339,7 +339,7 @@ export function InvoiceForm({
             <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Generate Invoice
+                  Generate Payment Receipt
                 </h2>
                 {abstractName && (
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -761,7 +761,7 @@ export function InvoiceForm({
                   disabled={isLoading}
                   className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                 >
-                  Preview Invoice
+                  Preview Payment Receipt
                 </button>
               </div>
             {/* </div> */}
@@ -926,7 +926,7 @@ export function InvoiceForm({
                         Sending...
                       </>
                     ) : (
-                      'Send Invoice'
+                      'Send Payment Receipt'
                     )}
                   </button>
                 </div>
@@ -940,10 +940,10 @@ export function InvoiceForm({
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Confirm Invoice Submission
+                Confirm Payment Receipt Submission
               </h2>
               <p className="text-sm text-gray-700 dark:text-gray-300 mb-6">
-                You're about to send this invoice. Please verify all details including registration, accommodation, and payment information. This action cannot be undone.
+                You're about to send this payment receipt. Please verify all details including registration, accommodation, and payment information. This action cannot be undone.
               </p>
               <div className="flex justify-end gap-3">
                 <button

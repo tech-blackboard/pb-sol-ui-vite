@@ -268,6 +268,58 @@ export async function sendInvoice(
   return data
 }
 
+export type PaymentReceiptOrderItem = {
+  serialNumber: number
+  description: string
+  quantity: number
+  price: number
+}
+
+export type PaymentReceiptData = {
+  invoiceAmount: number
+  orderItems: PaymentReceiptOrderItem[]
+  paymentLink?: string
+  interestedIn?: string
+  note?: string
+  // Additional data for context
+  registrationFee?: number
+  numberOfParticipants?: number
+  accommodationFee?: number
+  numberOfNights?: number
+  occupancyType?: string
+  internetHandlingFees?: number
+  checkIn?: string
+  checkOut?: string
+}
+
+export type SendPaymentReceiptResponse = {
+  success: boolean
+  message: string
+  abstract: {
+    id: number | string
+    name?: string
+    email?: string
+  }
+}
+
+export async function sendPaymentReceipt(
+  id: string | number,
+  paymentReceiptData: PaymentReceiptData
+): Promise<SendPaymentReceiptResponse> {
+  const { data } = await api.post<SendPaymentReceiptResponse>(
+    `${ABSTRACT_BASE}/${id}/send-payment-receipt`,
+    paymentReceiptData,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      withCredentials: true,
+    }
+  )
+  return data
+}
+
 export async function sendConfirmationEmail(
   id: string | number
 ): Promise<SendInvoiceResponse> {
