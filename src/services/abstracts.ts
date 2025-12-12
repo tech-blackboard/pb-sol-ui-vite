@@ -276,7 +276,7 @@ export type PaymentReceiptOrderItem = {
 }
 
 export type PaymentReceiptData = {
-  invoiceAmount: number
+  paymentReceiptAmount: number
   orderItems: PaymentReceiptOrderItem[]
   paymentLink?: string
   interestedIn?: string

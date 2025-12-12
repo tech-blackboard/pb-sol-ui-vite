@@ -8,7 +8,7 @@ interface PaymentReceiptOrderItem {
 }
 
 interface PaymentReceiptData {
-  invoiceAmount: number
+  paymentReceiptAmount: number
   orderItems: PaymentReceiptOrderItem[]
   paymentLink?: string
   interestedIn?: string
@@ -78,7 +78,7 @@ export function PaymentReceiptForm({
   const DEFAULT_PAYMENT_LINK = import.meta.env.VITE_DEFAULT_PAYMENT_LINK || ''
 
   const [formData, setFormData] = useState<PaymentReceiptData>({
-    invoiceAmount: 0,
+    paymentReceiptAmount: 0,
     orderItems: [],
     quantity: 1,
     paymentLink: DEFAULT_PAYMENT_LINK,
@@ -228,7 +228,7 @@ export function PaymentReceiptForm({
     if (occupancyType && numberOfNights > 0) {
       orderItems.push({
         serialNumber: 2,
-        description: `Accommodation - ${occupancyType}`,
+        description: `Accommodation - ${occupancyType} / ${checkIn} to ${checkOut}(${numberOfNights} nights)`,
         quantity: numberOfNights,
         price: accommodationFee
       })
@@ -250,11 +250,11 @@ export function PaymentReceiptForm({
     }
     
     // Calculate total invoice amount
-    const invoiceAmount = totalRegistrationValue + totalAccommodationValue + internetHandlingFees
+    const ReceiptAmount = totalRegistrationValue + totalAccommodationValue + internetHandlingFees
     
     // Prepare invoice data
     const paymentReceiptData: PaymentReceiptData = {
-      invoiceAmount,
+      paymentReceiptAmount:ReceiptAmount,
       orderItems,
       paymentLink: formData.paymentLink,
       interestedIn: formData.interestedIn,
@@ -300,7 +300,7 @@ export function PaymentReceiptForm({
 
   function handleClose() {
     setFormData({
-      invoiceAmount: 0,
+      paymentReceiptAmount: 0,
       orderItems: [],
       quantity: 1,
       paymentLink: DEFAULT_PAYMENT_LINK,
@@ -585,161 +585,6 @@ export function PaymentReceiptForm({
                     </table>
                   </div>
                 </div>
-
-                {/* Invoice Amount */}
-                {/* <div>
-                  <label
-                    htmlFor="invoiceAmount"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Invoice Amount <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative mt-1">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                      $
-                    </span>
-                    <input
-                      type="number"
-                      id="invoiceAmount"
-                      step="0.01"
-                      min="0"
-                      value={formData.invoiceAmount || ''}
-                      onChange={(e) => handleChange('invoiceAmount', parseFloat(e.target.value) || 0)}
-                      disabled={isLoading}
-                      className={`block w-full rounded-md border pl-7 pr-3 py-2 focus:outline-none focus:ring-2 disabled:opacity-50 ${errors.invoiceAmount
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                        : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600'
-                        } dark:bg-gray-700 dark:text-white`}
-                      placeholder="0.00"
-                    />
-                  </div>
-                  {errors.invoiceAmount && (
-                    <p className="mt-1 text-sm text-red-600">{errors.invoiceAmount}</p>
-                  )}
-                </div> */}
-
-                {/* Description */}
-                {/* <div>
-                  <label
-                    htmlFor="description"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Description <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    id="description"
-                    rows={3}
-                    value={formData.description}
-                    onChange={(e) => handleChange('description', e.target.value)}
-                    disabled={isLoading}
-                    className={`mt-1 block w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 disabled:opacity-50 ${errors.description
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600'
-                      } dark:bg-gray-700 dark:text-white`}
-                    placeholder="Enter invoice description..."
-                  />
-                  {errors.description && (
-                    <p className="mt-1 text-sm text-red-600">{errors.description}</p>
-                  )}
-                </div> */}
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  {/* Quantity */}
-                  {/* <div>
-                    <label
-                      htmlFor="quantity"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >
-                      Quantity
-                    </label>
-                    <input
-                      type="number"
-                      id="quantity"
-                      min="1"
-                      value={formData.quantity || ''}
-                      onChange={(e) => handleChange('quantity', parseInt(e.target.value) || 1)}
-                      disabled={isLoading}
-                      className={`mt-1 block w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 disabled:opacity-50 ${errors.quantity
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                        : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600'
-                        } dark:bg-gray-700 dark:text-white`}
-                      placeholder="1"
-                    />
-                    {errors.quantity && (
-                      <p className="mt-1 text-sm text-red-600">{errors.quantity}</p>
-                    )}
-                  </div> */}
-
-                  {/* Price */}
-                  {/* <div>
-                    <label
-                      htmlFor="price"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                    >
-                      Unit Price
-                    </label>
-                    <div className="relative mt-1">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                        $
-                      </span>
-                      <input
-                        type="number"
-                        id="price"
-                        step="0.01"
-                        min="0"
-                        value={formData.price || ''}
-                        onChange={(e) => handleChange('price', parseFloat(e.target.value) || 0)}
-                        disabled={isLoading}
-                        className={`block w-full rounded-md border pl-7 pr-3 py-2 focus:outline-none focus:ring-2 disabled:opacity-50 ${errors.price
-                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                          : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600'
-                          } dark:bg-gray-700 dark:text-white`}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    {errors.price && (
-                      <p className="mt-1 text-sm text-red-600">{errors.price}</p>
-                    )}
-                  </div> */}
-                </div>
-
-                {/* Payment Link */}
-                <div>
-                  <label
-                    htmlFor="paymentLink"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Payment Link (Optional)
-                  </label>
-                  <input
-                    type="url"
-                    id="paymentLink"
-                    value={formData.paymentLink || ''}
-                    onChange={(e) => handleChange('paymentLink', e.target.value)}
-                    disabled={isLoading}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                    placeholder="https://payment.example.com/..."
-                  />
-                </div>
-
-                {/* Note */}
-                <div>
-                  <label
-                    htmlFor="note"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Note (Optional)
-                  </label>
-                  <textarea
-                    id="note"
-                    rows={4}
-                    value={formData.note || ''}
-                    onChange={(e) => handleChange('note', e.target.value)}
-                    disabled={isLoading}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white resize-none"
-                    placeholder="Add any additional notes or special requests..."
-                  />
-                </div>
               </div>
             </div>
 
@@ -815,30 +660,6 @@ export function PaymentReceiptForm({
                     <div>
                       <dt className="text-gray-500 dark:text-gray-400"><strong>Accommodation Fee:</strong></dt>
                       <dd className="text-gray-900 dark:text-gray-100">$ {accommodationFee}</dd>
-                    </div>
-                    {/* <div>
-                      <dt className="text-gray-500 dark:text-gray-400"><strong>Invoice Amount:</strong></dt>
-                      <dd className="text-gray-900 dark:text-gray-100">{formData.invoiceAmount}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-gray-500 dark:text-gray-400"><strong>Description:</strong></dt>
-                      <dd className="text-gray-900 dark:text-gray-100">{formData.description ?? '—'}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-gray-500 dark:text-gray-400"><strong>Quantity:</strong></dt>
-                      <dd className="text-gray-900 dark:text-gray-100">{formData.quantity ?? '—'}</dd>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <dt className="text-gray-500 dark:text-gray-400"><strong>Unit Price:</strong></dt>
-                      <dd className="text-gray-900 dark:text-gray-100">{formData.price ?? '—'}</dd>
-                    </div> */}
-                    <div>
-                      <dt className="text-gray-500 dark:text-gray-400"><strong>Payment Link:</strong></dt>
-                      <dd className="text-gray-900 dark:text-gray-100">{formData.paymentLink || '—'}</dd>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <dt className="text-gray-500 dark:text-gray-400"><strong>Note:</strong></dt>
-                      <dd className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{formData.note || '—'}</dd>
                     </div>
                     {/* Registration Summary */}
                     <div className="mt-6 sm:col-span-2">
