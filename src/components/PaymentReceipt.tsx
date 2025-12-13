@@ -21,6 +21,7 @@ interface PaymentReceiptData {
   internetHandlingFees?: number
   checkIn?: string
   checkOut?: string
+  totalAccommodationValue?: number
   // Legacy fields for backwards compatibility
   description?: string
   quantity?: number
@@ -207,14 +208,14 @@ export function PaymentReceiptForm({
   function handleCancelConfirm() {
     setShowConfirmModal(false)
   }
-
+ 
   function handleFinalSubmit() {
     setShowConfirmModal(false)
     
     // Calculate order items
     const orderItems: PaymentReceiptOrderItem[] = []
     const totalRegistrationValue = (formData.registrationFee || registrationFee) * (formData.quantity || 1)
-    const totalAccommodationValue = accommodationFee * numberOfNights
+    const totalAccommodationValue = accommodationFee * numberOfNights 
     
     // Add registration fee item
     orderItems.push({
@@ -228,7 +229,7 @@ export function PaymentReceiptForm({
     if (occupancyType && numberOfNights > 0) {
       orderItems.push({
         serialNumber: 2,
-        description: `Accommodation - ${occupancyType} / ${checkIn} to ${checkOut}(${numberOfNights} nights)`,
+        description: `${occupancyType} / ${checkIn} to ${checkOut}(${numberOfNights} nights)`,
         quantity: numberOfNights,
         price: accommodationFee
       })
@@ -249,10 +250,10 @@ export function PaymentReceiptForm({
       })
     }
     
-    // Calculate total invoice amount
+    // Calculate total payment receipt amount
     const ReceiptAmount = totalRegistrationValue + totalAccommodationValue + internetHandlingFees
     
-    // Prepare invoice data
+    // Prepare payment receipt data
     const paymentReceiptData: PaymentReceiptData = {
       paymentReceiptAmount:ReceiptAmount,
       orderItems,
@@ -262,6 +263,8 @@ export function PaymentReceiptForm({
       registrationFee: formData.registrationFee || registrationFee,
       numberOfParticipants: formData.quantity || 1,
       accommodationFee: accommodationFee > 0 ? accommodationFee : undefined,
+      // totalAccommodationValue:  `${totalAccommodationValue > 0 ? totalAccommodationValue : 0} / ${numberOfNights > 0 ? numberOfNights : 0} night(s)` as unknown as number,
+      totalAccommodationValue: totalAccommodationValue > 0 ? totalAccommodationValue : undefined,
       numberOfNights: numberOfNights > 0 ? numberOfNights : undefined,
       occupancyType: occupancyType || undefined,
       internetHandlingFees: internetHandlingFees > 0 ? internetHandlingFees : undefined,

@@ -285,6 +285,7 @@ export type PaymentReceiptData = {
   registrationFee?: number
   numberOfParticipants?: number
   accommodationFee?: number
+  totalAccommodationValue?: number
   numberOfNights?: number
   occupancyType?: string
   internetHandlingFees?: number
