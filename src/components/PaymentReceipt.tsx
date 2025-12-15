@@ -229,7 +229,7 @@ export function PaymentReceiptForm({
     if (occupancyType && numberOfNights > 0) {
       orderItems.push({
         serialNumber: 2,
-        description: `${occupancyType} / ${checkIn} to ${checkOut}(${numberOfNights} nights)`,
+        description: ` Accommodation - ${occupancyType}`,
         quantity: numberOfNights,
         price: accommodationFee
       })
