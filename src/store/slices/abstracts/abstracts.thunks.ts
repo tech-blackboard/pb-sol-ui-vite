@@ -1,7 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit'
 import {
   searchAbstracts,
-  sendConfirmationEmail,
   updateAbstractStatus,
 } from '../../../services/abstracts'
 import type { AbstractFilters } from './abstracts.types'
