@@ -113,13 +113,6 @@ export function PaymentReceiptForm({
     }
   }, [formData.interestedIn])
 
-  function handleChange(field: keyof PaymentReceiptData, value: string | number) {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }))
-    }
-  }
-
   const handleInterestedInChange = (value: string) => {
     setFormData((prev) => ({
       ...prev,
