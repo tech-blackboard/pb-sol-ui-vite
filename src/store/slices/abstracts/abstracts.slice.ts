@@ -4,7 +4,7 @@ import {
   fetchAbstracts,
   updateStatusThunk,
 } from './abstracts.thunks'
-import { normalizeAbstract } from '../../../utils/normalizeAbstract'
+import { normalizeAbstract } from '../../../features/abstracts/utils/normalizeAbstract'
 
 /* -------------------- types -------------------- */
 
@@ -42,7 +42,6 @@ const initialState: AbstractsState = {
   items: [],
   rawItems: [],
   selected: null,
-
   loading: false,
   error: null,
 

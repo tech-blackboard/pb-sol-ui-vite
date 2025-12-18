@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import AbstractFiltersDrawer from '../components/AbstractFiltersDrawer'
-import AbstractForm from '../components/AbstractForm'
+import AbstractFiltersDrawer from './AbstractFiltersDrawer'
+import AbstractForm from '../../../components/AbstractForm'
 
 export default function AbstractHeader() {
   const [showForm, setShowForm] = useState(false)

@@ -1,5 +1,5 @@
 
-import type { AbstractRecord } from '../types'
+import type { AbstractRecord } from '../../../types'
 import AbstractRow from './AbstractRow'
 
 interface Props {

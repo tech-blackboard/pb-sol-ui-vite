@@ -1,5 +1,5 @@
-import type { AbstractRecord } from '../types'
-import { formatDate } from '../utils/utils'
+import type { AbstractRecord } from '../../../types'
+import { formatDate } from '../../../utils/utils'
 
 type StatusAction =
   | 'Under Review'

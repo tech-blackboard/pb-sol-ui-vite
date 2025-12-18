@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
-import { useAppDispatch, useAppSelector } from '../store/hooks'
+import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import {
   updateDraftFilter,
   applyFilters,
   resetFilters,
-  } from '../store/slices/abstracts/abstracts.slice'
-  import { selectDraftFilters } from '../store/slices/abstracts/abstracts.selectors'
-  import { listWebsites } from '../services/sourcedb'
-  import type { SourceWebsite } from '../services/sourcedb'
+  } from '../../../store/slices/abstracts/abstracts.slice'
+  import { selectDraftFilters } from '../../../store/slices/abstracts/abstracts.selectors'
+  import { listWebsites } from '../../../services/sourcedb'
+  import type { SourceWebsite } from '../../../services/sourcedb'
 
 interface Props {
   open: boolean
