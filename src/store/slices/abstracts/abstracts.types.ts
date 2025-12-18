@@ -1,4 +1,4 @@
-import type { AbstractRecord } from '../../../types'
+import type { AbstractRecord } from '../../../features/abstracts/types'
 
 export interface AbstractsState {
   items: AbstractRecord[]

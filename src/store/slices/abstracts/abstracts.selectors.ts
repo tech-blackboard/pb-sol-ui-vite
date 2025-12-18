@@ -20,3 +20,9 @@ export const selectDraftFilters = (s: RootState) =>
 
 export const selectAppliedFilters = (s: RootState) =>
   s.abstracts.appliedFilters
+
+export const selectModalStatus = (s: RootState) =>
+  s.abstracts.modalStatus
+
+export const selectStatusLoading = (s: RootState) =>
+  s.abstracts.actionLoading.status

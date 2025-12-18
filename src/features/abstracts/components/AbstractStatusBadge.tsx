@@ -1,4 +1,4 @@
-import type { AbstractStatus } from '../../../types'
+import type { AbstractStatus } from '../types'
 
 export default function AbstractStatusBadge({
   status,

@@ -1,4 +1,4 @@
-import type { AbstractRecord, AbstractStatus } from '../../../types'
+import type { AbstractRecord, AbstractStatus } from '../types'
 
 const allowedStatuses: AbstractStatus[] = [
   'Under Review',

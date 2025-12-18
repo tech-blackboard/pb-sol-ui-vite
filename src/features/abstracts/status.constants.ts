@@ -1,5 +1,4 @@
-import type { AbstractStatus } from '../types'
-
+import type { AbstractStatus } from './types'
 export const STATUS_TO_ID: Record<AbstractStatus, number> = {
   'Under Review': 1,
   Accepted: 2,

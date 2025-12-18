@@ -1,4 +1,4 @@
-import type { AbstractRecord } from '../../../types'
+import type { AbstractRecord } from '../types'
 import { formatDate } from '../../../utils/utils'
 
 interface Props {

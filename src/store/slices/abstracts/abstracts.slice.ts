@@ -1,17 +1,14 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { AbstractFilters } from './abstracts.types'
-import {
-  fetchAbstracts,
-  updateStatusThunk,
-} from './abstracts.thunks'
+import { fetchAbstracts, updateStatusThunk } from './abstracts.thunks'
 import { normalizeAbstract } from '../../../features/abstracts/utils/normalizeAbstract'
-
-/* -------------------- types -------------------- */
+import type { AbstractStatus } from '../../../features/abstracts/types'
 
 interface AbstractsState {
   items: any[]
   rawItems: any[]
   selected: any | null
+  modalStatus: AbstractStatus | null
 
   loading: boolean
   error: string | null
@@ -28,20 +25,18 @@ interface AbstractsState {
   }
 }
 
-/* -------------------- constants -------------------- */
-
 const initialFilters: AbstractFilters = {
   search: '',
   sortBy: 'now',
   sortOrder: 'DESC',
 }
 
-/* -------------------- initial state -------------------- */
-
 const initialState: AbstractsState = {
   items: [],
   rawItems: [],
   selected: null,
+  modalStatus: null,
+
   loading: false,
   error: null,
 
@@ -57,21 +52,29 @@ const initialState: AbstractsState = {
   },
 }
 
-/* -------------------- slice -------------------- */
-
 const abstractsSlice = createSlice({
   name: 'abstracts',
   initialState,
   reducers: {
-    /* selection */
+    /* ---------- selection ---------- */
     setSelected(state, action: PayloadAction<any>) {
       state.selected = action.payload
-    },
-    clearSelected(state) {
-      state.selected = null
+      state.modalStatus =
+        action.payload?.status?.actionType ??
+        action.payload?.status ??
+        'Under Review'
     },
 
-    /* pagination */
+    clearSelected(state) {
+      state.selected = null
+      state.modalStatus = null
+    },
+
+    setModalStatus(state, action: PayloadAction<AbstractStatus>) {
+      state.modalStatus = action.payload
+    },
+
+    /* ---------- pagination ---------- */
     setPage(state, action: PayloadAction<number>) {
       state.page = action.payload
     },
@@ -80,7 +83,7 @@ const abstractsSlice = createSlice({
       state.page = 1
     },
 
-    /* -------- filters (OLD PAGE BEHAVIOR) -------- */
+    /* ---------- filters ---------- */
     updateDraftFilter(
       state,
       action: PayloadAction<{ key: keyof AbstractFilters; value: any }>
@@ -89,7 +92,7 @@ const abstractsSlice = createSlice({
     },
 
     applyFilters(state) {
-      state.appliedFilters = { ...state.draftFilters}
+      state.appliedFilters = { ...state.draftFilters }
       state.page = 1
     },
 
@@ -102,7 +105,7 @@ const abstractsSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
-      /* fetch */
+      /* ---------- fetch ---------- */
       .addCase(fetchAbstracts.pending, (state) => {
         state.loading = true
         state.error = null
@@ -118,7 +121,7 @@ const abstractsSlice = createSlice({
         state.error = action.error.message ?? 'Failed to load'
       })
 
-      /* status update */
+      /* ---------- status update ---------- */
       .addCase(updateStatusThunk.pending, (state) => {
         state.actionLoading.status = true
       })
@@ -132,20 +135,24 @@ const abstractsSlice = createSlice({
         if (idx !== -1) {
           state.rawItems[idx] = payload
           state.items[idx] = normalizeAbstract(payload)
-          state.selected = payload
         }
+
+        // 🔥 keep modal + table in sync
+           state.selected = payload
+           state.modalStatus = (payload.status?.actionType ?? payload.status ?? 'Under Review') as AbstractStatus
       })
       .addCase(updateStatusThunk.rejected, (state) => {
         state.actionLoading.status = false
       })
+      /* ---------- send confirmation ---------- */
+      
   },
 })
-
-/* -------------------- exports -------------------- */
 
 export const {
   setSelected,
   clearSelected,
+  setModalStatus,
   setPage,
   setPageSize,
   updateDraftFilter,
