@@ -2,8 +2,8 @@ import type { AbstractRecord, AbstractStatus } from '../types'
 import { formatDate } from '../../../utils/utils'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { selectActionLoading } from '../../../store/slices/abstracts/abstracts.selectors'
-import { sendPaymentReminderThunk } from '../../../store/slices/abstracts/abstracts.thunks'
-import { openInvoiceModal } from '../../../store/slices/abstracts/abstracts.slice'
+import { sendConfirmationEmailThunk, sendPaymentReminderThunk } from '../../../store/slices/abstracts/abstracts.thunks'
+import { openInvoiceModal, openPaymentReceiptModal } from '../../../store/slices/abstracts/abstracts.slice'
 import toast from 'react-hot-toast'
 
 type StatusAction = AbstractStatus
@@ -71,6 +71,8 @@ export default function AbstractDetailsModal({
   const isRegistered = currentStatus === 'Registered'
   const isTerminal = currentStatus === 'Rejected' || currentStatus === 'Out of Scope'
   const showInvoiceActions = modalStatus === 'Sent Invoice'
+  const showPaymentReceiptActions = modalStatus === 'Registered'
+  const showConfirmationButton = !item.isEmailSent
 
   const handlePaymentReminder = async () => {
     if (!item) return
@@ -224,14 +226,35 @@ export default function AbstractDetailsModal({
                 onClick={onUpdate}
                 disabled={actionLoading.status || isSameStatus}
                 className={`rounded-md border px-2.5 py-1.5 text-xs ${actionLoading.status || isSameStatus
-                    ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                    : 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
+                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                  : 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
                   }`}
               >
                 {actionLoading.status ? 'Updating...' : 'Update'}
               </button>
             )}
-            
+
+{showConfirmationButton && (
+              <button
+                onClick={async () => {
+                  const result = await dispatch(
+                    sendConfirmationEmailThunk(String(item.id ?? item._id))
+                  )
+
+                  if (sendConfirmationEmailThunk.fulfilled.match(result)) {
+                    toast.success(
+                      result.payload.message || 'Confirmation email sent successfully!'
+                    )
+                  } else {
+                    toast.error('Failed to send confirmation email')
+                  }
+                }}
+                disabled={actionLoading.confirmation}
+                className="rounded-md border border-blue-600 bg-blue-600 text-white px-2.5 py-1.5 text-xs hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"              >
+                {actionLoading.confirmation ? 'Sending...' : 'Send Confirmation Email'}
+              </button>
+            )}
+
             {/* INVOICE + REMINDER (ONLY for Sent Invoice) */}
             {showInvoiceActions && (
               <>
@@ -256,12 +279,29 @@ export default function AbstractDetailsModal({
 
               </>
             )}
+            {showPaymentReceiptActions && (
+
+              <button
+                onClick={() =>
+                  dispatch(
+                    openPaymentReceiptModal({
+                      id: String(item.id ?? item._id),
+                      name: record.name,
+                    })
+                  )
+                }
+                className="rounded-md border border-blue-600 bg-blue-600 text-white px-2.5 py-1.5 text-xs hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Payment Receipt
+              </button>
+            )}
+
             <button
-                  onClick={onClose}
-                  className="rounded-md border px-2.5 py-1.5 text-xs text-black border-gray-200 hover:bg-gray-100"
-                >
-                  Close
-                </button>
+              onClick={onClose}
+              className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+              >
+              Close
+            </button>
           </div>
         </div>
       </div>

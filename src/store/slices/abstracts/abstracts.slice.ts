@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { AbstractFilters } from './abstracts.types'
-import { fetchAbstracts, sendInvoiceThunk, sendPaymentReminderThunk, updateStatusThunk } from './abstracts.thunks'
+import { fetchAbstracts, sendConfirmationEmailThunk, sendInvoiceThunk, sendPaymentReceiptThunk, sendPaymentReminderThunk, updateStatusThunk } from './abstracts.thunks'
 import { normalizeAbstract } from '../../../features/abstracts/utils/normalizeAbstract'
 import type { AbstractStatus } from '../../../features/abstracts/types'
 
@@ -24,6 +24,8 @@ interface AbstractsState {
     status: boolean
     invoice: boolean
     reminder: boolean
+    confirmation: boolean
+    receipt: boolean
   }
 
   invoiceModal: {
@@ -31,6 +33,13 @@ interface AbstractsState {
     abstractId: string | null
     abstractName: string
   }
+
+  paymentReceiptModal: {
+    open: boolean
+    abstractId: string | null
+    abstractName: string
+  }
+  
 }
 
 const initialFilters: AbstractFilters = {
@@ -59,6 +68,8 @@ const initialState: AbstractsState = {
     status: false,
     invoice: false,
     reminder: false,
+    confirmation: false,
+    receipt: false,
   },
 
   invoiceModal: {
@@ -66,6 +77,13 @@ const initialState: AbstractsState = {
     abstractId: null,
     abstractName: '',
   },
+
+  paymentReceiptModal: {
+    open: false,
+    abstractId: null,
+    abstractName: '',
+  },
+  
 }
 
 const abstractsSlice = createSlice({
@@ -132,6 +150,23 @@ const abstractsSlice = createSlice({
       state.invoiceModal.abstractId = null
       state.invoiceModal.abstractName = ''
     },
+
+    /* ---------- payment receipt modal ---------- */
+    openPaymentReceiptModal(
+      state,
+      action: PayloadAction<{ id: string; name: string }>
+    ) {
+      state.paymentReceiptModal.open = true
+      state.paymentReceiptModal.abstractId = action.payload.id
+      state.paymentReceiptModal.abstractName = action.payload.name
+    },
+    
+    closePaymentReceiptModal(state) {
+      state.paymentReceiptModal.open = false
+      state.paymentReceiptModal.abstractId = null
+      state.paymentReceiptModal.abstractName = ''
+    },
+    
   },
 
   extraReducers: (builder) => {
@@ -210,6 +245,70 @@ const abstractsSlice = createSlice({
         state.actionLoading.reminder = false
       })
 
+      /* ---------- send payment receipt ---------- */
+      .addCase(sendPaymentReceiptThunk.pending, (state) => {
+        state.actionLoading.reminder = true
+      })
+      
+      .addCase(sendPaymentReceiptThunk.fulfilled, (state, { payload }) => {
+        state.actionLoading.reminder = false
+      
+        const updated = payload.updated
+      
+        const idx = state.rawItems.findIndex(
+          (x) => String(x.id ?? x._id) === String(updated.id ?? updated.id)
+        )
+      
+        if (idx !== -1) {
+          state.rawItems[idx] = updated
+          state.items[idx] = normalizeAbstract(updated)
+        }
+      
+        state.selected = updated
+        state.modalStatus = 'Registered'
+      
+        state.paymentReceiptModal.open = false
+        state.paymentReceiptModal.abstractId = null
+        state.paymentReceiptModal.abstractName = ''
+      })
+      
+      .addCase(sendPaymentReceiptThunk.rejected, (state) => {
+        state.actionLoading.reminder = false
+      })
+
+      /* ---------- send confirmation email ---------- */
+      .addCase(sendConfirmationEmailThunk.pending, (state) => {
+        state.actionLoading.confirmation = true
+      })
+      
+      .addCase(sendConfirmationEmailThunk.fulfilled, (state, { payload }) => {
+        state.actionLoading.confirmation = false
+      
+        const { id } = payload
+      
+        const idx = state.rawItems.findIndex(
+          (x) => String(x.id ?? x._id) === String(id)
+        )
+      
+        if (idx !== -1) {
+          state.rawItems[idx] = {
+            ...state.rawItems[idx],
+            isEmailSent: true,
+          }
+          state.items[idx] = normalizeAbstract(state.rawItems[idx])
+        }
+      
+        if (state.selected && String(state.selected.id ?? state.selected._id) === String(id)) {
+          state.selected = {
+            ...state.selected,
+            isEmailSent: true,
+          }
+        }
+      })
+      
+      .addCase(sendConfirmationEmailThunk.rejected, (state) => {
+        state.actionLoading.confirmation = false
+      })
   },
 })
 
@@ -224,6 +323,8 @@ export const {
   resetFilters,
   openInvoiceModal,
   closeInvoiceModal,
+  openPaymentReceiptModal,
+  closePaymentReceiptModal
 } = abstractsSlice.actions
 
 export default abstractsSlice.reducer

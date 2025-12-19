@@ -8,8 +8,9 @@ import {
   setSelected,
   setModalStatus,
   closeInvoiceModal,
+  closePaymentReceiptModal,
 } from '../../../store/slices/abstracts/abstracts.slice'
-import { fetchAbstracts, sendInvoiceThunk, updateStatusThunk } from '../../../store/slices/abstracts/abstracts.thunks'
+import { fetchAbstracts, sendInvoiceThunk, sendPaymentReceiptThunk, updateStatusThunk } from '../../../store/slices/abstracts/abstracts.thunks'
 import {
   selectAppliedFilters,
   selectModalStatus,
@@ -23,7 +24,8 @@ import AbstractDetailsModal from '../components/AbstractDetailsModal'
 import { STATUS_TO_ID } from '../status.constants'
 import type { AbstractStatus } from '../types'
 import { InvoiceForm } from '../../../components/InvoiceForm'
-import type { InvoiceData } from '../../../services/abstracts'
+import type { InvoiceData, PaymentReceiptData } from '../../../services/abstracts'
+import { PaymentReceiptForm } from '../../../components/PaymentReceipt'
 
 export default function AbstractsPage() {
   const dispatch = useAppDispatch()
@@ -39,6 +41,7 @@ export default function AbstractsPage() {
 
   const invoiceModal = useAppSelector((s) => s.abstracts.invoiceModal)
   const actionLoading = useAppSelector(selectActionLoading)
+  const paymentReceiptModal = useAppSelector((s) => s.abstracts.paymentReceiptModal)
 
   useEffect(() => {
     dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }))
@@ -103,6 +106,33 @@ export default function AbstractsPage() {
     dispatch(closeInvoiceModal())
   }
 
+  const handlePaymentReceiptSubmit = async (paymentReceiptData: PaymentReceiptData) => {
+    if (!paymentReceiptModal.abstractId) return
+    // 1️⃣ Send payment receipt email
+    const paymentReceiptResult = await dispatch(
+      sendPaymentReceiptThunk({
+        abstractId: paymentReceiptModal.abstractId,
+        receiptData: paymentReceiptData,
+      })
+    )
+    if (!sendPaymentReceiptThunk.fulfilled.match(paymentReceiptResult)) {
+      toast.error('Failed to send payment receipt')
+      return
+    }
+    if (sendPaymentReceiptThunk.fulfilled.match(paymentReceiptResult)) {
+      console.log(paymentReceiptResult.payload.receiptResult)
+      toast.success(`${paymentReceiptResult.payload.receiptResult.message}`)
+      setTimeout(() => {
+        toast.success('Status updated to Registered')
+      }, 400)
+    } else {
+      toast.error('Failed to send payment receipt')
+    }
+
+    // 3️⃣ Close modal
+    dispatch(closePaymentReceiptModal())
+  }
+
 
   return (
     <div className="h-full flex flex-col">
@@ -148,6 +178,16 @@ export default function AbstractsPage() {
           isLoading={actionLoading.invoice}
           onClose={() => dispatch(closeInvoiceModal())}
           onSubmit={(invoiceData) => handleInvoiceSubmit(invoiceData)}
+        />
+      )}
+
+      {paymentReceiptModal.open && (
+        <PaymentReceiptForm
+          isOpen={paymentReceiptModal.open}
+          onClose={() => dispatch(closePaymentReceiptModal())}
+          onSubmit={(paymentReceiptData) => handlePaymentReceiptSubmit(paymentReceiptData)}
+          abstractName={paymentReceiptModal.abstractName}
+          isLoading={actionLoading.reminder}
         />
       )}
     </div>
