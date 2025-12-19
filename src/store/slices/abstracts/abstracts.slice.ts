@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { AbstractFilters } from './abstracts.types'
-import { fetchAbstracts, updateStatusThunk } from './abstracts.thunks'
+import { fetchAbstracts, sendInvoiceThunk, sendPaymentReminderThunk, updateStatusThunk } from './abstracts.thunks'
 import { normalizeAbstract } from '../../../features/abstracts/utils/normalizeAbstract'
 import type { AbstractStatus } from '../../../features/abstracts/types'
 
@@ -22,6 +22,14 @@ interface AbstractsState {
 
   actionLoading: {
     status: boolean
+    invoice: boolean
+    reminder: boolean
+  }
+
+  invoiceModal: {
+    open: boolean
+    abstractId: string | null
+    abstractName: string
   }
 }
 
@@ -49,6 +57,14 @@ const initialState: AbstractsState = {
 
   actionLoading: {
     status: false,
+    invoice: false,
+    reminder: false,
+  },
+
+  invoiceModal: {
+    open: false,
+    abstractId: null,
+    abstractName: '',
   },
 }
 
@@ -101,6 +117,21 @@ const abstractsSlice = createSlice({
       state.appliedFilters = initialFilters
       state.page = 1
     },
+    /* ---------- invoice modal ---------- */
+    openInvoiceModal(
+      state,
+      action: PayloadAction<{ id: string; name: string }>
+    ) {
+      state.invoiceModal.open = true
+      state.invoiceModal.abstractId = action.payload.id
+      state.invoiceModal.abstractName = action.payload.name
+    },
+
+    closeInvoiceModal(state) {
+      state.invoiceModal.open = false
+      state.invoiceModal.abstractId = null
+      state.invoiceModal.abstractName = ''
+    },
   },
 
   extraReducers: (builder) => {
@@ -138,14 +169,47 @@ const abstractsSlice = createSlice({
         }
 
         // 🔥 keep modal + table in sync
-           state.selected = payload
-           state.modalStatus = (payload.status?.actionType ?? payload.status ?? 'Under Review') as AbstractStatus
+        state.selected = payload
+        state.modalStatus = (payload.status?.actionType ?? payload.status ?? 'Under Review') as AbstractStatus
       })
       .addCase(updateStatusThunk.rejected, (state) => {
         state.actionLoading.status = false
       })
-      /* ---------- send confirmation ---------- */
-      
+      /* ---------- open invoice modal ---------- */
+      .addCase(sendInvoiceThunk.pending, (state) => {
+        state.actionLoading.invoice = true
+      })
+
+      .addCase(sendInvoiceThunk.fulfilled, (state) => {
+        state.actionLoading.invoice = false
+        state.invoiceModal.open = false
+        state.invoiceModal.abstractId = null
+        state.invoiceModal.abstractName = ''
+      })
+
+      .addCase(sendInvoiceThunk.rejected, (state) => {
+        state.actionLoading.invoice = false
+      })
+
+
+      /* ---------- close invoice modal ---------- */
+      .addCase(closeInvoiceModal, (state) => {
+        state.invoiceModal.open = false
+        state.invoiceModal.abstractId = null
+        state.invoiceModal.abstractName = ''
+      })
+
+      /* ---------- send payment reminder ---------- */
+      .addCase(sendPaymentReminderThunk.pending, (state) => {
+        state.actionLoading.reminder = true
+      })
+      .addCase(sendPaymentReminderThunk.fulfilled, (state) => {
+        state.actionLoading.reminder = false
+      })
+      .addCase(sendPaymentReminderThunk.rejected, (state) => {
+        state.actionLoading.reminder = false
+      })
+
   },
 })
 
@@ -158,6 +222,8 @@ export const {
   updateDraftFilter,
   applyFilters,
   resetFilters,
+  openInvoiceModal,
+  closeInvoiceModal,
 } = abstractsSlice.actions
 
 export default abstractsSlice.reducer

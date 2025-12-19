@@ -1,7 +1,10 @@
 import type { AbstractRecord, AbstractStatus } from '../types'
 import { formatDate } from '../../../utils/utils'
-import { useAppSelector } from '../../../store/hooks'
+import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { selectActionLoading } from '../../../store/slices/abstracts/abstracts.selectors'
+import { sendPaymentReminderThunk } from '../../../store/slices/abstracts/abstracts.thunks'
+import { openInvoiceModal } from '../../../store/slices/abstracts/abstracts.slice'
+import toast from 'react-hot-toast'
 
 type StatusAction = AbstractStatus
 
@@ -24,6 +27,7 @@ export default function AbstractDetailsModal({
 }: Props) {
   const actionLoading = useAppSelector(selectActionLoading)
 
+  const dispatch = useAppDispatch()
   if (!item || !record) return null
 
   /* -------------------- status -------------------- */
@@ -32,19 +36,18 @@ export default function AbstractDetailsModal({
     typeof item.status === 'object'
       ? item.status?.actionType ?? 'Under Review'
       : record.status
-
   const isSameStatus = modalStatus === currentStatus
-
+  const showUpdateButton = modalStatus !== 'Sent Invoice'
   const statusClass =
     currentStatus === 'Accepted'
       ? 'bg-green-50 text-green-700'
       : currentStatus === 'Under Review'
-      ? 'bg-yellow-50 text-yellow-800'
-      : currentStatus === 'Rejected'
-      ? 'bg-red-50 text-red-700'
-      : currentStatus === 'Out of Scope'
-      ? 'bg-gray-100 text-gray-700'
-      : 'bg-blue-50 text-blue-700'
+        ? 'bg-yellow-50 text-yellow-800'
+        : currentStatus === 'Rejected'
+          ? 'bg-red-50 text-red-700'
+          : currentStatus === 'Out of Scope'
+            ? 'bg-gray-100 text-gray-700'
+            : 'bg-blue-50 text-blue-700'
 
   /* -------------------- file -------------------- */
 
@@ -66,14 +69,27 @@ export default function AbstractDetailsModal({
   const isAccepted = currentStatus === 'Accepted'
   const isSentInvoice = currentStatus === 'Sent Invoice'
   const isRegistered = currentStatus === 'Registered'
-  const isTerminal =
-    currentStatus === 'Rejected' || currentStatus === 'Out of Scope'
+  const isTerminal = currentStatus === 'Rejected' || currentStatus === 'Out of Scope'
+  const showInvoiceActions = modalStatus === 'Sent Invoice'
+
+  const handlePaymentReminder = async () => {
+    if (!item) return
+
+    const result = await dispatch(
+      sendPaymentReminderThunk(String(item.id ?? item._id))
+    )
+    if (sendPaymentReminderThunk.fulfilled.match(result)) {
+      toast.success(`Payment reminder sent successfully to ${item.email}`)
+    } else {
+      toast.error('Failed to send payment reminder')
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-3xl rounded-lg bg-white shadow-xl border border-gray-200">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
           <h2 className="text-lg font-semibold">Abstract Details</h2>
           <button
             onClick={onClose}
@@ -167,11 +183,11 @@ export default function AbstractDetailsModal({
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-3 border-t flex flex-wrap gap-2 justify-between items-center">
+        <div className="px-4 py-3 border-t border-gray-200 flex flex-wrap gap-2 justify-between items-center">
+          {/* Status selector */}
           <div className="flex items-center gap-2">
-            <label className="text-sm">Status</label>
             <select
-              className="rounded-md border px-2.5 py-1.5 text-xs"
+              className="w-full rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={modalStatus}
               onChange={(e) =>
                 onStatusChange(e.target.value as StatusAction)
@@ -201,25 +217,51 @@ export default function AbstractDetailsModal({
             </select>
           </div>
 
+          {/* Action buttons */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={onUpdate}
-              disabled={actionLoading.status || isSameStatus}
-              className={`rounded-md border px-2.5 py-1.5 text-xs ${
-                actionLoading.status || isSameStatus
-                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                  : 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
-              }`}
-            >
-              {actionLoading.status ? 'Updating...' : 'Update'}
-            </button>
+            {showUpdateButton && (
+              <button
+                onClick={onUpdate}
+                disabled={actionLoading.status || isSameStatus}
+                className={`rounded-md border px-2.5 py-1.5 text-xs ${actionLoading.status || isSameStatus
+                    ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                    : 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
+                  }`}
+              >
+                {actionLoading.status ? 'Updating...' : 'Update'}
+              </button>
+            )}
+            
+            {/* INVOICE + REMINDER (ONLY for Sent Invoice) */}
+            {showInvoiceActions && (
+              <>
+                <button
+                  onClick={() => dispatch(openInvoiceModal({
+                    id: String(item.id ?? item._id),
+                    name: record.name,
+                  }))}
+                  className={`rounded-md border px-2.5 py-1.5 text-xs ${actionLoading.invoice ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'}`}
+                  disabled={actionLoading.invoice}
+                >
+                  {actionLoading.invoice ? 'Sending...' : 'Invoice'}
+                </button>
 
+                <button
+                  onClick={handlePaymentReminder}
+                  className={`rounded-md border px-2.5 py-1.5 text-xs ${actionLoading.reminder ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'text-black border-gray-300 hover:bg-gray-100'}`}
+                  disabled={actionLoading.reminder}
+                >
+                  {actionLoading.reminder ? 'Sending...' : 'Payment Reminder'}
+                </button>
+
+              </>
+            )}
             <button
-              onClick={onClose}
-              className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
-            >
-              Close
-            </button>
+                  onClick={onClose}
+                  className="rounded-md border px-2.5 py-1.5 text-xs text-black border-gray-200 hover:bg-gray-100"
+                >
+                  Close
+                </button>
           </div>
         </div>
       </div>
