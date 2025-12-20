@@ -26,3 +26,15 @@ export const selectModalStatus = (s: RootState) =>
 
 export const selectStatusLoading = (s: RootState) =>
   s.abstracts.actionLoading.status
+
+// src/store/slices/abstracts/abstracts.selectors.ts
+import { createSelector } from '@reduxjs/toolkit'
+
+export const selectSelectedNormalized = createSelector(
+  [(s: RootState) => s.abstracts.selected, (s: RootState) => s.abstracts.items],
+  (selected, items) => {
+    if (!selected) return null
+    const id = String(selected.id ?? selected.id)
+    return items.find(item => String(item.id ?? item._id) === id)
+  }
+)

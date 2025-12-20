@@ -16,6 +16,7 @@ import {
   selectModalStatus,
   selectActionLoading,
   selectSelectedAbstract,
+  selectSelectedNormalized,
 } from '../../../store/slices/abstracts/abstracts.selectors'
 import AbstractHeader from '../components/AbstractHeader'
 import AbstractTable from '../components/AbstractTable'
@@ -30,11 +31,12 @@ import { PaymentReceiptForm } from '../../../components/PaymentReceipt'
 export default function AbstractsPage() {
   const dispatch = useAppDispatch()
 
-  const { items, rawItems, loading, page, pageSize, total, selected } =
+  const { items, rawItems, loading, page, pageSize, total, error } =
     useAppSelector((s) => s.abstracts)
 
   const appliedFilters = useAppSelector(selectAppliedFilters)
   const viewItem = useAppSelector(selectSelectedAbstract)
+  const viewRecord = useAppSelector(selectSelectedNormalized) // normalized
   const modalStatus = useAppSelector(
     selectModalStatus
   ) as AbstractStatus | null
@@ -138,18 +140,17 @@ export default function AbstractsPage() {
     <div className="h-full flex flex-col">
       <AbstractHeader />
 
-      <AbstractTable
+      < AbstractTable
         rows={items}
         rawRows={rawItems}
         loading={loading}
-        error={null}
-        errKind="none"
+        error={error}
+        errKind={error ? 'generic' : 'none'}
         onRetry={() =>
           dispatch(fetchAbstracts({ page, limit: pageSize, filters: appliedFilters }))
         }
         onView={(item) => dispatch(setSelected(item))}
       />
-
       <AbstractPagination
         totalPages={Math.ceil(total / pageSize)}
         rowsOnPage={pageSize}
@@ -160,10 +161,10 @@ export default function AbstractsPage() {
         onPageSizeChange={(s) => dispatch(setPageSize(s))}
       />
 
-      {selected && modalStatus && (
+      {viewItem && viewRecord && modalStatus && (
         <AbstractDetailsModal
-          item={selected}
-          record={selected}
+          item={viewItem}            // raw
+          record={viewRecord}        // normalized
           modalStatus={modalStatus}
           onClose={() => dispatch(clearSelected())}
           onStatusChange={(s) => dispatch(setModalStatus(s))}
@@ -185,9 +186,11 @@ export default function AbstractsPage() {
         <PaymentReceiptForm
           isOpen={paymentReceiptModal.open}
           onClose={() => dispatch(closePaymentReceiptModal())}
-          onSubmit={(paymentReceiptData) => handlePaymentReceiptSubmit(paymentReceiptData)}
+          onSubmit={(paymentReceiptData) =>
+            handlePaymentReceiptSubmit(paymentReceiptData)
+          }
           abstractName={paymentReceiptModal.abstractName}
-          isLoading={actionLoading.reminder}
+          isLoading={actionLoading.receipt}   // <-- use receipt flag
         />
       )}
     </div>

@@ -247,11 +247,11 @@ const abstractsSlice = createSlice({
 
       /* ---------- send payment receipt ---------- */
       .addCase(sendPaymentReceiptThunk.pending, (state) => {
-        state.actionLoading.reminder = true
+        state.actionLoading.receipt = true
       })
       
       .addCase(sendPaymentReceiptThunk.fulfilled, (state, { payload }) => {
-        state.actionLoading.reminder = false
+        state.actionLoading.receipt = false
       
         const updated = payload.updated
       
@@ -273,7 +273,7 @@ const abstractsSlice = createSlice({
       })
       
       .addCase(sendPaymentReceiptThunk.rejected, (state) => {
-        state.actionLoading.reminder = false
+        state.actionLoading.receipt = false
       })
 
       /* ---------- send confirmation email ---------- */
