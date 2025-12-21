@@ -39,7 +39,7 @@ export default function AbstractTable({
               <th className="px-4 py-3 font-medium min-w-[14rem] overflow-hidden">Title</th>
               <th className="px-4 py-3 font-medium min-w-[14rem] overflow-hidden">Message</th>
               <th className="px-4 py-3 font-medium min-w-[14rem] ">Presentation</th>
-              <th className="px-4 py-3 font-medium min-w-[14rem] ">Abstract File</th>
+              <th className="px-4 py-3 font-medium min-w-[18rem] ">Abstract File</th>
               <th className="px-4 py-3 font-medium">Submitted On</th>
               <th className="px-4 py-3 font-medium min-w-[8rem] ">Email Sent</th>
               <th className="px-4 py-3 font-medium min-w-[8rem] ">Status</th>

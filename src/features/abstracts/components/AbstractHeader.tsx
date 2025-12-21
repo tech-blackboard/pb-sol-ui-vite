@@ -1,10 +1,23 @@
 import { useState } from 'react'
 import AbstractFiltersDrawer from './AbstractFiltersDrawer'
 import AbstractForm from '../../../components/AbstractForm'
+import { useAppDispatch, useAppSelector } from '../../../store/hooks'
+import { fetchAbstracts } from '../../../store/slices/abstracts/abstracts.thunks'
+import { useEffect } from 'react'
 
 export default function AbstractHeader() {
   const [showForm, setShowForm] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
+
+  const dispatch = useAppDispatch()
+
+  const { page, pageSize } = useAppSelector((s) => s.abstracts)
+  const appliedFilters = useAppSelector((s) => s.abstracts.appliedFilters)
+
+  useEffect(() => {
+    dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }))
+  }, [page, pageSize, appliedFilters, dispatch])
+
 
   return (
     <>
@@ -89,7 +102,10 @@ export default function AbstractHeader() {
       {showForm && (
         <AbstractForm
           onClose={() => setShowForm(false)}
-          onSuccess={() => setShowForm(false)}
+          onSuccess={() => {
+            setShowForm(false)
+            dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }))
+          }}
         />
       )}
     </>
