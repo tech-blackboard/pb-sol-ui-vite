@@ -62,11 +62,11 @@ const REGISTRATION_FEES: Record<string, number> = {
 }
 
 
-const OCCUPANCY_OPTIONS: Record<string, number> = {
-  'Single Occupancy': 245,
-  'Double Occupancy': 265,
-  'Triple Occupancy': 290,
-}
+const OCCUPANCY_OPTIONS = [
+  'Single Occupancy',
+  'Double Occupancy',
+  'Triple Occupancy',
+]
 
 export function PaymentReceiptForm({
   isOpen,
@@ -85,6 +85,7 @@ export function PaymentReceiptForm({
     paymentLink: DEFAULT_PAYMENT_LINK,
     interestedIn: '',
     registrationFee: 0,
+    accommodationFee: 0,
     note: '',
   })
 
@@ -138,7 +139,7 @@ export function PaymentReceiptForm({
 
   function handleOccupancyChange(value: string) {
     setOccupancyType(value)
-    setAccommodationFee(OCCUPANCY_OPTIONS[value] || 0)
+    setAccommodationFee(0)
     setCheckIn('')
     setCheckOut('')
     setNumberOfNights(0)
@@ -184,6 +185,13 @@ export function PaymentReceiptForm({
     }
   }
 
+  function handleAccommodationFeeChange(field: keyof PaymentReceiptData, value: string | number) {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }))
+    }
+  }
+
   function handlePreviewInvoice() {
     if (validate()) {
       setShowPreview(true)
@@ -208,7 +216,7 @@ export function PaymentReceiptForm({
     // Calculate order items
     const orderItems: PaymentReceiptOrderItem[] = []
     const totalRegistrationValue = (formData.registrationFee || registrationFee) * (formData.quantity || 1)
-    const totalAccommodationValue = accommodationFee * numberOfNights 
+    const totalAccommodationValue = (formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) : accommodationFee) * numberOfNights
     
     // Add registration fee item
     orderItems.push({
@@ -224,7 +232,7 @@ export function PaymentReceiptForm({
         serialNumber: 2,
         description: ` Accommodation - ${occupancyType}`,
         quantity: numberOfNights,
-        price: accommodationFee
+        price: (formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) : accommodationFee) * numberOfNights
       })
     }
     
@@ -255,7 +263,7 @@ export function PaymentReceiptForm({
       note: formData.note,
       registrationFee: formData.registrationFee || registrationFee,
       numberOfParticipants: formData.quantity || 1,
-      accommodationFee: accommodationFee > 0 ? accommodationFee : undefined,
+      accommodationFee: formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) : accommodationFee,
       // totalAccommodationValue:  `${totalAccommodationValue > 0 ? totalAccommodationValue : 0} / ${numberOfNights > 0 ? numberOfNights : 0} night(s)` as unknown as number,
       totalAccommodationValue: totalAccommodationValue > 0 ? totalAccommodationValue : undefined,
       numberOfNights: numberOfNights > 0 ? numberOfNights : undefined,
@@ -281,6 +289,11 @@ export function PaymentReceiptForm({
       newErrors.registrationFee = 'Registration fee is required and must be greater than 0'
     }
 
+    // Validate Accommodation Fee
+    if (!formData.accommodationFee || formData.accommodationFee <= 0) {
+      newErrors.accommodationFee = 'Accommodation fee is required and must be greater than 0'
+    }
+
     // Validate Number of participants
     if (!formData.quantity || formData.quantity <= 0) {
       newErrors.quantity = 'Number of participants is required and must be at least 1'
@@ -302,6 +315,7 @@ export function PaymentReceiptForm({
       paymentLink: DEFAULT_PAYMENT_LINK,
       interestedIn: '',
       registrationFee: 0,
+      accommodationFee: 0,
       note: '',
     })
     setErrors({})
@@ -319,7 +333,7 @@ export function PaymentReceiptForm({
       ? Number(formData.registrationFee)
       : registrationFee) * (formData.quantity || 1)
 
-  const totalAccommodationValue = accommodationFee * numberOfNights
+  const totalAccommodationValue = formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) * numberOfNights : accommodationFee > 0 ? accommodationFee * numberOfNights : 0
   const totalPrice = totalRegistrationValue + totalAccommodationValue
 
 
@@ -397,6 +411,7 @@ export function PaymentReceiptForm({
                     type="number"
                     value={formData.registrationFee}
                     onChange={(e) => handleregistrationFeeChange('registrationFee', e.target.value)}
+                    onWheel={(e) => (e.target as HTMLInputElement).blur()}
                     disabled={isLoading}
                     className={`w-full px-4 py-2.5 rounded-lg border ${errors.registrationFee
                       ? 'border-red-500 focus:ring-red-500'
@@ -448,26 +463,25 @@ export function PaymentReceiptForm({
 
                   {showAccommodation && (
                     <>
-                      <div className="space-y-2 pl-6">
-                        {Object.entries(OCCUPANCY_OPTIONS).map(([label, fee]) => (
-                          <label key={label} className="flex items-center space-x-2">
-                            <input
-                              type="radio"
-                              name="occupancy"
-                              value={label}
-                              checked={occupancyType === label}
-                              onChange={() => handleOccupancyChange(label)}
-                              className="form-radio text-blue-600"
-                            />
-                            <span className="text-gray-900 dark:text-white">
-                              {label} – ${fee}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
+                      {OCCUPANCY_OPTIONS.map((label) => (
+                        <label key={label} className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            name="occupancy"
+                            value={label}
+                            checked={occupancyType === label}
+                            onChange={() => handleOccupancyChange(label)}
+                            className="form-radio text-blue-600"
+                          />
+                          <span className="text-gray-900 dark:text-white">
+                            {label}
+                          </span>
+                        </label>
+                      ))}
 
                       {occupancyType && (
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 pl-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-4 pl-6">
+
                           {/* Check In */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -494,17 +508,40 @@ export function PaymentReceiptForm({
                             />
                           </div>
 
-                          {/* Number of Nights */}
+                          {/* Nights */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                               Number of Nights
                             </label>
                             <input
                               type="number"
-                              value={numberOfNights}
                               readOnly
+                              value={numberOfNights}
                               className="w-full mt-1 rounded-md border px-3 py-2 dark:bg-gray-700 dark:text-white"
                             />
+                          </div>
+
+                          {/* Accommodation Price */}
+                          <div>
+                           
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Price per Night($) <span className="text-red-500">*</span>
+                            </label>
+                              <input
+                                type="number"
+                                value={formData.accommodationFee}
+                                onChange={(e) => handleAccommodationFeeChange('accommodationFee', e.target.value)}
+                                onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                                disabled={isLoading}
+                                className={`w-full px-4 py-2.5 rounded-lg border ${errors.accommodationFee
+                                  ? 'border-red-500 focus:ring-red-500'
+                                  : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
+                                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 disabled:opacity-50`}
+                              />
+
+                              {errors.accommodationFee && (
+                                <p className="mt-1 text-sm text-red-600">{errors.accommodationFee}</p>
+                              )}
                           </div>
                         </div>
                       )}
@@ -550,7 +587,7 @@ export function PaymentReceiptForm({
                             Accommodation
                           </td>
                           <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
-                            ${accommodationFee}
+                            ${formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) : accommodationFee}
                           </td>
                         </tr>
                         <tr>
@@ -655,7 +692,7 @@ export function PaymentReceiptForm({
                     </div>
                     <div>
                       <dt className="text-gray-500 dark:text-gray-400"><strong>Accommodation Fee:</strong></dt>
-                      <dd className="text-gray-900 dark:text-gray-100">$ {accommodationFee}</dd>
+                      <dd className="text-gray-900 dark:text-gray-100">$ {formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) : accommodationFee}</dd>
                     </div>
                     {/* Registration Summary */}
                     <div className="mt-6 sm:col-span-2">
@@ -683,7 +720,7 @@ export function PaymentReceiptForm({
                           </tr>
                           <tr>
                             <td className="px-3 py-2">Accommodation</td>
-                            <td className="px-3 py-2 text-right">${accommodationFee}</td>
+                            <td className="px-3 py-2 text-right">${formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) : accommodationFee}</td>
                           </tr>
                           <tr>
                             <td className="px-3 py-2">Number of Nights</td>
