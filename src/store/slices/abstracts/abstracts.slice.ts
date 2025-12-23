@@ -58,7 +58,7 @@ const initialState: AbstractsState = {
   error: null,
 
   page: 1,
-  pageSize: 25,
+  pageSize: 10,
   total: 0,
 
   draftFilters: initialFilters,
