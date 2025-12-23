@@ -122,7 +122,6 @@ export default function AbstractsPage() {
       return
     }
     if (sendPaymentReceiptThunk.fulfilled.match(paymentReceiptResult)) {
-      console.log(paymentReceiptResult.payload.receiptResult)
       toast.success(`${paymentReceiptResult.payload.receiptResult.message}`)
       setTimeout(() => {
         toast.success('Status updated to Registered')

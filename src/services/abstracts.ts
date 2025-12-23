@@ -66,7 +66,6 @@ export async function getAllAbstracts(): Promise<AbstractItem[]> {
     withCredentials: true,
   })
   const list = Array.isArray(data) ? data : data?.data ?? data?.items ?? data?.results ?? []
-  console.log(list)
   return Array.isArray(list) ? list : []
 }
 
@@ -191,7 +190,6 @@ export async function searchAbstracts(params: AbstractSearchParams = {}): Promis
     q.isEmailSent = q.isEmailSent === true ? 1 : 0
     // delete q.isEmailSent
   }
-  console.log(q)
   const { data } = await api.get(`${ABSTRACT_BASE}/search`, {
     params: q,
     headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
