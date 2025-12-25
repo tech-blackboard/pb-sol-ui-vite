@@ -9,8 +9,9 @@ import {
   setModalStatus,
   closeInvoiceModal,
   closePaymentReceiptModal,
+  closePaymentReminderModal,
 } from '../../../store/slices/abstracts/abstracts.slice'
-import { fetchAbstracts, sendInvoiceThunk, sendPaymentReceiptThunk, updateStatusThunk } from '../../../store/slices/abstracts/abstracts.thunks'
+import { fetchAbstracts, sendInvoiceThunk, sendPaymentReceiptThunk, sendPaymentReminderThunk, updateStatusThunk } from '../../../store/slices/abstracts/abstracts.thunks'
 import {
   selectAppliedFilters,
   selectModalStatus,
@@ -25,8 +26,9 @@ import AbstractDetailsModal from '../components/AbstractDetailsModal'
 import { STATUS_TO_ID } from '../status.constants'
 import type { AbstractStatus } from '../types'
 import { InvoiceForm } from '../../../components/InvoiceForm'
-import type { InvoiceData, PaymentReceiptData } from '../../../services/abstracts'
+import type { InvoiceData, PaymentReceiptData, PaymentReminderData } from '../../../services/abstracts'
 import { PaymentReceiptForm } from '../../../components/PaymentReceipt'
+import { PaymentReminderModal } from '../../../components/PaymentReminderModal'
 
 export default function AbstractsPage() {
   const dispatch = useAppDispatch()
@@ -44,6 +46,7 @@ export default function AbstractsPage() {
   const invoiceModal = useAppSelector((s) => s.abstracts.invoiceModal)
   const actionLoading = useAppSelector(selectActionLoading)
   const paymentReceiptModal = useAppSelector((s) => s.abstracts.paymentReceiptModal)
+  const paymentReminderModal = useAppSelector((s) => s.abstracts.paymentReminderModal)
 
   useEffect(() => {
     dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }))
@@ -134,6 +137,25 @@ export default function AbstractsPage() {
     dispatch(closePaymentReceiptModal())
   }
 
+  const handlePaymentReminderSubmit = async (paymentReminderData: PaymentReminderData) => {
+    console.log('paymentReminderData in handlePaymentReminderSubmit --->', paymentReminderData)
+    if (!paymentReminderModal.abstractId) return
+    // 1️⃣ Send payment reminder email
+    const paymentReminderResult = await dispatch(
+      sendPaymentReminderThunk({
+        abstractId: String(paymentReminderModal.abstractId),
+        paymentReminderData: paymentReminderData,
+      })
+    )
+    if (sendPaymentReminderThunk.fulfilled.match(paymentReminderResult)) {
+      toast.success(`${paymentReminderResult.payload.message}`)
+     
+    } else {
+      toast.error('Failed to send payment reminder')
+    }
+    // 3️⃣ Close modal
+    dispatch(closePaymentReminderModal())
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -190,6 +212,15 @@ export default function AbstractsPage() {
           }
           abstractName={paymentReceiptModal.abstractName}
           isLoading={actionLoading.receipt}   // <-- use receipt flag
+        />
+      )}
+
+      {paymentReminderModal.open && (
+        <PaymentReminderModal
+          isOpen={paymentReminderModal.open}
+          onClose={() => dispatch(closePaymentReminderModal())}
+          onSubmit={(paymentReminderData) => handlePaymentReminderSubmit(paymentReminderData)}
+          isLoading={actionLoading.reminder}
         />
       )}
     </div>

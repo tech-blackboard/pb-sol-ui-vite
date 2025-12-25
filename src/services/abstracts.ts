@@ -301,6 +301,10 @@ export type SendPaymentReceiptResponse = {
   }
 }
 
+export type PaymentReminderData = {
+  paymentLink?: string
+}
+
 export async function sendPaymentReceipt(
   id: string | number,
   paymentReceiptData: PaymentReceiptData
@@ -338,10 +342,10 @@ export async function sendConfirmationEmail(
 
 export type PaymentReminderResponse = {  status?: 'success' | 'error'; message?: string }
 
-export async function sendPaymentReminder(id: string | number): Promise<PaymentReminderResponse> {
+export async function sendPaymentReminder(id: string | number, paymentReminderData: PaymentReminderData): Promise<PaymentReminderResponse> {
   const { data } = await api.post(
     `${ABSTRACT_BASE}/${id}/payment-reminder`,
-    { id:Number(id) },
+    paymentReminderData,
     {
       headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       withCredentials: true,

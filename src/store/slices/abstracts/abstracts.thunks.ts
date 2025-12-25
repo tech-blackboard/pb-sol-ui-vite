@@ -8,7 +8,7 @@ import {
 } from '../../../services/abstracts'
 import type { AbstractFilters } from './abstracts.types'
 import { sendInvoice } from '../../../services/abstracts'
-import type { InvoiceData, PaymentReceiptData } from '../../../services/abstracts'
+import type { InvoiceData, PaymentReceiptData, PaymentReminderData } from '../../../services/abstracts'
 import { STATUS_TO_ID } from '../../../features/abstracts/status.constants'
 
 export const fetchAbstracts = createAsyncThunk(
@@ -55,8 +55,8 @@ export const sendInvoiceThunk = createAsyncThunk(
 
 export const sendPaymentReminderThunk = createAsyncThunk(
   'abstracts/paymentReminder',
-  async (abstractId: string) => {
-    return await sendPaymentReminder(abstractId)
+  async ({ abstractId, paymentReminderData }: { abstractId: string; paymentReminderData:PaymentReminderData }) => {
+    return await sendPaymentReminder(abstractId, paymentReminderData)
   }
 )
 export const sendPaymentReceiptThunk = createAsyncThunk(

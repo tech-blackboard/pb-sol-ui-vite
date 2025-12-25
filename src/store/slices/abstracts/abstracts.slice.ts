@@ -39,6 +39,12 @@ interface AbstractsState {
     abstractId: string | null
     abstractName: string
   }
+
+  paymentReminderModal: {
+    open: boolean
+    abstractId: string | null
+    abstractName: string
+  }
   
 }
 
@@ -79,6 +85,11 @@ const initialState: AbstractsState = {
   },
 
   paymentReceiptModal: {
+    open: false,
+    abstractId: null,
+    abstractName: '',
+  },
+  paymentReminderModal: {
     open: false,
     abstractId: null,
     abstractName: '',
@@ -166,7 +177,22 @@ const abstractsSlice = createSlice({
       state.paymentReceiptModal.abstractId = null
       state.paymentReceiptModal.abstractName = ''
     },
-    
+
+    /* ---------- payment reminder modal ---------- */
+    openPaymentReminderModal(
+      state,
+      action: PayloadAction<{ id: string; name: string }>
+    ) {
+      state.paymentReminderModal.open = true
+      state.paymentReminderModal.abstractId = action.payload.id
+      state.paymentReminderModal.abstractName = action.payload.name
+    },
+
+    closePaymentReminderModal(state) {
+      state.paymentReminderModal.open = false
+      state.paymentReminderModal.abstractId = null
+      state.paymentReminderModal.abstractName = ''
+    },
   },
 
   extraReducers: (builder) => {
@@ -240,9 +266,15 @@ const abstractsSlice = createSlice({
       })
       .addCase(sendPaymentReminderThunk.fulfilled, (state) => {
         state.actionLoading.reminder = false
+        state.paymentReminderModal.open = false
+        state.paymentReminderModal.abstractId = null
+        state.paymentReminderModal.abstractName = ''
       })
       .addCase(sendPaymentReminderThunk.rejected, (state) => {
         state.actionLoading.reminder = false
+        state.paymentReminderModal.open = false
+        state.paymentReminderModal.abstractId = null
+        state.paymentReminderModal.abstractName = ''
       })
 
       /* ---------- send payment receipt ---------- */
@@ -324,7 +356,9 @@ export const {
   openInvoiceModal,
   closeInvoiceModal,
   openPaymentReceiptModal,
-  closePaymentReceiptModal
+  closePaymentReceiptModal,
+  openPaymentReminderModal,
+  closePaymentReminderModal,
 } = abstractsSlice.actions
 
 export default abstractsSlice.reducer
