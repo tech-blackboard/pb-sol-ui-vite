@@ -2,8 +2,8 @@ import type { AbstractRecord, AbstractStatus } from '../types'
 import { formatDate } from '../../../utils/utils'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { selectActionLoading } from '../../../store/slices/abstracts/abstracts.selectors'
-import { sendConfirmationEmailThunk, sendPaymentReminderThunk } from '../../../store/slices/abstracts/abstracts.thunks'
-import { openInvoiceModal, openPaymentReceiptModal } from '../../../store/slices/abstracts/abstracts.slice'
+import { sendConfirmationEmailThunk} from '../../../store/slices/abstracts/abstracts.thunks'
+import { openInvoiceModal, openPaymentReceiptModal, openPaymentReminderModal } from '../../../store/slices/abstracts/abstracts.slice'
 import toast from 'react-hot-toast'
 
 type StatusAction = AbstractStatus
@@ -73,20 +73,7 @@ export default function AbstractDetailsModal({
   const showInvoiceActions = modalStatus === 'Sent Invoice'
   const showPaymentReceiptActions = modalStatus === 'Registered'
   const showConfirmationButton = !item.isEmailSent
-
-  const handlePaymentReminder = async () => {
-    if (!item) return
-
-    const result = await dispatch(
-      sendPaymentReminderThunk(String(item.id ?? item._id))
-    )
-    if (sendPaymentReminderThunk.fulfilled.match(result)) {
-      toast.success(`Payment reminder sent successfully to ${item.email}`)
-    } else {
-      toast.error('Failed to send payment reminder')
-    }
-  }
-
+ 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-3xl rounded-lg bg-white shadow-xl border border-gray-200">
@@ -270,7 +257,10 @@ export default function AbstractDetailsModal({
                 </button>
 
                 <button
-                  onClick={handlePaymentReminder}
+                  onClick={() => dispatch(openPaymentReminderModal({
+                    id: String(item.id ?? item._id),
+                    name: record.name,
+                  }))}
                   className={`rounded-md border px-2.5 py-1.5 text-xs ${actionLoading.reminder ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'text-black border-gray-300 hover:bg-gray-100'}`}
                   disabled={actionLoading.reminder}
                 >
@@ -295,7 +285,7 @@ export default function AbstractDetailsModal({
                 Payment Receipt
               </button>
             )}
-
+        
             <button
               onClick={onClose}
               className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
