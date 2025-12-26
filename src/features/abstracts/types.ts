@@ -27,5 +27,6 @@ export interface AbstractRecord {
   presentationType?: PresentationType
   file?: string
   status: AbstractStatus
+  fileS3Url?: string
   isEmailSent: boolean
 }

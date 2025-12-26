@@ -44,6 +44,7 @@ export function normalizeAbstract(item: any): AbstractRecord {
     message: item?.message,
     presentationType: toPresentationType(item?.intrested),
     file: item?.file,
+    fileS3Url: item?.fileS3Url,
     status,
     isEmailSent: Boolean(item?.isEmailSent),
   }
