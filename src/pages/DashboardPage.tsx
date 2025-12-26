@@ -21,18 +21,22 @@ export default function DashboardPage() {
 
       // Fetch totals by status in parallel
       const base: AbstractSearchParams = { page: 1, limit: 1 }
-      const [allRes, underRes, accRes, rejRes, oosRes, recentRes] = await Promise.all([
+      const [allRes, underRes, accRes, rejRes, oosRes, invoiceRes, registeredRes, recentRes] = await Promise.all([
         searchAbstracts({ ...base }),
         searchAbstracts({ ...base, status_id: 1 }),
         searchAbstracts({ ...base, status_id: 2 }),
         searchAbstracts({ ...base, status_id: 4 }),
         searchAbstracts({ ...base, status_id: 3 }),
+        searchAbstracts({ ...base, status_id: 5 }),
+        searchAbstracts({ ...base, status_id: 6 }),
         searchAbstracts({ page: 1, limit: 5, sortBy: 'now', sortOrder: 'DESC' }),
       ])
 
       const totalAll = allRes.total ?? allRes.items.length
       const totalUnder = underRes.total ?? underRes.items.length
       const totalAcc = accRes.total ?? accRes.items.length
+      const totalInvoice = invoiceRes.total ?? invoiceRes.items.length
+      const totalRegistered = registeredRes.total ?? registeredRes.items.length
       const totalRej = rejRes.total ?? rejRes.items.length
       const totalOos = oosRes.total ?? oosRes.items.length
 
@@ -40,6 +44,8 @@ export default function DashboardPage() {
         all: { label: 'Total Abstracts', value: totalAll, color: 'text-blue-600' },
         under: { label: 'Under Review', value: totalUnder, color: 'text-yellow-600' },
         accepted: { label: 'Accepted', value: totalAcc, color: 'text-green-600' },
+        invoice: { label: 'Invoiced', value: totalInvoice, color: 'text-purple-600' },
+        registered: { label: 'Registered', value: totalRegistered, color: 'text-green-600' },
         rejected: { label: 'Rejected', value: totalRej, color: 'text-red-600' },
         oos: { label: 'Out of Scope', value: totalOos, color: 'text-gray-600' },
       })
@@ -81,8 +87,8 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {['all', 'under', 'accepted', 'rejected', 'oos'].map((k) => {
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
+        {['all', 'under', 'accepted', 'invoice', 'registered', 'oos' , 'rejected'].map((k) => {
           const card = stats[k]
           return (
             <div key={k} className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 shadow-sm">

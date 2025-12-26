@@ -8,16 +8,20 @@ interface Props {
 }
 
 export default function AbstractRow({ record, raw, onView }: Props) {
-  const f: string | undefined = raw?.file
+  const f: string | undefined = record.file
   const isAbs = !!(f && /^https?:\/\//i.test(f))
   const name = f ? f.split('/').pop() || '' : ''
   const base = raw?.website?.link || ''
   const baseUrl = base.replace(/\/$/, '/')
-  const href = f
+  let href = f
     ? isAbs
       ? f
       : `${baseUrl}${f.startsWith('uploads') ? '' : 'uploads/'}${f}`
     : undefined
+
+  if(record.fileS3Url){
+    href = record.fileS3Url
+  }
 
   const statusClass =
     record.status === 'Accepted'
