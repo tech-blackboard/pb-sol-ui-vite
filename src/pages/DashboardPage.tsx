@@ -122,20 +122,45 @@ export default function DashboardPage() {
           const card = stats[k]
           const statusId = STATUS_MAP[k]
           const isActive = selectedStatus === statusId
-       
+          let activeColor = ''
+          if (statusId === null) {
+            activeColor = 'bg-blue-200'
+          } else if (statusId === 1) {
+            activeColor = 'bg-orange-200'
+          }
+           else if (statusId === 2) {
+            activeColor = 'bg-green-200'
+          } else if (statusId === 3) {
+            activeColor = 'bg-gray-200'
+          } else if (statusId === 4) {
+            activeColor = 'bg-red-200'
+          } else if (statusId === 5) {
+            activeColor = 'bg-purple-200'
+          } else if (statusId === 6) {
+            activeColor = 'bg-green-200'
+          }
+          
           return (
             <button
-              key={k}
-              onClick={() => setSelectedStatus(statusId)}
-              className={`rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 shadow-sm text-left transition cursor-pointer
-        ${isActive ? 'ring-1 ring-blue-500' : 'hover:bg-gray-50'}
-      `}
-            >
-              <div className="text-xs text-gray-500">{card?.label}</div>
-              <div className={`mt-1 text-2xl font-semibold ${card?.color}`}>
-                {statsLoading ? '—' : card?.value ?? 0}
-              </div>
-            </button>
+            key={k}
+            onClick={() => setSelectedStatus(statusId)}
+            className={`rounded-lg  p-4 shadow-sm text-left transition cursor-pointer
+              ${isActive
+                ? activeColor
+                : 'bg-white hover:bg-gray-50 border-gray-200'
+              }
+              
+            `}
+          >
+            <div className="text-xs text-gray-700 font-semibold">
+              {card?.label}
+            </div>
+          
+            <div className={`mt-1 text-2xl font-semibold ${card?.color}`}>
+              {statsLoading ? '—' : card?.value ?? 0}
+            </div>
+          </button>
+          
           )
         })}
       </div>
