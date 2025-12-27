@@ -25,7 +25,7 @@ export default function AbstractTable({
     <div className="relative flex-1 min-h-0 rounded-lg border border-gray-200 bg-white shadow-sm">
       <div className="overflow-x-auto overflow-y-auto h-full scrollbar-thin">
         <table className="min-w-full text-left text-sm">
-          <thead className="bg-gray-50 text-gray-600">
+          <thead className="bg-gray-50 text-gray-600 sticky top-0 ">
             <tr>
               <th className="px-4 py-3 font-medium min-w-[14rem]">Website</th>
               <th className="px-4 py-3 font-medium min-w-[14rem]">Name</th>
