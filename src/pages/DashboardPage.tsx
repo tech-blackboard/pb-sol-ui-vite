@@ -39,6 +39,7 @@ export default function DashboardPage() {
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [dashboardData, setDashboardData] = useState<any | null>(null)
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
 
   const [appliedFilters, setAppliedFilters] = useState<LoadDashboardParams>({
     websiteId: null,
@@ -60,7 +61,6 @@ export default function DashboardPage() {
     setAppliedFilters(newFilters)
     loadDashboard(newFilters)
   }
-
 
   const loadDashboard = async (filters: LoadDashboardParams) => {
     try {
@@ -99,11 +99,9 @@ export default function DashboardPage() {
     }
   }
 
-
   useEffect(() => {
     loadDashboard(appliedFilters)
   }, [])
-
 
   function mapStatusCounts(statusCounts: any[]) {
     const map: Record<number, number> = {}
@@ -125,108 +123,147 @@ export default function DashboardPage() {
   useEffect(() => {
     let mounted = true
 
-      ; (async () => {
-        try {
-          setLoadingWebsites(true)
-          const data = await listWebsites()
-          if (mounted) setWebsites(data)
-        } finally {
-          if (mounted) setLoadingWebsites(false)
-        }
-      })()
+    ;(async () => {
+      try {
+        setLoadingWebsites(true)
+        const data = await listWebsites()
+        if (mounted) setWebsites(data)
+      } finally {
+        if (mounted) setLoadingWebsites(false)
+      }
+    })()
 
     return () => {
       mounted = false
     }
   }, [])
 
+  const handleApplyFilters = () => {
+    const newFilters = { websiteId, fromDate, toDate, statusId: null }
+    setSelectedStatus(null)
+    setAppliedFilters(newFilters)
+    loadDashboard(newFilters)
+    setIsFilterModalOpen(false)
+  }
+
+  const handleResetFilters = () => {
+    const reset = { websiteId: null, fromDate: '', toDate: '', statusId: null }
+    setWebsiteId(null)
+    setFromDate('')
+    setToDate('')
+    setSelectedStatus(null)
+    setAppliedFilters(reset)
+    loadDashboard(reset)
+    setIsFilterModalOpen(false)
+  }
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col overflow-auto space-y-6 text-left">
-      {/* Responsive Dashboard Header */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        {/* Title */}
-        <h1 className="text-2xl font-semibold text-gray-900 shrink-0">
-          Dashboard
-        </h1>
-
-        {/* Filters + Actions */}
-        <div
-          className="
-      flex flex-col gap-3
-      sm:flex-row sm:flex-wrap
-      lg:flex-nowrap lg:items-center
-      lg:gap-3
-    "
+    <div className="flex-1 min-h-0 flex flex-col overflow-hidden space-y-6 text-left">
+      {/* Dashboard Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+        
+        <button
+          onClick={() => setIsFilterModalOpen(true)}
+          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
         >
-          {/* Website */}
-          <div className="w-full sm:w-[280px]">
-            <select
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              disabled={loadingWebsites}
-              value={websiteId ?? ''}
-              onChange={(e) =>
-                setWebsiteId(e.target.value ? Number(e.target.value) : null)
-              }
-            >
-              <option value="">
-                {loadingWebsites ? 'Loading websites…' : 'All Websites'}
-              </option>
-              {websites.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          </svg>
+          Filters
+        </button>
+      </div>
 
-          {/* From Date */}
-          <input
-            type="date"
-            className="w-full sm:w-[200px] rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-          />
+      {/* Filter Modal */}
+      {isFilterModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Filter Options
+              </h2>
+              <button
+                onClick={() => setIsFilterModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
 
-          {/* To Date */}
-          <input
-            type="date"
-            className="w-full sm:w-[200px] rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-          />
+            {/* Modal Content */}
+            <div className="px-6 py-4 space-y-4">
+              {/* Website Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Website
+                </label>
+                <select
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={loadingWebsites}
+                  value={websiteId ?? ''}
+                  onChange={(e) =>
+                    setWebsiteId(e.target.value ? Number(e.target.value) : null)
+                  }
+                >
+                  <option value="">
+                    {loadingWebsites ? 'Loading websites…' : 'All Websites'}
+                  </option>
+                  {websites.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {/* Actions */}
-          <div className="flex gap-3 w-full sm:w-auto">
-            <button
-              onClick={() => {
-                const newFilters = { websiteId, fromDate, toDate, statusId: null }
-                setSelectedStatus(null)
-                setAppliedFilters(newFilters)
-                loadDashboard(newFilters)
-              }}
-              className="flex-1 sm:flex-none  rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              Apply
-            </button>
+              {/* From Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  From Date
+                </label>
+                <input
+                  type="date"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                />
+              </div>
 
-            <button
-              onClick={() => {
-                const reset = { websiteId: null, fromDate: '', toDate: '', statusId: null }
-                setWebsiteId(null)
-                setFromDate('')
-                setToDate('')
-                setSelectedStatus(null)
-                setAppliedFilters(reset)
-                loadDashboard(reset)
-              }}
-              className="flex-1 sm:flex-none  rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Refresh
-            </button>
+              {/* To Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  To Date
+                </label>
+                <input
+                  type="date"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={handleResetFilters}
+                className="flex-1 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Reset
+              </button>
+              <button
+                onClick={handleApplyFilters}
+                className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+              >
+                Apply Filters
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
@@ -240,8 +277,7 @@ export default function DashboardPage() {
             activeColor = 'bg-blue-200'
           } else if (statusId === 1) {
             activeColor = 'bg-orange-200'
-          }
-          else if (statusId === 2) {
+          } else if (statusId === 2) {
             activeColor = 'bg-green-200'
           } else if (statusId === 3) {
             activeColor = 'bg-gray-200'
@@ -257,23 +293,17 @@ export default function DashboardPage() {
             <button
               key={k}
               onClick={() => onStatusClick(statusId)}
-              className={`rounded-lg  p-4 shadow-sm text-left transition cursor-pointer
-              ${isActive
-                  ? activeColor
-                  : 'bg-white hover:bg-gray-50 border-gray-200'
-                }
-              
-            `}
+              className={`rounded-lg p-4 shadow-sm text-left transition cursor-pointer
+                ${isActive ? activeColor : 'bg-white hover:bg-gray-50 border-gray-200'}
+              `}
             >
               <div className="text-xs text-gray-700 font-semibold">
                 {card?.label}
               </div>
-
               <div className={`mt-1 text-2xl font-semibold ${card?.color}`}>
                 {statsLoading ? '—' : card?.value ?? 0}
               </div>
             </button>
-
           )
         })}
       </div>
@@ -297,7 +327,6 @@ export default function DashboardPage() {
           >
             Reload
           </button>
-
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto">
           <table className="min-w-full text-left text-sm">
@@ -314,65 +343,88 @@ export default function DashboardPage() {
             <tbody>
               {tableLoading && (
                 <tr>
-                  <td className="px-4 py-6 text-gray-500" colSpan={4}>Loading...</td>
+                  <td className="px-4 py-6 text-gray-500" colSpan={6}>
+                    Loading...
+                  </td>
                 </tr>
               )}
               {!tableLoading && error && (
                 <tr>
-                  <td className="px-4 py-6" colSpan={4}>
+                  <td className="px-4 py-6" colSpan={6}>
                     <div className="flex items-center justify-between">
                       <div className="text-red-600">{error}</div>
-                      <button onClick={() => {
-                        setError(null)
-                        loadDashboard({
-                          websiteId,
-                          fromDate,
-                          toDate,
-                          statusId: null,
-                        })
-                      }} className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs hover:bg-gray-50 cursor-pointer">Retry</button>
+                      <button
+                        onClick={() => {
+                          setError(null)
+                          loadDashboard({
+                            websiteId,
+                            fromDate,
+                            toDate,
+                            statusId: null,
+                          })
+                        }}
+                        className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs hover:bg-gray-50 cursor-pointer"
+                      >
+                        Retry
+                      </button>
                     </div>
                   </td>
                 </tr>
               )}
               {!tableLoading && !error && recent.length === 0 && (
                 <tr>
-                  <td className="px-4 py-6 text-gray-500" colSpan={4}>No recent records</td>
+                  <td className="px-4 py-6 text-gray-500" colSpan={6}>
+                    No recent records
+                  </td>
                 </tr>
               )}
-              {!tableLoading && !error && recent.map((r: any, idx: number) => (
-
-                <tr key={idx} className="border-t border-gray-100 dark:border-gray-800">
-                  <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
-                    {r.website_name ?? r.website?.name ?? '—'}
-                  </td>
-
-                  <td className="px-4 py-3 text-gray-900 dark:text-gray-100">{r.name ?? (([r.user?.firstname, r.user?.lastname].filter(Boolean).join(' ')) || '—')}</td>
-                  <td className="px-4 py-3">
-                    <a href={`mailto:${r.email ?? r.user?.useremail ?? ''}`} className="text-blue-600 hover:underline">
-                      {r.email ?? r.user?.useremail ?? '—'}
-                    </a>
-                  </td>
-                  <td className="px-4 py-3 text-gray-900 dark:text-gray-100">{r.country ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-900 dark:text-gray-100">{r.now ? formatDate(r.now ?? '') : '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className={[
-                      'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
-                      r.status?.actionType === 'Accepted'
-                        ? 'bg-green-50 text-green-700'
-                        : r.status?.actionType === 'Under Review'
-                          ? 'bg-yellow-50 text-yellow-800'
-                          : r.status?.actionType === 'Rejected'
+              {!tableLoading &&
+                !error &&
+                recent.map((r: any, idx: number) => (
+                  <>
+                  <tr key={idx} className="border-t border-gray-100 dark:border-gray-800">
+                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
+                      {r.website_name ?? r.website?.name ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
+                      {r.name ??
+                        ([r.user?.firstname, r.user?.lastname].filter(Boolean).join(' ') ||
+                        '—')}
+                    </td>
+                    <td className="px-4 py-3">
+                      
+                       <a href={`mailto:${r.email ?? r.user?.useremail ?? ''}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {r.email ?? r.user?.useremail ?? '—'}
+                      </a>
+                    </td>
+                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
+                      {r.country ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
+                      {r.now ? formatDate(r.now ?? '') : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={[
+                          'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
+                          r.status?.actionType === 'Accepted'
+                            ? 'bg-green-50 text-green-700'
+                            : r.status?.actionType === 'Under Review'
+                            ? 'bg-yellow-50 text-yellow-800'
+                            : r.status?.actionType === 'Rejected'
                             ? 'bg-red-50 text-red-700'
                             : r.status?.actionType === 'Out of Scope'
-                              ? 'bg-gray-100 text-gray-700'
-                              : 'bg-blue-50 text-blue-700',
-                    ].join(' ')}>
-                      {r.status?.actionType ?? 'Under Review'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+                            ? 'bg-gray-100 text-gray-700'
+                            : 'bg-blue-50 text-blue-700',
+                        ].join(' ')}
+                      >
+                        {r.status?.actionType ?? 'Under Review'}
+                      </span>
+                    </td>
+                  </tr></>
+                ))}
             </tbody>
           </table>
         </div>
@@ -380,5 +432,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-
-
