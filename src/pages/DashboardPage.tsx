@@ -19,6 +19,12 @@ const STATUS_MAP: Record<string, number | null> = {
   registered: 6,
 }
 
+type LoadDashboardParams = {
+  websiteId?: number | null
+  fromDate?: string
+  toDate?: string
+  statusId?: number | null
+}
 
 export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null)
@@ -34,58 +40,69 @@ export default function DashboardPage() {
   const [toDate, setToDate] = useState('')
   const [dashboardData, setDashboardData] = useState<any | null>(null)
 
+  const [appliedFilters, setAppliedFilters] = useState<LoadDashboardParams>({
+    websiteId: null,
+    fromDate: '',
+    toDate: '',
+    statusId: null,
+  })
+
   type StatusKey = keyof typeof STATUS_MAP
 
   const onStatusClick = (statusId: number | null) => {
     setSelectedStatus(statusId)
 
-    fetchDashboard({
-      website_id: websiteId ?? undefined,
-      from_date: fromDate || undefined,
-      to_date: toDate || undefined,
-      status_id: statusId ?? undefined, // ✅ key line
-    }).then((res) => {
-      setDashboardData(res)
-      setRecent(res.recentAbstracts ?? [])
-    })
+    const newFilters = {
+      ...appliedFilters,
+      statusId,
+    }
+    console.log('newFilters onStatusClick', newFilters)
+    setAppliedFilters(newFilters)
+    loadDashboard(newFilters)
   }
 
+
+  const loadDashboard = async (filters: LoadDashboardParams) => {
+    try {
+      setStatsLoading(true)
+      setTableLoading(true)
+      setError(null)
+
+      const res = await fetchDashboard({
+        website_id: filters.websiteId ?? undefined,
+        from_date: filters.fromDate || undefined,
+        to_date: filters.toDate || undefined,
+        status_id: filters.statusId ?? undefined,
+      })
+
+      setDashboardData(res)
+
+      const counts = mapStatusCounts(res.statusCounts ?? [])
+
+      setStats({
+        all: { label: 'Total Abstracts', value: res.total ?? 0, color: 'text-blue-600' },
+        under: { label: 'Under Review', value: counts.under_review, color: 'text-orange-600' },
+        accepted: { label: 'Accepted', value: counts.accepted, color: 'text-green-600' },
+        oos: { label: 'Out of Scope', value: counts.out_of_scope, color: 'text-gray-600' },
+        rejected: { label: 'Rejected', value: counts.rejected, color: 'text-red-600' },
+        invoice: { label: 'Invoiced', value: counts.invoiced, color: 'text-purple-600' },
+        registered: { label: 'Registered', value: counts.registered, color: 'text-green-600' },
+      })
+
+      setRecent(res.recentAbstracts ?? [])
+    } catch (err) {
+      console.error(err)
+      setError('Unable to load dashboard data. Please try again.')
+    } finally {
+      setStatsLoading(false)
+      setTableLoading(false)
+    }
+  }
+
+
   useEffect(() => {
-    setStatsLoading(true)
-    setTableLoading(true)
-    setError(null)
-
-    fetchDashboard({
-      website_id: websiteId ?? undefined,
-      from_date: fromDate || undefined,
-      to_date: toDate || undefined,
-
-    })
-      .then((res) => {
-        setDashboardData(res)
-
-        const counts = mapStatusCounts(res.statusCounts ?? [])
-        console.log('counts', counts)
-
-        setStats({
-          all: { label: 'Total Abstracts', value: res.total, color: 'text-blue-600' },
-          under: { label: 'Under Review', value: counts.under_review, color: 'text-orange-600' },
-          accepted: { label: 'Accepted', value: counts.accepted, color: 'text-green-600' },
-          oos: { label: 'Out of Scope', value: counts.out_of_scope, color: 'text-gray-600' },
-          rejected: { label: 'Rejected', value: counts.rejected, color: 'text-red-600' },
-          invoice: { label: 'Invoiced', value: counts.invoiced, color: 'text-purple-600' },
-          registered: { label: 'Registered', value: counts.registered, color: 'text-green-600' },
-        })
-
-        // default table
-        setRecent(res.recentAbstracts ?? [])
-      })
-      .catch(() => setError('Failed to load dashboard data'))
-      .finally(() => {
-        setStatsLoading(false)
-        setTableLoading(false)
-      })
-  }, [websiteId, fromDate, toDate])
+    loadDashboard(appliedFilters)
+  }, [])
 
 
   function mapStatusCounts(statusCounts: any[]) {
@@ -123,91 +140,92 @@ export default function DashboardPage() {
     }
   }, [])
 
-  useEffect(() => {
-    if (!dashboardData) return
-
-    if (selectedStatus === null) {
-      setRecent(dashboardData.recentAbstracts ?? [])
-    } else {
-      setRecent(
-        (dashboardData.recentAbstracts ?? []).filter(
-          (r: any) => r.status?.id === selectedStatus
-        )
-      )
-    }
-  }, [selectedStatus, dashboardData])
 
   return (
     <div className="flex-1 min-h-0 flex flex-col overflow-auto space-y-6 text-left">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Dashboard</h1>
-        <a
-          href="#"
-          onClick={(e) => {
-            e.preventDefault()
-            setWebsiteId(null)
-            setFromDate('')
-            setToDate('')
-            setSelectedStatus(null)
-          }}
-          className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+      {/* Responsive Dashboard Header */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        {/* Title */}
+        <h1 className="text-2xl font-semibold text-gray-900 shrink-0">
+          Dashboard
+        </h1>
+
+        {/* Filters + Actions */}
+        <div
+          className="
+      flex flex-col gap-3
+      sm:flex-row sm:flex-wrap
+      lg:flex-nowrap lg:items-center
+      lg:gap-3
+    "
         >
-          Refresh
-        </a>
+          {/* Website */}
+          <div className="w-full sm:w-[280px]">
+            <select
+              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              disabled={loadingWebsites}
+              value={websiteId ?? ''}
+              onChange={(e) =>
+                setWebsiteId(e.target.value ? Number(e.target.value) : null)
+              }
+            >
+              <option value="">
+                {loadingWebsites ? 'Loading websites…' : 'All Websites'}
+              </option>
+              {websites.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      </div>
+          {/* From Date */}
+          <input
+            type="date"
+            className="w-full sm:w-[200px] rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+          />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
-        {/* Website */}
-        <select
-          className="
-      w-full
-      sm:max-w-xs
-      rounded-md border border-gray-300 bg-white
-      px-3 py-2 text-sm shadow-sm
-      focus:outline-none focus:ring-2 focus:ring-blue-500
-    "
-          disabled={loadingWebsites}
-          value={websiteId ?? ''}
-          onChange={(e) =>
-            setWebsiteId(e.target.value ? Number(e.target.value) : null)
-          }
-        >
-          <option value="">
-            {loadingWebsites ? 'Loading websites…' : 'All Websites'}
-          </option>
-          {websites.map((w) => (
-            <option key={w.id} value={w.id}>
-              {w.name}
-            </option>
-          ))}
-        </select>
+          {/* To Date */}
+          <input
+            type="date"
+            className="w-full sm:w-[200px] rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+          />
 
-        {/* From date */}
-        <input
-          type="date"
-          className="
-      w-full
-      rounded-md border border-gray-300 bg-white
-      px-3 py-2 text-sm shadow-sm
-      focus:outline-none focus:ring-2 focus:ring-blue-500
-    "
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
-        />
+          {/* Actions */}
+          <div className="flex gap-3 w-full sm:w-auto">
+            <button
+              onClick={() => {
+                const newFilters = { websiteId, fromDate, toDate, statusId: null }
+                setSelectedStatus(null)
+                setAppliedFilters(newFilters)
+                loadDashboard(newFilters)
+              }}
+              className="flex-1 sm:flex-none  rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Apply
+            </button>
 
-        {/* To date */}
-        <input
-          type="date"
-          className="
-      w-full
-      rounded-md border border-gray-300 bg-white
-      px-3 py-2 text-sm shadow-sm
-      focus:outline-none focus:ring-2 focus:ring-blue-500
-    "
-          value={toDate}
-          onChange={(e) => setToDate(e.target.value)}
-        />
+            <button
+              onClick={() => {
+                const reset = { websiteId: null, fromDate: '', toDate: '', statusId: null }
+                setWebsiteId(null)
+                setFromDate('')
+                setToDate('')
+                setSelectedStatus(null)
+                setAppliedFilters(reset)
+                loadDashboard(reset)
+              }}
+              className="flex-1 sm:flex-none  rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Stats */}
@@ -268,6 +286,12 @@ export default function DashboardPage() {
             onClick={() => {
               setSelectedStatus(null)
               setRecent(dashboardData?.recentAbstracts ?? [])
+              loadDashboard({
+                websiteId,
+                fromDate,
+                toDate,
+                statusId: null,
+              })
             }}
             className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs hover:bg-gray-50 cursor-pointer"
           >
@@ -300,7 +324,12 @@ export default function DashboardPage() {
                       <div className="text-red-600">{error}</div>
                       <button onClick={() => {
                         setError(null)
-                        setRecent(dashboardData?.recentAbstracts ?? [])
+                        loadDashboard({
+                          websiteId,
+                          fromDate,
+                          toDate,
+                          statusId: null,
+                        })
                       }} className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs hover:bg-gray-50 cursor-pointer">Retry</button>
                     </div>
                   </td>
