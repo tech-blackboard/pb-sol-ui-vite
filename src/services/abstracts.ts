@@ -354,4 +354,18 @@ export async function sendPaymentReminder(id: string | number, paymentReminderDa
   return data
 }
 
+export type DashboardFilters = {
+  website_id?: string | number
+  from_date?: string
+  to_date?: string
+  status_id?: number
+}
 
+export async function fetchDashboard(filters: DashboardFilters) {
+  const { data } = await api.get(`${ABSTRACT_BASE}/dashboard`, {
+    params: filters,
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    withCredentials: true,
+  })
+  return data
+}
