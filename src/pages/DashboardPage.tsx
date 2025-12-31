@@ -39,7 +39,7 @@ export default function DashboardPage() {
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [dashboardData, setDashboardData] = useState<any | null>(null)
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false)
 
   const [appliedFilters, setAppliedFilters] = useState<LoadDashboardParams>({
     websiteId: null,
@@ -143,7 +143,7 @@ export default function DashboardPage() {
     setSelectedStatus(null)
     setAppliedFilters(newFilters)
     loadDashboard(newFilters)
-    setIsFilterModalOpen(false)
+    setIsFilterDrawerOpen(false)
   }
 
   const handleResetFilters = () => {
@@ -154,7 +154,6 @@ export default function DashboardPage() {
     setSelectedStatus(null)
     setAppliedFilters(reset)
     loadDashboard(reset)
-    setIsFilterModalOpen(false)
   }
 
   return (
@@ -164,7 +163,7 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
         
         <button
-          onClick={() => setIsFilterModalOpen(true)}
+          onClick={() => setIsFilterDrawerOpen(true)}
           className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -174,18 +173,25 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* Filter Modal */}
-      {isFilterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      {/* Filter Drawer - Slide from Right */}
+      {isFilterDrawerOpen && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/30 z-40 transition-opacity"
+            onClick={() => setIsFilterDrawerOpen(false)}
+          />
+          
+          {/* Drawer - Full Height */}
+          <div className="fixed top-0 right-0 h-screen w-full sm:w-96 bg-white dark:bg-gray-900 shadow-2xl z-50 flex flex-col animate-slide-in">
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Filter Options
+                Filters
               </h2>
               <button
-                onClick={() => setIsFilterModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                onClick={() => setIsFilterDrawerOpen(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -193,15 +199,15 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Modal Content */}
-            <div className="px-6 py-4 space-y-4">
+            {/* Drawer Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
               {/* Website Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Website
                 </label>
                 <select
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   disabled={loadingWebsites}
                   value={websiteId ?? ''}
                   onChange={(e) =>
@@ -226,7 +232,7 @@ export default function DashboardPage() {
                 </label>
                 <input
                   type="date"
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
                 />
@@ -239,30 +245,32 @@ export default function DashboardPage() {
                 </label>
                 <input
                   type="date"
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={toDate}
                   onChange={(e) => setToDate(e.target.value)}
                 />
               </div>
             </div>
 
-            {/* Modal Actions */}
-            <div className="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={handleResetFilters}
-                className="flex-1 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Reset
-              </button>
-              <button
-                onClick={handleApplyFilters}
-                className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-              >
-                Apply Filters
-              </button>
+            {/* Drawer Footer - Actions */}
+            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-800/50 flex-shrink-0">
+              <div className="flex gap-3">
+                <button
+                  onClick={handleResetFilters}
+                  className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={handleApplyFilters}
+                  className="flex-1 rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors shadow-sm"
+                >
+                  Apply
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Stats */}
@@ -380,9 +388,9 @@ export default function DashboardPage() {
               )}
               {!tableLoading &&
                 !error &&
-                recent.map((r: any, idx: number) => (
-                  <>
-                  <tr key={idx} className="border-t border-gray-100 dark:border-gray-800">
+                recent.map((r: any) => (
+                
+                  <tr key={r.id ?? r.uuid ?? r.email ?? `${r.website_id}-${r.now}`} className="border-t border-gray-100 dark:border-gray-800">
                     <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
                       {r.website_name ?? r.website?.name ?? '—'}
                     </td>
@@ -393,7 +401,7 @@ export default function DashboardPage() {
                     </td>
                     <td className="px-4 py-3">
                       
-                       <a href={`mailto:${r.email ?? r.user?.useremail ?? ''}`}
+                        <a href={`mailto:${r.email ?? r.user?.useremail ?? ''}`}
                         className="text-blue-600 hover:underline"
                       >
                         {r.email ?? r.user?.useremail ?? '—'}
@@ -423,7 +431,7 @@ export default function DashboardPage() {
                         {r.status?.actionType ?? 'Under Review'}
                       </span>
                     </td>
-                  </tr></>
+                  </tr>
                 ))}
             </tbody>
           </table>
