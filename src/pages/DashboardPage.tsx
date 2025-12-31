@@ -388,9 +388,9 @@ export default function DashboardPage() {
               )}
               {!tableLoading &&
                 !error &&
-                recent.map((r: any, idx: number) => (
-                  <>
-                  <tr key={idx} className="border-t border-gray-100 dark:border-gray-800">
+                recent.map((r: any) => (
+                
+                  <tr key={r.id ?? r.uuid ?? r.email ?? `${r.website_id}-${r.now}`} className="border-t border-gray-100 dark:border-gray-800">
                     <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
                       {r.website_name ?? r.website?.name ?? '—'}
                     </td>
@@ -432,7 +432,6 @@ export default function DashboardPage() {
                       </span>
                     </td>
                   </tr>
-                  </>
                 ))}
             </tbody>
           </table>
