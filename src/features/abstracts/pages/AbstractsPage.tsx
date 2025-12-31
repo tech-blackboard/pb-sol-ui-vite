@@ -217,6 +217,7 @@ export default function AbstractsPage() {
 
       {paymentReminderModal.open && (
         <PaymentReminderModal
+          abstractId={paymentReminderModal.abstractId ?? 0}
           isOpen={paymentReminderModal.open}
           onClose={() => dispatch(closePaymentReminderModal())}
           onSubmit={(paymentReminderData) => handlePaymentReminderSubmit(paymentReminderData)}
