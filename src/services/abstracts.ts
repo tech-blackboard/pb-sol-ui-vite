@@ -44,6 +44,7 @@ export type AbstractItem = {
   website?: AbstractWebsite
   originalId?: number | string
   isEmailSent?: boolean
+  paymentLink?: string
 
   now?: string
 }
