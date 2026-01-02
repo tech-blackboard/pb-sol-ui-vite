@@ -35,3 +35,9 @@ dist-ssr
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Jest coverage
+coverage/
+coverage-final.json
+clover.xml
+lcov.info
