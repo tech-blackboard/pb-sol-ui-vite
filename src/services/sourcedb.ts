@@ -1,7 +1,7 @@
 // add near other exports
 import { api } from '../lib/api'
-
-const SOURCEDB_BASE = import.meta.env.VITE_SOURCEDB_BASE;
+import { SOURCEDB_BASE } from '../config/env';
+// const SOURCEDB_BASE = import.meta.env.VITE_SOURCEDB_BASE;
 
 export type SourceWebsite = { id: number | string; name: string }
 

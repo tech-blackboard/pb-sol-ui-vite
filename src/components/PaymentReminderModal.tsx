@@ -17,7 +17,7 @@ export function PaymentReminderModal({
   onSubmit,
   isLoading = false,
 }: PaymentReminderModalProps) {
-  const DEFAULT_PAYMENT_LINK = import.meta.env.VITE_DEFAULT_PAYMENT_LINK || ''
+  const DEFAULT_PAYMENT_LINK = ''
 
   const [existingPaymentLink, setExistingPaymentLink] = useState<string | null>(null)
   const [formData, setFormData] = useState<PaymentReminderData>({

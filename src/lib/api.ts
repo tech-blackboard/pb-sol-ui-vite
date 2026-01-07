@@ -1,7 +1,7 @@
 import axios from 'axios'
-
-const API_BASE = import.meta.env.VITE_API_BASE;
-const AUTH_BASE = import.meta.env.VITE_AUTH_BASE;
+import { API_BASE, AUTH_BASE } from '../config/env';
+// const API_BASE = import.meta.env.VITE_API_BASE;
+// const AUTH_BASE = import.meta.env.VITE_AUTH_BASE;
 
 function getToken() {
   return localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
