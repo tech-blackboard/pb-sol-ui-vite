@@ -1,5 +1,5 @@
 import { api } from '../lib/api';
-
+import { AUTH_BASE } from '../config/env';
 export type LoginRequest = { useremail: string; userpassword: string }
 export type LoginResponse = {
   message?: string
@@ -11,7 +11,7 @@ export type LoginResponse = {
 }
 
 
-const AUTH_BASE = import.meta.env.VITE_AUTH_BASE;
+// const AUTH_BASE = import.meta.env.VITE_AUTH_BASE;
 
 export async function login(body: LoginRequest): Promise<LoginResponse> {
   const { data } = await api.post<LoginResponse>(`${AUTH_BASE}/login`, body, {
@@ -28,7 +28,7 @@ export async function logout(): Promise<void> {
 
 export async function refreshToken(): Promise<string> {
   const { data } = await api.post(
-    `${(import.meta as any).env?.VITE_AUTH_BASE || import.meta.env.VITE_AUTH_BASE}/refresh-token`,
+    `${AUTH_BASE}/refresh-token`,
     {},
     { withCredentials: true, headers: { 'Content-Type': 'application/json' } },
   )
