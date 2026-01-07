@@ -10,6 +10,7 @@ import SignInPage, { type SignInCredentials } from './pages/SignInPage'
 import { type AppDispatch } from './store'
 import { selectAuth, loginThunk, logoutThunk } from './store/slices/authSlice'
 import { selectTheme, toggleTheme } from './store/slices/themeSlice'
+import { DeviceFingerprintProvider } from './components/DeviceFingerprintProvider'
 import NetworkErrorAlert from './alerts/NetworkErrorAlert'
 import ServerIssueAlert from './alerts/ServerIssueAlert'
 import ServerUnavailableAlert from './alerts/ServerUnavailableAlert'
@@ -25,11 +26,11 @@ function App() {
     const onNet = () => setShowNetwork(true)
     const onSrv = () => setShowServer(true)
     const onUnavail = () => setShowServerUnavailable(true)
-    
+
     window.addEventListener('app:network-error', onNet as any)
     window.addEventListener('app:server-error', onSrv as any)
     window.addEventListener('app:server-unavailable', onUnavail as any)
-    
+
     return () => {
       window.removeEventListener('app:network-error', onNet as any)
       window.removeEventListener('app:server-error', onSrv as any)
@@ -43,7 +44,7 @@ function App() {
   const themeMode = useSelector(selectTheme)
   const links: NavLink[] = [
     { id: 'dashboard', label: 'Dashboard' },
-    { id: 'abstracts', label: 'Abstracts'},
+    { id: 'abstracts', label: 'Abstracts' },
   ];
 
 
@@ -77,7 +78,7 @@ function App() {
   if (!user) {
     return <SignInPage onSignIn={handleSignIn} isLoading={authLoading} error={authError} />
   }
-  
+
   if (showServerUnavailable) {
     return <ServerUnavailableAlert />
   }
@@ -85,52 +86,53 @@ function App() {
   if (showNetwork) {
     return <NetworkErrorAlert />
   }
-  
+
   if (showServer) {
     return <ServerIssueAlert />
   }
 
   return (
-    <div className="h-dvh overflow-hidden flex flex-col bg-gray-50 dark:bg-gray-950">
-      <Toaster
-        position="bottom-right"
-        toastOptions={{
-          duration: 2500,
-          style: { fontSize: '0.875rem' },
-          success: { iconTheme: { primary: '#16a34a', secondary: 'white' } },
-        }}
-      />
-      <Header
-        user={user}
-        onLogout={handleLogout}
-        onToggleSidebar={() => setSidebarOpen((v) => !v)}
-        theme={themeMode}
-        onToggleTheme={() => dispatch(toggleTheme())}
-      />
-     
-
-      <div className="flex flex-1 pt-16 pb-12 overflow-hidden">
-        {/* Sidebar */}
-        <Nav
-          links={links}
-          activeId={activeId}
-          onNavigate={setActiveId}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
+    <DeviceFingerprintProvider>
+      <div className="h-dvh overflow-hidden flex flex-col bg-gray-50 dark:bg-gray-950">
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            duration: 2500,
+            style: { fontSize: '0.875rem' },
+            success: { iconTheme: { primary: '#16a34a', secondary: 'white' } },
+          }}
+        />
+        <Header
+          user={user}
+          onLogout={handleLogout}
+          onToggleSidebar={() => setSidebarOpen((v) => !v)}
+          theme={themeMode}
+          onToggleTheme={() => dispatch(toggleTheme())}
         />
 
-        {/* Main content area */}
-        <div className="flex-1 overflow-hidden">
-          {/* Overlay for mobile when sidebar open */}
-          {sidebarOpen && (
-            <div
-              className="fixed inset-0 z-20 bg-black/30 backdrop-blur-sm md:hidden"
-              onClick={() => setSidebarOpen(false)}
-            />
-          )}
-          <main className="w-full h-full px-4 sm:px-6 lg:px-8 py-6 overflow-hidden">
-            <div className="h-full overflow-hidden flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm text-left">
-              {activeId === 'abstracts' ? (
+
+        <div className="flex flex-1 pt-16 pb-12 overflow-hidden">
+          {/* Sidebar */}
+          <Nav
+            links={links}
+            activeId={activeId}
+            onNavigate={setActiveId}
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
+
+          {/* Main content area */}
+          <div className="flex-1 overflow-hidden">
+            {/* Overlay for mobile when sidebar open */}
+            {sidebarOpen && (
+              <div
+                className="fixed inset-0 z-20 bg-black/30 backdrop-blur-sm md:hidden"
+                onClick={() => setSidebarOpen(false)}
+              />
+            )}
+            <main className="w-full h-full px-4 sm:px-6 lg:px-8 py-6 overflow-hidden">
+              <div className="h-full overflow-hidden flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm text-left">
+                {activeId === 'abstracts' ? (
                   isAdmin ? (
                     <AbstractsPage />
                   ) : (
@@ -139,15 +141,16 @@ function App() {
                 ) : (
                   <DashboardPage />
                 )}
-            </div>
-          </main>
+              </div>
+            </main>
+          </div>
+
         </div>
 
+        <Footer />
+
       </div>
-
-      <Footer />
-
-    </div>
+    </DeviceFingerprintProvider>
   )
 }
 
