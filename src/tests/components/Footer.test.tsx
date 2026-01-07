@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import Footer from '../components/Footer.tsx'
+import Footer from '../../src/components/Footer.tsx'
 
 describe('Footer component', () => {
   test('renders footer text with current year', () => {
