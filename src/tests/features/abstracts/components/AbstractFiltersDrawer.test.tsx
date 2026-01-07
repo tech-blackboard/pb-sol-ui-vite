@@ -1,0 +1,259 @@
+import {
+    render,
+    screen,
+    fireEvent,
+    waitFor,
+    act,
+  } from '@testing-library/react'
+  import '@testing-library/jest-dom'
+  import AbstractFiltersDrawer from '../../../../features/abstracts/components/AbstractFiltersDrawer'
+  
+  import { useAppDispatch, useAppSelector } from '../../../../store/hooks'
+  import {
+    updateDraftFilter,
+    applyFilters,
+    resetFilters,
+  } from '../../../../store/slices/abstracts/abstracts.slice'
+  import { selectDraftFilters } from '../../../../store/slices/abstracts/abstracts.selectors'
+  import { listWebsites } from '../../../../services/sourcedb'
+  
+  jest.mock('../../../../store/hooks')
+  jest.mock('../../../../services/sourcedb')
+  
+  const mockDispatch = jest.fn()
+  
+  const baseFilters = {
+    search: '',
+    name: '',
+    email: '',
+    organization: '',
+    country: '',
+    title: '',
+    status_id: undefined,
+    website_id: undefined,
+    sortBy: 'now',
+    sortOrder: 'DESC',
+    isEmailSent: undefined,
+  }
+  
+  /* ------------------------------------------------------------------ */
+  /* helpers                                                            */
+  /* ------------------------------------------------------------------ */
+  
+  function renderDrawer({
+    open = true,
+    filters = baseFilters,
+    onClose = jest.fn(),
+  }: {
+    open?: boolean
+    filters?: any
+    onClose?: jest.Mock
+  } = {}) {
+    ;(useAppDispatch as jest.Mock).mockReturnValue(mockDispatch)
+    ;(useAppSelector as jest.Mock).mockImplementation((selector) =>
+      selector === selectDraftFilters ? filters : undefined
+    )
+  
+    return {
+      onClose,
+      ...render(<AbstractFiltersDrawer open={open} onClose={onClose} />),
+    }
+  }
+  
+  /**
+   * IMPORTANT:
+   * Any test rendering with open=true MUST await the async useEffect
+   */
+  async function renderDrawerAndWait(options = {}) {
+    ;(listWebsites as jest.Mock).mockResolvedValue([])
+  
+    const utils = renderDrawer(options)
+  
+    await waitFor(() => {
+      expect(listWebsites).toHaveBeenCalled()
+    })
+  
+    return utils
+  }
+  
+  /* ------------------------------------------------------------------ */
+  /* tests                                                              */
+  /* ------------------------------------------------------------------ */
+  
+  describe('AbstractFiltersDrawer – full coverage (fixed)', () => {
+    beforeEach(() => {
+      jest.clearAllMocks()
+    })
+  
+    /* ---------- open=false branch ---------- */
+    test('returns null when open is false', () => {
+      const { container } = renderDrawer({ open: false })
+      expect(container).toBeEmptyDOMElement()
+    })
+  
+    test('does not call listWebsites when open is false', () => {
+      renderDrawer({ open: false })
+      expect(listWebsites).not.toHaveBeenCalled()
+    })
+  
+    /* ---------- async website loading ---------- */
+    test('shows loading text then renders websites', async () => {
+      ;(listWebsites as jest.Mock).mockResolvedValue([
+        { id: 1, name: 'Website A' },
+      ])
+  
+      renderDrawer()
+  
+      expect(
+        screen.getByText('Loading websites…')
+      ).toBeInTheDocument()
+  
+      expect(await screen.findByText('Website A')).toBeInTheDocument()
+    })
+  
+    /* ---------- cleanup (mounted=false) ---------- */
+    test('cleanup prevents state update after unmount', async () => {
+      let resolvePromise!: (value: any) => void
+  
+      ;(listWebsites as jest.Mock).mockReturnValue(
+        new Promise((res) => (resolvePromise = res))
+      )
+  
+      const { unmount } = renderDrawer()
+  
+      unmount()
+  
+      await act(async () => {
+        resolvePromise([{ id: 99, name: 'Late Website' }])
+      })
+    })
+  
+    /* ---------- Input helper ---------- */
+    test('Input helper dispatches updateDraftFilter', async () => {
+      await renderDrawerAndWait()
+  
+      fireEvent.change(screen.getByPlaceholderText('Country'), {
+        target: { value: 'India' },
+      })
+  
+      expect(mockDispatch).toHaveBeenCalledWith(
+        updateDraftFilter({ key: 'country', value: 'India' })
+      )
+    })
+  
+    /* ---------- status_id branches ---------- */
+    test('status_id empty converts to undefined', async () => {
+      await renderDrawerAndWait()
+  
+      fireEvent.change(
+        screen.getByText('Status').closest('select')!,
+        { target: { value: '' } }
+      )
+  
+      expect(mockDispatch).toHaveBeenCalledWith(
+        updateDraftFilter({ key: 'status_id', value: undefined })
+      )
+    })
+  
+    test('status_id value converts to number', async () => {
+      await renderDrawerAndWait()
+  
+      fireEvent.change(
+        screen.getByText('Status').closest('select')!,
+        { target: { value: '2' } }
+      )
+  
+      expect(mockDispatch).toHaveBeenCalledWith(
+        updateDraftFilter({ key: 'status_id', value: 2 })
+      )
+    })
+  
+    /* ---------- website_id branches ---------- */
+    test('website_id empty converts to undefined', async () => {
+      await renderDrawerAndWait()
+  
+      const selects = screen.getAllByRole('combobox')
+      const websiteSelect = selects[1]
+  
+      fireEvent.change(websiteSelect, {
+        target: { value: '' },
+      })
+  
+      expect(mockDispatch).toHaveBeenCalledWith(
+        updateDraftFilter({ key: 'website_id', value: undefined })
+      )
+    })
+  
+    /* ---------- isEmailSent ternary branches ---------- */
+    test('isEmailSent empty -> undefined', async () => {
+      await renderDrawerAndWait()
+  
+      fireEvent.change(
+        screen.getByText('All').closest('select')!,
+        { target: { value: '' } }
+      )
+  
+      expect(mockDispatch).toHaveBeenCalledWith(
+        updateDraftFilter({ key: 'isEmailSent', value: undefined })
+      )
+    })
+  
+    test('isEmailSent true branch', async () => {
+      await renderDrawerAndWait()
+  
+      fireEvent.change(
+        screen.getByText('All').closest('select')!,
+        { target: { value: 'true' } }
+      )
+  
+      expect(mockDispatch).toHaveBeenCalledWith(
+        updateDraftFilter({ key: 'isEmailSent', value: true })
+      )
+    })
+  
+    test('isEmailSent false branch', async () => {
+      await renderDrawerAndWait()
+  
+      fireEvent.change(
+        screen.getByText('All').closest('select')!,
+        { target: { value: 'false' } }
+      )
+  
+      expect(mockDispatch).toHaveBeenCalledWith(
+        updateDraftFilter({ key: 'isEmailSent', value: false })
+      )
+    })
+  
+    /* ---------- footer actions ---------- */
+    test('Reset button dispatches resetFilters', async () => {
+      await renderDrawerAndWait()
+  
+      fireEvent.click(screen.getByText('Reset'))
+      expect(mockDispatch).toHaveBeenCalledWith(resetFilters())
+    })
+  
+    test('Apply button dispatches applyFilters and closes drawer', async () => {
+      const { onClose } = await renderDrawerAndWait()
+  
+      fireEvent.click(screen.getByText('Apply'))
+  
+      expect(mockDispatch).toHaveBeenCalledWith(applyFilters())
+      expect(onClose).toHaveBeenCalled()
+    })
+  
+    /* ---------- backdrop & close button ---------- */
+    test('clicking backdrop calls onClose', async () => {
+      const { container, onClose } = await renderDrawerAndWait()
+  
+      fireEvent.click(container.querySelector('.bg-black\\/40')!)
+      expect(onClose).toHaveBeenCalled()
+    })
+  
+    test('close button calls onClose', async () => {
+      const { onClose } = await renderDrawerAndWait()
+  
+      fireEvent.click(screen.getByText('✕'))
+      expect(onClose).toHaveBeenCalled()
+    })
+  })
+  
