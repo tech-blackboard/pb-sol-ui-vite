@@ -60,13 +60,11 @@ const REGISTRATION_FEES: Record<string, number> = {
   'Others': 399
 }
 
-
-const OCCUPANCY_OPTIONS: Record<string, number> = {
-  'Single Occupancy': 245,
-  'Double Occupancy': 265,
-  'Triple Occupancy': 290,
-}
-
+const OCCUPANCY_OPTIONS = [
+  'Single Occupancy',
+  'Double Occupancy',
+  'Triple Occupancy',
+]
 export function InvoiceForm({
   isOpen,
   onClose,
@@ -84,6 +82,7 @@ export function InvoiceForm({
     paymentLink: DEFAULT_PAYMENT_LINK,
     interestedIn: '',
     registrationFee: 0,
+    accommodationFee: 0,
     note: '',
   })
 
@@ -144,7 +143,8 @@ export function InvoiceForm({
 
   function handleOccupancyChange(value: string) {
     setOccupancyType(value)
-    setAccommodationFee(OCCUPANCY_OPTIONS[value] || 0)
+    // Reset price so user must enter manually
+    setAccommodationFee(0)
     setCheckIn('')
     setCheckOut('')
     setNumberOfNights(0)
@@ -190,6 +190,13 @@ export function InvoiceForm({
     }
   }
 
+  function handleAccommodationFeeChange(field: keyof InvoiceData, value: string | number) {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }))
+    }
+  }
+
   function handlePreviewInvoice() {
     if (validate()) {
       setShowPreview(true)
@@ -210,12 +217,11 @@ export function InvoiceForm({
 
   function handleFinalSubmit() {
     setShowConfirmModal(false)
-    
+
     // Calculate order items
     const orderItems: InvoiceOrderItem[] = []
     const totalRegistrationValue = (formData.registrationFee || registrationFee) * (formData.quantity || 1)
-    const totalAccommodationValue = accommodationFee * numberOfNights
-    
+    const totalAccommodationValue = (formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) : accommodationFee) * numberOfNights
     // Add registration fee item
     orderItems.push({
       serialNumber: 1,
@@ -223,22 +229,22 @@ export function InvoiceForm({
       quantity: formData.quantity || 1,
       price: formData.registrationFee || registrationFee
     })
-    
+
     // Add accommodation item if applicable
     if (occupancyType && numberOfNights > 0) {
       orderItems.push({
         serialNumber: 2,
         description: `Accommodation - ${occupancyType}`,
         quantity: numberOfNights,
-        price: accommodationFee
+        price: formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) : accommodationFee
       })
     }
-    
+
     // Calculate internet handling fees (5% of total if accommodation is included)
-    const internetHandlingFees = occupancyType && numberOfNights > 0 
-      ? (totalRegistrationValue + totalAccommodationValue) * 0.05 
+    const internetHandlingFees = occupancyType && numberOfNights > 0
+      ? (totalRegistrationValue + totalAccommodationValue) * 0.05
       : 0
-    
+
     // Add internet handling fees if applicable
     if (internetHandlingFees > 0) {
       orderItems.push({
@@ -248,10 +254,10 @@ export function InvoiceForm({
         price: internetHandlingFees
       })
     }
-    
+
     // Calculate total invoice amount
     const invoiceAmount = totalRegistrationValue + totalAccommodationValue + internetHandlingFees
-    
+
     // Prepare invoice data
     const invoiceData: InvoiceData = {
       invoiceAmount,
@@ -261,14 +267,14 @@ export function InvoiceForm({
       note: formData.note,
       registrationFee: formData.registrationFee || registrationFee,
       numberOfParticipants: formData.quantity || 1,
-      accommodationFee: accommodationFee > 0 ? accommodationFee : undefined,
+      accommodationFee: formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) : accommodationFee,
       numberOfNights: numberOfNights > 0 ? numberOfNights : undefined,
       occupancyType: occupancyType || undefined,
       internetHandlingFees: internetHandlingFees > 0 ? internetHandlingFees : undefined,
       checkIn: checkIn || undefined,
       checkOut: checkOut || undefined
     }
-    
+
     onSubmit(invoiceData)
   }
 
@@ -285,6 +291,10 @@ export function InvoiceForm({
       newErrors.registrationFee = 'Registration fee is required and must be greater than 0'
     }
 
+    // Validate Accommodation Fee
+    if (!formData.accommodationFee || formData.accommodationFee <= 0) {
+      newErrors.accommodationFee = 'Accommodation fee is required and must be greater than 0'
+    }
     // Validate Number of participants
     if (!formData.quantity || formData.quantity <= 0) {
       newErrors.quantity = 'Number of participants is required and must be at least 1'
@@ -306,6 +316,7 @@ export function InvoiceForm({
       paymentLink: DEFAULT_PAYMENT_LINK,
       interestedIn: '',
       registrationFee: 0,
+      accommodationFee: 0,
       note: '',
     })
     setErrors({})
@@ -315,7 +326,7 @@ export function InvoiceForm({
     setCheckIn('')
     setCheckOut('')
     setNumberOfNights(0)
-    
+
     onClose()
   }
   const totalRegistrationValue =
@@ -323,7 +334,7 @@ export function InvoiceForm({
       ? Number(formData.registrationFee)
       : registrationFee) * (formData.quantity || 1)
 
-  const totalAccommodationValue = accommodationFee * numberOfNights
+  const totalAccommodationValue = formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) * numberOfNights : accommodationFee * numberOfNights
   const totalPrice = totalRegistrationValue + totalAccommodationValue
 
 
@@ -401,6 +412,7 @@ export function InvoiceForm({
                     type="number"
                     value={formData.registrationFee}
                     onChange={(e) => handleregistrationFeeChange('registrationFee', e.target.value)}
+                    onWheel={(e) => (e.target as HTMLInputElement).blur()}
                     disabled={isLoading}
                     className={`w-full px-4 py-2.5 rounded-lg border ${errors.registrationFee
                       ? 'border-red-500 focus:ring-red-500'
@@ -452,26 +464,25 @@ export function InvoiceForm({
 
                   {showAccommodation && (
                     <>
-                      <div className="space-y-2 pl-6">
-                        {Object.entries(OCCUPANCY_OPTIONS).map(([label, fee]) => (
-                          <label key={label} className="flex items-center space-x-2">
-                            <input
-                              type="radio"
-                              name="occupancy"
-                              value={label}
-                              checked={occupancyType === label}
-                              onChange={() => handleOccupancyChange(label)}
-                              className="form-radio text-blue-600"
-                            />
-                            <span className="text-gray-900 dark:text-white">
-                              {label} – ${fee}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
+                      {OCCUPANCY_OPTIONS.map((label) => (
+                        <label key={label} className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            name="occupancy"
+                            value={label}
+                            checked={occupancyType === label}
+                            onChange={() => handleOccupancyChange(label)}
+                            className="form-radio text-blue-600"
+                          />
+                          <span className="text-gray-900 dark:text-white">
+                            {label}
+                          </span>
+                        </label>
+                      ))}
 
                       {occupancyType && (
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 pl-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-4 pl-6">
+
                           {/* Check In */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -498,17 +509,40 @@ export function InvoiceForm({
                             />
                           </div>
 
-                          {/* Number of Nights */}
+                          {/* Nights */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                               Number of Nights
                             </label>
                             <input
                               type="number"
-                              value={numberOfNights}
                               readOnly
+                              value={numberOfNights}
                               className="w-full mt-1 rounded-md border px-3 py-2 dark:bg-gray-700 dark:text-white"
                             />
+                          </div>
+
+                          {/* Accommodation Price */}
+                          <div>
+                            
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Price per Night ($) <span className="text-red-500">*</span>
+                            </label> 
+                              <input
+                                type="number"
+                                value={formData.accommodationFee}
+                                onChange={(e) => handleAccommodationFeeChange('accommodationFee', e.target.value)}
+                                onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                                disabled={isLoading}
+                                className={`w-full px-4 py-2.5 rounded-lg border ${errors.accommodationFee
+                                  ? 'border-red-500 focus:ring-red-500'
+                                  : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
+                                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 disabled:opacity-50`}
+                              />
+
+                              {errors.accommodationFee && (
+                                <p className="mt-1 text-sm text-red-600">{errors.accommodationFee}</p>
+                              )}
                           </div>
                         </div>
                       )}
@@ -517,77 +551,77 @@ export function InvoiceForm({
                 </div>
 
                 {/* Registration Summary Table */}
-                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    Registration Summary
-                  </h3>
-                  <div className="overflow-hidden rounded-lg border border-gray-300 dark:border-gray-600">
-                    <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-600">
-                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                        <tr>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                            Registration Price:
-                          </td>
-                          <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
-                            ${formData.registrationFee && Number(formData.registrationFee) > 0 ? Number(formData.registrationFee) : registrationFee}
-                          </td>
-                        </tr>
+                      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                          Registration Summary
+                        </h3>
+                        <div className="overflow-hidden rounded-lg border border-gray-300 dark:border-gray-600">
+                          <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-600">
+                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                              <tr>
+                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                                  Registration Price:
+                                </td>
+                                <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
+                                  ${formData.registrationFee && Number(formData.registrationFee) > 0 ? Number(formData.registrationFee) : registrationFee}
+                                </td>
+                              </tr>
 
-                        <tr>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                            Number of participants:
-                          </td>
-                          <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
-                            {formData.quantity || 1}
-                          </td>
-                        </tr>
-                        <tr className="bg-gray-50 dark:bg-gray-900">
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                            Total Registration Value
-                          </td>
-                          <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
-                            ${totalRegistrationValue}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                            Accommodation
-                          </td>
-                          <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
-                            ${accommodationFee}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                            Number of Nights:
-                          </td>
-                          <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
-                            {numberOfNights}
-                          </td>
-                        </tr>
-                        <tr className="bg-gray-50 dark:bg-gray-900">
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                            Total Accommodation Value
-                          </td>
-                          <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
-                            ${totalAccommodationValue}
-                          </td>
-                        </tr>
-                        <tr className="bg-blue-50 dark:bg-blue-900">
-                          <td className="px-6 py-4 text-base font-bold text-gray-900 dark:text-white">
-                            Total Registration Price:
-                          </td>
-                          <td className="px-6 py-4 text-base text-right font-bold text-blue-600 dark:text-blue-400">
-                            ${totalPrice}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                              <tr>
+                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                                  Number of participants:
+                                </td>
+                                <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
+                                  {formData.quantity || 1}
+                                </td>
+                              </tr>
+                              <tr className="bg-gray-50 dark:bg-gray-900">
+                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                                  Total Registration Value
+                                </td>
+                                <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
+                                  ${totalRegistrationValue}
+                                </td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                                  Accommodation
+                                </td>
+                                <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
+                                  ${formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) : accommodationFee}
+                                </td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                                  Number of Nights:
+                                </td>
+                                <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
+                                  {numberOfNights}
+                                </td>
+                              </tr>
+                              <tr className="bg-gray-50 dark:bg-gray-900">
+                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                                  Total Accommodation Value
+                                </td>
+                                <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
+                                  ${totalAccommodationValue}
+                                </td>
+                              </tr>
+                              <tr className="bg-blue-50 dark:bg-blue-900">
+                                <td className="px-6 py-4 text-base font-bold text-gray-900 dark:text-white">
+                                  Total Registration Price:
+                                </td>
+                                <td className="px-6 py-4 text-base text-right font-bold text-blue-600 dark:text-blue-400">
+                                  ${totalPrice}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
 
-                {/* Invoice Amount */}
-                {/* <div>
+                      {/* Invoice Amount */}
+                      {/* <div>
                   <label
                     htmlFor="invoiceAmount"
                     className="block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -618,8 +652,8 @@ export function InvoiceForm({
                   )}
                 </div> */}
 
-                {/* Description */}
-                {/* <div>
+                      {/* Description */}
+                      {/* <div>
                   <label
                     htmlFor="description"
                     className="block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -643,9 +677,9 @@ export function InvoiceForm({
                   )}
                 </div> */}
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  {/* Quantity */}
-                  {/* <div>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        {/* Quantity */}
+                        {/* <div>
                     <label
                       htmlFor="quantity"
                       className="block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -670,8 +704,8 @@ export function InvoiceForm({
                     )}
                   </div> */}
 
-                  {/* Price */}
-                  {/* <div>
+                        {/* Price */}
+                        {/* <div>
                     <label
                       htmlFor="price"
                       className="block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -701,122 +735,122 @@ export function InvoiceForm({
                       <p className="mt-1 text-sm text-red-600">{errors.price}</p>
                     )}
                   </div> */}
+                      </div>
+
+                      {/* Payment Link */}
+                      <div>
+                        <label
+                          htmlFor="paymentLink"
+                          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        >
+                          Payment Link (Optional)
+                        </label>
+                        <input
+                          type="url"
+                          id="paymentLink"
+                          value={formData.paymentLink || ''}
+                          onChange={(e) => handleChange('paymentLink', e.target.value)}
+                          disabled={isLoading}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                          placeholder="https://payment.example.com/..."
+                        />
+                      </div>
+
+                      {/* Note */}
+                      <div>
+                        <label
+                          htmlFor="note"
+                          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        >
+                          Note (Optional)
+                        </label>
+                        <textarea
+                          id="note"
+                          rows={4}
+                          value={formData.note || ''}
+                          onChange={(e) => handleChange('note', e.target.value)}
+                          disabled={isLoading}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white resize-none"
+                          placeholder="Add any additional notes or special requests..."
+                        />
+                      </div>
+                    </div>
                 </div>
 
-                {/* Payment Link */}
-                <div>
-                  <label
-                    htmlFor="paymentLink"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Payment Link (Optional)
-                  </label>
-                  <input
-                    type="url"
-                    id="paymentLink"
-                    value={formData.paymentLink || ''}
-                    onChange={(e) => handleChange('paymentLink', e.target.value)}
-                    disabled={isLoading}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                    placeholder="https://payment.example.com/..."
-                  />
-                </div>
-
-                {/* Note */}
-                <div>
-                  <label
-                    htmlFor="note"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    Note (Optional)
-                  </label>
-                  <textarea
-                    id="note"
-                    rows={4}
-                    value={formData.note || ''}
-                    onChange={(e) => handleChange('note', e.target.value)}
-                    disabled={isLoading}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white resize-none"
-                    placeholder="Add any additional notes or special requests..."
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-4 py-1 dark:border-gray-700">
-              <button
-                type="button"
-                onClick={handleClose}
-                disabled={isLoading}
-                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-
-              {/* <div className="flex items-center justify-end gap-3 px-4 py-4 dark:border-gray-700"> */}
-                <button
-                  type="button"
-                  onClick={handlePreviewInvoice}
-                  disabled={isLoading}
-                  className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                >
-                  Preview Invoice
-                </button>
-              </div>
-            {/* </div> */}
-          </>
-        ) : (
-          <>
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-              <div className="w-full max-w-3xl rounded-lg bg-white dark:bg-gray-900 shadow-xl border border-gray-200 dark:border-gray-800">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Preview Details</h2>
+                {/* Footer */}
+                <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-4 py-1 dark:border-gray-700">
                   <button
-                    onClick={() => handleClosePreview()}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
-                    aria-label="Close"
+                    type="button"
+                    onClick={handleClose}
+                    disabled={isLoading}
+                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor" className="h-5 w-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6m0 12L6 6" />
-                    </svg>
+                    Cancel
+                  </button>
+
+                  {/* <div className="flex items-center justify-end gap-3 px-4 py-4 dark:border-gray-700"> */}
+                  <button
+                    type="button"
+                    onClick={handlePreviewInvoice}
+                    disabled={isLoading}
+                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                  >
+                    Preview Invoice
                   </button>
                 </div>
-                <div className="max-h-[70vh] overflow-auto px-4 py-4">
-                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                    <div>
-                      <dt className="text-gray-500 dark:text-gray-400"><strong>Interested In:</strong></dt>
-                      <dd className="text-gray-900 dark:text-gray-100">{formData.interestedIn || 'Oral Presenter (In-Person)'}</dd>
+                {/* </div> */}
+              </>
+              ) : (
+              <>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                  <div className="w-full max-w-3xl rounded-lg bg-white dark:bg-gray-900 shadow-xl border border-gray-200 dark:border-gray-800">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Preview Details</h2>
+                      <button
+                        onClick={() => handleClosePreview()}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+                        aria-label="Close"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor" className="h-5 w-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6m0 12L6 6" />
+                        </svg>
+                      </button>
                     </div>
-                    <div>
-                      <dt className="text-gray-500 dark:text-gray-400"><strong>Registration Fee:</strong></dt>
-                      <dd className="text-gray-900 dark:text-gray-100">$ {formData.registrationFee || '699'}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-gray-500 dark:text-gray-400"><strong>Number of participants:</strong></dt>
-                      <dd className="text-gray-900 dark:text-gray-100">{formData.quantity || 1}</dd>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <dt className="text-gray-500 dark:text-gray-400"><strong>Occupancy Type:</strong></dt>
-                      <dd className="text-gray-900 dark:text-gray-100">{occupancyType || '—'}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-gray-500 dark:text-gray-400"><strong>Check In:</strong></dt>
-                      <dd className="text-blue-700 dark:text-blue-300">{checkIn || '—'}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-gray-500 dark:text-gray-400"><strong>Check Out:</strong></dt>
-                      <dd className="text-gray-900 dark:text-gray-100">{checkOut || '—'}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-gray-500 dark:text-gray-400"><strong>Number of Nights:</strong></dt>
-                      <dd className="text-gray-900 dark:text-gray-100">{numberOfNights}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-gray-500 dark:text-gray-400"><strong>Accommodation Fee:</strong></dt>
-                      <dd className="text-gray-900 dark:text-gray-100">$ {accommodationFee}</dd>
-                    </div>
-                    {/* <div>
+                    <div className="max-h-[70vh] overflow-auto px-4 py-4">
+                      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                        <div>
+                          <dt className="text-gray-500 dark:text-gray-400"><strong>Interested In:</strong></dt>
+                          <dd className="text-gray-900 dark:text-gray-100">{formData.interestedIn || 'Oral Presenter (In-Person)'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-gray-500 dark:text-gray-400"><strong>Registration Fee:</strong></dt>
+                          <dd className="text-gray-900 dark:text-gray-100">$ {formData.registrationFee || '699'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-gray-500 dark:text-gray-400"><strong>Number of participants:</strong></dt>
+                          <dd className="text-gray-900 dark:text-gray-100">{formData.quantity || 1}</dd>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <dt className="text-gray-500 dark:text-gray-400"><strong>Occupancy Type:</strong></dt>
+                          <dd className="text-gray-900 dark:text-gray-100">{occupancyType || '—'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-gray-500 dark:text-gray-400"><strong>Check In:</strong></dt>
+                          <dd className="text-blue-700 dark:text-blue-300">{checkIn || '—'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-gray-500 dark:text-gray-400"><strong>Check Out:</strong></dt>
+                          <dd className="text-gray-900 dark:text-gray-100">{checkOut || '—'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-gray-500 dark:text-gray-400"><strong>Number of Nights:</strong></dt>
+                          <dd className="text-gray-900 dark:text-gray-100">{numberOfNights}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-gray-500 dark:text-gray-400"><strong>Accommodation Fee:</strong></dt>
+                          <dd className="text-gray-900 dark:text-gray-100">$ {formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) : accommodationFee}</dd>
+                        </div>
+                        {/* <div>
                       <dt className="text-gray-500 dark:text-gray-400"><strong>Invoice Amount:</strong></dt>
                       <dd className="text-gray-900 dark:text-gray-100">{formData.invoiceAmount}</dd>
                     </div>
@@ -832,138 +866,138 @@ export function InvoiceForm({
                       <dt className="text-gray-500 dark:text-gray-400"><strong>Unit Price:</strong></dt>
                       <dd className="text-gray-900 dark:text-gray-100">{formData.price ?? '—'}</dd>
                     </div> */}
-                    <div>
-                      <dt className="text-gray-500 dark:text-gray-400"><strong>Payment Link:</strong></dt>
-                      <dd className="text-gray-900 dark:text-gray-100">{formData.paymentLink || '—'}</dd>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <dt className="text-gray-500 dark:text-gray-400"><strong>Note:</strong></dt>
-                      <dd className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{formData.note || '—'}</dd>
-                    </div>
-                    {/* Registration Summary */}
-                    <div className="mt-6 sm:col-span-2">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                        Registration Summary
-                      </h3>
-                      <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-600">
-                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                        <div>
+                          <dt className="text-gray-500 dark:text-gray-400"><strong>Payment Link:</strong></dt>
+                          <dd className="text-gray-900 dark:text-gray-100">{formData.paymentLink || '—'}</dd>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <dt className="text-gray-500 dark:text-gray-400"><strong>Note:</strong></dt>
+                          <dd className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{formData.note || '—'}</dd>
+                        </div>
+                        {/* Registration Summary */}
+                        <div className="mt-6 sm:col-span-2">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                            Registration Summary
+                          </h3>
+                          <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-600">
+                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
 
-                          <tr>
-                            <td className="px-3 py-2">Registration Price</td>
-                            <td className="px-3 py-2 text-right">
-                              ${formData.registrationFee && formData.registrationFee > 0
-                                ? formData.registrationFee
-                                : registrationFee}
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="px-3 py-2">Number of participants</td>
-                            <td className="px-3 py-2 text-right">{formData.quantity || 1}</td>
-                          </tr>
-                          <tr>
-                            <td className="px-3 py-2">Total Registration Value</td>
-                            <td className="px-3 py-2 text-right">${totalRegistrationValue}</td>
-                          </tr>
-                          <tr>
-                            <td className="px-3 py-2">Accommodation</td>
-                            <td className="px-3 py-2 text-right">${accommodationFee}</td>
-                          </tr>
-                          <tr>
-                            <td className="px-3 py-2">Number of Nights</td>
-                            <td className="px-3 py-2 text-right">{numberOfNights}</td>
-                          </tr>
+                              <tr>
+                                <td className="px-3 py-2">Registration Price</td>
+                                <td className="px-3 py-2 text-right">
+                                  ${formData.registrationFee && formData.registrationFee > 0
+                                    ? formData.registrationFee
+                                    : registrationFee}
+                                </td>
+                              </tr>
+                              <tr>
+                                <td className="px-3 py-2">Number of participants</td>
+                                <td className="px-3 py-2 text-right">{formData.quantity || 1}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-3 py-2">Total Registration Value</td>
+                                <td className="px-3 py-2 text-right">${totalRegistrationValue}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-3 py-2">Accommodation</td>
+                                <td className="px-3 py-2 text-right">${formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) : accommodationFee}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-3 py-2">Number of Nights</td>
+                                <td className="px-3 py-2 text-right">{numberOfNights}</td>
+                              </tr>
 
-                          <tr>
-                            <td className="px-3 py-2">Total Accommodation Value</td>
-                            <td className="px-3 py-2 text-right">${totalAccommodationValue}</td>
-                          </tr>
-                          <tr>
-                            <td className="px-3 py-2 font-bold">Grand Total</td>
-                            <td className="px-3 py-2 text-right font-bold">${totalPrice}</td>
-                          </tr>
-                        </tbody>
-                      </table>
+                              <tr>
+                                <td className="px-3 py-2">Total Accommodation Value</td>
+                                <td className="px-3 py-2 text-right">${totalAccommodationValue}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-3 py-2 font-bold">Grand Total</td>
+                                <td className="px-3 py-2 text-right font-bold">${totalPrice}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </dl>
                     </div>
-                  </dl>
+
+                    {/* Preview Footer */}
+                    <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4 dark:border-gray-700">
+                      <button
+                        type="button"
+                        onClick={handleClosePreview}
+                        className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                      >
+                        Back to Form
+                      </button>
+                      <button
+                        onClick={handleConfirmClick}
+                        disabled={isLoading}
+                        className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                      >
+                        {isLoading ? (
+                          <>
+                            <svg
+                              className="h-4 w-4 animate-spin text-white"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              />
+                            </svg>
+                            Sending...
+                          </>
+                        ) : (
+                          'Send Invoice'
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-
-                {/* Preview Footer */}
-                <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4 dark:border-gray-700">
-                  <button
-                    type="button"
-                    onClick={handleClosePreview}
-                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                  >
-                    Back to Form
-                  </button>
-                  <button
-                    onClick={handleConfirmClick}
-                    disabled={isLoading}
-                    className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-                  >
-                    {isLoading ? (
-                      <>
-                        <svg
-                          className="h-4 w-4 animate-spin text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          />
-                        </svg>
-                        Sending...
-                      </>
-                    ) : (
-                      'Send Invoice'
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>
+              </>
         )}
 
 
-        {showConfirmModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Confirm Invoice Submission
-              </h2>
-              <p className="text-sm text-gray-700 dark:text-gray-300 mb-6">
-                You're about to send this invoice. Please verify all details including registration, accommodation, and payment information. This action cannot be undone.
-              </p>
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={handleCancelConfirm}
-                  className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleFinalSubmit}
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                >
-                  Confirm & Send
-                </button>
-              </div>
+              {showConfirmModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                      Confirm Invoice Submission
+                    </h2>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-6">
+                      You're about to send this invoice. Please verify all details including registration, accommodation, and payment information. This action cannot be undone.
+                    </p>
+                    <div className="flex justify-end gap-3">
+                      <button
+                        onClick={handleCancelConfirm}
+                        className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleFinalSubmit}
+                        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                      >
+                        Confirm & Send
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
-        )}
-
-      </div>
-    </div>
-  )
+        )
 }

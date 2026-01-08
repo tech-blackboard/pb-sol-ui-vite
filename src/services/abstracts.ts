@@ -44,6 +44,7 @@ export type AbstractItem = {
   website?: AbstractWebsite
   originalId?: number | string
   isEmailSent?: boolean
+  paymentLink?: string
 
   now?: string
 }
@@ -66,7 +67,6 @@ export async function getAllAbstracts(): Promise<AbstractItem[]> {
     withCredentials: true,
   })
   const list = Array.isArray(data) ? data : data?.data ?? data?.items ?? data?.results ?? []
-  console.log(list)
   return Array.isArray(list) ? list : []
 }
 
@@ -191,7 +191,6 @@ export async function searchAbstracts(params: AbstractSearchParams = {}): Promis
     q.isEmailSent = q.isEmailSent === true ? 1 : 0
     // delete q.isEmailSent
   }
-  console.log(q)
   const { data } = await api.get(`${ABSTRACT_BASE}/search`, {
     params: q,
     headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
@@ -303,6 +302,10 @@ export type SendPaymentReceiptResponse = {
   }
 }
 
+export type PaymentReminderData = {
+  paymentLink?: string
+}
+
 export async function sendPaymentReceipt(
   id: string | number,
   paymentReceiptData: PaymentReceiptData
@@ -340,10 +343,10 @@ export async function sendConfirmationEmail(
 
 export type PaymentReminderResponse = {  status?: 'success' | 'error'; message?: string }
 
-export async function sendPaymentReminder(id: string | number): Promise<PaymentReminderResponse> {
+export async function sendPaymentReminder(id: string | number, paymentReminderData: PaymentReminderData): Promise<PaymentReminderResponse> {
   const { data } = await api.post(
     `${ABSTRACT_BASE}/${id}/payment-reminder`,
-    { id:Number(id) },
+    paymentReminderData,
     {
       headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       withCredentials: true,
@@ -352,4 +355,18 @@ export async function sendPaymentReminder(id: string | number): Promise<PaymentR
   return data
 }
 
+export type DashboardFilters = {
+  website_id?: string | number
+  from_date?: string
+  to_date?: string
+  status_id?: number
+}
 
+export async function fetchDashboard(filters: DashboardFilters) {
+  const { data } = await api.get(`${ABSTRACT_BASE}/dashboard`, {
+    params: filters,
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    withCredentials: true,
+  })
+  return data
+}

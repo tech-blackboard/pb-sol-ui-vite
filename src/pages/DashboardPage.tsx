@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { searchAbstracts, type AbstractSearchParams } from '../services/abstracts'
+import { fetchDashboard } from '../services/abstracts'
 import { formatDate } from '../utils/utils'
+import { listWebsites, type SourceWebsite } from '../services/sourcedb'
 
 type StatCard = {
   label: string
@@ -8,89 +9,309 @@ type StatCard = {
   color: string
 }
 
+const STATUS_MAP: Record<string, number | null> = {
+  all: null,
+  under: 1,
+  accepted: 2,
+  oos: 3,
+  rejected: 4,
+  invoice: 5,
+  registered: 6,
+}
+
+type LoadDashboardParams = {
+  websiteId?: number | null
+  fromDate?: string
+  toDate?: string
+  statusId?: number | null
+}
+
 export default function DashboardPage() {
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [stats, setStats] = useState<Record<string, StatCard>>({})
   const [recent, setRecent] = useState<any[]>([])
+  const [selectedStatus, setSelectedStatus] = useState<number | null>(null)
+  const [statsLoading, setStatsLoading] = useState(true)
+  const [tableLoading, setTableLoading] = useState(true)
+  const [websiteId, setWebsiteId] = useState<number | null>(null)
+  const [websites, setWebsites] = useState<SourceWebsite[]>([])
+  const [loadingWebsites, setLoadingWebsites] = useState(false)
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
+  const [dashboardData, setDashboardData] = useState<any | null>(null)
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false)
 
-  async function load() {
+  const [appliedFilters, setAppliedFilters] = useState<LoadDashboardParams>({
+    websiteId: null,
+    fromDate: '',
+    toDate: '',
+    statusId: null,
+  })
+
+  type StatusKey = keyof typeof STATUS_MAP
+
+  const onStatusClick = (statusId: number | null) => {
+    setSelectedStatus(statusId)
+
+    const newFilters = {
+      ...appliedFilters,
+      statusId,
+    }
+    console.log('newFilters onStatusClick', newFilters)
+    setAppliedFilters(newFilters)
+    loadDashboard(newFilters)
+  }
+
+  const loadDashboard = async (filters: LoadDashboardParams) => {
     try {
-      setLoading(true)
+      setStatsLoading(true)
+      setTableLoading(true)
       setError(null)
 
-      // Fetch totals by status in parallel
-      const base: AbstractSearchParams = { page: 1, limit: 1 }
-      const [allRes, underRes, accRes, rejRes, oosRes, recentRes] = await Promise.all([
-        searchAbstracts({ ...base }),
-        searchAbstracts({ ...base, status_id: 1 }),
-        searchAbstracts({ ...base, status_id: 2 }),
-        searchAbstracts({ ...base, status_id: 4 }),
-        searchAbstracts({ ...base, status_id: 3 }),
-        searchAbstracts({ page: 1, limit: 5, sortBy: 'now', sortOrder: 'DESC' }),
-      ])
-
-      const totalAll = allRes.total ?? allRes.items.length
-      const totalUnder = underRes.total ?? underRes.items.length
-      const totalAcc = accRes.total ?? accRes.items.length
-      const totalRej = rejRes.total ?? rejRes.items.length
-      const totalOos = oosRes.total ?? oosRes.items.length
-
-      setStats({
-        all: { label: 'Total Abstracts', value: totalAll, color: 'text-blue-600' },
-        under: { label: 'Under Review', value: totalUnder, color: 'text-yellow-600' },
-        accepted: { label: 'Accepted', value: totalAcc, color: 'text-green-600' },
-        rejected: { label: 'Rejected', value: totalRej, color: 'text-red-600' },
-        oos: { label: 'Out of Scope', value: totalOos, color: 'text-gray-600' },
+      const res = await fetchDashboard({
+        website_id: filters.websiteId ?? undefined,
+        from_date: filters.fromDate || undefined,
+        to_date: filters.toDate || undefined,
+        status_id: filters.statusId ?? undefined,
       })
 
-      setRecent(recentRes.items ?? [])
-    } catch (e: any) {
-      setError(e?.message ?? 'Failed to load dashboard')
+      setDashboardData(res)
+
+      const counts = mapStatusCounts(res.statusCounts ?? [])
+
+      setStats({
+        all: { label: 'Total Abstracts', value: res.total ?? 0, color: 'text-blue-600' },
+        under: { label: 'Under Review', value: counts.under_review, color: 'text-orange-600' },
+        accepted: { label: 'Accepted', value: counts.accepted, color: 'text-green-600' },
+        oos: { label: 'Out of Scope', value: counts.out_of_scope, color: 'text-gray-600' },
+        rejected: { label: 'Rejected', value: counts.rejected, color: 'text-red-600' },
+        invoice: { label: 'Invoiced', value: counts.invoiced, color: 'text-purple-600' },
+        registered: { label: 'Registered', value: counts.registered, color: 'text-green-600' },
+      })
+
+      setRecent(res.recentAbstracts ?? [])
+    } catch (err) {
+      console.error(err)
+      setError('Unable to load dashboard data. Please try again.')
     } finally {
-      setLoading(false)
+      setStatsLoading(false)
+      setTableLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadDashboard(appliedFilters)
+  }, [])
+
+  function mapStatusCounts(statusCounts: any[]) {
+    const map: Record<number, number> = {}
+
+    statusCounts.forEach((s) => {
+      map[s.status_id] = Number(s.count)
+    })
+
+    return {
+      under_review: map[1] ?? 0,
+      accepted: map[2] ?? 0,
+      out_of_scope: map[3] ?? 0,
+      rejected: map[4] ?? 0,
+      invoiced: map[5] ?? 0,
+      registered: map[6] ?? 0,
     }
   }
 
   useEffect(() => {
     let mounted = true
+
     ;(async () => {
-      await load()
-      if (!mounted) return
+      try {
+        setLoadingWebsites(true)
+        const data = await listWebsites()
+        if (mounted) setWebsites(data)
+      } finally {
+        if (mounted) setLoadingWebsites(false)
+      }
     })()
+
     return () => {
       mounted = false
     }
   }, [])
 
+  const handleApplyFilters = () => {
+    const newFilters = { websiteId, fromDate, toDate, statusId: null }
+    setSelectedStatus(null)
+    setAppliedFilters(newFilters)
+    loadDashboard(newFilters)
+    setIsFilterDrawerOpen(false)
+  }
+
+  const handleResetFilters = () => {
+    const reset = { websiteId: null, fromDate: '', toDate: '', statusId: null }
+    setWebsiteId(null)
+    setFromDate('')
+    setToDate('')
+    setSelectedStatus(null)
+    setAppliedFilters(reset)
+    loadDashboard(reset)
+  }
+
   return (
-    <div className="flex-1 min-h-0 flex flex-col overflow-auto space-y-6 text-left">
+    <div className="flex-1 min-h-0 flex flex-col overflow-hidden space-y-6 text-left">
+      {/* Dashboard Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Dashboard</h1>
-        <a
-          href="#"
-          onClick={(e) => {
-            e.preventDefault()
-            // Let the parent navigation handle switching; as a simple fallback, navigate by hash
-            window.scrollTo({ top: 0 })
-          }}
-          className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+        <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+        
+        <button
+          onClick={() => setIsFilterDrawerOpen(true)}
+          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
         >
-          Refresh
-        </a>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          </svg>
+          Filters
+        </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {['all', 'under', 'accepted', 'rejected', 'oos'].map((k) => {
-          const card = stats[k]
-          return (
-            <div key={k} className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 shadow-sm">
-              <div className="text-xs text-gray-500">{card?.label ?? '—'}</div>
-              <div className={`mt-1 text-2xl font-semibold ${card?.color ?? 'text-gray-900 dark:text-gray-100'}`}>
-                {loading ? '—' : card?.value ?? 0}
+      {/* Filter Drawer - Slide from Right */}
+      {isFilterDrawerOpen && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/30 z-40 transition-opacity"
+            onClick={() => setIsFilterDrawerOpen(false)}
+          />
+          
+          {/* Drawer - Full Height */}
+          <div className="fixed top-0 right-0 h-screen w-full sm:w-96 bg-white dark:bg-gray-900 shadow-2xl z-50 flex flex-col animate-slide-in">
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Filters
+              </h2>
+              <button
+                onClick={() => setIsFilterDrawerOpen(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Drawer Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+              {/* Website Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Website
+                </label>
+                <select
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={loadingWebsites}
+                  value={websiteId ?? ''}
+                  onChange={(e) =>
+                    setWebsiteId(e.target.value ? Number(e.target.value) : null)
+                  }
+                >
+                  <option value="">
+                    {loadingWebsites ? 'Loading websites…' : 'All Websites'}
+                  </option>
+                  {websites.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* From Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  From Date
+                </label>
+                <input
+                  type="date"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                />
+              </div>
+
+              {/* To Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  To Date
+                </label>
+                <input
+                  type="date"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                />
               </div>
             </div>
+
+            {/* Drawer Footer - Actions */}
+            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-800/50 flex-shrink-0">
+              <div className="flex gap-3">
+                <button
+                  onClick={handleResetFilters}
+                  className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={handleApplyFilters}
+                  className="flex-1 rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors shadow-sm"
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
+        {(Object.keys(STATUS_MAP) as StatusKey[]).map((k) => {
+          const card = stats[k]
+          const statusId = STATUS_MAP[k]
+          const isActive = selectedStatus === statusId
+
+          let activeColor = ''
+          if (statusId === null) {
+            activeColor = 'bg-blue-200'
+          } else if (statusId === 1) {
+            activeColor = 'bg-orange-200'
+          } else if (statusId === 2) {
+            activeColor = 'bg-green-200'
+          } else if (statusId === 3) {
+            activeColor = 'bg-gray-200'
+          } else if (statusId === 4) {
+            activeColor = 'bg-red-200'
+          } else if (statusId === 5) {
+            activeColor = 'bg-purple-200'
+          } else if (statusId === 6) {
+            activeColor = 'bg-green-200'
+          }
+
+          return (
+            <button
+              key={k}
+              onClick={() => onStatusClick(statusId)}
+              className={`rounded-lg p-4 shadow-sm text-left transition cursor-pointer
+                ${isActive ? activeColor : 'bg-white hover:bg-gray-50 border-gray-200'}
+              `}
+            >
+              <div className="text-xs text-gray-700 font-semibold">
+                {card?.label}
+              </div>
+              <div className={`mt-1 text-2xl font-semibold ${card?.color}`}>
+                {statsLoading ? '—' : card?.value ?? 0}
+              </div>
+            </button>
           )
         })}
       </div>
@@ -99,68 +320,119 @@ export default function DashboardPage() {
       <div className="flex-1 min-h-[12rem] rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
           <div className="font-medium text-gray-900 dark:text-gray-100">Recent Abstracts</div>
-          <button onClick={load} className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs hover:bg-gray-50">Reload</button>
+          <button
+            onClick={() => {
+              setSelectedStatus(null)
+              setRecent(dashboardData?.recentAbstracts ?? [])
+              loadDashboard({
+                websiteId,
+                fromDate,
+                toDate,
+                statusId: null,
+              })
+            }}
+            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs hover:bg-gray-50 cursor-pointer"
+          >
+            Reload
+          </button>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300">
+            <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300 sticky top-0 z-10">
               <tr>
+                <th className="px-4 py-3 font-medium">Website</th>
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Email</th>
-                <th className="px-4 py-3 font-medium">Organization</th>
-                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Country</th>
                 <th className="px-4 py-3 font-medium">Submitted On</th>
+                <th className="px-4 py-3 font-medium">Status</th>
               </tr>
             </thead>
             <tbody>
-              {loading && (
+              {tableLoading && (
                 <tr>
-                  <td className="px-4 py-6 text-gray-500" colSpan={4}>Loading...</td>
+                  <td className="px-4 py-6 text-gray-500" colSpan={6}>
+                    Loading...
+                  </td>
                 </tr>
               )}
-              {!loading && error && (
+              {!tableLoading && error && (
                 <tr>
-                  <td className="px-4 py-6" colSpan={4}>
+                  <td className="px-4 py-6" colSpan={6}>
                     <div className="flex items-center justify-between">
                       <div className="text-red-600">{error}</div>
-                      <button onClick={load} className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs hover:bg-gray-50">Retry</button>
+                      <button
+                        onClick={() => {
+                          setError(null)
+                          loadDashboard({
+                            websiteId,
+                            fromDate,
+                            toDate,
+                            statusId: null,
+                          })
+                        }}
+                        className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs hover:bg-gray-50 cursor-pointer"
+                      >
+                        Retry
+                      </button>
                     </div>
                   </td>
                 </tr>
               )}
-              {!loading && !error && recent.length === 0 && (
+              {!tableLoading && !error && recent.length === 0 && (
                 <tr>
-                  <td className="px-4 py-6 text-gray-500" colSpan={4}>No recent records</td>
+                  <td className="px-4 py-6 text-gray-500" colSpan={6}>
+                    No recent records
+                  </td>
                 </tr>
               )}
-              {!loading && !error && recent.map((r, idx) => (
-                <tr key={idx} className="border-t border-gray-100 dark:border-gray-800">
-                  <td className="px-4 py-3 text-gray-900 dark:text-gray-100">{r.name ?? (([r.user?.firstname, r.user?.lastname].filter(Boolean).join(' ')) || '—')}</td>
-                  <td className="px-4 py-3">
-                    <a href={`mailto:${r.email ?? r.user?.useremail ?? ''}`} className="text-blue-600 hover:underline">
-                      {r.email ?? r.user?.useremail ?? '—'}
-                    </a>
-                  </td>
-                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{r.organization ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className={[
-                      'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
-                      r.status?.actionType === 'Accepted'
-                        ? 'bg-green-50 text-green-700'
-                        : r.status?.actionType === 'Under Review'
-                        ? 'bg-yellow-50 text-yellow-800'
-                        : r.status?.actionType === 'Rejected'
-                        ? 'bg-red-50 text-red-700'
-                        : r.status?.actionType === 'Out of Scope'
-                        ? 'bg-gray-100 text-gray-700'
-                        : 'bg-blue-50 text-blue-700',
-                    ].join(' ')}>
-                      {r.status?.actionType ?? 'Under Review'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-900 dark:text-gray-100">{r.now ? formatDate(r.now ?? '') : '—'}</td>
-                </tr>
-              ))}
+              {!tableLoading &&
+                !error &&
+                recent.map((r: any) => (
+                
+                  <tr key={r.id ?? r.uuid ?? r.email ?? `${r.website_id}-${r.now}`} className="border-t border-gray-100 dark:border-gray-800">
+                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
+                      {r.website_name ?? r.website?.name ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
+                      {r.name ??
+                        ([r.user?.firstname, r.user?.lastname].filter(Boolean).join(' ') ||
+                        '—')}
+                    </td>
+                    <td className="px-4 py-3">
+                      
+                        <a href={`mailto:${r.email ?? r.user?.useremail ?? ''}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {r.email ?? r.user?.useremail ?? '—'}
+                      </a>
+                    </td>
+                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
+                      {r.country ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
+                      {r.now ? formatDate(r.now ?? '') : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={[
+                          'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
+                          r.status?.actionType === 'Accepted'
+                            ? 'bg-green-50 text-green-700'
+                            : r.status?.actionType === 'Under Review'
+                            ? 'bg-yellow-50 text-yellow-800'
+                            : r.status?.actionType === 'Rejected'
+                            ? 'bg-red-50 text-red-700'
+                            : r.status?.actionType === 'Out of Scope'
+                            ? 'bg-gray-100 text-gray-700'
+                            : 'bg-blue-50 text-blue-700',
+                        ].join(' ')}
+                      >
+                        {r.status?.actionType ?? 'Under Review'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -168,5 +440,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-
-

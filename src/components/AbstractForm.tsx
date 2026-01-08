@@ -1,7 +1,8 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { X, Upload, CheckCircle, AlertCircle } from 'lucide-react'
 import { 
-  createAbstract, 
+  createAbstract,
+  createAbstractWithFormDataFileUpload, 
   // createAbstractWithFormDataFileUpload 
 } from '../services/abstracts'
 import { listWebsites, type SourceWebsite } from '../services/sourcedb'
@@ -142,57 +143,62 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
     return Object.keys(newErrors).length === 0
   }
 
-  // const handleSubmitWithFileUpload = async (e: FormEvent) => {
-  //   e.preventDefault()
+  const handleSubmitWithFileUpload = async (e: FormEvent) => {
+    e.preventDefault()
   
-  //   if (!validate()) {
-  //     toast.error('Please fix all errors before submitting')
-  //     return
-  //   }
+    if (!validate()) {
+      toast.error('Please fix all errors before submitting')
+      return
+    }
   
-  //   setSubmitting(true)
+    setSubmitting(true)
   
-  //   try {
-  //       // Create FormData for file upload
-  //       const formDataToSend = new FormData()
-  //       formDataToSend.append('name', `${formData.caption} ${formData.name}`)
-  //       formDataToSend.append('phone', formData.phone)
-  //       formDataToSend.append('wphone', formData.whatsapp || formData.phone)
-  //       formDataToSend.append('country', formData.country)
-  //       formDataToSend.append('city', formData.city)
-  //       formDataToSend.append('organization', formData.organization)
-  //       formDataToSend.append('intrested', formData.interestedIn)
-  //       formDataToSend.append('title', formData.title)
-  //       formDataToSend.append('message', formData.message)
-  //       if (formData.websiteId) formDataToSend.append('website_id', String(formData.websiteId))
-  //       if (formData.file) formDataToSend.append('file', formData.file)
-      
-  //       await createAbstractWithFormDataFileUpload(formDataToSend as any)
-        
-  //       toast.success('Abstract submitted successfully!')
-  //       onSuccess?.()
-  //       onClose()
-  //     }  catch (err: any) {
-  //       console.error('Submit error:', err)
-  //       console.error('Error details:', {
-  //         status: err?.response?.status,
-  //         statusText: err?.response?.statusText,
-  //         data: err?.response?.data,
-  //         message: err?.message
-  //       })
-        
-  //       const errorMsg = err?.response?.data?.message 
-  //         || err?.response?.data?.error 
-  //         || (err?.response?.status === 500 ? 'Internal Server Error. Please check the server logs.' : '')
-  //         || err?.message 
-  //         || 'Failed to submit abstract'
-          
-  //       toast.error(errorMsg, { duration: 5000 })
-  //     } finally {
-  //       setSubmitting(false)
-  //     }
-  // }
-
+    try {
+      const formDataToSend = new FormData()
+  
+      formDataToSend.append('name', `${formData.caption} ${formData.name}`)
+      formDataToSend.append('email', formData.email)
+      formDataToSend.append('aemail', formData.aemail)
+      formDataToSend.append('phone', formData.phone)
+      formDataToSend.append('wphone', formData.whatsapp || formData.phone)
+      formDataToSend.append('country', formData.country)
+      formDataToSend.append('city', formData.city)
+      formDataToSend.append('organization', formData.organization)
+      formDataToSend.append('intrested', formData.interestedIn)
+      formDataToSend.append('title', formData.title)
+      formDataToSend.append('message', formData.message)
+      formDataToSend.append('captcha', formData.captcha) 
+      formDataToSend.append('status_id', '1')
+      formDataToSend.append('is_email_sent', 'false')
+  
+      if (formData.websiteId) {
+        formDataToSend.append('website_id', String(formData.websiteId))
+      }
+  
+      if (formData.file) {
+        formDataToSend.append('file', formData.file) // ✅ REAL FILE
+      }
+  
+      await createAbstractWithFormDataFileUpload(formDataToSend)
+  
+      toast.success('Abstract submitted successfully!')
+      onSuccess?.()
+      onClose()
+    } catch (err: any) {
+      console.error('Submit error:', err)
+  
+      const errorMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        'Failed to submit abstract'
+  
+      toast.error(errorMsg, { duration: 5000 })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+  
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
   
@@ -643,7 +649,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
           </button>
           <button
             type="submit"
-            onClick={handleSubmit}
+            onClick={handleSubmitWithFileUpload}
             disabled={submitting}
             className="px-6 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white font-semibold transition-colors flex items-center gap-2"
           >
