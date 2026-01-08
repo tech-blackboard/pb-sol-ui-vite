@@ -12,11 +12,11 @@ export async function getDeviceFingerprint(): Promise<string> {
         return fingerprintPromise;
     }
 
-    // Check localStorage cache first
-    const cached = localStorage.getItem('deviceFingerprint');
-    if (cached) {
-        return cached;
-    }
+    // // Check localStorage cache first
+    // const cached = localStorage.getItem('deviceFingerprint');
+    // if (cached) {
+    //     return cached;
+    // }
 
     // Generate new fingerprint
     fingerprintPromise = (async () => {

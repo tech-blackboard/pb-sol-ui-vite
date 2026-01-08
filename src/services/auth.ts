@@ -1,7 +1,9 @@
 import { api } from '../lib/api';
+import { publicApi } from '../lib/publicApi';
+import { getBrowserAndOS } from '../utils/deviceInfo';
 
-import { getCachedDeviceFingerprint, getDeviceFingerprint } from './deviceFingerprint';
-export type LoginRequest = { useremail: string; userpassword: string }
+import { getDeviceFingerprint } from './deviceFingerprint';
+export type LoginRequest = { useremail: string; userpassword: string; deviceId: string }
 export type LoginResponse = {
   message?: string
   token?: string
@@ -15,18 +17,19 @@ export type LoginResponse = {
 const AUTH_BASE = import.meta.env.VITE_AUTH_BASE;
 
 export async function login(body: LoginRequest): Promise<LoginResponse> {
-  let deviceId = getCachedDeviceFingerprint();
-  if (!deviceId) {
-    deviceId = await getDeviceFingerprint();
-  }
-  const { data } = await api.post<LoginResponse>(`${AUTH_BASE}/login`, {
+
+  let deviceId = await getDeviceFingerprint();
+
+  const { browser, os } = getBrowserAndOS();
+  const { data } = await publicApi.post<LoginResponse>(`${AUTH_BASE}/login`, {
     ...body,
     deviceId,
+    browser,
+    os,
   }, {
     headers: { 'Content-Type': 'application/json' },
     withCredentials: true,
   })
-
   return data
 }
 

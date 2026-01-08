@@ -10,10 +10,10 @@ import SignInPage, { type SignInCredentials } from './pages/SignInPage'
 import { type AppDispatch } from './store'
 import { selectAuth, loginThunk, logoutThunk } from './store/slices/authSlice'
 import { selectTheme, toggleTheme } from './store/slices/themeSlice'
-import { DeviceFingerprintProvider } from './components/DeviceFingerprintProvider'
 import NetworkErrorAlert from './alerts/NetworkErrorAlert'
 import ServerIssueAlert from './alerts/ServerIssueAlert'
 import ServerUnavailableAlert from './alerts/ServerUnavailableAlert'
+import DeviceManagement from './pages/DeviceManagement'
 
 function App() {
   const dispatch = useDispatch<AppDispatch>()
@@ -45,6 +45,7 @@ function App() {
   const links: NavLink[] = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'abstracts', label: 'Abstracts' },
+    ...(isAdmin ? [{ id: 'deviceManagment', label: 'Device Management' }] : []),
   ];
 
 
@@ -58,7 +59,7 @@ function App() {
 
   async function handleSignIn(creds: SignInCredentials) {
     try {
-      await dispatch(loginThunk({ useremail: creds.useremail, userpassword: creds.userpassword, remember: creds.remember })).unwrap()
+      await dispatch(loginThunk({ useremail: creds.useremail, userpassword: creds.userpassword, remember: creds.remember, deviceId: creds.deviceid })).unwrap()
       setActiveId('dashboard')
     } catch {
       // errors are handled in slice state
@@ -92,65 +93,64 @@ function App() {
   }
 
   return (
-    <DeviceFingerprintProvider>
-      <div className="h-dvh overflow-hidden flex flex-col bg-gray-50 dark:bg-gray-950">
-        <Toaster
-          position="bottom-right"
-          toastOptions={{
-            duration: 2500,
-            style: { fontSize: '0.875rem' },
-            success: { iconTheme: { primary: '#16a34a', secondary: 'white' } },
-          }}
+
+    <div className="h-dvh overflow-hidden flex flex-col bg-gray-50 dark:bg-gray-950">
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          duration: 2500,
+          style: { fontSize: '0.875rem' },
+          success: { iconTheme: { primary: '#16a34a', secondary: 'white' } },
+        }}
+      />
+      <Header
+        user={user}
+        onLogout={handleLogout}
+        onToggleSidebar={() => setSidebarOpen((v) => !v)}
+        theme={themeMode}
+        onToggleTheme={() => dispatch(toggleTheme())}
+      />
+
+
+      <div className="flex flex-1 pt-16 pb-12 overflow-hidden">
+        {/* Sidebar */}
+        <Nav
+          links={links}
+          activeId={activeId}
+          onNavigate={setActiveId}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
         />
-        <Header
-          user={user}
-          onLogout={handleLogout}
-          onToggleSidebar={() => setSidebarOpen((v) => !v)}
-          theme={themeMode}
-          onToggleTheme={() => dispatch(toggleTheme())}
-        />
 
+        {/* Main content area */}
+        <div className="flex-1 overflow-hidden">
+          {/* Overlay for mobile when sidebar open */}
+          {sidebarOpen && (
+            <div
+              className="fixed inset-0 z-20 bg-black/30 backdrop-blur-sm md:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+          <main className="w-full h-full px-4 sm:px-6 lg:px-8 py-6 overflow-hidden">
+            <div className="h-full overflow-hidden flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm text-left">
+              {activeId === 'abstracts' ? (
+                <AbstractsPage />
+              ) : activeId === 'deviceManagment' && isAdmin ? (
+                <DeviceManagement />
+              ) : (
+                <DashboardPage />
+              )}
 
-        <div className="flex flex-1 pt-16 pb-12 overflow-hidden">
-          {/* Sidebar */}
-          <Nav
-            links={links}
-            activeId={activeId}
-            onNavigate={setActiveId}
-            isOpen={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
-          />
-
-          {/* Main content area */}
-          <div className="flex-1 overflow-hidden">
-            {/* Overlay for mobile when sidebar open */}
-            {sidebarOpen && (
-              <div
-                className="fixed inset-0 z-20 bg-black/30 backdrop-blur-sm md:hidden"
-                onClick={() => setSidebarOpen(false)}
-              />
-            )}
-            <main className="w-full h-full px-4 sm:px-6 lg:px-8 py-6 overflow-hidden">
-              <div className="h-full overflow-hidden flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm text-left">
-                {activeId === 'abstracts' ? (
-                  isAdmin ? (
-                    <AbstractsPage />
-                  ) : (
-                    <AbstractsPage />
-                  )
-                ) : (
-                  <DashboardPage />
-                )}
-              </div>
-            </main>
-          </div>
-
+            </div>
+          </main>
         </div>
 
-        <Footer />
-
       </div>
-    </DeviceFingerprintProvider>
+
+      <Footer />
+
+    </div>
+
   )
 }
 

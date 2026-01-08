@@ -66,7 +66,6 @@ api.interceptors.request.use((config) => {
 })
 
 let refreshPromise: Promise<string> | null = null
-
 async function refreshAccessToken(): Promise<string> {
   if (!refreshPromise) {
     refreshPromise = axios
@@ -113,11 +112,14 @@ api.interceptors.response.use(
       window.dispatchEvent(new CustomEvent('app:network-error'))
     }
 
-    // Handle device-specific errors
-    if (status === 403 && err?.response?.data?.message?.includes('device')) {
-      window.dispatchEvent(new CustomEvent('app:device-not-approved', {
-        detail: { message: err.response.data.message }
-      }))
+    // 🔹 DEVICE restriction = business rule (NOT auth failure)
+    if (err?.response?.data?.message?.includes('device')) {
+      window.dispatchEvent(
+        new CustomEvent('app:device-not-approved', {
+          detail: { message: err.response.data.message },
+        }),
+      )
+      return Promise.reject(err)
     }
 
     const isAuthFailure = [401, 403, 419, 498].includes(status as number)

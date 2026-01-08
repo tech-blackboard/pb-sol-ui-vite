@@ -1,6 +1,7 @@
 import { api } from '../lib/api';
 
 const API_BASE = import.meta.env.VITE_API_BASE;
+const Device_BACE = import.meta.env.VITE_DEVICE_BASE;
 export type Device = {
     id: string;
     userId: number;
@@ -36,7 +37,7 @@ function getAuthHeaders(): Record<string, string> {
 }
 
 export async function getDevicesByUser(userId: number): Promise<Device[]> {
-    const { data } = await api.get<DeviceListResponse>(`${API_BASE}/device/user/${userId}`, {
+    const { data } = await api.get<DeviceListResponse>(`${Device_BACE}/user/${userId}`, {
         headers: {
             'Content-Type': 'application/json',
             ...getAuthHeaders(),
@@ -45,9 +46,10 @@ export async function getDevicesByUser(userId: number): Promise<Device[]> {
     });
     return data.data;
 }
-
+console.log(API_BASE)
 export async function getAllDevices(page = 1, limit = 50): Promise<DeviceListResponse> {
-    const { data } = await api.get<DeviceListResponse>(`${API_BASE}/device`, {
+    const { data } = await api.get<DeviceListResponse>(`${Device_BACE}`, {
+
         params: { page, limit },
         headers: {
             'Content-Type': 'application/json',
@@ -60,7 +62,7 @@ export async function getAllDevices(page = 1, limit = 50): Promise<DeviceListRes
 
 export async function approveDevice(deviceId: string): Promise<Device> {
     const { data } = await api.patch<{ success: boolean; data: Device }>(
-        `${API_BASE}/device/${deviceId}/approve`,
+        `${Device_BACE}/${deviceId}/approve`,
         {},
         {
             headers: {
@@ -75,7 +77,7 @@ export async function approveDevice(deviceId: string): Promise<Device> {
 
 export async function revokeDevice(deviceId: string): Promise<Device> {
     const { data } = await api.patch<{ success: boolean; data: Device }>(
-        `${API_BASE}/device/${deviceId}/revoke`,
+        `${Device_BACE}/${deviceId}/revoke`,
         {},
         {
             headers: {
@@ -89,7 +91,7 @@ export async function revokeDevice(deviceId: string): Promise<Device> {
 }
 
 export async function forceLogoutDevice(deviceId: string): Promise<void> {
-    await api.delete(`${API_BASE}/device/${deviceId}/logout`, {
+    await api.delete(`${Device_BACE}/${deviceId}/logout`, {
         headers: {
             'Content-Type': 'application/json',
             ...getAuthHeaders(),
