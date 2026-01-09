@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+import { getCachedDeviceFingerprint } from '../services/deviceFingerprint';
 const API_BASE = import.meta.env.VITE_API_BASE;
 const AUTH_BASE = import.meta.env.VITE_AUTH_BASE;
 
@@ -41,18 +42,30 @@ api.interceptors.request.use((config) => {
   const token = getToken()
   if (token) {
     if (config.headers && typeof (config.headers as any).set === 'function') {
-      ;(config.headers as any).set('Authorization', `Bearer ${token}`)
+      ; (config.headers as any).set('Authorization', `Bearer ${token}`)
     } else {
       const headers = (config.headers as Record<string, any>) || {}
       headers.Authorization = headers.Authorization ?? `Bearer ${token}`
       config.headers = headers as any
     }
   }
+
+  // Add device ID header
+  const deviceId = getCachedDeviceFingerprint()
+  if (deviceId) {
+    if (config.headers && typeof (config.headers as any).set === 'function') {
+      ; (config.headers as any).set('x-device-id', deviceId)
+    } else {
+      const headers = (config.headers as Record<string, any>) || {}
+      headers['x-device-id'] = deviceId
+      config.headers = headers as any
+    }
+  }
+
   return config
 })
 
 let refreshPromise: Promise<string> | null = null
-
 async function refreshAccessToken(): Promise<string> {
   if (!refreshPromise) {
     refreshPromise = axios
@@ -97,7 +110,17 @@ api.interceptors.response.use(
     } else if ((code === 'ERR_NETWORK' && !status) || !navigator.onLine) {
       // True network/offline issue
       window.dispatchEvent(new CustomEvent('app:network-error'))
-    } 
+    }
+
+    // 🔹 DEVICE restriction = business rule (NOT auth failure)
+    if (err?.response?.data?.message?.includes('device')) {
+      window.dispatchEvent(
+        new CustomEvent('app:device-not-approved', {
+          detail: { message: err.response.data.message },
+        }),
+      )
+      return Promise.reject(err)
+    }
 
     const isAuthFailure = [401, 403, 419, 498].includes(status as number)
     const isRefreshCall = String(original?.url || '').includes('/refresh-token')
@@ -117,9 +140,9 @@ api.interceptors.response.use(
         const newToken = await refreshAccessToken()
         original.headers = original.headers || {}
         if (typeof (original.headers as any).set === 'function') {
-          ;(original.headers as any).set('Authorization', `Bearer ${newToken}`)
+          ; (original.headers as any).set('Authorization', `Bearer ${newToken}`)
         } else {
-          ;(original.headers as any).Authorization = `Bearer ${newToken}`
+          ; (original.headers as any).Authorization = `Bearer ${newToken}`
         }
         return api(original)
       } catch (e) {
