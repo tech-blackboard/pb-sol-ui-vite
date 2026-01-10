@@ -74,7 +74,12 @@ export const loginThunk = createAsyncThunk<
 
 export const logoutThunk = createAsyncThunk('auth/logout', async (_, { rejectWithValue }) => {
 	try {
-		await apiLogout()
+		// Attempt server-side logout, but don't block local cleanup if it fails
+		try {
+			await apiLogout()
+		} catch (err) {
+			console.warn('Server logout failed (token likely expired), clearing local session anyway.', err)
+		}
 		localStorage.removeItem('accessToken')
 		localStorage.removeItem('refreshToken')
 		localStorage.removeItem('authUser')
@@ -83,6 +88,10 @@ export const logoutThunk = createAsyncThunk('auth/logout', async (_, { rejectWit
 		sessionStorage.removeItem('authUser')
 		sessionStorage.removeItem('userData')
 		localStorage.removeItem('userData')
+
+		// Clear device fingerprint from cache if desired (optional)
+		// localStorage.removeItem('deviceFingerprint') 
+
 		return { success: true }
 	} catch (e: any) {
 		return rejectWithValue(e?.message || 'Failed to logout')

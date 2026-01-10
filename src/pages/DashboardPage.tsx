@@ -420,11 +420,11 @@ export default function DashboardPage() {
                           r.status?.actionType === 'Accepted'
                             ? 'bg-green-50 text-green-700'
                             : r.status?.actionType === 'Under Review'
-                              ? 'bg-yellow-50 text-yellow-800'
+                              ? 'bg-yellow-50 text-yellow-800 w-[6rem]'
                               : r.status?.actionType === 'Rejected'
                                 ? 'bg-red-50 text-red-700'
                                 : r.status?.actionType === 'Out of Scope'
-                                  ? 'bg-gray-100 text-gray-700'
+                                  ? 'bg-gray-100 text-gray-700 w-[6rem]'
                                   : 'bg-blue-50 text-blue-700',
                         ].join(' ')}
                       >

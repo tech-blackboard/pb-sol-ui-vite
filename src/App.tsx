@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Toaster } from 'react-hot-toast'
+import { Toaster, toast } from 'react-hot-toast'
 import { useDispatch, useSelector } from 'react-redux'
 import Header, { type User } from './components/Header'
 import Nav, { type NavLink } from './components/Nav'
@@ -31,10 +31,26 @@ function App() {
     window.addEventListener('app:server-error', onSrv as any)
     window.addEventListener('app:server-unavailable', onUnavail as any)
 
+    // Handle auth failures (token expiry)
+    const onAuthFail = () => {
+      dispatch(logoutThunk())
+    }
+
+    // Handle device revocation
+    const onDeviceRevoked = (e: CustomEvent) => {
+      toast.error(e.detail?.message || 'Device access revoked externally')
+      dispatch(logoutThunk())
+    }
+
+    window.addEventListener('app:auth-failure', onAuthFail as any)
+    window.addEventListener('app:device-not-approved', onDeviceRevoked as any)
+
     return () => {
       window.removeEventListener('app:network-error', onNet as any)
       window.removeEventListener('app:server-error', onSrv as any)
       window.removeEventListener('app:server-unavailable', onUnavail as any)
+      window.removeEventListener('app:auth-failure', onAuthFail as any)
+      window.removeEventListener('app:device-not-approved', onDeviceRevoked as any)
     }
   }, [])
 
