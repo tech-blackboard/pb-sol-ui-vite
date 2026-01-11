@@ -48,7 +48,7 @@ export async function getDevicesByUser(userId: number): Promise<Device[]> {
 }
 console.log(API_BASE)
 export async function getAllDevices(page = 1, limit = 50): Promise<DeviceListResponse> {
-    const { data } = await api.get<DeviceListResponse>(`${Device_BACE}`, {
+    const { data } = await api.get<DeviceListResponse>(`${Device_BACE}/all`, {
 
         params: { page, limit },
         headers: {
