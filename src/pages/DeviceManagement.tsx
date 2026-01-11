@@ -73,7 +73,7 @@ const DeviceManagement: React.FC = () => {
         }
     };
 
-    if (loading && devices.length === 0) {
+    if (loading) {
         return (
             <div className="flex items-center justify-center h-full">
                 <div className="text-gray-600 dark:text-gray-400">Loading devices...</div>
@@ -90,7 +90,7 @@ const DeviceManagement: React.FC = () => {
                 </p>
             </div>
 
-            {devices.length === 0 ? (
+            {devices?.length === 0 ? (
                 <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                     No devices found
                 </div>
@@ -124,7 +124,7 @@ const DeviceManagement: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                                {devices.map((device) => (
+                                {devices?.map((device) => (
                                     <tr key={device.id}>
                                         <td className="px-4 py-4 whitespace-nowrap text-sm">
                                             <div className="text-gray-900 dark:text-white">
