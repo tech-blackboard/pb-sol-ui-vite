@@ -39,7 +39,7 @@ export async function logout(): Promise<void> {
 
 export async function refreshToken(): Promise<string> {
   const { data } = await api.post(
-    `${(import.meta as any).env?.VITE_AUTH_BASE || import.meta.env.VITE_AUTH_BASE}/refresh-token`,
+    `${AUTH_BASE}/refresh-token`,
     {},
     { withCredentials: true, headers: { 'Content-Type': 'application/json' } },
   )

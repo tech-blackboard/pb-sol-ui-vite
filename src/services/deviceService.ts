@@ -91,7 +91,7 @@ export async function revokeDevice(deviceId: string): Promise<Device> {
 }
 
 export async function forceLogoutDevice(deviceId: string): Promise<void> {
-    await api.delete(`${Device_BACE}/${deviceId}/logout`, {
+    await api.delete(`${Device_BACE}/${deviceId}/device-logout`, {
         headers: {
             'Content-Type': 'application/json',
             ...getAuthHeaders(),

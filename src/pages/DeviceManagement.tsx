@@ -15,6 +15,7 @@ const DeviceManagement: React.FC = () => {
     const [total, setTotal] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
     const limit = 50;
+    const [deleteDeviceId, setDeleteDeviceId] = useState<string | null>(null);
 
     const loadDevices = async () => {
         try {
@@ -54,17 +55,21 @@ const DeviceManagement: React.FC = () => {
         }
     };
 
-    const handleForceLogout = async (deviceId: string) => {
-        if (!confirm('Are you sure you want to force logout this device? This will delete the device.')) {
-            return;
-        }
+    const openDeleteModal = (deviceId: string) => {
+        setDeleteDeviceId(deviceId);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteDeviceId) return;
 
         try {
-            await forceLogoutDevice(deviceId);
-            toast.success('Device logged out successfully');
+            await forceLogoutDevice(deleteDeviceId);
+            toast.success('Device deleted successfully');
             loadDevices();
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Failed to logout device');
+            toast.error(error?.response?.data?.message || 'Failed to delete device');
+        } finally {
+            setDeleteDeviceId(null);
         }
     };
 
@@ -174,7 +179,7 @@ const DeviceManagement: React.FC = () => {
                                                     </button>
                                                 )}
                                                 <button
-                                                    onClick={() => handleForceLogout(device.id)}
+                                                    onClick={() => openDeleteModal(device.id)}
                                                     className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                                                 >
                                                     Delete
@@ -217,7 +222,38 @@ const DeviceManagement: React.FC = () => {
                     )}
                 </>
             )}
-        </div>
+
+
+            {/* Delete Confirmation Modal */}
+            {
+                deleteDeviceId && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-6 border border-gray-200 dark:border-gray-700">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                Delete Device?
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                                Are you sure you want to permanently delete this device? Users will be logged out immediately.
+                            </p>
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={() => setDeleteDeviceId(null)}
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleConfirmDelete}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     );
 };
 
