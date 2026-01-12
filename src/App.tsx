@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Toaster } from 'react-hot-toast'
+import { Toaster, toast } from 'react-hot-toast'
 import { useDispatch, useSelector } from 'react-redux'
 import Header, { type User } from './components/Header'
 import Nav, { type NavLink } from './components/Nav'
@@ -13,6 +13,7 @@ import { selectTheme, toggleTheme } from './store/slices/themeSlice'
 import NetworkErrorAlert from './alerts/NetworkErrorAlert'
 import ServerIssueAlert from './alerts/ServerIssueAlert'
 import ServerUnavailableAlert from './alerts/ServerUnavailableAlert'
+import DeviceManagement from './pages/DeviceManagement'
 
 function App() {
   const dispatch = useDispatch<AppDispatch>()
@@ -25,15 +26,31 @@ function App() {
     const onNet = () => setShowNetwork(true)
     const onSrv = () => setShowServer(true)
     const onUnavail = () => setShowServerUnavailable(true)
-    
+
     window.addEventListener('app:network-error', onNet as any)
     window.addEventListener('app:server-error', onSrv as any)
     window.addEventListener('app:server-unavailable', onUnavail as any)
-    
+
+    // Handle auth failures (token expiry)
+    const onAuthFail = () => {
+      dispatch(logoutThunk())
+    }
+
+    // Handle device revocation
+    const onDeviceRevoked = (e: CustomEvent) => {
+      toast.error(e.detail?.message || 'Device access revoked externally')
+      dispatch(logoutThunk())
+    }
+
+    window.addEventListener('app:auth-failure', onAuthFail as any)
+    window.addEventListener('app:device-not-approved', onDeviceRevoked as any)
+
     return () => {
       window.removeEventListener('app:network-error', onNet as any)
       window.removeEventListener('app:server-error', onSrv as any)
       window.removeEventListener('app:server-unavailable', onUnavail as any)
+      window.removeEventListener('app:auth-failure', onAuthFail as any)
+      window.removeEventListener('app:device-not-approved', onDeviceRevoked as any)
     }
   }, [])
 
@@ -43,7 +60,8 @@ function App() {
   const themeMode = useSelector(selectTheme)
   const links: NavLink[] = [
     { id: 'dashboard', label: 'Dashboard' },
-    { id: 'abstracts', label: 'Abstracts'},
+    { id: 'abstracts', label: 'Abstracts' },
+    ...(isAdmin ? [{ id: 'deviceManagment', label: 'Device Management' }] : []),
   ];
 
 
@@ -57,7 +75,7 @@ function App() {
 
   async function handleSignIn(creds: SignInCredentials) {
     try {
-      await dispatch(loginThunk({ useremail: creds.useremail, userpassword: creds.userpassword, remember: creds.remember })).unwrap()
+      await dispatch(loginThunk({ useremail: creds.useremail, userpassword: creds.userpassword, remember: creds.remember, deviceId: creds.deviceid })).unwrap()
       setActiveId('dashboard')
     } catch {
       // errors are handled in slice state
@@ -77,7 +95,7 @@ function App() {
   if (!user) {
     return <SignInPage onSignIn={handleSignIn} isLoading={authLoading} error={authError} />
   }
-  
+
   if (showServerUnavailable) {
     return <ServerUnavailableAlert />
   }
@@ -85,12 +103,13 @@ function App() {
   if (showNetwork) {
     return <NetworkErrorAlert />
   }
-  
+
   if (showServer) {
     return <ServerIssueAlert />
   }
 
   return (
+
     <div className="h-dvh overflow-hidden flex flex-col bg-gray-50 dark:bg-gray-950">
       <Toaster
         position="bottom-right"
@@ -107,7 +126,7 @@ function App() {
         theme={themeMode}
         onToggleTheme={() => dispatch(toggleTheme())}
       />
-     
+
 
       <div className="flex flex-1 pt-16 pb-12 overflow-hidden">
         {/* Sidebar */}
@@ -131,14 +150,13 @@ function App() {
           <main className="w-full h-full px-4 sm:px-6 lg:px-8 py-6 overflow-hidden">
             <div className="h-full overflow-hidden flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm text-left">
               {activeId === 'abstracts' ? (
-                  isAdmin ? (
-                    <AbstractsPage />
-                  ) : (
-                    <AbstractsPage />
-                  )
-                ) : (
-                  <DashboardPage />
-                )}
+                <AbstractsPage />
+              ) : activeId === 'deviceManagment' && isAdmin ? (
+                <DeviceManagement />
+              ) : (
+                <DashboardPage />
+              )}
+
             </div>
           </main>
         </div>
@@ -148,6 +166,7 @@ function App() {
       <Footer />
 
     </div>
+
   )
 }
 

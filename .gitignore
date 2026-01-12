@@ -35,8 +35,8 @@ dist-ssr
 .env.development.local
 .env.test.local
 .env.production.local
-
-# Jest coverage
+.husky/
+#jest config 
 coverage/
 coverage-final.json
 clover.xml

@@ -123,15 +123,15 @@ export default function DashboardPage() {
   useEffect(() => {
     let mounted = true
 
-    ;(async () => {
-      try {
-        setLoadingWebsites(true)
-        const data = await listWebsites()
-        if (mounted) setWebsites(data)
-      } finally {
-        if (mounted) setLoadingWebsites(false)
-      }
-    })()
+      ; (async () => {
+        try {
+          setLoadingWebsites(true)
+          const data = await listWebsites()
+          if (mounted) setWebsites(data)
+        } finally {
+          if (mounted) setLoadingWebsites(false)
+        }
+      })()
 
     return () => {
       mounted = false
@@ -161,7 +161,7 @@ export default function DashboardPage() {
       {/* Dashboard Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
-        
+
         <button
           onClick={() => setIsFilterDrawerOpen(true)}
           className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
@@ -177,11 +177,11 @@ export default function DashboardPage() {
       {isFilterDrawerOpen && (
         <>
           {/* Backdrop */}
-          <div 
+          <div
             className="fixed inset-0 bg-black/30 z-40 transition-opacity"
             onClick={() => setIsFilterDrawerOpen(false)}
           />
-          
+
           {/* Drawer - Full Height */}
           <div className="fixed top-0 right-0 h-screen w-full sm:w-96 bg-white dark:bg-gray-900 shadow-2xl z-50 flex flex-col animate-slide-in">
             {/* Drawer Header */}
@@ -319,7 +319,7 @@ export default function DashboardPage() {
       {/* Recent abstracts */}
       <div className="flex-1 min-h-[12rem] rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-          <div className="font-medium text-gray-900 dark:text-gray-100">Recent Abstracts</div>
+          <div className="font-medium text-gray-900 dark:text-gray-100">Recent Abstracts  [{dashboardData?.recentAbstracts?.length}]</div>
           <button
             onClick={() => {
               setSelectedStatus(null)
@@ -389,7 +389,7 @@ export default function DashboardPage() {
               {!tableLoading &&
                 !error &&
                 recent.map((r: any) => (
-                
+
                   <tr key={r.id ?? r.uuid ?? r.email ?? `${r.website_id}-${r.now}`} className="border-t border-gray-100 dark:border-gray-800">
                     <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
                       {r.website_name ?? r.website?.name ?? '—'}
@@ -397,11 +397,11 @@ export default function DashboardPage() {
                     <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
                       {r.name ??
                         ([r.user?.firstname, r.user?.lastname].filter(Boolean).join(' ') ||
-                        '—')}
+                          '—')}
                     </td>
                     <td className="px-4 py-3">
-                      
-                        <a href={`mailto:${r.email ?? r.user?.useremail ?? ''}`}
+
+                      <a href={`mailto:${r.email ?? r.user?.useremail ?? ''}`}
                         className="text-blue-600 hover:underline"
                       >
                         {r.email ?? r.user?.useremail ?? '—'}
@@ -420,12 +420,12 @@ export default function DashboardPage() {
                           r.status?.actionType === 'Accepted'
                             ? 'bg-green-50 text-green-700'
                             : r.status?.actionType === 'Under Review'
-                            ? 'bg-yellow-50 text-yellow-800'
-                            : r.status?.actionType === 'Rejected'
-                            ? 'bg-red-50 text-red-700'
-                            : r.status?.actionType === 'Out of Scope'
-                            ? 'bg-gray-100 text-gray-700'
-                            : 'bg-blue-50 text-blue-700',
+                              ? 'bg-yellow-50 text-yellow-800 w-[6rem]'
+                              : r.status?.actionType === 'Rejected'
+                                ? 'bg-red-50 text-red-700'
+                                : r.status?.actionType === 'Out of Scope'
+                                  ? 'bg-gray-100 text-gray-700 w-[6rem]'
+                                  : 'bg-blue-50 text-blue-700',
                         ].join(' ')}
                       >
                         {r.status?.actionType ?? 'Under Review'}

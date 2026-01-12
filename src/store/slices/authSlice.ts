@@ -8,6 +8,7 @@ export type AuthUser = { name: string; role: string; isAdmin?: boolean }
 export type LoginPayload = {
 	useremail: string
 	userpassword: string
+	deviceId: string
 	remember?: boolean
 }
 
@@ -30,11 +31,18 @@ const initial: AuthState = {
 	error: null,
 }
 
-export const loginThunk = createAsyncThunk(
+
+
+export const loginThunk = createAsyncThunk<
+	{ user: AuthUser; token: string | null },
+	LoginPayload,
+	{ rejectValue: string }
+>(
 	'auth/login',
-	async ({ useremail, userpassword, remember }: LoginPayload, { rejectWithValue }) => {
+	async ({ useremail, userpassword, deviceId, remember }, { rejectWithValue }) => {
 		try {
-			const resp = await apiLogin({ useremail, userpassword })
+			const resp = await apiLogin({ useremail, userpassword, deviceId })
+
 			const roles = resp.user.roles || []
 			const hasAdminRole = roles.map((r) => r.toLowerCase()).includes('admin')
 			const isAdmin = resp.isAdmin === true || hasAdminRole
@@ -45,21 +53,33 @@ export const loginThunk = createAsyncThunk(
 				role: isAdmin ? 'Administrator' : 'User',
 				isAdmin,
 			}
+
 			const storage = remember ? localStorage : sessionStorage
 			if (token) storage.setItem('accessToken', String(token))
 			if (refreshToken) storage.setItem('refreshToken', String(refreshToken))
 			storage.setItem('authUser', JSON.stringify(user))
-		    storage.setItem('userData', JSON.stringify(resp.user))
+			storage.setItem('userData', JSON.stringify(resp.user))
+
 			return { user, token }
 		} catch (e: any) {
-			return rejectWithValue(e?.message || 'Failed to sign in')
+			const message =
+				e?.response?.data?.message ||
+				e?.response?.data?.error ||
+				'Failed to sign in'
+			return rejectWithValue(message)
 		}
-	},
+	}
 )
+
 
 export const logoutThunk = createAsyncThunk('auth/logout', async (_, { rejectWithValue }) => {
 	try {
-		await apiLogout()
+		// Attempt server-side logout, but don't block local cleanup if it fails
+		try {
+			await apiLogout()
+		} catch (err) {
+			console.warn('Server logout failed (token likely expired), clearing local session anyway.', err)
+		}
 		localStorage.removeItem('accessToken')
 		localStorage.removeItem('refreshToken')
 		localStorage.removeItem('authUser')
@@ -68,6 +88,10 @@ export const logoutThunk = createAsyncThunk('auth/logout', async (_, { rejectWit
 		sessionStorage.removeItem('authUser')
 		sessionStorage.removeItem('userData')
 		localStorage.removeItem('userData')
+
+		// Clear device fingerprint from cache if desired (optional)
+		// localStorage.removeItem('deviceFingerprint') 
+
 		return { success: true }
 	} catch (e: any) {
 		return rejectWithValue(e?.message || 'Failed to logout')
