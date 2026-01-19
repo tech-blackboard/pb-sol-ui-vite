@@ -1,0 +1,372 @@
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import '@testing-library/jest-dom'
+import AbstractsPage from '../../../../features/abstracts/pages/AbstractsPage'
+import { useAppDispatch, useAppSelector } from '../../../../store/hooks'
+import {
+    fetchAbstracts,
+    updateStatusThunk,
+    sendInvoiceThunk,
+    sendPaymentReceiptThunk,
+    sendPaymentReminderThunk,
+} from '../../../../store/slices/abstracts/abstracts.thunks'
+import {
+    setPage,
+    setPageSize,
+    setSelected,
+    clearSelected,
+    setModalStatus,
+    closeInvoiceModal,
+    closePaymentReceiptModal,
+    closePaymentReminderModal,
+} from '../../../../store/slices/abstracts/abstracts.slice'
+import { toast } from 'react-hot-toast'
+import type { AbstractItem } from '../../../../services/abstracts'
+import type { AbstractRecord } from '../../../../features/abstracts/types'
+
+/* --------------------------------------------------
+   MOCKS
+-------------------------------------------------- */
+
+jest.mock('../../../../store/hooks', () => ({
+    useAppDispatch: jest.fn(),
+    useAppSelector: jest.fn(),
+}))
+
+jest.mock('../../../../store/slices/abstracts/abstracts.thunks', () => ({
+    fetchAbstracts: jest.fn(),
+    updateStatusThunk: Object.assign(jest.fn(), {
+        fulfilled: { match: jest.fn() },
+    }),
+    sendInvoiceThunk: Object.assign(jest.fn(), {
+        fulfilled: { match: jest.fn() },
+    }),
+    sendPaymentReceiptThunk: Object.assign(jest.fn(), {
+        fulfilled: { match: jest.fn() },
+    }),
+    sendPaymentReminderThunk: Object.assign(jest.fn(), {
+        fulfilled: { match: jest.fn() },
+    }),
+}))
+
+jest.mock('../../../../store/slices/abstracts/abstracts.slice', () => ({
+    setPage: jest.fn(),
+    setPageSize: jest.fn(),
+    setSelected: jest.fn(),
+    clearSelected: jest.fn(),
+    setModalStatus: jest.fn(),
+    closeInvoiceModal: jest.fn(),
+    closePaymentReceiptModal: jest.fn(),
+    closePaymentReminderModal: jest.fn(),
+}))
+
+jest.mock('react-hot-toast', () => ({
+    toast: {
+        success: jest.fn(),
+        error: jest.fn(),
+    },
+}))
+
+// Mock child components to isolate AbstractsPage logic
+jest.mock('../../../../features/abstracts/components/AbstractHeader', () => ({
+    __esModule: true,
+    default: () => <div data-testid="abstract-header">Header</div>
+}))
+
+interface AbstractTableProps {
+    rawRows: AbstractItem[]
+    onView: (item: AbstractItem) => void
+    onRetry: () => void
+}
+
+jest.mock('../../../../features/abstracts/components/AbstractTable', () => ({
+    __esModule: true,
+    default: (props: AbstractTableProps) => (
+        <div data-testid="abstract-table">
+            Table
+            <button onClick={() => props.onView(props.rawRows[0])}>View First</button>
+            <button onClick={props.onRetry}>Retry</button>
+        </div>
+    )
+}))
+
+interface AbstractPaginationProps {
+    onPageChange: (page: number) => void
+    onPageSizeChange: (size: number) => void
+}
+
+jest.mock('../../../../features/abstracts/components/AbstractPagination', () => ({
+    __esModule: true,
+    default: (props: AbstractPaginationProps) => (
+        <div data-testid="abstract-pagination">
+            Pagination
+            <button onClick={() => props.onPageChange(2)}>Next Page</button>
+            <button onClick={() => props.onPageSizeChange(20)}>Change Size</button>
+        </div>
+    )
+}))
+
+interface AbstractDetailsModalProps {
+    onClose: () => void
+    onStatusChange: (status: string) => void
+    onUpdate: () => void
+}
+
+jest.mock('../../../../features/abstracts/components/AbstractDetailsModal', () => ({
+    __esModule: true,
+    default: (props: AbstractDetailsModalProps) => (
+        <div data-testid="abstract-details-modal">
+            Modal
+            <button onClick={props.onClose}>Close</button>
+            <button onClick={() => props.onStatusChange('Accepted')}>Change Status</button>
+            <button onClick={props.onUpdate}>Update</button>
+        </div>
+    )
+}))
+
+interface FormProps {
+    onClose: () => void
+    onSubmit: (data: Record<string, unknown>) => void
+}
+
+jest.mock('../../../../components/InvoiceForm', () => ({
+    __esModule: true,
+    InvoiceForm: (props: FormProps) => (
+        <div data-testid="invoice-form">
+            Invoice Form
+            <button onClick={props.onClose}>Close</button>
+            <button onClick={() => props.onSubmit({ amount: 100 })}>Submit Invoice</button>
+        </div>
+    )
+}))
+
+jest.mock('../../../../components/PaymentReceipt', () => ({
+    __esModule: true,
+    PaymentReceiptForm: (props: FormProps) => (
+        <div data-testid="payment-receipt-form">
+            Payment Receipt Form
+            <button onClick={props.onClose}>Close</button>
+            <button onClick={() => props.onSubmit({ amount: 100 })}>Submit Receipt</button>
+        </div>
+    )
+}))
+
+jest.mock('../../../../components/PaymentReminderModal', () => ({
+    __esModule: true,
+    PaymentReminderModal: (props: FormProps) => (
+        <div data-testid="payment-reminder-modal">
+            Payment Reminder Modal
+            <button onClick={props.onClose}>Close</button>
+            <button onClick={() => props.onSubmit({ amount: 100 })}>Submit Reminder</button>
+        </div>
+    )
+}))
+
+
+/* --------------------------------------------------
+   HELPERS
+-------------------------------------------------- */
+
+const mockAbstractItem: AbstractItem = {
+    id: '1',
+    name: 'Test Abstract',
+    status: { id: 1, actionType: 'Under Review' },
+} as unknown as AbstractItem
+
+const mockAbstractRecord: AbstractRecord = {
+    id: '1',
+    name: 'Test Abstract',
+    status: 'Under Review',
+    email: 'test@example.com',
+    isEmailSent: false,
+}
+
+const mockState = {
+    abstracts: {
+        items: [mockAbstractRecord],
+        rawItems: [mockAbstractItem],
+        loading: false,
+        page: 1,
+        pageSize: 10,
+        total: 1,
+        error: null,
+        invoiceModal: { open: false, abstractId: null, abstractName: '' },
+        paymentReceiptModal: { open: false, abstractId: null, abstractName: '' },
+        paymentReminderModal: { open: false, abstractId: null, abstractName: '' },
+        actionLoading: { status: false, invoice: false, receipt: false, reminder: false, confirmation: false },
+    }
+}
+
+/* --------------------------------------------------
+   TEST SUITE
+-------------------------------------------------- */
+
+describe('AbstractsPage', () => {
+    const dispatchMock = jest.fn()
+
+    beforeEach(() => {
+        jest.clearAllMocks()
+            ; (useAppDispatch as jest.Mock).mockReturnValue(dispatchMock)
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(mockState))
+
+            // Setup thunk matchers
+            ; (updateStatusThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(true)
+            ; (sendInvoiceThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(true)
+            ; (sendPaymentReceiptThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(true)
+            ; (sendPaymentReminderThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(true)
+
+        dispatchMock.mockResolvedValue({ type: 'fulfilled', payload: {} })
+    })
+
+    test('renders main layout components', () => {
+        render(<AbstractsPage />)
+        expect(screen.getByTestId('abstract-header')).toBeInTheDocument()
+        expect(screen.getByTestId('abstract-table')).toBeInTheDocument()
+        expect(screen.getByTestId('abstract-pagination')).toBeInTheDocument()
+    })
+
+    test('dispatches fetchAbstracts on mount', () => {
+        render(<AbstractsPage />)
+        expect(fetchAbstracts).toHaveBeenCalled()
+    })
+
+    test('handles table retry and view actions', () => {
+        render(<AbstractsPage />)
+
+        fireEvent.click(screen.getByText('Retry'))
+        expect(fetchAbstracts).toHaveBeenCalledTimes(2) // mount + retry
+
+        fireEvent.click(screen.getByText('View First'))
+        expect(setSelected).toHaveBeenCalledWith(mockAbstractItem)
+    })
+
+    test('handles pagination actions', () => {
+        render(<AbstractsPage />)
+
+        fireEvent.click(screen.getByText('Next Page'))
+        expect(setPage).toHaveBeenCalledWith(2)
+
+        fireEvent.click(screen.getByText('Change Size'))
+        expect(setPageSize).toHaveBeenCalledWith(20)
+    })
+
+    test('renders DetailsModal when item is selected', () => {
+        const stateWithSelected = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                selected: mockAbstractItem,
+                modalStatus: 'Under Review',
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithSelected))
+
+        render(<AbstractsPage />)
+        expect(screen.getByTestId('abstract-details-modal')).toBeInTheDocument()
+
+        fireEvent.click(screen.getByText('Close'))
+        expect(clearSelected).toHaveBeenCalled()
+
+        fireEvent.click(screen.getByText('Change Status'))
+        expect(setModalStatus).toHaveBeenCalledWith('Accepted')
+    })
+
+    test('handles handleUpdateStatus in DetailsModal', async () => {
+        // Mocking selectors for internal handleUpdateStatus check
+        const stateSelectedAndAccepted = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                selected: mockAbstractItem,
+                modalStatus: 'Accepted',
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateSelectedAndAccepted))
+
+        render(<AbstractsPage />)
+
+        fireEvent.click(screen.getByText('Update'))
+
+        await waitFor(() => {
+            expect(updateStatusThunk).toHaveBeenCalled()
+            expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('Status updated'))
+        })
+    })
+
+    test('renders and handles InvoiceForm', async () => {
+        const stateWithInvoice = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                invoiceModal: { open: true, abstractId: '1', abstractName: 'Test' },
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithInvoice))
+
+        render(<AbstractsPage />)
+        expect(screen.getByTestId('invoice-form')).toBeInTheDocument()
+
+        fireEvent.click(screen.getByText('Submit Invoice'))
+
+        await waitFor(() => {
+            expect(sendInvoiceThunk).toHaveBeenCalled()
+            expect(updateStatusThunk).toHaveBeenCalled()
+            expect(closeInvoiceModal).toHaveBeenCalled()
+        })
+    })
+
+    test('renders and handles PaymentReceiptForm', async () => {
+        const stateWithReceipt = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                paymentReceiptModal: { open: true, abstractId: '1', abstractName: 'Test' },
+                actionLoading: { ...mockState.abstracts.actionLoading, receipt: false }
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithReceipt))
+
+        render(<AbstractsPage />)
+        expect(screen.getByTestId('payment-receipt-form')).toBeInTheDocument()
+
+        // Mock payload for success toast
+        dispatchMock.mockResolvedValueOnce({
+            type: 'fulfilled',
+            payload: { receiptResult: { message: 'Receipt sent' } }
+        })
+
+        fireEvent.click(screen.getByText('Submit Receipt'))
+
+        await waitFor(() => {
+            expect(sendPaymentReceiptThunk).toHaveBeenCalled()
+            expect(closePaymentReceiptModal).toHaveBeenCalled()
+            expect(toast.success).toHaveBeenCalledWith('Receipt sent')
+        })
+    })
+
+    test('renders and handles PaymentReminderModal', async () => {
+        const stateWithReminder = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                paymentReminderModal: { open: true, abstractId: '1', abstractName: 'Test' },
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithReminder))
+
+        render(<AbstractsPage />)
+        expect(screen.getByTestId('payment-reminder-modal')).toBeInTheDocument()
+
+        dispatchMock.mockResolvedValueOnce({
+            type: 'fulfilled',
+            payload: { message: 'Reminder sent' }
+        })
+
+        fireEvent.click(screen.getByText('Submit Reminder'))
+
+        await waitFor(() => {
+            expect(sendPaymentReminderThunk).toHaveBeenCalled()
+            expect(closePaymentReminderModal).toHaveBeenCalled()
+            expect(toast.success).toHaveBeenCalledWith('Reminder sent')
+        })
+    })
+})
