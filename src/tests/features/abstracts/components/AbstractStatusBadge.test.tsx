@@ -1,18 +1,19 @@
 import { render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import AbstractStatusBadge from '../../../../features/abstracts/components/AbstractStatusBadge'
+import type { AbstractStatus } from '../../../../features/abstracts/types'
 
 describe('AbstractStatusBadge', () => {
   test.each([
-    { status: 'Accepted', expectedClass: 'bg-green-50' },
-    { status: 'Under Review', expectedClass: 'bg-yellow-50' },
-    { status: 'Rejected', expectedClass: 'bg-red-50' },
-    { status: 'Out of Scope', expectedClass: 'bg-gray-100' },
-    { status: 'Registered', expectedClass: 'bg-blue-50' }, // default branch
+    { status: 'Accepted' as AbstractStatus, expectedClass: 'bg-green-50' },
+    { status: 'Under Review' as AbstractStatus, expectedClass: 'bg-yellow-50' },
+    { status: 'Rejected' as AbstractStatus, expectedClass: 'bg-red-50' },
+    { status: 'Out of Scope' as AbstractStatus, expectedClass: 'bg-gray-100' },
+    { status: 'Registered' as AbstractStatus, expectedClass: 'bg-blue-50' }, // default branch
   ])(
     'renders correct badge for status: $status',
     ({ status, expectedClass }) => {
-      render(<AbstractStatusBadge status={status as any} />)
+      render(<AbstractStatusBadge status={status} />)
 
       const badge = screen.getByText(status)
 

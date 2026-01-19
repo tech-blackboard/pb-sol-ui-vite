@@ -35,6 +35,8 @@ export async function getDeviceFingerprint(): Promise<string> {
             const fallbackId = `fallback-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             localStorage.setItem('deviceFingerprint', fallbackId);
             return fallbackId;
+        } finally {
+            fingerprintPromise = null;
         }
     })();
 
@@ -47,7 +49,6 @@ export async function getDeviceFingerprint(): Promise<string> {
  */
 // console.log('-----device fingerprint', localStorage.getItem('deviceFingerprint'))
 export function getCachedDeviceFingerprint(): string | null {
-    console.log('-----device in function  fingerprint', localStorage.getItem('deviceFingerprint'))
     return localStorage.getItem('deviceFingerprint');
 }
 

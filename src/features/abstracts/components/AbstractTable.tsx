@@ -1,15 +1,15 @@
-
+import type { AbstractItem } from '../../../services/abstracts'
 import type { AbstractRecord } from '../types'
 import AbstractRow from './AbstractRow'
 
 interface Props {
   rows: AbstractRecord[]
-  rawRows: any[]
+  rawRows: AbstractItem[]
   loading: boolean
   error: string | null
   errKind: 'none' | 'generic'
   onRetry: () => void
-  onView: (item: any) => void
+  onView: (item: AbstractItem | undefined) => void
 }
 
 export default function AbstractTable({
@@ -84,14 +84,14 @@ export default function AbstractTable({
               !error &&
               rows.map((r) => {
                 const raw = rawRows.find(
-                  (x) => String(x.id ?? x._id) === r.id
+                  (x) => String(x.id) === r.id
                 )
 
                 return (
                   <AbstractRow
                     key={r.id}
                     record={r}
-                    raw={raw}
+                    raw={raw ?? null}
                     onView={() => onView(raw)}
                   />
                 )

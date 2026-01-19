@@ -2,8 +2,8 @@ import type { AbstractRecord } from '../../../features/abstracts/types'
 
 export interface AbstractsState {
   items: AbstractRecord[]
-  rawItems: any[]
-  selected: any | null
+  rawItems: import('../../../services/abstracts').AbstractItem[]
+  selected: import('../../../services/abstracts').AbstractItem | null
 
   loading: boolean
   error: string | null
@@ -11,7 +11,7 @@ export interface AbstractsState {
   page: number
   pageSize: number
   total: number
-  filters: any
+  filters: AbstractFilters
 
   actionLoading: {
     status: boolean

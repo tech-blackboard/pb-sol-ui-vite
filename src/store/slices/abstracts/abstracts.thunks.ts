@@ -31,8 +31,9 @@ export const fetchAbstracts = createAsyncThunk(
         limit,
         ...filters, // 🔥 THIS IS CRITICAL
       })
-    } catch (err: any) {
-      return rejectWithValue(err.message)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'An unknown error occurred'
+      return rejectWithValue(message)
     }
   }
 )
@@ -55,7 +56,7 @@ export const sendInvoiceThunk = createAsyncThunk(
 
 export const sendPaymentReminderThunk = createAsyncThunk(
   'abstracts/paymentReminder',
-  async ({ abstractId, paymentReminderData }: { abstractId: string; paymentReminderData:PaymentReminderData }) => {
+  async ({ abstractId, paymentReminderData }: { abstractId: string; paymentReminderData: PaymentReminderData }) => {
     return await sendPaymentReminder(abstractId, paymentReminderData)
   }
 )

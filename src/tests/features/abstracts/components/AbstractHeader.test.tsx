@@ -21,26 +21,26 @@ jest.mock('../../../../store/slices/abstracts/abstracts.thunks', () => ({
 
 // Mock child components
 jest.mock('../../../../features/abstracts/components/AbstractFiltersDrawer.tsx', () => ({
-    __esModule: true,
-    default: (props: any) => (
-      <div data-testid="filters-drawer">
-        Filters Drawer
-        <button onClick={props.onClose}>Close Filters</button>
-      </div>
-    ),
-  }))
+  __esModule: true,
+  default: (props: { onClose: () => void }) => (
+    <div data-testid="filters-drawer">
+      Filters Drawer
+      <button onClick={props.onClose}>Close Filters</button>
+    </div>
+  ),
+}))
 
 jest.mock('../../../../components/AbstractForm.tsx', () => ({
-    __esModule: true,
-    default: (props: any) => (
-      <div data-testid="abstract-form">
-        Abstract Form
-        <button onClick={props.onClose}>Close Form</button>
-        <button onClick={props.onSuccess}>Success</button>
-      </div>
-    ),
-  }))
-  
+  __esModule: true,
+  default: (props: { onClose: () => void; onSuccess: () => void }) => (
+    <div data-testid="abstract-form">
+      Abstract Form
+      <button onClick={props.onClose}>Close Form</button>
+      <button onClick={props.onSuccess}>Success</button>
+    </div>
+  ),
+}))
+
 
 
 /* --------------------------------------------------
@@ -53,17 +53,17 @@ describe('AbstractHeader', () => {
   beforeEach(() => {
     jest.clearAllMocks()
 
-    ;(useAppDispatch as jest.Mock).mockReturnValue(dispatchMock)
+      ; (useAppDispatch as jest.Mock).mockReturnValue(dispatchMock)
 
-    ;(useAppSelector as jest.Mock).mockImplementation((selectorFn) =>
-      selectorFn({
-        abstracts: {
-          page: 1,
-          pageSize: 10,
-          appliedFilters: { status: 'Under Review' },
-        },
-      })
-    )
+      ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) =>
+        selectorFn({
+          abstracts: {
+            page: 1,
+            pageSize: 10,
+            appliedFilters: { status: 'Under Review' },
+          },
+        })
+      )
   })
 
   /* -------------------------------------------------- */

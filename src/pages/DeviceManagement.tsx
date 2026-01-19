@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import {
     getAllDevices,
@@ -17,31 +17,33 @@ const DeviceManagement: React.FC = () => {
     const limit = 50;
     const [deleteDeviceId, setDeleteDeviceId] = useState<string | null>(null);
 
-    const loadDevices = async () => {
+    const loadDevices = useCallback(async () => {
         try {
             setLoading(true);
             const response = await getAllDevices(page, limit);
             setDevices(response.data);
             setTotal(response.pagination?.total || 0);
             setTotalPages(response.pagination?.totalPages || 1);
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Failed to load devices');
+        } catch (error: unknown) {
+            const axiosError = error as { response?: { data?: { message?: string } } }
+            toast.error(axiosError?.response?.data?.message || 'Failed to load devices');
         } finally {
             setLoading(false);
         }
-    };
+    }, [page, limit]);
 
     useEffect(() => {
         loadDevices();
-    }, [page]);
+    }, [loadDevices]);
 
     const handleApprove = async (deviceId: string) => {
         try {
             await approveDevice(deviceId);
             toast.success('Device approved successfully');
             loadDevices();
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Failed to approve device');
+        } catch (error: unknown) {
+            const axiosError = error as { response?: { data?: { message?: string } } }
+            toast.error(axiosError?.response?.data?.message || 'Failed to approve device');
         }
     };
 
@@ -50,8 +52,9 @@ const DeviceManagement: React.FC = () => {
             await revokeDevice(deviceId);
             toast.success('Device revoked successfully');
             loadDevices();
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Failed to revoke device');
+        } catch (error: unknown) {
+            const axiosError = error as { response?: { data?: { message?: string } } }
+            toast.error(axiosError?.response?.data?.message || 'Failed to revoke device');
         }
     };
 
@@ -66,8 +69,9 @@ const DeviceManagement: React.FC = () => {
             await forceLogoutDevice(deleteDeviceId);
             toast.success('Device deleted successfully');
             loadDevices();
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Failed to delete device');
+        } catch (error: unknown) {
+            const axiosError = error as { response?: { data?: { message?: string } } }
+            toast.error(axiosError?.response?.data?.message || 'Failed to delete device');
         } finally {
             setDeleteDeviceId(null);
         }
