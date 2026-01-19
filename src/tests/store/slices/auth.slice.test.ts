@@ -42,7 +42,8 @@ describe('auth slice', () => {
     const state = reducer(initialState, loginThunk.pending('', {
       useremail: 'a@test.com',
       userpassword: '123',
-    } as any))
+      deviceId: 'device123',
+    }))
 
     expect(state.loading).toBe(true)
     expect(state.error).toBeNull()
@@ -56,7 +57,11 @@ describe('auth slice', () => {
 
     const state = reducer(
       initialState,
-      loginThunk.fulfilled(payload, '', {} as any)
+      loginThunk.fulfilled(payload, '', {
+        useremail: 'a@test.com',
+        userpassword: '123',
+        deviceId: 'device123',
+      })
     )
 
     expect(state.loading).toBe(false)
@@ -71,7 +76,11 @@ describe('auth slice', () => {
       loginThunk.rejected(
         new Error(),
         '',
-        {} as any,
+        {
+          useremail: 'a@test.com',
+          userpassword: '123',
+          deviceId: 'device123',
+        },
         'Invalid credentials'
       )
     )

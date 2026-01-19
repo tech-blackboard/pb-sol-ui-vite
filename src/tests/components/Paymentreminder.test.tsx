@@ -15,6 +15,8 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import toast from 'react-hot-toast'
 
+import type { AbstractItem } from '../../services/abstracts'
+
 import { PaymentReminderModal } from '../../components/PaymentReminderModal'
 import { getAbstractById } from '../../services/abstracts'
 
@@ -52,7 +54,7 @@ describe('PaymentReminderModal', () => {
   })
 
   it('renders modal when open', async () => {
-    mockGetAbstractById.mockResolvedValue({ paymentLink: null } as any)
+    mockGetAbstractById.mockResolvedValue({ paymentLink: null } as unknown as AbstractItem)
 
     render(<PaymentReminderModal {...defaultProps} />)
 
@@ -62,7 +64,7 @@ describe('PaymentReminderModal', () => {
   /* ---------------------------------- Loading --------------------------------- */
 
   it('shows loading while fetching data', () => {
-    mockGetAbstractById.mockImplementation(() => new Promise(() => {}))
+    mockGetAbstractById.mockImplementation(() => new Promise(() => { }))
 
     render(<PaymentReminderModal {...defaultProps} />)
 
@@ -74,7 +76,7 @@ describe('PaymentReminderModal', () => {
   it('shows existing payment link when available', async () => {
     mockGetAbstractById.mockResolvedValue({
       paymentLink: 'https://pay.test/link',
-    } as any)
+    } as unknown as AbstractItem)
 
     render(<PaymentReminderModal {...defaultProps} />)
 
@@ -88,7 +90,7 @@ describe('PaymentReminderModal', () => {
   it('copies payment link to clipboard', async () => {
     mockGetAbstractById.mockResolvedValue({
       paymentLink: 'https://pay.test/link',
-    } as any)
+    } as unknown as AbstractItem)
 
     render(<PaymentReminderModal {...defaultProps} />)
 
@@ -104,29 +106,29 @@ describe('PaymentReminderModal', () => {
   it('submits existing payment link', async () => {
     mockGetAbstractById.mockResolvedValue({
       paymentLink: 'https://pay.test/link',
-    } as any)
-  
+    } as unknown as AbstractItem)
+
     render(<PaymentReminderModal {...defaultProps} />)
-  
+
     // Wait until the button is enabled (data loaded)
     const sendBtn = await waitFor(() => {
       const btn = screen.getByText('Send Reminder')
       expect(btn).toBeEnabled()
       return btn
     })
-  
+
     fireEvent.click(sendBtn)
-  
+
     expect(onSubmit).toHaveBeenCalledWith({
       paymentLink: 'https://pay.test/link',
     })
   })
-  
+
 
   /* -------------------------- No payment link case ----------------------------- */
 
   it('shows input when payment link is missing', async () => {
-    mockGetAbstractById.mockResolvedValue({ paymentLink: null } as any)
+    mockGetAbstractById.mockResolvedValue({ paymentLink: null } as unknown as AbstractItem)
 
     render(<PaymentReminderModal {...defaultProps} />)
 
@@ -136,7 +138,7 @@ describe('PaymentReminderModal', () => {
   })
 
   it('submits manually entered payment link', async () => {
-    mockGetAbstractById.mockResolvedValue({ paymentLink: null } as any)
+    mockGetAbstractById.mockResolvedValue({ paymentLink: null } as unknown as AbstractItem)
 
     render(<PaymentReminderModal {...defaultProps} />)
 
@@ -158,7 +160,7 @@ describe('PaymentReminderModal', () => {
   /* ---------------------------------- Close ----------------------------------- */
 
   it('calls onClose when close button is clicked', async () => {
-    mockGetAbstractById.mockResolvedValue({ paymentLink: null } as any)
+    mockGetAbstractById.mockResolvedValue({ paymentLink: null } as unknown as AbstractItem)
 
     render(<PaymentReminderModal {...defaultProps} />)
 
@@ -169,7 +171,7 @@ describe('PaymentReminderModal', () => {
   /* --------------------------------- Disabled --------------------------------- */
 
   it('disables controls when loading', async () => {
-    mockGetAbstractById.mockResolvedValue({ paymentLink: null } as any)
+    mockGetAbstractById.mockResolvedValue({ paymentLink: null } as unknown as AbstractItem)
 
     render(<PaymentReminderModal {...defaultProps} isLoading />)
 
@@ -180,7 +182,7 @@ describe('PaymentReminderModal', () => {
 
   it('handles API error gracefully', async () => {
     mockGetAbstractById.mockRejectedValue(new Error('API error'))
-    jest.spyOn(console, 'error').mockImplementation(() => {})
+    jest.spyOn(console, 'error').mockImplementation(() => { })
 
     render(<PaymentReminderModal {...defaultProps} />)
 

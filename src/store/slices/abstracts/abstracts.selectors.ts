@@ -34,7 +34,7 @@ export const selectSelectedNormalized = createSelector(
   [(s: RootState) => s.abstracts.selected, (s: RootState) => s.abstracts.items],
   (selected, items) => {
     if (!selected) return null
-    const id = String(selected.id ?? selected.id)
-    return items.find(item => String(item.id ?? item._id) === id)
+    const id = String(selected.id)
+    return items.find(item => String(item.id) === id)
   }
 )

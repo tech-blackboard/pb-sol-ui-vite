@@ -27,9 +27,9 @@ function App() {
     const onSrv = () => setShowServer(true)
     const onUnavail = () => setShowServerUnavailable(true)
 
-    window.addEventListener('app:network-error', onNet as any)
-    window.addEventListener('app:server-error', onSrv as any)
-    window.addEventListener('app:server-unavailable', onUnavail as any)
+    window.addEventListener('app:network-error', onNet as EventListener)
+    window.addEventListener('app:server-error', onSrv as EventListener)
+    window.addEventListener('app:server-unavailable', onUnavail as EventListener)
 
     // Handle auth failures (token expiry)
     const onAuthFail = () => {
@@ -37,26 +37,27 @@ function App() {
     }
 
     // Handle device revocation
-    const onDeviceRevoked = (e: CustomEvent) => {
-      toast.error(e.detail?.message || 'Device access revoked externally')
+    const onDeviceRevoked = (e: Event) => {
+      const customEvent = e as CustomEvent
+      toast.error(customEvent.detail?.message || 'Device access revoked externally')
       dispatch(logoutThunk())
     }
 
-    window.addEventListener('app:auth-failure', onAuthFail as any)
-    window.addEventListener('app:device-not-approved', onDeviceRevoked as any)
+    window.addEventListener('app:auth-failure', onAuthFail as EventListener)
+    window.addEventListener('app:device-not-approved', onDeviceRevoked as EventListener)
 
     return () => {
-      window.removeEventListener('app:network-error', onNet as any)
-      window.removeEventListener('app:server-error', onSrv as any)
-      window.removeEventListener('app:server-unavailable', onUnavail as any)
-      window.removeEventListener('app:auth-failure', onAuthFail as any)
-      window.removeEventListener('app:device-not-approved', onDeviceRevoked as any)
+      window.removeEventListener('app:network-error', onNet as EventListener)
+      window.removeEventListener('app:server-error', onSrv as EventListener)
+      window.removeEventListener('app:server-unavailable', onUnavail as EventListener)
+      window.removeEventListener('app:auth-failure', onAuthFail as EventListener)
+      window.removeEventListener('app:device-not-approved', onDeviceRevoked as EventListener)
     }
-  }, [])
+  }, [dispatch])
 
   // Theme managed by Redux
   const { user: authUser, loading: authLoading, error: authError } = useSelector(selectAuth)
-  const isAdmin = Boolean((authUser as any)?.isAdmin)
+  const isAdmin = Boolean(authUser?.isAdmin)
   const themeMode = useSelector(selectTheme)
   const links: NavLink[] = [
     { id: 'dashboard', label: 'Dashboard' },

@@ -1,5 +1,6 @@
 import { selectSelectedNormalized } from '../../../../store/slices/abstracts/abstracts.selectors'
 import type { RootState } from '../../../../store/index'
+import type { AbstractRecord, AbstractStatus } from '../../../../features/abstracts/types'
 
 describe('abstracts selectors', () => {
   const baseState: RootState = {
@@ -26,7 +27,26 @@ describe('abstracts selectors', () => {
       paymentReceiptModal: { open: false, abstractId: null, abstractName: '' },
       paymentReminderModal: { open: false, abstractId: null, abstractName: '' },
     },
-  } as unknown as RootState
+    auth: {
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      loading: false,
+      error: null,
+      isInitialized: false,
+    },
+    theme: {
+      mode: 'light',
+    },
+  } as RootState
+
+  const createMockItem = (id: string, name: string): AbstractRecord => ({
+    id,
+    name,
+    email: `${name.toLowerCase()}@test.com`,
+    status: 'Accepted' as AbstractStatus,
+    isEmailSent: false,
+  })
 
   it('returns null when no abstract is selected', () => {
     const result = selectSelectedNormalized(baseState)
@@ -34,40 +54,28 @@ describe('abstracts selectors', () => {
   })
 
   it('returns matching item when selected.id matches item.id', () => {
+    const item = createMockItem('1', 'N1')
     const state = {
       ...baseState,
       abstracts: {
         ...baseState.abstracts,
-        selected: { id: '1' },
-        items: [{ id: '1', title: 'A' }],
+        selected: { id: '1' } as unknown as import('../../../../services/abstracts').AbstractItem,
+        items: [item],
       },
     }
 
     const result = selectSelectedNormalized(state)
-    expect(result).toEqual({ id: '1', title: 'A' })
-  })
-
-  it('matches selected.id with item._id', () => {
-    const state = {
-      ...baseState,
-      abstracts: {
-        ...baseState.abstracts,
-        selected: { id: '99' },
-        items: [{ _id: '99', title: 'B' }],
-      },
-    }
-
-    const result = selectSelectedNormalized(state)
-    expect(result).toEqual({ _id: '99', title: 'B' })
+    expect(result).toEqual(item)
   })
 
   it('returns undefined when no matching item is found', () => {
+    const item = createMockItem('1', 'N1')
     const state = {
       ...baseState,
       abstracts: {
         ...baseState.abstracts,
-        selected: { id: '3' },
-        items: [{ id: '1' }],
+        selected: { id: '3' } as unknown as import('../../../../services/abstracts').AbstractItem,
+        items: [item],
       },
     }
 
@@ -76,12 +84,13 @@ describe('abstracts selectors', () => {
   })
 
   it('is memoized for same input references', () => {
+    const item = createMockItem('1', 'N1')
     const state = {
       ...baseState,
       abstracts: {
         ...baseState.abstracts,
-        selected: { id: '1' },
-        items: [{ id: '1' }],
+        selected: { id: '1' } as unknown as import('../../../../services/abstracts').AbstractItem,
+        items: [item],
       },
     }
 

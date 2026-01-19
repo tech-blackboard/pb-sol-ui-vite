@@ -46,8 +46,8 @@ export const loginThunk = createAsyncThunk<
 			const roles = resp.user.roles || []
 			const hasAdminRole = roles.map((r) => r.toLowerCase()).includes('admin')
 			const isAdmin = resp.isAdmin === true || hasAdminRole
-			const token = (resp as any).access_token || (resp as any).accessToken || (resp as any).token || null
-			const refreshToken = (resp as any).refresh_token || (resp as any).refreshToken || null
+			const token = resp.access_token || resp.accessToken || resp.token || null
+			const refreshToken = resp.refresh_token || resp.refreshToken || null
 			const user: AuthUser = {
 				name: resp.user.email.split('@')[0] || 'User',
 				role: isAdmin ? 'Administrator' : 'User',
@@ -61,10 +61,11 @@ export const loginThunk = createAsyncThunk<
 			storage.setItem('userData', JSON.stringify(resp.user))
 
 			return { user, token }
-		} catch (e: any) {
+		} catch (e: unknown) {
+			const axiosError = e as { response?: { data?: { message?: string; error?: string } } }
 			const message =
-				e?.response?.data?.message ||
-				e?.response?.data?.error ||
+				axiosError?.response?.data?.message ||
+				axiosError?.response?.data?.error ||
 				'Failed to sign in'
 			return rejectWithValue(message)
 		}
@@ -93,8 +94,9 @@ export const logoutThunk = createAsyncThunk('auth/logout', async (_, { rejectWit
 		// localStorage.removeItem('deviceFingerprint') 
 
 		return { success: true }
-	} catch (e: any) {
-		return rejectWithValue(e?.message || 'Failed to logout')
+	} catch (e: unknown) {
+		const message = e instanceof Error ? e.message : 'Failed to logout'
+		return rejectWithValue(message)
 	}
 })
 

@@ -11,6 +11,8 @@ export type LoginResponse = {
   access_token?: string
   user: { id: string | number; email: string; roles?: string[] }
   isAdmin?: boolean
+  refreshToken?: string
+  refresh_token?: string
 }
 
 
@@ -18,7 +20,7 @@ export type LoginResponse = {
 
 export async function login(body: LoginRequest): Promise<LoginResponse> {
 
-  let deviceId = await getDeviceFingerprint();
+  const deviceId = await getDeviceFingerprint();
 
   const { browser, os } = getBrowserAndOS();
   const { data } = await publicApi.post<LoginResponse>(`${AUTH_BASE}/login`, {

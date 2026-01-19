@@ -1,8 +1,8 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { X, Upload, CheckCircle, AlertCircle } from 'lucide-react'
-import { 
+import {
   createAbstract,
-  createAbstractWithFormDataFileUpload, 
+  createAbstractWithFormDataFileUpload,
   // createAbstractWithFormDataFileUpload 
 } from '../services/abstracts'
 import { listWebsites, type SourceWebsite } from '../services/sourcedb'
@@ -16,7 +16,7 @@ interface AbstractFormProps {
 
 // All countries A-Z
 const COUNTRIES = [
-  'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina', 
+  'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina',
   'Armenia', 'Australia', 'Austria', 'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados',
   'Belarus', 'Belgium', 'Belize', 'Benin', 'Bhutan', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana',
   'Brazil', 'Brunei', 'Bulgaria', 'Burkina Faso', 'Burundi', 'Cabo Verde', 'Cambodia', 'Cameroon',
@@ -59,22 +59,22 @@ const INTERESTED_IN_OPTIONS = [
 
 export default function AbstractForm({ websiteId, onClose, onSuccess }: AbstractFormProps) {
   const [formData, setFormData] = useState({
-        caption: '',
-        name: '',
-        email: '', // ADD THIS
-        aemail: '', // ADD THIS (alternate email)
-        phone: '',
-        whatsapp: '',
-        country: '',
-        city: '',
-        organization: '',
-        interestedIn: '',
-        title: '',
-        message: '',
-        captcha: '',
-        websiteId: websiteId || undefined,
-        file: null as File | null,
-})
+    caption: '',
+    name: '',
+    email: '', // ADD THIS
+    aemail: '', // ADD THIS (alternate email)
+    phone: '',
+    whatsapp: '',
+    country: '',
+    city: '',
+    organization: '',
+    interestedIn: '',
+    title: '',
+    message: '',
+    captcha: '',
+    websiteId: websiteId || undefined,
+    file: null as File | null,
+  })
 
   const [captchaCode] = useState(() => Math.random().toString(36).substring(2, 8))
   const [submitting, setSubmitting] = useState(false)
@@ -84,28 +84,28 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
   useEffect(() => {
     let mounted = true
-    ;(async () => {
-      try {
-        setWebLoading(true)
-        const ws = await listWebsites()
-        if (!mounted) return
-        setWebsites(ws)
-      } catch (err) {
-        console.error('Failed to load websites:', err)
-        toast.error('Failed to load website options')
-      } finally {
-        setWebLoading(false)
-      }
-    })()
+      ; (async () => {
+        try {
+          setWebLoading(true)
+          const ws = await listWebsites()
+          if (!mounted) return
+          setWebsites(ws)
+        } catch (err) {
+          console.error('Failed to load websites:', err)
+          toast.error('Failed to load website options')
+        } finally {
+          setWebLoading(false)
+        }
+      })()
     return () => {
       mounted = false
     }
   }, [])
-  
+
   const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({ 
-      ...prev, 
-      [field]: field === 'websiteId' && value ? Number(value) : value 
+    setFormData((prev) => ({
+      ...prev,
+      [field]: field === 'websiteId' && value ? Number(value) : value
     }))
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: '' }))
@@ -122,7 +122,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
   const validate = () => {
     const newErrors: Record<string, string> = {}
-  
+
     if (!formData.caption) newErrors.caption = 'Caption is required'
     if (!formData.name.trim()) newErrors.name = 'Name is required'
     if (!formData.email.trim()) newErrors.email = 'Email is required' // ADD THIS
@@ -138,24 +138,24 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
     if (!formData.websiteId) newErrors.websiteId = 'Please select a website'
     if (!formData.file) newErrors.file = 'Please upload a file'
     if (formData.captcha !== captchaCode) newErrors.captcha = 'Captcha does not match'
-  
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSubmitWithFileUpload = async (e: FormEvent) => {
     e.preventDefault()
-  
+
     if (!validate()) {
       toast.error('Please fix all errors before submitting')
       return
     }
-  
+
     setSubmitting(true)
-  
+
     try {
       const formDataToSend = new FormData()
-  
+
       formDataToSend.append('name', `${formData.caption} ${formData.name}`)
       formDataToSend.append('email', formData.email)
       formDataToSend.append('aemail', formData.aemail)
@@ -167,51 +167,52 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
       formDataToSend.append('intrested', formData.interestedIn)
       formDataToSend.append('title', formData.title)
       formDataToSend.append('message', formData.message)
-      formDataToSend.append('captcha', formData.captcha) 
+      formDataToSend.append('captcha', formData.captcha)
       formDataToSend.append('status_id', '1')
       formDataToSend.append('is_email_sent', 'false')
-  
+
       if (formData.websiteId) {
         formDataToSend.append('website_id', String(formData.websiteId))
       }
-  
+
       if (formData.file) {
         formDataToSend.append('file', formData.file) // ✅ REAL FILE
       }
-  
+
       await createAbstractWithFormDataFileUpload(formDataToSend)
-  
+
       toast.success('Abstract submitted successfully!')
       onSuccess?.()
       onClose()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Submit error:', err)
-  
+      const axiosError = err as { response?: { data?: { message?: string; error?: string } }; message?: string }
+
       const errorMsg =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err?.message ||
+        axiosError?.response?.data?.message ||
+        axiosError?.response?.data?.error ||
+        axiosError?.message ||
         'Failed to submit abstract'
-  
+
       toast.error(errorMsg, { duration: 5000 })
     } finally {
       setSubmitting(false)
     }
   }
-  
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-  
+
     if (!validate()) {
       toast.error('Please fix all errors before submitting')
       return
     }
-  
+
     setSubmitting(true)
-  
+
     try {
       // Create JSON payload matching the backend expected format
-      const payload: any = {
+      const payload = {
         name: `${formData.caption} ${formData.name}`,
         email: formData.email, // Add email field if you have it in the form
         aemail: formData.aemail, // Add alternate email if you have it
@@ -227,33 +228,42 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
         status_id: 1, // Default to "Under Review"
         isEmailSent: false,
       }
-      
-      if (formData.websiteId) {
-        payload.website_id = formData.websiteId
+
+      const finalPayload = {
+        ...payload,
+        website_id: formData.websiteId,
       }
-  
-      console.log('Sending payload:', payload)
-  
-      await createAbstract(payload)
-      
+
+      console.log('Sending payload:', finalPayload)
+
+      await createAbstract(finalPayload)
+
       toast.success('Abstract submitted successfully!')
       onSuccess?.()
       onClose()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Submit error:', err)
+      const axiosError = err as {
+        response?: {
+          status?: number;
+          statusText?: string;
+          data?: { message?: string; error?: string }
+        };
+        message?: string
+      }
       console.error('Error details:', {
-        status: err?.response?.status,
-        statusText: err?.response?.statusText,
-        data: err?.response?.data,
-        message: err?.message
+        status: axiosError?.response?.status,
+        statusText: axiosError?.response?.statusText,
+        data: axiosError?.response?.data,
+        message: axiosError?.message
       })
-      
-      const errorMsg = err?.response?.data?.message 
-        || err?.response?.data?.error 
-        || (err?.response?.status === 500 ? 'Internal Server Error. Please check all required fields.' : '')
-        || err?.message 
+
+      const errorMsg = axiosError?.response?.data?.message
+        || axiosError?.response?.data?.error
+        || (axiosError?.response?.status === 500 ? 'Internal Server Error. Please check all required fields.' : '')
+        || axiosError?.message
         || 'Failed to submit abstract'
-        
+
       toast.error(errorMsg, { duration: 5000 })
     } finally {
       setSubmitting(false)
@@ -288,11 +298,10 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
               <select
                 value={formData.caption}
                 onChange={(e) => handleChange('caption', e.target.value)}
-                className={`w-full px-4 py-2.5 rounded-lg border ${
-                  errors.caption
+                className={`w-full px-4 py-2.5 rounded-lg border ${errors.caption
                     ? 'border-red-500 focus:ring-red-500'
                     : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
-                } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
+                  } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               >
                 <option value="">--Caption*--</option>
                 {CAPTIONS.map((cap) => (
@@ -318,11 +327,10 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 placeholder="Name"
                 value={formData.name}
                 onChange={(e) => handleChange('name', e.target.value)}
-                className={`w-full px-4 py-2.5 rounded-lg border ${
-                  errors.name
+                className={`w-full px-4 py-2.5 rounded-lg border ${errors.name
                     ? 'border-red-500 focus:ring-red-500'
                     : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
-                } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
+                  } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               />
               {errors.name && (
                 <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
@@ -333,70 +341,68 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
             </div>
             {/* Email */}
             <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Email*
-            </label>
-            <input
+              </label>
+              <input
                 type="email"
                 placeholder="john@example.com"
                 value={formData.email}
                 onChange={(e) => handleChange('email', e.target.value)}
-                className={`w-full px-4 py-2.5 rounded-lg border ${
-                errors.email
+                className={`w-full px-4 py-2.5 rounded-lg border ${errors.email
                     ? 'border-red-500 focus:ring-red-500'
                     : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
-                } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
-            />
-            {errors.email && (
+                  } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
+              />
+              {errors.email && (
                 <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
-                {errors.email}
+                  <AlertCircle className="w-4 h-4" />
+                  {errors.email}
                 </p>
-            )}
+              )}
             </div>
             {/* Alternate Email */}
             <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Alternate Email
-            </label>
-            <input
+              </label>
+              <input
                 type="email"
                 placeholder="alternate@example.com"
                 value={formData.aemail}
                 onChange={(e) => handleChange('aemail', e.target.value)}
                 className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
+              />
             </div>
             {/* Website */}
             <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Website/Conference*
-            </label>
-            <select
+              </label>
+              <select
                 value={formData.websiteId || ''}
                 onChange={(e) => handleChange('websiteId', e.target.value)}
                 disabled={webLoading}
-                className={`w-full px-4 py-2.5 rounded-lg border ${
-                errors.websiteId
+                className={`w-full px-4 py-2.5 rounded-lg border ${errors.websiteId
                     ? 'border-red-500 focus:ring-red-500'
                     : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
-                } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
+                  } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
                 <option value="">
-                {webLoading ? 'Loading websites...' : 'Select Website/Conference*'}
+                  {webLoading ? 'Loading websites...' : 'Select Website/Conference*'}
                 </option>
                 {websites.map((w) => (
-                <option key={w.id} value={Number(w.id)}>
+                  <option key={w.id} value={Number(w.id)}>
                     {w.name}
-                </option>
+                  </option>
                 ))}
-            </select>
-            {errors.websiteId && (
+              </select>
+              {errors.websiteId && (
                 <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
-                {errors.websiteId}
+                  <AlertCircle className="w-4 h-4" />
+                  {errors.websiteId}
                 </p>
-            )}
+              )}
             </div>
             {/* Phone */}
             <div>
@@ -408,11 +414,10 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 placeholder="Phone"
                 value={formData.phone}
                 onChange={(e) => handleChange('phone', e.target.value)}
-                className={`w-full px-4 py-2.5 rounded-lg border ${
-                  errors.phone
+                className={`w-full px-4 py-2.5 rounded-lg border ${errors.phone
                     ? 'border-red-500 focus:ring-red-500'
                     : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
-                } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
+                  } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               />
               {errors.phone && (
                 <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
@@ -444,11 +449,10 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
               <select
                 value={formData.country}
                 onChange={(e) => handleChange('country', e.target.value)}
-                className={`w-full px-4 py-2.5 rounded-lg border ${
-                  errors.country
+                className={`w-full px-4 py-2.5 rounded-lg border ${errors.country
                     ? 'border-red-500 focus:ring-red-500'
                     : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
-                } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
+                  } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               >
                 <option value="">Select Country*</option>
                 {COUNTRIES.map((country) => (
@@ -475,11 +479,10 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 placeholder="Hyderabad"
                 value={formData.city}
                 onChange={(e) => handleChange('city', e.target.value)}
-                className={`w-full px-4 py-2.5 rounded-lg border ${
-                  errors.city
+                className={`w-full px-4 py-2.5 rounded-lg border ${errors.city
                     ? 'border-red-500 focus:ring-red-500'
                     : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
-                } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
+                  } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               />
               {errors.city && (
                 <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
@@ -499,11 +502,10 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 placeholder="Organization"
                 value={formData.organization}
                 onChange={(e) => handleChange('organization', e.target.value)}
-                className={`w-full px-4 py-2.5 rounded-lg border ${
-                  errors.organization
+                className={`w-full px-4 py-2.5 rounded-lg border ${errors.organization
                     ? 'border-red-500 focus:ring-red-500'
                     : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
-                } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
+                  } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               />
               {errors.organization && (
                 <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
@@ -521,11 +523,10 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
               <select
                 value={formData.interestedIn}
                 onChange={(e) => handleChange('interestedIn', e.target.value)}
-                className={`w-full px-4 py-2.5 rounded-lg border ${
-                  errors.interestedIn
+                className={`w-full px-4 py-2.5 rounded-lg border ${errors.interestedIn
                     ? 'border-red-500 focus:ring-red-500'
                     : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
-                } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
+                  } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               >
                 <option value="">--Interested in*--</option>
                 {INTERESTED_IN_OPTIONS.map((option) => (
@@ -553,11 +554,10 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
               placeholder="Abstract Title*"
               value={formData.title}
               onChange={(e) => handleChange('title', e.target.value)}
-              className={`w-full px-4 py-2.5 rounded-lg border ${
-                errors.title
+              className={`w-full px-4 py-2.5 rounded-lg border ${errors.title
                   ? 'border-red-500 focus:ring-red-500'
                   : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
-              } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
+                } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
             />
             {errors.title && (
               <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
@@ -622,11 +622,10 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 placeholder="Enter captcha"
                 value={formData.captcha}
                 onChange={(e) => handleChange('captcha', e.target.value)}
-                className={`flex-1 px-4 py-2.5 rounded-lg border ${
-                  errors.captcha
+                className={`flex-1 px-4 py-2.5 rounded-lg border ${errors.captcha
                     ? 'border-red-500 focus:ring-red-500'
                     : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
-                } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
+                  } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               />
             </div>
             {errors.captcha && (

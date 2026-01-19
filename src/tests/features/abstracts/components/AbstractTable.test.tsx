@@ -4,11 +4,11 @@ import AbstractTable from '../../../../features/abstracts/components/AbstractTab
 // 🔹 Mock AbstractRow to isolate table logic
 jest.mock('../../../../features/abstracts/components/AbstractRow', () => ({
   __esModule: true,
-  default: ({ record, onView }: any) => (
+  default: ({ record, onView }: { record: { id: string; name: string }; onView: (raw: import('../../../../services/abstracts').AbstractItem | undefined) => void }) => (
     <tr data-testid={`row-${record.id}`}>
       <td>{record.name}</td>
       <td>
-        <button onClick={onView}>View</button>
+        <button onClick={() => onView(undefined)}>View</button>
       </td>
     </tr>
   ),
@@ -73,12 +73,12 @@ describe('AbstractTable', () => {
     const rows = [
       { id: '1', name: 'John Doe' },
       { id: '2', name: 'Jane Doe' },
-    ] as any[]
+    ] as import('../../../../features/abstracts/types').AbstractRecord[]
 
     const rawRows = [
       { id: '1', extra: 'raw-1' },
-      { _id: '2', extra: 'raw-2' },
-    ]
+      { id: '2', extra: 'raw-2' },
+    ] as unknown as import('../../../../services/abstracts').AbstractItem[]
 
     render(
       <AbstractTable
@@ -94,7 +94,7 @@ describe('AbstractTable', () => {
 
   /* ---------------- onView callback ---------------- */
   test('calls onView with correct raw record', () => {
-    const rows = [{ id: '1', name: 'John Doe' }] as any[]
+    const rows = [{ id: '1', name: 'John Doe' }] as import('../../../../features/abstracts/types').AbstractRecord[]
     const rawRows = [{ id: '1', extra: 'raw-data' }]
 
     render(
@@ -112,7 +112,7 @@ describe('AbstractTable', () => {
 
   /* ---------------- no matching raw row ---------------- */
   test('handles missing raw row gracefully', () => {
-    const rows = [{ id: '99', name: 'Unknown' }] as any[]
+    const rows = [{ id: '99', name: 'Unknown' }] as import('../../../../features/abstracts/types').AbstractRecord[]
 
     render(
       <AbstractTable

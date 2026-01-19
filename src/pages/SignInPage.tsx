@@ -23,9 +23,10 @@ export default function SignInPage({ onSignIn, isLoading = false, error = null }
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail')
     const savedPassword = localStorage.getItem('rememberedPassword')
+    const savedDeviceId = localStorage.getItem('deviceFingerprint')
     if (savedEmail) setEmail(savedEmail)
     if (savedPassword) setPassword(savedPassword)
-    if (deviceid) setDeviceid(deviceid)
+    if (savedDeviceId) setDeviceid(savedDeviceId)
     if (savedEmail || savedPassword) setRemember(true)
   }, [])
 

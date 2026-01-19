@@ -2,25 +2,29 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import AbstractRow from '../../../../features/abstracts/components/AbstractRow'
 import { formatDate } from '../../../../utils/utils'
+import type { AbstractRecord } from '../../../../features/abstracts/types'
+import type { AbstractItem } from '../../../../services/abstracts'
 
 jest.mock('../../../../utils/utils', () => ({
   formatDate: jest.fn(() => '01 Jan 2025'),
 }))
 
-const baseRecord = {
+const baseRecord: AbstractRecord = {
   id: '1',
   name: 'John Doe',
   email: 'john@example.com',
-  altEmail: null,
-  phone: null,
+  altEmail: undefined,
+  phone: undefined,
   file: undefined,
   fileS3Url: undefined,
   status: 'Accepted',
   isEmailSent: true,
 }
 
-const baseRaw = {
+const baseRaw: AbstractItem = {
+  id: '1',
   website: {
+    id: 1,
     name: 'Test Website',
     link: 'https://example.com/',
   },
@@ -46,7 +50,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow record={baseRecord as any} raw={baseRaw} onView={onView} />
+          <AbstractRow record={baseRecord} raw={baseRaw} onView={onView} />
         </tbody>
       </table>
     )
@@ -67,7 +71,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow record={baseRecord as any} raw={baseRaw} onView={onView} />
+          <AbstractRow record={baseRecord} raw={baseRaw} onView={onView} />
         </tbody>
       </table>
     )
@@ -80,7 +84,7 @@ describe('AbstractRow – full branch & function coverage', () => {
       <table>
         <tbody>
           <AbstractRow
-            record={{ ...baseRecord, isEmailSent: false } as any}
+            record={{ ...baseRecord, isEmailSent: false }}
             raw={baseRaw}
             onView={onView}
           />
@@ -103,7 +107,7 @@ describe('AbstractRow – full branch & function coverage', () => {
       <table>
         <tbody>
           <AbstractRow
-            record={{ ...baseRecord, status } as any}
+            record={{ ...baseRecord, status: status as AbstractRecord['status'] }}
             raw={baseRaw}
             onView={onView}
           />
@@ -123,7 +127,7 @@ describe('AbstractRow – full branch & function coverage', () => {
             record={{
               ...baseRecord,
               file: 'https://files.com/test.pdf',
-            } as any}
+            }}
             raw={baseRaw}
             onView={onView}
           />
@@ -140,7 +144,7 @@ describe('AbstractRow – full branch & function coverage', () => {
       <table>
         <tbody>
           <AbstractRow
-            record={{ ...baseRecord, file: 'test.pdf' } as any}
+            record={{ ...baseRecord, file: 'test.pdf' }}
             raw={baseRaw}
             onView={onView}
           />
@@ -160,7 +164,7 @@ describe('AbstractRow – full branch & function coverage', () => {
       <table>
         <tbody>
           <AbstractRow
-            record={{ ...baseRecord, file: 'uploads/test.pdf' } as any}
+            record={{ ...baseRecord, file: 'uploads/test.pdf' }}
             raw={baseRaw}
             onView={onView}
           />
@@ -184,7 +188,7 @@ describe('AbstractRow – full branch & function coverage', () => {
               ...baseRecord,
               file: 'test.pdf',
               fileS3Url: 'https://s3.aws.com/file.pdf',
-            } as any}
+            }}
             raw={baseRaw}
             onView={onView}
           />
@@ -203,7 +207,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow record={baseRecord as any} raw={baseRaw} onView={onView} />
+          <AbstractRow record={baseRecord} raw={baseRaw} onView={onView} />
         </tbody>
       </table>
     )
@@ -216,7 +220,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow record={baseRecord as any} raw={baseRaw} onView={onView} />
+          <AbstractRow record={baseRecord} raw={baseRaw} onView={onView} />
         </tbody>
       </table>
     )
@@ -230,7 +234,7 @@ describe('AbstractRow – full branch & function coverage', () => {
       <table>
         <tbody>
           <AbstractRow
-            record={baseRecord as any}
+            record={baseRecord}
             raw={{ ...baseRaw, now: undefined }}
             onView={onView}
           />
@@ -246,7 +250,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow record={baseRecord as any} raw={baseRaw} onView={onView} />
+          <AbstractRow record={baseRecord} raw={baseRaw} onView={onView} />
         </tbody>
       </table>
     )
@@ -260,7 +264,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow record={baseRecord as any} raw={null} onView={onView} />
+          <AbstractRow record={baseRecord} raw={null} onView={onView} />
         </tbody>
       </table>
     )

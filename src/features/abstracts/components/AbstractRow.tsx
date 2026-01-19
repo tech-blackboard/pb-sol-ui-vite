@@ -1,9 +1,10 @@
+import type { AbstractItem } from '../../../services/abstracts'
 import type { AbstractRecord } from '../types'
 import { formatDate } from '../../../utils/utils'
 
 interface Props {
   record: AbstractRecord
-  raw: any
+  raw: AbstractItem | null
   onView: () => void
 }
 
@@ -19,7 +20,7 @@ export default function AbstractRow({ record, raw, onView }: Props) {
       : `${baseUrl}${f.startsWith('uploads') ? '' : 'uploads/'}${f}`
     : undefined
 
-  if(record.fileS3Url){
+  if (record.fileS3Url) {
     href = record.fileS3Url
   }
 
@@ -27,12 +28,12 @@ export default function AbstractRow({ record, raw, onView }: Props) {
     record.status === 'Accepted'
       ? 'bg-green-50 text-green-700'
       : record.status === 'Under Review'
-      ? 'bg-yellow-50 text-yellow-800'
-      : record.status === 'Rejected'
-      ? 'bg-red-50 text-red-700'
-      : record.status === 'Out of Scope'
-      ? 'bg-gray-100 text-gray-700'
-      : 'bg-blue-50 text-blue-700'
+        ? 'bg-yellow-50 text-yellow-800'
+        : record.status === 'Rejected'
+          ? 'bg-red-50 text-red-700'
+          : record.status === 'Out of Scope'
+            ? 'bg-gray-100 text-gray-700'
+            : 'bg-blue-50 text-blue-700'
 
   return (
     <tr className="border-t border-gray-100">

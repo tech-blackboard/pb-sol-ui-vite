@@ -1,3 +1,4 @@
+import type { AbstractItem } from '../../../services/abstracts'
 import type { AbstractRecord, AbstractStatus } from '../types'
 
 const allowedStatuses: AbstractStatus[] = [
@@ -9,7 +10,7 @@ const allowedStatuses: AbstractStatus[] = [
   'Registered',
 ]
 
-function toPresentationType(v: any) {
+function toPresentationType(v: string | number | undefined | null) {
   const value = String(v ?? '').toLowerCase()
   if (value.includes('oral')) return 'Oral'
   if (value.includes('poster')) return 'Poster'
@@ -18,20 +19,21 @@ function toPresentationType(v: any) {
   return undefined
 }
 
-export function normalizeAbstract(item: any): AbstractRecord {
-  const action = item?.status?.actionType
+export function normalizeAbstract(item: AbstractItem): AbstractRecord {
+  const statusRaw = item?.status
+  const action = typeof statusRaw === 'object' ? statusRaw?.actionType : statusRaw
 
-  const status: AbstractStatus = allowedStatuses.includes(action)
-    ? action
+  const status: AbstractStatus = (action && (allowedStatuses as string[]).includes(action as string))
+    ? (action as AbstractStatus)
     : 'Under Review'
 
   return {
-    id: String(item?.id ?? item?._id),
+    id: String(item?.id),
     name:
-      item?.name ??
+      item?.name ||
       [item?.user?.firstname, item?.user?.lastname]
         .filter(Boolean)
-        .join(' ') ??
+        .join(' ') ||
       'Unnamed',
     email: item?.email ?? item?.user?.useremail ?? '',
     altEmail: item?.aemail,
