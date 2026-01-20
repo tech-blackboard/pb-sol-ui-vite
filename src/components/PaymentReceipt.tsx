@@ -295,7 +295,7 @@ export function PaymentReceiptForm({
     }
 
     // Validate Accommodation Fee
-    if (!formData.accommodationFee || formData.accommodationFee <= 0) {
+    if (showAccommodation && (!formData.accommodationFee || formData.accommodationFee <= 0)) {
       newErrors.accommodationFee = 'Accommodation fee is required and must be greater than 0'
     }
 
