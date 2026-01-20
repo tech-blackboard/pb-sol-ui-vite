@@ -139,6 +139,8 @@ export function PaymentReceiptForm({
 
   function handleOccupancyChange(value: string) {
     setOccupancyType(value)
+    // Reset price so user must enter manually
+    setFormData(prev => ({ ...prev, accommodationFee: 0 }))
     setAccommodationFee(0)
     setCheckIn('')
     setCheckOut('')
@@ -149,6 +151,7 @@ export function PaymentReceiptForm({
     setShowAccommodation(checked)
     if (!checked) {
       // Reset all accommodation-related fields when unchecked
+      setFormData(prev => ({ ...prev, accommodationFee: 0 }))
       setOccupancyType('')
       setAccommodationFee(0)
       setCheckIn('')
