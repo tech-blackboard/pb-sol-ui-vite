@@ -161,6 +161,8 @@ export function InvoiceForm({
       setCheckIn('')
       setCheckOut('')
       setNumberOfNights(0)
+    } else {
+      setOccupancyType('Single Occupancy')
     }
   }
 
@@ -294,9 +296,9 @@ export function InvoiceForm({
     }
 
     // Validate Accommodation Fee
-    // if (!formData.accommodationFee || formData.accommodationFee <= 0) {
-    //   newErrors.accommodationFee = 'Accommodation fee is required and must be greater than 0'
-    // }
+    if (showAccommodation && (!formData.accommodationFee || formData.accommodationFee <= 0)) {
+      newErrors.accommodationFee = 'Accommodation fee is required and must be greater than 0'
+    }
     // Validate Number of participants
     if (!formData.quantity || formData.quantity <= 0) {
       newErrors.quantity = 'Number of participants is required and must be at least 1'
@@ -344,7 +346,7 @@ export function InvoiceForm({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 ">
-      <div className="relative w-full max-w-4xl rounded-lg bg-white shadow-xl dark:bg-gray-800 max-h-[98vh] ">
+      <div className={`relative w-full max-w-4xl rounded-lg bg-white shadow-xl dark:bg-gray-800 max-h-[98vh] border-2 ${Object.keys(errors).length > 0 ? 'border-red-500' : 'border-transparent'}`}>
 
         {!showPreview ? (
           <>
