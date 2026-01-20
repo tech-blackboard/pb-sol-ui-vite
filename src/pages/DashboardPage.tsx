@@ -17,6 +17,7 @@ const STATUS_MAP: Record<string, number | null> = {
   rejected: 4,
   invoice: 5,
   registered: 6,
+  deleted: 7,
 }
 
 type LoadDashboardParams = {
@@ -87,6 +88,7 @@ export default function DashboardPage() {
         rejected: { label: 'Rejected', value: counts.rejected, color: 'text-red-600' },
         invoice: { label: 'Invoiced', value: counts.invoiced, color: 'text-purple-600' },
         registered: { label: 'Registered', value: counts.registered, color: 'text-green-600' },
+        deleted: { label: 'Deleted', value: counts.deleted, color: 'text-red-600' },
       })
 
       setRecent(res.recentAbstracts ?? [])
@@ -117,6 +119,7 @@ export default function DashboardPage() {
       rejected: map[4] ?? 0,
       invoiced: map[5] ?? 0,
       registered: map[6] ?? 0,
+      deleted: map[7] ?? 0,
     }
   }
 
@@ -274,7 +277,7 @@ export default function DashboardPage() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-8 gap-4">
         {(Object.keys(STATUS_MAP) as StatusKey[]).map((k) => {
           const card = stats[k]
           const statusId = STATUS_MAP[k]
@@ -295,6 +298,8 @@ export default function DashboardPage() {
             activeColor = 'bg-purple-200'
           } else if (statusId === 6) {
             activeColor = 'bg-green-200'
+          } else if (statusId === 7) {
+            activeColor = 'bg-red-200'
           }
 
           return (
@@ -425,7 +430,9 @@ export default function DashboardPage() {
                                 ? 'bg-red-50 text-red-700'
                                 : r.status?.actionType === 'Out of Scope'
                                   ? 'bg-gray-100 text-gray-700 w-[6rem]'
-                                  : 'bg-blue-50 text-blue-700',
+                                  : r.status?.actionType === 'Deleted'
+                                    ? 'bg-gray-100 text-red-700'
+                                    : 'bg-blue-50 text-blue-700',
                         ].join(' ')}
                       >
                         {r.status?.actionType ?? 'Under Review'}
