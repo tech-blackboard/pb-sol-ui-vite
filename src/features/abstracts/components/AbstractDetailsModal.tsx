@@ -2,7 +2,7 @@ import type { AbstractRecord, AbstractStatus } from '../types'
 import { formatDate } from '../../../utils/utils'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { selectActionLoading } from '../../../store/slices/abstracts/abstracts.selectors'
-import { sendConfirmationEmailThunk} from '../../../store/slices/abstracts/abstracts.thunks'
+import { sendConfirmationEmailThunk } from '../../../store/slices/abstracts/abstracts.thunks'
 import { openInvoiceModal, openPaymentReceiptModal, openPaymentReminderModal } from '../../../store/slices/abstracts/abstracts.slice'
 import toast from 'react-hot-toast'
 
@@ -47,7 +47,9 @@ export default function AbstractDetailsModal({
           ? 'bg-red-50 text-red-700'
           : currentStatus === 'Out of Scope'
             ? 'bg-gray-100 text-gray-700'
-            : 'bg-blue-50 text-blue-700'
+            : currentStatus === 'Deleted'
+              ? 'bg-gray-100 text-red-700'
+              : 'bg-blue-50 text-blue-700'
 
   /* -------------------- file -------------------- */
 
@@ -69,11 +71,11 @@ export default function AbstractDetailsModal({
   const isAccepted = currentStatus === 'Accepted'
   const isSentInvoice = currentStatus === 'Sent Invoice'
   const isRegistered = currentStatus === 'Registered'
-  const isTerminal = currentStatus === 'Rejected' || currentStatus === 'Out of Scope'
+  const isTerminal = currentStatus === 'Rejected' || currentStatus === 'Out of Scope' || currentStatus === 'Deleted'
   const showInvoiceActions = modalStatus === 'Sent Invoice'
   const showPaymentReceiptActions = modalStatus === 'Registered'
   const showConfirmationButton = !item.isEmailSent
- 
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-3xl rounded-lg bg-white shadow-xl border border-gray-200">
@@ -203,6 +205,9 @@ export default function AbstractDetailsModal({
               <option disabled={isUnderReview || isRegistered || isTerminal}>
                 Registered
               </option>
+              <option>
+                Deleted
+              </option>
             </select>
           </div>
 
@@ -221,7 +226,7 @@ export default function AbstractDetailsModal({
               </button>
             )}
 
-{showConfirmationButton && (
+            {showConfirmationButton && (
               <button
                 onClick={async () => {
                   const result = await dispatch(
@@ -285,11 +290,11 @@ export default function AbstractDetailsModal({
                 Payment Receipt
               </button>
             )}
-        
+
             <button
               onClick={onClose}
               className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
-              >
+            >
               Close
             </button>
           </div>
