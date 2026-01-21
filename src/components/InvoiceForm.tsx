@@ -21,6 +21,8 @@ interface InvoiceData {
   internetHandlingFees?: number
   checkIn?: string
   checkOut?: string
+  totalRegistrationValue?: number
+  totalAccommodationValue?: number
   // Legacy fields for backwards compatibility
   description?: string
   quantity?: number
@@ -244,10 +246,12 @@ export function InvoiceForm({
       })
     }
 
-    // Calculate internet handling fees (5% of total if accommodation is included)
-    const internetHandlingFees = occupancyType && numberOfNights > 0
-      ? (totalRegistrationValue + totalAccommodationValue) * 0.05
-      : 0
+    // Calculate internet handling fees (4.8% of total if accommodation is included)
+    const internetHandlingFees = Math.round(
+      (occupancyType && numberOfNights > 0
+        ? (totalRegistrationValue + totalAccommodationValue)
+        : totalRegistrationValue) * 0.048
+    )
 
     // Add internet handling fees if applicable
     if (internetHandlingFees > 0) {
@@ -339,7 +343,9 @@ export function InvoiceForm({
       : registrationFee) * (formData.quantity || 1)
 
   const totalAccommodationValue = formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) * numberOfNights : accommodationFee * numberOfNights
-  const totalPrice = totalRegistrationValue + totalAccommodationValue
+
+  const internetHandlingFees = Math.round((totalRegistrationValue + totalAccommodationValue) * 0.048)
+  const totalPrice = totalRegistrationValue + totalAccommodationValue + internetHandlingFees
 
 
   if (!isOpen) return null
@@ -611,9 +617,17 @@ export function InvoiceForm({
                             ${totalAccommodationValue}
                           </td>
                         </tr>
+                        <tr className="bg-gray-50 dark:bg-gray-900">
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                            Internet Handling Fees (4.8%)
+                          </td>
+                          <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
+                            ${internetHandlingFees}
+                          </td>
+                        </tr>
                         <tr className="bg-blue-50 dark:bg-blue-900">
                           <td className="px-6 py-4 text-base font-bold text-gray-900 dark:text-white">
-                            Total Registration Price:
+                            Invoice Amount
                           </td>
                           <td className="px-6 py-4 text-base text-right font-bold text-blue-600 dark:text-blue-400">
                             ${totalPrice}
@@ -889,9 +903,9 @@ export function InvoiceForm({
                           <tr>
                             <td className="px-3 py-2">Registration Price</td>
                             <td className="px-3 py-2 text-right">
-                              ${formData.registrationFee && formData.registrationFee > 0
+                              $ {(formData.registrationFee && formData.registrationFee > 0
                                 ? formData.registrationFee
-                                : registrationFee}
+                                : registrationFee)}
                             </td>
                           </tr>
                           <tr>
@@ -914,6 +928,10 @@ export function InvoiceForm({
                           <tr>
                             <td className="px-3 py-2">Total Accommodation Value</td>
                             <td className="px-3 py-2 text-right">${totalAccommodationValue}</td>
+                          </tr>
+                          <tr>
+                            <td className="px-3 py-2">Internet Handling Fees (4.8%)</td>
+                            <td className="px-3 py-2 text-right">${internetHandlingFees}</td>
                           </tr>
                           <tr>
                             <td className="px-3 py-2 font-bold">Grand Total</td>

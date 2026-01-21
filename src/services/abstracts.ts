@@ -94,12 +94,12 @@ export async function createAbstract(body: Partial<AbstractItem>): Promise<Abstr
 
 export async function createAbstractWithFormDataFileUpload(body: Partial<AbstractItem> | FormData): Promise<AbstractItem> {
   const isFormData = body instanceof FormData
-  
+
   // For FormData, we need to handle headers differently
   const config: any = {
     withCredentials: true,
   }
-  
+
   if (isFormData) {
     // Don't set Content-Type for FormData - let browser set it with boundary
     // Only add Authorization header
@@ -116,7 +116,7 @@ export async function createAbstractWithFormDataFileUpload(body: Partial<Abstrac
       ...getAuthHeaders(),
     }
   }
-  
+
   const { data } = await api.post<AbstractItem>(`${ABSTRACT_BASE}`, body, config)
   return data
 }
@@ -290,6 +290,7 @@ export type PaymentReceiptData = {
   internetHandlingFees?: number
   checkIn?: string
   checkOut?: string
+  totalRegistrationValue?: number
 }
 
 export type SendPaymentReceiptResponse = {
@@ -341,7 +342,7 @@ export async function sendConfirmationEmail(
   return data
 }
 
-export type PaymentReminderResponse = {  status?: 'success' | 'error'; message?: string }
+export type PaymentReminderResponse = { status?: 'success' | 'error'; message?: string }
 
 export async function sendPaymentReminder(id: string | number, paymentReminderData: PaymentReminderData): Promise<PaymentReminderResponse> {
   const { data } = await api.post(
