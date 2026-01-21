@@ -89,6 +89,11 @@ export function InvoiceForm({
   })
 
   const [errors, setErrors] = useState<Partial<Record<keyof InvoiceData, string>>>({})
+  const [accommodationErrors, setAccommodationErrors] = useState<{
+    checkIn?: string
+    checkOut?: string
+    numberOfNights?: string
+  }>({})
   const [registrationFee, setRegistrationFee] = useState(699)
   const [showAccommodation, setShowAccommodation] = useState(false)
   const [occupancyType, setOccupancyType] = useState<string>('')
@@ -303,6 +308,24 @@ export function InvoiceForm({
     if (showAccommodation && (!formData.accommodationFee || formData.accommodationFee <= 0)) {
       newErrors.accommodationFee = 'Accommodation fee is required and must be greater than 0'
     }
+
+    // Validate Accommodation Date Fields
+    const newAccommodationErrors: { checkIn?: string; checkOut?: string; numberOfNights?: string } = {}
+    if (showAccommodation) {
+      if (!checkIn) {
+        newAccommodationErrors.checkIn = 'Check-in date is required'
+      }
+      if (!checkOut) {
+        newAccommodationErrors.checkOut = 'Check-out date is required'
+      } else if (checkIn && checkOut && new Date(checkOut) <= new Date(checkIn)) {
+        newAccommodationErrors.checkOut = 'Check-out must be after check-in date'
+      }
+      if (numberOfNights <= 0) {
+        newAccommodationErrors.numberOfNights = 'Number of nights must be greater than 0'
+      }
+    }
+    setAccommodationErrors(newAccommodationErrors)
+
     // Validate Number of participants
     if (!formData.quantity || formData.quantity <= 0) {
       newErrors.quantity = 'Number of participants is required and must be at least 1'
@@ -313,7 +336,7 @@ export function InvoiceForm({
     }
 
     setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    return Object.keys(newErrors).length === 0 && Object.keys(newAccommodationErrors).length === 0
   }
 
   function handleClose() {
@@ -328,6 +351,7 @@ export function InvoiceForm({
       note: '',
     })
     setErrors({})
+    setAccommodationErrors({})
     setShowAccommodation(false)
     setOccupancyType('')
     setAccommodationFee(0)
@@ -352,7 +376,7 @@ export function InvoiceForm({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 ">
-      <div className={`relative w-full max-w-4xl rounded-lg bg-white shadow-xl dark:bg-gray-800 max-h-[98vh] border-2 ${Object.keys(errors).length > 0 ? 'border-red-500' : 'border-transparent'}`}>
+      <div className={`relative w-full max-w-4xl rounded-lg bg-white shadow-xl dark:bg-gray-800 max-h-[98vh] border-2 ${Object.keys(errors).length > 0 || Object.keys(accommodationErrors).length > 0 ? 'border-red-500' : 'border-transparent'}`}>
 
         {!showPreview ? (
           <>
@@ -496,40 +520,58 @@ export function InvoiceForm({
                           {/* Check In */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Check In
+                              Check In <span className="text-red-500">*</span>
                             </label>
                             <input
                               type="date"
                               value={checkIn}
                               onChange={(e) => handleCheckInChange(e.target.value)}
-                              className="w-full mt-1 rounded-md border px-3 py-2 dark:bg-gray-700 dark:text-white"
+                              className={`w-full mt-1 rounded-md border px-3 py-2 dark:bg-gray-700 dark:text-white ${accommodationErrors.checkIn
+                                  ? 'border-red-500 focus:ring-red-500'
+                                  : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
+                                }`}
                             />
+                            {accommodationErrors.checkIn && (
+                              <p className="mt-1 text-sm text-red-600">{accommodationErrors.checkIn}</p>
+                            )}
                           </div>
 
                           {/* Check Out */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Check Out
+                              Check Out <span className="text-red-500">*</span>
                             </label>
                             <input
                               type="date"
                               value={checkOut}
                               onChange={(e) => handleCheckOutChange(e.target.value)}
-                              className="w-full mt-1 rounded-md border px-3 py-2 dark:bg-gray-700 dark:text-white"
+                              className={`w-full mt-1 rounded-md border px-3 py-2 dark:bg-gray-700 dark:text-white ${accommodationErrors.checkOut
+                                  ? 'border-red-500 focus:ring-red-500'
+                                  : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
+                                }`}
                             />
+                            {accommodationErrors.checkOut && (
+                              <p className="mt-1 text-sm text-red-600">{accommodationErrors.checkOut}</p>
+                            )}
                           </div>
 
                           {/* Nights */}
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Number of Nights
+                              Number of Nights <span className="text-red-500">*</span>
                             </label>
                             <input
                               type="number"
                               readOnly
                               value={numberOfNights}
-                              className="w-full mt-1 rounded-md border px-3 py-2 dark:bg-gray-700 dark:text-white"
+                              className={`w-full mt-1 rounded-md border px-3 py-2 dark:bg-gray-700 dark:text-white bg-gray-50 dark:bg-gray-600 ${accommodationErrors.numberOfNights
+                                  ? 'border-red-500'
+                                  : 'border-gray-300 dark:border-gray-600'
+                                }`}
                             />
+                            {accommodationErrors.numberOfNights && (
+                              <p className="mt-1 text-sm text-red-600">{accommodationErrors.numberOfNights}</p>
+                            )}
                           </div>
 
                           {/* Accommodation Price */}
