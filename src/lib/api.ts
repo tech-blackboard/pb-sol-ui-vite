@@ -67,12 +67,15 @@ const refreshApi = axios.create({
 let refreshPromise: Promise<string> | null = null
 async function refreshAccessToken(): Promise<string> {
   if (!refreshPromise) {
+    console.log('refreshing token');
+    const deviceId = getCachedDeviceFingerprint()
     refreshPromise = refreshApi.post(
       `${AUTH_BASE}/refresh-token`,
       {},
       {
         headers: {
           Authorization: `Bearer ${getRefreshToken()}`,
+          ...(deviceId ? { 'x-device-id': deviceId } : {}),
         },
       },
     )

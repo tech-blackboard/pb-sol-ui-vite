@@ -290,6 +290,7 @@ export type PaymentReceiptData = {
   internetHandlingFees?: number
   checkIn?: string
   checkOut?: string
+  totalRegistrationValue?: number
 }
 
 export type SendPaymentReceiptResponse = {

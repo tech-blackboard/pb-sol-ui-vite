@@ -33,7 +33,9 @@ export default function AbstractRow({ record, raw, onView }: Props) {
           ? 'bg-red-50 text-red-700'
           : record.status === 'Out of Scope'
             ? 'bg-gray-100 text-gray-700'
-            : 'bg-blue-50 text-blue-700'
+            : record.status === 'Deleted'
+              ? 'bg-gray-100 text-red-700'
+              : 'bg-blue-50 text-blue-700'
 
   return (
     <tr className="border-t border-gray-100">

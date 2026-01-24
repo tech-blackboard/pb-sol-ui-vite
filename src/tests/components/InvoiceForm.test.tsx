@@ -81,11 +81,11 @@ describe('InvoiceForm', () => {
     fireEvent.click(screen.getByLabelText('Single Occupancy'))
 
     // Dates
-    fireEvent.change(screen.getByLabelText('Check In'), {
+    fireEvent.change(screen.getByLabelText(/Check In/i), {
       target: { value: '2025-01-01' },
     })
 
-    fireEvent.change(screen.getByLabelText('Check Out'), {
+    fireEvent.change(screen.getByLabelText(/Check Out/i), {
       target: { value: '2025-01-04' },
     })
 
@@ -122,11 +122,11 @@ describe('InvoiceForm', () => {
     fireEvent.click(screen.getByLabelText(/Looking for Accommodation/i))
     fireEvent.click(screen.getByLabelText('Single Occupancy'))
 
-    fireEvent.change(screen.getByLabelText('Check In'), {
+    fireEvent.change(screen.getByLabelText(/Check In/i), {
       target: { value: '2025-01-01' },
     })
 
-    fireEvent.change(screen.getByLabelText('Check Out'), {
+    fireEvent.change(screen.getByLabelText(/Check Out/i), {
       target: { value: '2025-01-03' },
     })
 
