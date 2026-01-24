@@ -1,9 +1,17 @@
-import{ useState } from 'react';
+import { useState } from 'react';
 import { ShieldX, X, Mail, AlertTriangle } from 'lucide-react';
 
-export default function NoPermissionsAlert() {
-  const [isVisible, setIsVisible] = useState(true)
-  if (!isVisible) return null
+interface NoPermissionsAlertProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+  message?: string;
+}
+
+export default function NoPermissionsAlert({ isOpen = true, onClose, message }: NoPermissionsAlertProps) {
+  const [isVisible, setIsVisible] = useState(isOpen)
+
+  if (!isVisible && !isOpen) return null
+  if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -13,7 +21,10 @@ export default function NoPermissionsAlert() {
       {/* Modal */}
       <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
         <button
-          onClick={() => setIsVisible(false)}
+          onClick={() => {
+            setIsVisible(false);
+            onClose?.();
+          }}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
           aria-label="Close"
         >
@@ -27,9 +38,9 @@ export default function NoPermissionsAlert() {
         </div>
 
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">No Permissions Assigned</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">{message || 'No Permissions Assigned'}</h2>
           <p className="text-gray-600 leading-relaxed">
-            Your account doesn't have permissions to access this resource. Please contact your administrator.
+            {message ? 'Please contact support or try again.' : "Your account doesn't have permissions to access this resource. Please contact your administrator."}
           </p>
         </div>
 
@@ -49,7 +60,10 @@ export default function NoPermissionsAlert() {
             Request Access
           </button>
           <button
-            onClick={() => setIsVisible(false)}
+            onClick={() => {
+              setIsVisible(false);
+              onClose?.();
+            }}
             className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3.5 rounded-lg transition-all"
           >
             Close

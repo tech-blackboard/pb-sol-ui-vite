@@ -6,4 +6,5 @@ export const STATUS_TO_ID: Record<AbstractStatus, number> = {
   Rejected: 4,
   'Sent Invoice': 5,
   Registered: 6,
+  Deleted: 7,
 }

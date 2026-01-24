@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react'
 import { ServerOff, RefreshCw, AlertTriangle, Settings, HelpCircle } from 'lucide-react'
 
-export default function ServerUnavailableAlert() {
+interface ServerUnavailableAlertProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function ServerUnavailableAlert({ isOpen = true, onClose }: ServerUnavailableAlertProps) {
+  if (!isOpen) return null;
   const [isRetrying, setIsRetrying] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
 
@@ -68,15 +74,23 @@ export default function ServerUnavailableAlert() {
             )}
           </div>
 
-          {/* Retry Button */}
-          <button
-            onClick={handleRetry}
-            disabled={isRetrying}
-            className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
-          >
-            <RefreshCw className={`w-5 h-5 ${isRetrying ? 'animate-spin' : ''}`} />
-            {isRetrying ? 'Retrying...' : 'Retry Connection'}
-          </button>
+          {/* Actions */}
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={handleRetry}
+              disabled={isRetrying}
+              className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+            >
+              <RefreshCw className={`w-5 h-5 ${isRetrying ? 'animate-spin' : ''}`} />
+              {isRetrying ? 'Retrying...' : 'Retry Connection'}
+            </button>
+            <button
+              onClick={() => onClose?.()}
+              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+            >
+              Dismiss
+            </button>
+          </div>
 
           {/* Troubleshooting Steps */}
           <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">

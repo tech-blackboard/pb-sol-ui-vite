@@ -35,6 +35,12 @@ dist-ssr
 .env.development.local
 .env.test.local
 .env.production.local
+.env.stage
+.env.stage.local
+.env.stage.development.local
+.env.stage.test.local
+.env.stage.production.local
+.env.*
 .husky/
 #jest config 
 coverage/

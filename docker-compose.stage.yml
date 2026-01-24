@@ -2,16 +2,16 @@ version: '3.8'
 
 services:
   frontend:
-    image: 483271267558.dkr.ecr.ap-south-2.amazonaws.com/pb-sol-ui-vite:latest
-    container_name: frontend-prod
+    image: 495417556644.dkr.ecr.ap-south-2.amazonaws.com/pb-sol-ui-vite:latest
+    container_name: frontend-stage
     restart: always
     ports:
       - "80:80"
     environment:
       - NODE_ENV=production
-      - API_BACKEND_HOST=pb-api-prod
+      - API_BACKEND_HOST=pb-api-stage
     networks:
-      - app-network
+      app-network:
     healthcheck:
       test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/" ]
       interval: 30s

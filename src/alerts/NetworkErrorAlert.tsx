@@ -1,8 +1,14 @@
-import{ useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { WifiOff, RefreshCw, AlertCircle, Wifi, Globe, Signal } from 'lucide-react';
 
 // Network Issue Component
-export default function NetworkErrorAlert() {
+interface NetworkErrorAlertProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function NetworkErrorAlert({ isOpen = true, onClose }: NetworkErrorAlertProps) {
+  if (!isOpen) return null;
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [lastChecked, setLastChecked] = useState(new Date());
@@ -32,7 +38,7 @@ export default function NetworkErrorAlert() {
   const checkConnection = async () => {
     setIsRetrying(true);
     setRetryCount(prev => prev + 1);
-    
+
     setTimeout(() => {
       setIsRetrying(false);
       setLastChecked(new Date());
@@ -42,9 +48,9 @@ export default function NetworkErrorAlert() {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-800/50 overflow-y-auto">
-    <div className="max-w-md w-full my-8">
-      <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-        {/* Icon */}
+      <div className="max-w-md w-full my-8">
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          {/* Icon */}
           <div className="mb-6 flex justify-center">
             <div className="relative">
               <div className="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center">
@@ -99,15 +105,23 @@ export default function NetworkErrorAlert() {
             )}
           </div>
 
-          {/* Retry Button */}
-          <button
-            onClick={checkConnection}
-            disabled={isRetrying}
-            className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
-          >
-            <RefreshCw className={`w-5 h-5 ${isRetrying ? 'animate-spin' : ''}`} />
-            {isRetrying ? 'Checking Connection...' : 'Check Connection'}
-          </button>
+          {/* Actions */}
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={checkConnection}
+              disabled={isRetrying}
+              className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+            >
+              <RefreshCw className={`w-5 h-5 ${isRetrying ? 'animate-spin' : ''}`} />
+              {isRetrying ? 'Checking Connection...' : 'Check Connection'}
+            </button>
+            <button
+              onClick={() => onClose?.()}
+              className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+            >
+              Dismiss
+            </button>
+          </div>
 
           {/* Troubleshooting Steps */}
           <div className="mt-6 pt-6 border-t border-slate-200">
@@ -141,7 +155,7 @@ export default function NetworkErrorAlert() {
               <p className="text-xs text-orange-800 flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <span>
-                  <strong>Detected:</strong> Your browser reports no internet connection. 
+                  <strong>Detected:</strong> Your browser reports no internet connection.
                   Please check your network settings.
                 </span>
               </p>

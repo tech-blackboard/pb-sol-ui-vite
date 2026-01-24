@@ -48,7 +48,9 @@ export default function AbstractDetailsModal({
           ? 'bg-red-50 text-red-700'
           : currentStatus === 'Out of Scope'
             ? 'bg-gray-100 text-gray-700'
-            : 'bg-blue-50 text-blue-700'
+            : currentStatus === 'Deleted'
+              ? 'bg-gray-100 text-red-700'
+              : 'bg-blue-50 text-blue-700'
 
   /* -------------------- file -------------------- */
 
@@ -70,7 +72,7 @@ export default function AbstractDetailsModal({
   const isAccepted = currentStatus === 'Accepted'
   const isSentInvoice = currentStatus === 'Sent Invoice'
   const isRegistered = currentStatus === 'Registered'
-  const isTerminal = currentStatus === 'Rejected' || currentStatus === 'Out of Scope'
+  const isTerminal = currentStatus === 'Rejected' || currentStatus === 'Out of Scope' || currentStatus === 'Deleted'
   const showInvoiceActions = modalStatus === 'Sent Invoice'
   const showPaymentReceiptActions = modalStatus === 'Registered'
   const showConfirmationButton = !item.isEmailSent
@@ -203,6 +205,9 @@ export default function AbstractDetailsModal({
               </option>
               <option disabled={isUnderReview || isRegistered || isTerminal}>
                 Registered
+              </option>
+              <option>
+                Deleted
               </option>
             </select>
           </div>

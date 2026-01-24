@@ -5,6 +5,7 @@ export type AbstractStatus =
   | 'Rejected'
   | 'Sent Invoice'
   | 'Registered'
+  | 'Deleted'
 
 export type PresentationType =
   | 'Oral'

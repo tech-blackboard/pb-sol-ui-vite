@@ -9,6 +9,7 @@ describe('statusMap', () => {
         'Rejected',
         'Sent Invoice',
         'Registered',
+        'Deleted'
     ]
 
     it('has correct mapping for all expected statuses', () => {
@@ -19,6 +20,7 @@ describe('statusMap', () => {
             'Rejected': 4,
             'Sent Invoice': 5,
             'Registered': 6,
+            'Deleted': 7,
         }
 
         statuses.forEach((status) => {

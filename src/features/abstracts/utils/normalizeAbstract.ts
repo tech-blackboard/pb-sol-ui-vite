@@ -8,6 +8,7 @@ const allowedStatuses: AbstractStatus[] = [
   'Rejected',
   'Sent Invoice',
   'Registered',
+  'Deleted',
 ]
 
 function toPresentationType(v: string | number | undefined | null) {
