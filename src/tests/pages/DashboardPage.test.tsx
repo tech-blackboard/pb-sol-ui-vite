@@ -123,7 +123,8 @@ describe('DashboardPage', () => {
     })
 
     it('shows error state on failure', async () => {
-        ; (fetchDashboard as jest.Mock).mockRejectedValue(new Error('Fail'))
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { })
+            ; (fetchDashboard as jest.Mock).mockRejectedValue(new Error('Fail'))
         render(<DashboardPage />)
 
         await waitFor(() => {
@@ -133,8 +134,15 @@ describe('DashboardPage', () => {
 
         // Wait for retry button and click
         const retryButton = await screen.findByRole('button', { name: /Retry/i })
+            // Successful retry
+            ; (fetchDashboard as jest.Mock).mockResolvedValue(mockDashboardData)
         fireEvent.click(retryButton)
-        expect(fetchDashboard).toHaveBeenCalledTimes(2)
+
+        await waitFor(() => {
+            expect(fetchDashboard).toHaveBeenCalledTimes(2)
+            expect(screen.getByText('10')).toBeInTheDocument()
+        })
+        consoleSpy.mockRestore()
     })
 
     it('handles empty recent abstracts', async () => {

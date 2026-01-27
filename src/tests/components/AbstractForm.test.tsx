@@ -33,7 +33,7 @@ describe('AbstractForm', () => {
   })
 
   it('renders the AbstractForm modal', async () => {
-    ;(listWebsites as jest.Mock).mockResolvedValue([])
+    ; (listWebsites as jest.Mock).mockResolvedValue([])
 
     render(<AbstractForm onClose={onClose} />)
 
@@ -43,7 +43,7 @@ describe('AbstractForm', () => {
   })
 
   it('shows validation errors on empty submit', async () => {
-    ;(listWebsites as jest.Mock).mockResolvedValue([])
+    ; (listWebsites as jest.Mock).mockResolvedValue([])
 
     render(<AbstractForm onClose={onClose} />)
 
@@ -63,7 +63,7 @@ describe('AbstractForm', () => {
   })
 
   it('loads website options from API', async () => {
-    ;(listWebsites as jest.Mock).mockResolvedValue([
+    ; (listWebsites as jest.Mock).mockResolvedValue([
       { id: 1, name: 'Test Conference' },
     ])
 
@@ -73,11 +73,11 @@ describe('AbstractForm', () => {
   })
 
   it('submits form successfully with file upload', async () => {
-    ;(listWebsites as jest.Mock).mockResolvedValue([
+    ; (listWebsites as jest.Mock).mockResolvedValue([
       { id: 1, name: 'Test Conference' },
     ])
 
-    ;(createAbstractWithFormDataFileUpload as jest.Mock).mockResolvedValue({})
+      ; (createAbstractWithFormDataFileUpload as jest.Mock).mockResolvedValue({})
 
     render(<AbstractForm onClose={onClose} onSuccess={onSuccess} />)
 
@@ -159,5 +159,80 @@ describe('AbstractForm', () => {
       expect(onSuccess).toHaveBeenCalled()
       expect(onClose).toHaveBeenCalled()
     })
+  })
+
+  it('shows error toast when website loading fails', async () => {
+    ; (listWebsites as jest.Mock).mockRejectedValue(new Error('Network Error'))
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { })
+
+    render(<AbstractForm onClose={onClose} />)
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to load website options')
+      expect(consoleErrorSpy).toHaveBeenCalled()
+    })
+    consoleErrorSpy.mockRestore()
+  })
+
+  it('shows validation error for invalid email', async () => {
+    ; (listWebsites as jest.Mock).mockResolvedValue([])
+    render(<AbstractForm onClose={onClose} />)
+
+    fireEvent.change(screen.getByPlaceholderText('john@example.com'), {
+      target: { value: 'invalid-email' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /submit now/i }))
+
+    expect(await screen.findByText('Invalid email format')).toBeInTheDocument()
+  })
+
+  it('clears validation errors when field value changes', async () => {
+    ; (listWebsites as jest.Mock).mockResolvedValue([])
+    render(<AbstractForm onClose={onClose} />)
+
+    // Trigger error
+    fireEvent.click(screen.getByRole('button', { name: /submit now/i }))
+    expect(await screen.findByText('Name is required')).toBeInTheDocument()
+
+    // Change value
+    fireEvent.change(screen.getByPlaceholderText('Name'), {
+      target: { value: 'John' },
+    })
+    expect(screen.queryByText('Name is required')).not.toBeInTheDocument()
+  })
+
+  it('handles submission failure in handleSubmitWithFileUpload', async () => {
+    ; (listWebsites as jest.Mock).mockResolvedValue([{ id: 1, name: 'Web' }])
+      ; (createAbstractWithFormDataFileUpload as jest.Mock).mockRejectedValue({
+        response: { data: { message: 'Server Error' } }
+      })
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { })
+
+    render(<AbstractForm onClose={onClose} websiteId={1} />)
+    await screen.findByText('Web')
+
+    // Fill minimum required fields
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'Dr.' } })
+    fireEvent.change(screen.getByPlaceholderText('Name'), { target: { value: 'John' } })
+    fireEvent.change(screen.getByPlaceholderText('john@example.com'), { target: { value: 'j@t.com' } })
+    fireEvent.change(screen.getByPlaceholderText('Phone'), { target: { value: '123' } })
+    fireEvent.change(screen.getByPlaceholderText('Hyderabad'), { target: { value: 'City' } })
+    fireEvent.change(screen.getByPlaceholderText('Organization'), { target: { value: 'Org' } })
+    fireEvent.change(screen.getAllByRole('combobox')[2], { target: { value: 'India' } })
+    fireEvent.change(screen.getAllByRole('combobox')[3], { target: { value: 'Oral Presentation(In-Person)' } })
+    fireEvent.change(screen.getByPlaceholderText('Abstract Title*'), { target: { value: 'Title' } })
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(fileInput, { target: { files: [new File([''], 'a.pdf')] } })
+
+    const captchaValue = document.querySelector('.font-mono')!.textContent!
+    fireEvent.change(screen.getByPlaceholderText('Enter captcha'), { target: { value: captchaValue } })
+
+    fireEvent.click(screen.getByRole('button', { name: /submit now/i }))
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Server Error', { duration: 5000 })
+    })
+    consoleErrorSpy.mockRestore()
   })
 })

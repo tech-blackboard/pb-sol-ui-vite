@@ -13,9 +13,13 @@ const config: Config = {
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
+    '!src/**/*.types.ts',
+    '!src/features/abstracts/types.ts',
     '!src/**/index.ts',
     '!src/**/main.tsx',
     '!src/**/vite-env.d.ts',
+    '!src/tests/**',
+    '!**/*.test-d.ts',
   ],
 
   transform: {
@@ -24,6 +28,9 @@ const config: Config = {
       {
         useESM: true,
         tsconfig: '<rootDir>/tsconfig.jest.json', // 🔥 REQUIRED
+        diagnostics: {
+          ignoreCodes: [1343]
+        }
       },
     ],
   },

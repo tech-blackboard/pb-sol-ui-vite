@@ -15,7 +15,7 @@ import {
   resetFilters,
 } from '../../../../store/slices/abstracts/abstracts.slice'
 import { selectDraftFilters } from '../../../../store/slices/abstracts/abstracts.selectors'
-import { listWebsites } from '../../../../services/sourcedb'
+import { listWebsites, type SourceWebsite } from '../../../../services/sourcedb'
 
 jest.mock('../../../../store/hooks')
 jest.mock('../../../../services/sourcedb')
@@ -64,8 +64,8 @@ function renderDrawer({
  * IMPORTANT:
  * Any test rendering with open=true MUST await the async useEffect
  */
-async function renderDrawerAndWait(options = {}) {
-  ; (listWebsites as jest.Mock).mockResolvedValue([])
+async function renderDrawerAndWait(options = {}, websitesData: SourceWebsite[] = []) {
+  (listWebsites as jest.Mock).mockResolvedValue(websitesData)
 
   const utils = renderDrawer(options)
 
@@ -254,5 +254,31 @@ describe('AbstractFiltersDrawer – full coverage (fixed)', () => {
 
     fireEvent.click(screen.getByText('✕'))
     expect(onClose).toHaveBeenCalled()
+  })
+
+  test('website selection dispatches updateDraftFilter', async () => {
+    await renderDrawerAndWait({}, [{ id: 10, name: 'Website X' }])
+
+    const websiteOption = await screen.findByText('Website X')
+    expect(websiteOption).toBeInTheDocument()
+
+    const selects = screen.getAllByRole('combobox')
+    const websiteSelect = selects[1]
+
+    fireEvent.change(websiteSelect, { target: { value: '10' } })
+    expect(mockDispatch).toHaveBeenCalledWith(updateDraftFilter({ key: 'website_id', value: 10 }))
+  })
+
+  test('handles website loading failure', async () => {
+    ; (listWebsites as jest.Mock).mockRejectedValue(new Error('API Fail'))
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { })
+
+    renderDrawer()
+
+    await waitFor(() => {
+      expect(listWebsites).toHaveBeenCalled()
+      expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error))
+    })
+    consoleSpy.mockRestore()
   })
 })

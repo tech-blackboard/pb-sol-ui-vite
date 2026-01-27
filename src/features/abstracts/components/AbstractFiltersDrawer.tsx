@@ -31,6 +31,8 @@ export default function AbstractFiltersDrawer({ open, onClose }: Props) {
           setLoadingWebsites(true)
           const data = await listWebsites()
           if (mounted) setWebsites(data)
+        } catch (err) {
+          console.error(err)
         } finally {
           if (mounted) setLoadingWebsites(false)
         }

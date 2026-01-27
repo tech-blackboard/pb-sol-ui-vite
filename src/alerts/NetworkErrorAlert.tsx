@@ -8,7 +8,6 @@ interface NetworkErrorAlertProps {
 }
 
 export default function NetworkErrorAlert({ isOpen = true, onClose }: NetworkErrorAlertProps) {
-  if (!isOpen) return null;
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [lastChecked, setLastChecked] = useState(new Date());
@@ -16,13 +15,15 @@ export default function NetworkErrorAlert({ isOpen = true, onClose }: NetworkErr
 
   // Lock body scroll when alert is shown
   useEffect(() => {
+    if (!isOpen) return;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
     };
-  }, []);
+  }, [isOpen]);
 
   useEffect(() => {
+    if (!isOpen) return;
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
@@ -33,7 +34,7 @@ export default function NetworkErrorAlert({ isOpen = true, onClose }: NetworkErr
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [isOpen]);
 
   const checkConnection = async () => {
     setIsRetrying(true);
@@ -45,6 +46,8 @@ export default function NetworkErrorAlert({ isOpen = true, onClose }: NetworkErr
       setIsOnline(navigator.onLine);
     }, 2000);
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-800/50 overflow-y-auto">

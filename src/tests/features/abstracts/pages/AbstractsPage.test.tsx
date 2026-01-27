@@ -369,4 +369,64 @@ describe('AbstractsPage', () => {
             expect(toast.success).toHaveBeenCalledWith('Reminder sent')
         })
     })
+
+    test('handles handleInvoiceSubmit failure', async () => {
+        const stateWithInvoice = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                invoiceModal: { open: true, abstractId: '1', abstractName: 'Test' },
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithInvoice))
+            ; (sendInvoiceThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
+
+        render(<AbstractsPage />)
+
+        fireEvent.click(screen.getByText('Submit Invoice'))
+
+        await waitFor(() => {
+            expect(toast.error).toHaveBeenCalledWith('Failed to send invoice')
+        })
+    })
+
+    test('handles handlePaymentReceiptSubmit failure', async () => {
+        const stateWithReceipt = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                paymentReceiptModal: { open: true, abstractId: '1', abstractName: 'Test' },
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithReceipt))
+            ; (sendPaymentReceiptThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
+
+        render(<AbstractsPage />)
+
+        fireEvent.click(screen.getByText('Submit Receipt'))
+
+        await waitFor(() => {
+            expect(toast.error).toHaveBeenCalledWith('Failed to send payment receipt')
+        })
+    })
+
+    test('handles handlePaymentReminderSubmit failure', async () => {
+        const stateWithReminder = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                paymentReminderModal: { open: true, abstractId: '1', abstractName: 'Test' },
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithReminder))
+            ; (sendPaymentReminderThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
+
+        render(<AbstractsPage />)
+
+        fireEvent.click(screen.getByText('Submit Reminder'))
+
+        await waitFor(() => {
+            expect(toast.error).toHaveBeenCalledWith('Failed to send payment reminder')
+        })
+    })
 })

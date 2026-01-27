@@ -157,6 +157,22 @@ describe('PaymentReminderModal', () => {
     })
   })
 
+  it('shows validation error when payment link is empty', async () => {
+    mockGetAbstractById.mockResolvedValue({ paymentLink: null } as unknown as AbstractItem)
+
+    render(<PaymentReminderModal {...defaultProps} />)
+
+    const input = await screen.findByPlaceholderText('https://payment.example.com/...')
+
+    // Trigger error by sending empty
+    fireEvent.click(screen.getByText('Send Reminder'))
+    expect(await screen.findByText('Payment link is required')).toBeInTheDocument()
+
+    // Clear error
+    fireEvent.change(input, { target: { value: 'https://test.com' } })
+    expect(screen.queryByText('Payment link is required')).not.toBeInTheDocument()
+  })
+
   /* ---------------------------------- Close ----------------------------------- */
 
   it('calls onClose when close button is clicked', async () => {
@@ -182,7 +198,7 @@ describe('PaymentReminderModal', () => {
 
   it('handles API error gracefully', async () => {
     mockGetAbstractById.mockRejectedValue(new Error('API error'))
-    jest.spyOn(console, 'error').mockImplementation(() => { })
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { })
 
     render(<PaymentReminderModal {...defaultProps} />)
 
@@ -191,5 +207,6 @@ describe('PaymentReminderModal', () => {
         'Payment link is not available, please send payment reminder'
       )
     ).toBeInTheDocument()
+    consoleSpy.mockRestore()
   })
 })
