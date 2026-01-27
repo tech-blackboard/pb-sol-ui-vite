@@ -236,7 +236,7 @@ export default function AbstractDetailsModal({
 
                   if (sendConfirmationEmailThunk.fulfilled.match(result)) {
                     toast.success(
-                      result.payload.message || 'Confirmation email sent successfully!'
+                      (result.payload as { message: string })?.message || 'Confirmation email sent successfully!'
                     )
                   } else {
                     toast.error('Failed to send confirmation email')

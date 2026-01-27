@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ServerOff, RefreshCw, AlertTriangle, Settings, HelpCircle } from 'lucide-react'
+import { reloadPage } from '../utils/navigation'
 
 interface ServerUnavailableAlertProps {
   isOpen?: boolean;
@@ -7,25 +8,27 @@ interface ServerUnavailableAlertProps {
 }
 
 export default function ServerUnavailableAlert({ isOpen = true, onClose }: ServerUnavailableAlertProps) {
-  if (!isOpen) return null;
   const [isRetrying, setIsRetrying] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
 
   // Lock body scroll
   useEffect(() => {
+    if (!isOpen) return;
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = ''
     }
-  }, [])
+  }, [isOpen])
 
   const handleRetry = () => {
     setIsRetrying(true)
     setRetryCount((prev) => prev + 1)
     setTimeout(() => {
-      window.location.reload()
+      reloadPage()
     }, 1000)
   }
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gradient-to-br from-red-50 to-orange-50 dark:from-gray-900 dark:to-gray-800 overflow-y-auto">

@@ -12,10 +12,10 @@ export function getBrowserAndOS() {
 
     // OS detection
     if (ua.includes('Windows')) os = 'Windows';
+    else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
     else if (ua.includes('Mac OS')) os = 'MacOS';
     else if (ua.includes('Linux')) os = 'Linux';
     else if (ua.includes('Android')) os = 'Android';
-    else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
 
     return { browser, os };
 }

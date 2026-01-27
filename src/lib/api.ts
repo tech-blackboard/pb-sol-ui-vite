@@ -118,7 +118,7 @@ api.interceptors.response.use(
     if (typeof status === 'number' && status >= 500) {
       // Server error (5xx)
       window.dispatchEvent(new CustomEvent('app:server-error'))
-    } else if (!status && (code === 'ECONNREFUSED' || code === 'ERR_CONNECTION_REFUSED' || code === 'ERR_NETWORK')) {
+    } else if (!status && (code === 'ECONNREFUSED' || code === 'ERR_CONNECTION_REFUSED')) {
       // Server stopped/unreachable
       window.dispatchEvent(new CustomEvent('app:server-unavailable'))
     } else if ((code === 'ERR_NETWORK' && !status) || !navigator.onLine) {
@@ -161,8 +161,10 @@ api.interceptors.response.use(
       const sentToken = original.headers?.Authorization?.replace('Bearer ', '')
       if (currentToken && sentToken && currentToken !== sentToken) {
         original.headers = original.headers || {}
-        if (original.headers) {
+        if (typeof original.headers.set === 'function') {
           original.headers.set('Authorization', `Bearer ${currentToken}`)
+        } else {
+          original.headers['Authorization'] = `Bearer ${currentToken}`
         }
         return api(original)
       }
@@ -170,8 +172,10 @@ api.interceptors.response.use(
       try {
         const newToken = await refreshAccessToken()
         original.headers = original.headers || {}
-        if (original.headers) {
+        if (typeof original.headers.set === 'function') {
           original.headers.set('Authorization', `Bearer ${newToken}`)
+        } else {
+          original.headers['Authorization'] = `Bearer ${newToken}`
         }
         return api(original)
       } catch (e) {

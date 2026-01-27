@@ -185,33 +185,33 @@ describe('PaymentReceiptForm – Final Clean Suite v2', () => {
 
   test('hides Send button when Back to Form is clicked', async () => {
     setup()
-  
+
     fireEvent.change(screen.getByLabelText(/Interested in/i), {
       target: { value: 'Listener (Virtual)' },
     })
-  
+
     fireEvent.change(screen.getByLabelText(/Registration Fee/i), {
       target: { value: '199' },
     })
-  
+
     fireEvent.click(
       screen.getByRole('button', { name: /Preview Payment Receipt/i })
     )
-  
+
     await screen.findByRole('button', { name: /Send Payment Receipt/i })
-  
+
     // ✅ correct button in Preview
     fireEvent.click(
       screen.getByRole('button', { name: /Back to Form/i })
     )
-  
+
     await waitFor(() => {
       expect(
         screen.queryByRole('button', { name: /Send Payment Receipt/i })
       ).not.toBeInTheDocument()
     })
   })
-  
+
 
   /* -------------------------------------------------- */
   /* CONFIRM MODAL                                     */
@@ -314,9 +314,31 @@ describe('PaymentReceiptForm – Final Clean Suite v2', () => {
 
   test('calls onClose when cancel is clicked', () => {
     setup()
-
     fireEvent.click(screen.getByText('Cancel'))
-
     expect(onClose).toHaveBeenCalled()
+  })
+
+  test('clears error when field changes', async () => {
+    setup()
+    fireEvent.click(screen.getByRole('button', { name: /Preview Payment Receipt/i }))
+    await screen.findByText(/Please select an option/i)
+
+    fireEvent.change(screen.getByLabelText(/Interested in/i), {
+      target: { value: 'Others' }
+    })
+    expect(screen.queryByText(/Please select an option/i)).not.toBeInTheDocument()
+  })
+
+  test('handles date validation failure', async () => {
+    setup()
+    fireEvent.click(screen.getByLabelText(/Looking for Accommodation/i))
+
+    // Submit with missing dates
+    fireEvent.click(screen.getByRole('button', { name: /Preview Payment Receipt/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/Check-in date is required/i)).toBeInTheDocument()
+      expect(screen.getByText(/Check-out date is required/i)).toBeInTheDocument()
+    })
   })
 })

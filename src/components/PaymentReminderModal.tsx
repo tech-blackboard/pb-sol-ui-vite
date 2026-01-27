@@ -60,6 +60,11 @@ export function PaymentReminderModal({
   }
 
   function handleSend() {
+    if (!existingPaymentLink && !formData.paymentLink) {
+      setErrors({ paymentLink: 'Payment link is required' })
+      return
+    }
+
     const payload: PaymentReminderData = {
       paymentLink: existingPaymentLink ?? formData.paymentLink,
     }

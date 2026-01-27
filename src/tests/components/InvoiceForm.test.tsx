@@ -153,9 +153,49 @@ describe('InvoiceForm', () => {
 
   test('cancel button resets form and closes modal', () => {
     renderForm()
-
     fireEvent.click(screen.getByText('Cancel'))
-
     expect(onClose).toHaveBeenCalled()
+  })
+
+  test('resets accommodation fields when checkbox is unchecked', () => {
+    renderForm()
+
+    // Enable accommodation
+    fireEvent.click(screen.getByLabelText(/Looking for Accommodation/i))
+    fireEvent.click(screen.getByLabelText('Double Occupancy'))
+    fireEvent.change(screen.getByLabelText(/Check In/i), { target: { value: '2025-01-01' } })
+
+    // Uncheck
+    fireEvent.click(screen.getByLabelText(/Looking for Accommodation/i))
+
+    // Re-check to verify reset
+    fireEvent.click(screen.getByLabelText(/Looking for Accommodation/i))
+    expect(screen.getByLabelText('Single Occupancy')).toBeChecked()
+    expect(screen.getByLabelText(/Check In/i)).toHaveValue('')
+  })
+
+  test('handles occupancy change and resets fields', () => {
+    renderForm()
+
+    fireEvent.click(screen.getByLabelText(/Looking for Accommodation/i))
+    fireEvent.change(screen.getByLabelText(/Check In/i), { target: { value: '2025-01-01' } })
+
+    fireEvent.click(screen.getByLabelText('Triple Occupancy'))
+    expect(screen.getByLabelText(/Check In/i)).toHaveValue('')
+  })
+
+  test('validation fails for invalid accommodation dates', async () => {
+    renderForm()
+
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'Listener (In-Person)' } })
+    fireEvent.change(screen.getByLabelText(/Registration Fee/i), { target: { value: '799' } })
+
+    fireEvent.click(screen.getByLabelText(/Looking for Accommodation/i))
+    fireEvent.change(screen.getByLabelText(/Check In/i), { target: { value: '2025-01-05' } })
+    fireEvent.change(screen.getByLabelText(/Check Out/i), { target: { value: '2025-01-01' } })
+
+    fireEvent.click(screen.getByText('Preview Invoice'))
+
+    expect(await screen.findByText('Check-out must be after check-in date')).toBeInTheDocument()
   })
 })

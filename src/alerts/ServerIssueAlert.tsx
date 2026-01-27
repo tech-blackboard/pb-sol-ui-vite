@@ -6,7 +6,6 @@ interface ServerIssueAlertProps {
 }
 
 export default function ServerIssueAlert({ isOpen = true, onClose }: ServerIssueAlertProps) {
-  if (!isOpen) return null;
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [lastChecked, setLastChecked] = useState(new Date());
@@ -22,6 +21,8 @@ export default function ServerIssueAlert({ isOpen = true, onClose }: ServerIssue
       // In real implementation, check actual server status
     }, 2000);
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-rose-50 flex items-center justify-center p-4">

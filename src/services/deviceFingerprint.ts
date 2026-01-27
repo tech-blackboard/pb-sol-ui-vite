@@ -6,7 +6,7 @@ let fingerprintPromise: Promise<string> | null = null;
  * Initialize and get device fingerprint ID
  * Uses FingerprintJS to generate a stable browser fingerprint
  */
-export async function getDeviceFingerprint(): Promise<string> {
+export function getDeviceFingerprint(): Promise<string> {
     // Return cached promise if already initializing
     if (fingerprintPromise) {
         return fingerprintPromise;

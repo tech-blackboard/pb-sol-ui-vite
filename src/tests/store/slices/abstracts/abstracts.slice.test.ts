@@ -1,8 +1,26 @@
 
 
-import type { AbstractItem } from '../../../../services/abstracts'
-import reducer, { setSelected, clearSelected, setPage, setPageSize, updateDraftFilter, applyFilters, resetFilters, openInvoiceModal, closeInvoiceModal } from '../../../../store/slices/abstracts/abstracts.slice'
-import { fetchAbstracts, updateStatusThunk, sendInvoiceThunk } from '../../../../store/slices/abstracts/abstracts.thunks'
+import type { AbstractItem, AbstractSearchResult, InvoiceData, PaymentReceiptData, PaymentReminderData, SendPaymentReceiptResponse } from '../../../../services/abstracts'
+import type { AbstractRecord, AbstractStatus } from '../../../../features/abstracts/types'
+
+import type { AbstractFilters } from '../../../../store/slices/abstracts/abstracts.types'
+import reducer, {
+  setSelected,
+  clearSelected,
+  setPage,
+  setPageSize,
+  updateDraftFilter,
+  applyFilters,
+  resetFilters,
+  openInvoiceModal,
+  closeInvoiceModal,
+  setModalStatus,
+  openPaymentReceiptModal,
+  closePaymentReceiptModal,
+  openPaymentReminderModal,
+  closePaymentReminderModal
+} from '../../../../store/slices/abstracts/abstracts.slice'
+import { fetchAbstracts, updateStatusThunk, sendInvoiceThunk, sendPaymentReminderThunk, sendPaymentReceiptThunk, sendConfirmationEmailThunk } from '../../../../store/slices/abstracts/abstracts.thunks'
 
 describe('abstracts slice', () => {
   const initialState = reducer(undefined, { type: 'INIT' })
@@ -148,11 +166,94 @@ describe('abstracts slice', () => {
     expect(state.total).toBe(2)
   })
 
+  it('should set selected abstract and modal status (status as string)', () => {
+    const abstract = { id: '1', status: 'Pending' as AbstractStatus } as unknown as AbstractItem
+
+    const state = reducer(initialState, setSelected(abstract))
+
+    expect(state.selected).toEqual(abstract)
+    expect(state.modalStatus).toBe('Pending')
+  });
+
+  it('should set modal status via setModalStatus', () => {
+    const state = reducer(initialState, setModalStatus('Approved' as AbstractStatus))
+    expect(state.modalStatus).toBe('Approved')
+  });
+
+  it('should handle fetchAbstracts.fulfilled with missing total', () => {
+    const payload = { items: [{ id: '1' }] }
+    const state = reducer(initialState, fetchAbstracts.fulfilled(payload as unknown as AbstractSearchResult, '', { page: 1, limit: 10, filters: { search: '', sortBy: 'now', sortOrder: 'DESC' } }))
+    expect(state.total).toBe(1)
+  });
+
+  it('should handle updateStatusThunk.fulfilled when ID is not in rawItems', () => {
+    const startState = { ...initialState, rawItems: [{ id: '2' }] as AbstractItem[] }
+    const payload = { id: '1', status: 'Approved' } as unknown as AbstractItem
+    const state = reducer(startState, updateStatusThunk.fulfilled(payload, '', { id: '1', statusId: 1 }))
+    expect(state.rawItems[0].id).toBe('2')
+    expect(state.selected).toBe(payload)
+  });
+
+  it('should handle sendPaymentReceiptThunk.fulfilled', () => {
+    const startState = {
+      ...initialState,
+      rawItems: [{ id: '1', name: 'Original' }] as AbstractItem[],
+      items: [{ id: '1' }] as unknown as AbstractRecord[],
+      actionLoading: { ...initialState.actionLoading, receipt: true },
+      paymentReceiptModal: { open: true, abstractId: '1', abstractName: 'Test' }
+    }
+    const payload = { updated: { id: '1', name: 'Updated' } } as unknown as { receiptResult: SendPaymentReceiptResponse; updated: AbstractItem }
+    const state = reducer(startState, sendPaymentReceiptThunk.fulfilled(payload, '', { abstractId: '1', receiptData: {} as PaymentReceiptData }))
+
+    expect(state.rawItems[0].name).toBe('Updated')
+    expect(state.paymentReceiptModal.open).toBe(false)
+    expect(state.modalStatus).toBe('Registered')
+  });
+
+  it('should handle sendConfirmationEmailThunk.fulfilled and update items', () => {
+    const startState = {
+      ...initialState,
+      rawItems: [{ id: '1', isEmailSent: false }] as AbstractItem[],
+      items: [{ id: '1' }] as unknown as AbstractRecord[],
+      selected: { id: '1', isEmailSent: false } as AbstractItem
+    }
+    const state = reducer(startState, sendConfirmationEmailThunk.fulfilled({ id: '1', message: 'Sent' }, '', '1'))
+
+    expect(state.rawItems[0].isEmailSent).toBe(true)
+    expect(state.selected?.isEmailSent).toBe(true)
+  });
+
+  it('should handle sendPaymentReminderThunk.rejected and close modal', () => {
+    const startState = {
+      ...initialState,
+      paymentReminderModal: { open: true, abstractId: '1', abstractName: 'T' },
+      actionLoading: { ...initialState.actionLoading, reminder: true }
+    }
+    const state = reducer(startState, sendPaymentReminderThunk.rejected(null, '', { abstractId: '1', paymentReminderData: {} as PaymentReminderData }))
+    expect(state.actionLoading.reminder).toBe(false)
+    expect(state.paymentReminderModal.open).toBe(false)
+  });
+
+  /* -------------------- OTHER MODALS -------------------- */
+  it('should open/close payment receipt modal', () => {
+    let state = reducer(initialState, openPaymentReceiptModal({ id: '1', name: 'N' }))
+    expect(state.paymentReceiptModal.open).toBe(true)
+    state = reducer(state, closePaymentReceiptModal())
+    expect(state.paymentReceiptModal.open).toBe(false)
+  });
+
+  it('should open/close payment reminder modal', () => {
+    let state = reducer(initialState, openPaymentReminderModal({ id: '1', name: 'N' }))
+    expect(state.paymentReminderModal.open).toBe(true)
+    state = reducer(state, closePaymentReminderModal())
+    expect(state.paymentReminderModal.open).toBe(false)
+  });
+
   it('should handle updateStatusThunk.fulfilled', () => {
     const startState = {
       ...initialState,
       rawItems: [{ id: '1', status: { id: 1, actionType: 'Old' } }] as unknown as AbstractItem[],
-      items: [{ id: '1', status: 'Old' as import('../../../../features/abstracts/types').AbstractStatus }] as unknown as import('../../../../features/abstracts/types').AbstractRecord[],
+      items: [{ id: '1', status: 'Old' as AbstractStatus }] as unknown as AbstractRecord[],
     }
 
     const payload = { id: '1', status: { id: 1, actionType: 'Approved' } } as unknown as AbstractItem
@@ -181,5 +282,57 @@ describe('abstracts slice', () => {
 
     expect(state.actionLoading.invoice).toBe(false)
     expect(state.invoiceModal.open).toBe(false)
+  })
+
+  it('should handle fetchAbstracts.rejected', () => {
+    const state = reducer(initialState, fetchAbstracts.rejected(new Error('Network Error'), '', { page: 1, limit: 10, filters: { search: '', sortBy: 'now', sortOrder: 'DESC' } as AbstractFilters }))
+
+    expect(state.loading).toBe(false)
+    expect(state.error).toBe('Network Error')
+  })
+
+  it('should handle updateStatusThunk.rejected', () => {
+    const startState = { ...initialState, actionLoading: { ...initialState.actionLoading, status: true } }
+    const state = reducer(startState, updateStatusThunk.rejected(null, '', { id: '1', statusId: 1 }))
+    expect(state.actionLoading.status).toBe(false)
+  })
+
+  it('should handle sendInvoiceThunk.rejected', () => {
+    const startState = { ...initialState, actionLoading: { ...initialState.actionLoading, invoice: true } }
+    const state = reducer(startState, sendInvoiceThunk.rejected(null, '', { abstractId: '1', invoiceData: {} as InvoiceData }))
+    expect(state.actionLoading.invoice).toBe(false)
+  })
+
+  it('should handle sendPaymentReminderThunk.rejected', () => {
+    const startState = { ...initialState, actionLoading: { ...initialState.actionLoading, reminder: true } }
+    const state = reducer(startState, sendPaymentReminderThunk.rejected(null, '', { abstractId: '1', paymentReminderData: {} as PaymentReminderData }))
+    expect(state.actionLoading.reminder).toBe(false)
+  })
+
+  it('should handle sendPaymentReceiptThunk.rejected', () => {
+    const startState = { ...initialState, actionLoading: { ...initialState.actionLoading, receipt: true } }
+    const state = reducer(startState, sendPaymentReceiptThunk.rejected(null, '', { abstractId: '1', receiptData: {} as PaymentReceiptData }))
+    expect(state.actionLoading.receipt).toBe(false)
+  })
+
+  it('should handle sendConfirmationEmailThunk.rejected', () => {
+    const startState = { ...initialState, actionLoading: { ...initialState.actionLoading, confirmation: true } }
+    const state = reducer(startState, sendConfirmationEmailThunk.rejected(null, '', '1'))
+    expect(state.actionLoading.confirmation).toBe(false)
+  })
+
+  it('should handle updateStatusThunk.fulfilled with payload.status as object', () => {
+    const payload = { id: '1', status: { actionType: 'Accepted' } } as unknown as AbstractItem
+    const state = reducer(initialState, updateStatusThunk.fulfilled(payload, '', { id: '1', statusId: 2 }))
+    expect(state.modalStatus).toBe('Accepted')
+  })
+
+  it('should handle sendConfirmationEmailThunk.fulfilled when selected ID matches', () => {
+    const startState = {
+      ...initialState,
+      selected: { id: '1', isEmailSent: false } as AbstractItem
+    }
+    const state = reducer(startState, sendConfirmationEmailThunk.fulfilled({ id: '1', message: 'Sent' }, '', '1'))
+    expect(state.selected?.isEmailSent).toBe(true)
   })
 })
