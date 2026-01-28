@@ -14,9 +14,8 @@ function ContactRow({ item, onView }: ContactRowProps) {
                 <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">{item.email}</a>
             </td>
             <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{item.phone}</td>
-            <td className="px-4 py-3 text-gray-700">{item.country}</td>
+            <td className="px-4 py-3 text-gray-700">{item.country ? item.country : '—'}</td>
             <td className="px-4 py-3 text-gray-700 min-w-[14rem]">{item.message}</td>
-            <td className="px-4 py-3 text-gray-700">{item.originalId ?? '—'}</td>
             <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{item.now ? formatDate(item.now) : '—'}</td>
             <td className="px-4 py-3 whitespace-nowrap">
                 <button
@@ -55,7 +54,6 @@ export default function ContactTable({ rows, loading, error, onRetry, onView }: 
                             <th className="px-4 py-3 font-semibold min-w-[8rem]">Phone</th>
                             <th className="px-4 py-3 font-semibold min-w-[8rem]">Country</th>
                             <th className="px-4 py-3 font-semibold min-w-[14rem]">Message</th>
-                            <th className="px-4 py-3 font-semibold min-w-[8rem]">OriginalId</th>
                             <th className="px-4 py-3 font-semibold min-w-[10rem]">Submitted On</th>
                             <th className="px-4 py-3 font-semibold min-w-[5rem]">Actions</th>
                         </tr>
