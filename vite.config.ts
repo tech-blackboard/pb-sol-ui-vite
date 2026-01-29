@@ -20,6 +20,38 @@ export default defineConfig({
         target: 'http://localhost:3000',
         changeOrigin: true,
       },
+      '/abstract': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/source-databases': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/device': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/registration': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/acc-registration': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/sponsorship': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/contact': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/brochure': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
     },
   },
 })
