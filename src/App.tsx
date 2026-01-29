@@ -15,6 +15,12 @@ import ServerIssueAlert from './alerts/ServerIssueAlert'
 import ServerUnavailableAlert from './alerts/ServerUnavailableAlert'
 import DeviceManagement from './pages/DeviceManagement'
 
+import RegistrationsPage from './features/registrations/pages/RegistrationsPage'
+import SponsorshipsPage from './features/sponsorships/pages/SponsorshipsPage'
+import BrochuresPage from './features/brochures/pages/BrochuresPage'
+import AccRegistrationsPage from './features/accRegistrations/pages/AccRegistrationsPage'
+import ContactsPage from './features/contacts/pages/ContactsPage'
+
 function App() {
   const dispatch = useDispatch<AppDispatch>()
   const [activeId, setActiveId] = useState<string>('abstracts')
@@ -61,10 +67,13 @@ function App() {
   const links: NavLink[] = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'abstracts', label: 'Abstracts' },
+    { id: 'registrations', label: 'Registrations' },
+    { id: 'accRegistrations', label: 'Accommodation Registrations' },
+    { id: 'brochures', label: 'Brochure' },
+    { id: 'sponsorships', label: 'Sponsorship' },
+    { id: 'contacts', label: 'Contact' },
     ...(isAdmin ? [{ id: 'deviceManagment', label: 'Device Management' }] : []),
   ];
-
-
 
   const user: User | null = (authUser as unknown as User) ?? null
 
@@ -151,6 +160,16 @@ function App() {
             <div className="h-full overflow-hidden flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm text-left">
               {activeId === 'abstracts' ? (
                 <AbstractsPage />
+              ) : activeId === 'registrations' ? (
+                <RegistrationsPage />
+              ) : activeId === 'accRegistrations' ? (
+                <AccRegistrationsPage />
+              ) : activeId === 'brochures' ? (
+                <BrochuresPage />
+              ) : activeId === 'sponsorships' ? (
+                <SponsorshipsPage />
+              ) : activeId === 'contacts' ? (
+                <ContactsPage />
               ) : activeId === 'deviceManagment' && isAdmin ? (
                 <DeviceManagement />
               ) : (
