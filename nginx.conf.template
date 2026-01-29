@@ -35,6 +35,9 @@ server {
 
     # Proxy API routes to backend - ✅ ADDED 'device' and other routes
     location ~ ^/(auth|abstract|source-databases|device|crm|upload|user|role|permission|statusaction|product|category) {
+        # Allow uploads up to 10MB (fixes 413 Request Entity Too Large)
+        client_max_body_size 10M;
+        
         proxy_pass http://${API_BACKEND_HOST}:3000;
         
         proxy_http_version 1.1;
