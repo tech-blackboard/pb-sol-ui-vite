@@ -1,13 +1,17 @@
+import { useState } from 'react'
 import { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { fetchContacts, setPage, setPageSize, setSelected, clearSelected } from '../../../store/slices/contacts/contacts.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import ContactTable from '../components/ContactTable'
 import ContactDetailsModal from '../components/ContactDetailsModal'
+import SectionHeader from '../../../components/SectionHeader'
+import ContactFiltersDrawer from '../components/ContactFiltersDrawer'
 
 export default function ContactsPage() {
     const dispatch = useAppDispatch()
     const { items, loading, page, pageSize, total, error, appliedFilters, selected } = useAppSelector((s) => s.contacts)
+    const [filtersOpen, setFiltersOpen] = useState(false)
 
     useEffect(() => {
         dispatch(fetchContacts({ filters: appliedFilters, page, limit: pageSize }))
@@ -15,11 +19,17 @@ export default function ContactsPage() {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between my-3">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-700 dark:text-gray-100">
-                    All Conferences — Contact Requests
-                </h2>
-            </div>
+            <SectionHeader
+                title="All Conferences — Contact Requests"
+                onFilterClick={() => setFiltersOpen(true)}
+            />
+
+            {filtersOpen && (
+                <ContactFiltersDrawer
+                    open={filtersOpen}
+                    onClose={() => setFiltersOpen(false)}
+                />
+            )}
 
             <ContactTable
                 rows={items}

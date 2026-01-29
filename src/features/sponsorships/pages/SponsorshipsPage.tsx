@@ -1,13 +1,17 @@
+import { useState } from 'react'
 import { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { fetchSponsorships, setPage, setPageSize, setSelected, clearSelected } from '../../../store/slices/sponsorships/sponsorships.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import SponsorshipTable from '../components/SponsorshipTable'
 import SponsorshipDetailsModal from '../components/SponsorshipDetailsModal'
+import SectionHeader from '../../../components/SectionHeader'
+import SponsorshipFiltersDrawer from '../components/SponsorshipFiltersDrawer'
 
 export default function SponsorshipsPage() {
     const dispatch = useAppDispatch()
     const { items, loading, page, pageSize, total, error, appliedFilters, selected } = useAppSelector((s) => s.sponsorships)
+    const [filtersOpen, setFiltersOpen] = useState(false)
 
     useEffect(() => {
         dispatch(fetchSponsorships({ filters: appliedFilters, page, limit: pageSize }))
@@ -15,11 +19,17 @@ export default function SponsorshipsPage() {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between my-3">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-700 dark:text-gray-100">
-                    All Conferences — Sponsorship Inquiries
-                </h2>
-            </div>
+            <SectionHeader
+                title="All Conferences — Sponsorship Inquiries"
+                onFilterClick={() => setFiltersOpen(true)}
+            />
+
+            {filtersOpen && (
+                <SponsorshipFiltersDrawer
+                    open={filtersOpen}
+                    onClose={() => setFiltersOpen(false)}
+                />
+            )}
 
             <SponsorshipTable
                 rows={items}

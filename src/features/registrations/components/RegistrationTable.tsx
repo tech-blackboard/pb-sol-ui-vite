@@ -114,7 +114,7 @@ export default function RegistrationTable({ rows, loading, error, onRetry, onVie
                         )}
                         {!loading && !error && rows.length === 0 && (
                             <tr>
-                                <td colSpan={23} className="px-4 py-10 text-center text-gray-400">No registrations found</td>
+                                <td colSpan={23} className="px-4 py-4 text-left text-gray-400">No registrations found</td>
                             </tr>
                         )}
                         {!loading && !error && rows.map((row) => (
