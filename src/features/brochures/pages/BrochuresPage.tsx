@@ -1,13 +1,17 @@
+import { useState } from 'react'
 import { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { fetchBrochures, setPage, setPageSize, setSelected, clearSelected } from '../../../store/slices/brochures/brochures.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import BrochureTable from '../components/BrochureTable'
 import BrochureDetailsModal from '../components/BrochureDetailsModal'
+import SectionHeader from '../../../components/SectionHeader'
+import BrochureFiltersDrawer from '../components/BrochureFiltersDrawer'
 
 export default function BrochuresPage() {
     const dispatch = useAppDispatch()
     const { items, loading, page, pageSize, total, error, appliedFilters, selected } = useAppSelector((s) => s.brochures)
+    const [filtersOpen, setFiltersOpen] = useState(false)
 
     useEffect(() => {
         dispatch(fetchBrochures({ filters: appliedFilters, page, limit: pageSize }))
@@ -15,11 +19,17 @@ export default function BrochuresPage() {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between my-3">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-700 dark:text-gray-100">
-                    All Conferences — Brochure Requests
-                </h2>
-            </div>
+            <SectionHeader
+                title="All Conferences — Brochure Requests"
+                onFilterClick={() => setFiltersOpen(true)}
+            />
+
+            {filtersOpen && (
+                <BrochureFiltersDrawer
+                    open={filtersOpen}
+                    onClose={() => setFiltersOpen(false)}
+                />
+            )}
 
             <BrochureTable
                 rows={items}

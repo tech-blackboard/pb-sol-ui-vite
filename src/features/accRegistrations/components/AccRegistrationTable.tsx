@@ -116,7 +116,7 @@ export default function AccRegistrationTable({ rows, loading, error, onRetry, on
                         )}
                         {!loading && !error && rows.length === 0 && (
                             <tr>
-                                <td colSpan={24} className="px-4 py-10 text-center text-gray-400">No records found</td>
+                                <td colSpan={24} className="px-4 py-4 text-left text-gray-400">No records found</td>
                             </tr>
                         )}
                         {!loading && !error && rows.map((row) => (

@@ -1,13 +1,17 @@
+import { useState } from 'react'
 import { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { fetchAccRegistrations, setPage, setPageSize, setSelected, clearSelected } from '../../../store/slices/accRegistrations/accRegistrations.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import AccRegistrationTable from '../components/AccRegistrationTable'
 import AccRegistrationDetailsModal from '../components/AccRegistrationDetailsModal'
+import SectionHeader from '../../../components/SectionHeader'
+import AccRegistrationFiltersDrawer from '../components/AccRegistrationFiltersDrawer'
 
 export default function AccRegistrationsPage() {
     const dispatch = useAppDispatch()
     const { items, loading, page, pageSize, total, error, appliedFilters, selected } = useAppSelector((s) => s.accRegistrations)
+    const [filtersOpen, setFiltersOpen] = useState(false)
 
     useEffect(() => {
         dispatch(fetchAccRegistrations({ filters: appliedFilters, page, limit: pageSize }))
@@ -15,11 +19,17 @@ export default function AccRegistrationsPage() {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between my-3">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-700 dark:text-gray-100">
-                    All Conferences — Accommodation Registrations
-                </h2>
-            </div>
+            <SectionHeader
+                title="All Conferences — Accommodation Registrations"
+                onFilterClick={() => setFiltersOpen(true)}
+            />
+
+            {filtersOpen && (
+                <AccRegistrationFiltersDrawer
+                    open={filtersOpen}
+                    onClose={() => setFiltersOpen(false)}
+                />
+            )}
 
             <AccRegistrationTable
                 rows={items}
