@@ -157,7 +157,7 @@ function App() {
             />
           )}
           <main className="w-full h-full px-4 sm:px-6 lg:px-8 py-6 overflow-hidden">
-            <div className="h-full overflow-hidden flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm text-left">
+            <div className="h-full overflow-hidden flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 shadow-sm text-left">
               {activeId === 'abstracts' ? (
                 <AbstractsPage />
               ) : activeId === 'registrations' ? (
