@@ -9,7 +9,10 @@ function AccRegistrationRow({ item, onView }: AccRegistrationRowProps) {
     return (
         <tr className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
             <td className="px-4 py-3 text-gray-700 truncate max-w-[12rem]">{item.website?.name ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">{item.name}</td>
+            <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">
+                <span className="text-gray-500 mr-1.5 font-normal">{item.caption}</span>
+                {item.name}
+            </td>
             <td className="px-4 py-3">
                 <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">{item.email}</a>
             </td>
@@ -21,12 +24,12 @@ function AccRegistrationRow({ item, onView }: AccRegistrationRowProps) {
             <td className="px-4 py-3 text-gray-700">{item.presentation ? item.presentation : '—'}</td>
             <td className="px-4 py-3 text-gray-700">{item.participants ? item.participants : '—'}</td>
             <td className="px-4 py-3 text-gray-700">{item.regtype ? item.regtype : '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.accomm ?? '—'}</td>
+            <td className="px-4 py-3 text-gray-700">{item.accomm ? item.accomm : '—'}</td>
             <td className="px-4 py-3 text-gray-700">{item.checkin ?? '—'}</td>
             <td className="px-4 py-3 text-gray-700">{item.checkout ?? '—'}</td>
             <td className="px-4 py-3 text-gray-700">{item.nights ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.accm ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.acmpng ?? '—'}</td>
+            <td className="px-4 py-3 text-gray-700">{item.accm ? item.accm : '—'}</td>
+            <td className="px-4 py-3 text-gray-700">{item.acmpng ? item.acmpng : '—'}</td>
             <td className="px-4 py-3 text-gray-700">{item.acc_pr ? `$${item.acc_pr}` : '—'}</td>
             <td className="px-4 py-3 text-gray-700 font-medium">{item.tot_price ? `$${item.tot_price}` : '—'}</td>
             <td className="px-4 py-3 text-gray-700">{item.transaction_id ? item.transaction_id : '—'}</td>

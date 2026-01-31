@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import { searchSponsorships } from '../../../services/sponsorships';
+import { searchSponsorships, createSponsorship } from '../../../services/sponsorships';
 
 export interface SponsorshipFilters {
     search?: string;
@@ -33,6 +33,13 @@ export const fetchSponsorships = createAsyncThunk(
             limit: params.limit,
             ...params.filters,
         });
+    }
+);
+
+export const createSponsorshipThunk = createAsyncThunk(
+    'sponsorships/create',
+    async (payload: any) => {
+        return await createSponsorship(payload);
     }
 );
 
@@ -97,6 +104,16 @@ const sponsorshipsSlice = createSlice({
             .addCase(fetchSponsorships.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.error.message ?? 'Failed to load';
+            })
+            .addCase(createSponsorshipThunk.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(createSponsorshipThunk.fulfilled, (state) => {
+                state.loading = false;
+            })
+            .addCase(createSponsorshipThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.error.message ?? 'Failed to create';
             });
     },
 });

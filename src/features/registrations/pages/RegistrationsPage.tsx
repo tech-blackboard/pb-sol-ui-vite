@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { setSelected, clearSelected, setPage, setPageSize } from '../../../store/slices/registrations/registrations.slice'
@@ -6,15 +5,13 @@ import { fetchRegistrations } from '../../../store/slices/registrations/registra
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import RegistrationTable from '../components/RegistrationTable'
 import RegistrationDetailsModal from '../components/RegistrationDetailsModal'
-import SectionHeader from '../../../components/SectionHeader'
-import RegistrationFiltersDrawer from '../components/RegistrationFiltersDrawer'
+import RegistrationHeader from '../components/RegistrationHeader'
 
 export default function RegistrationsPage() {
     const dispatch = useAppDispatch()
 
     const { items, loading, page, pageSize, total, error, appliedFilters, selected } =
         useAppSelector((s) => s.registrations)
-    const [filtersOpen, setFiltersOpen] = useState(false)
 
     useEffect(() => {
         dispatch(fetchRegistrations({ filters: appliedFilters, page, limit: pageSize }))
@@ -22,17 +19,8 @@ export default function RegistrationsPage() {
 
     return (
         <div className="h-full flex flex-col">
-            <SectionHeader
-                title="All Conferences — Registrations"
-                onFilterClick={() => setFiltersOpen(true)}
-            />
+            <RegistrationHeader />
 
-            {filtersOpen && (
-                <RegistrationFiltersDrawer
-                    open={filtersOpen}
-                    onClose={() => setFiltersOpen(false)}
-                />
-            )}
 
             <RegistrationTable
                 rows={items}

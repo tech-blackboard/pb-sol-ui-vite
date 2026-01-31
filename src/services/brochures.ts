@@ -17,12 +17,21 @@ export type BrochureSearchResult = {
     total: number;
     page: number;
     limit: number;
+    data?: BrochureItem[]; // To handle both API response formats
 };
 
-const BASE = '/brochure';
+const VITE_BROCHURE_BASE = import.meta.env.VITE_BROCHURE_BASE;
+
+export async function createBrochure(payload: any): Promise<BrochureItem> {
+    const { data } = await api.post(`${VITE_BROCHURE_BASE}`, payload, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return data;
+}
 
 export async function searchBrochures(params: any = {}): Promise<BrochureSearchResult> {
-    const { data } = await api.get(`${BASE}/search`, {
+    const { data } = await api.get(`${VITE_BROCHURE_BASE}/search`, {
         params,
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
@@ -37,7 +46,7 @@ export async function searchBrochures(params: any = {}): Promise<BrochureSearchR
 }
 
 export async function deleteBrochure(id: number | string): Promise<void> {
-    await api.delete(`${BASE}/${id}`, {
+    await api.delete(`${VITE_BROCHURE_BASE}/${id}`, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });
