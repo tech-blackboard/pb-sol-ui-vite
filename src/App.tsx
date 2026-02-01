@@ -25,6 +25,7 @@ function App() {
   const dispatch = useDispatch<AppDispatch>()
   const [activeId, setActiveId] = useState<string>('abstracts')
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false)
+  const [navCollapsed, setNavCollapsed] = useState<boolean>(false)
   const [showNetwork, setShowNetwork] = useState(false)
   const [showServer, setShowServer] = useState(false)
   const [showServerUnavailable, setShowServerUnavailable] = useState(false)
@@ -145,6 +146,8 @@ function App() {
           onNavigate={setActiveId}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
+          isCollapsed={navCollapsed}
+          onToggleCollapse={() => setNavCollapsed((prev) => !prev)}
         />
 
         {/* Main content area */}
