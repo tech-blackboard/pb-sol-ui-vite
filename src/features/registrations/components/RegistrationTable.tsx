@@ -16,7 +16,7 @@ function RegistrationRow({ item, onView }: RegistrationRowProps) {
             <td className="px-3 text-gray-700" title={item.aemail ?? '—'}>{item.aemail ?? '—'}</td>
             <td className="px-3 text-gray-700 whitespace-nowrap" title={item.phone}>{item.phone}</td>
             <td className="px-3 text-gray-700 whitespace-nowrap" title={item.wphone ?? '—'}>{item.wphone ?? '—'}</td>
-            <td className="px-3 text-gray-700" title={item.institution ?? '—'}>{item.institution ?? '—'}</td>
+            <td className="px-3 text-gray-700 truncate max-w-[12rem]" title={item.institution ?? '—'}>{item.institution ?? '—'}</td>
             <td className="px-3 text-gray-700" title={item.country}>{item.country}</td>
             <td className="px-3 text-gray-700 truncate max-w-[12rem]" title={item.presentation || '—'}>{item.presentation}</td>
             <td className="px-3 text-gray-700" title={item.participants}>{item.participants}</td>
