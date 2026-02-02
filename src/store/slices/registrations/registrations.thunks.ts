@@ -1,5 +1,5 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { searchRegistrations, deleteRegistration } from '../../../services/registrations';
+import { searchRegistrations, deleteRegistration, createRegistration } from '../../../services/registrations';
 import type { RegistrationFilters } from './registrations.types';
 
 
@@ -20,5 +20,13 @@ export const deleteRegistrationThunk = createAsyncThunk(
     async (id: string | number) => {
         await deleteRegistration(id);
         return id;
+    }
+);
+
+export const createRegistrationThunk = createAsyncThunk(
+    'registrations/create',
+    async (data: any) => {
+        const result = await createRegistration(data);
+        return result;
     }
 );

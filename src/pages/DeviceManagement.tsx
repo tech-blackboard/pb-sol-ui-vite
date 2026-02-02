@@ -82,7 +82,7 @@ const DeviceManagement: React.FC = () => {
     }
 
     return (
-        <div className="h-full overflow-auto p-4 ">
+        <div className="h-full flex flex-col overflow-hidden ">
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Device Management</h1>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -96,9 +96,9 @@ const DeviceManagement: React.FC = () => {
                 </div>
             ) : (
                 <>
-                    <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div className="flex-1 min-h-0 overflow-auto scrollbar-thin border border-gray-200 dark:border-gray-700 rounded-lg">
                         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead className="bg-gray-50 dark:bg-gray-800">
+                            <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
                                 <tr>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         User

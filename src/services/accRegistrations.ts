@@ -35,10 +35,10 @@ export type AccRegistrationSearchResult = {
     limit: number;
 };
 
-const BASE = '/acc-registration';
+const VITE_ACC_REGISTRATION_BASE = import.meta.env.VITE_ACC_REGISTRATION_BASE;
 
 export async function searchAccRegistrations(params: any = {}): Promise<AccRegistrationSearchResult> {
-    const { data } = await api.get(`${BASE}/search`, {
+    const { data } = await api.get(`${VITE_ACC_REGISTRATION_BASE}/search`, {
         params,
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
@@ -53,8 +53,16 @@ export async function searchAccRegistrations(params: any = {}): Promise<AccRegis
 }
 
 export async function deleteAccRegistration(id: number | string): Promise<void> {
-    await api.delete(`${BASE}/${id}`, {
+    await api.delete(`${VITE_ACC_REGISTRATION_BASE}/${id}`, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });
+}
+
+export async function createAccRegistration(data: any): Promise<AccRegistrationItem> {
+    const { data: responseData } = await api.post(`${VITE_ACC_REGISTRATION_BASE}`, data, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return responseData;
 }

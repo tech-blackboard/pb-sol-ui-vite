@@ -19,10 +19,10 @@ export type ContactSearchResult = {
     limit: number;
 };
 
-const BASE = '/contact';
+const VITE_CONTACT_BASE = import.meta.env.VITE_CONTACT_BASE;
 
 export async function searchContacts(params: any = {}): Promise<ContactSearchResult> {
-    const { data } = await api.get(`${BASE}/search`, {
+    const { data } = await api.get(`${VITE_CONTACT_BASE}/search`, {
         params,
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
@@ -36,8 +36,16 @@ export async function searchContacts(params: any = {}): Promise<ContactSearchRes
     };
 }
 
+export async function createContact(payload: any): Promise<ContactItem> {
+    const { data } = await api.post(`${VITE_CONTACT_BASE}`, payload, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return data;
+}
+
 export async function deleteContact(id: number | string): Promise<void> {
-    await api.delete(`${BASE}/${id}`, {
+    await api.delete(`${VITE_CONTACT_BASE}/${id}`, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });

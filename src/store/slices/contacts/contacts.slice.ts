@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import { searchContacts } from '../../../services/contacts';
+import { searchContacts, createContact } from '../../../services/contacts';
 
 export interface ContactFilters {
     search?: string;
@@ -32,6 +32,13 @@ export const fetchContacts = createAsyncThunk(
             limit: params.limit,
             ...params.filters,
         });
+    }
+);
+
+export const createContactThunk = createAsyncThunk(
+    'contacts/create',
+    async (payload: any) => {
+        return await createContact(payload);
     }
 );
 
@@ -96,6 +103,10 @@ const contactsSlice = createSlice({
             .addCase(fetchContacts.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.error.message ?? 'Failed to load';
+            })
+            .addCase(createContactThunk.fulfilled, (state, { payload }) => {
+                state.items = [payload, ...state.items];
+                state.total += 1;
             });
     },
 });

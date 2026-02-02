@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-import { fetchRegistrations, deleteRegistrationThunk } from './registrations.thunks';
+import { fetchRegistrations, deleteRegistrationThunk, createRegistrationThunk } from './registrations.thunks';
 import type { RegistrationFilters, RegistrationsState } from './registrations.types';
 
 const initialFilters: RegistrationFilters = {
@@ -72,6 +72,20 @@ const registrationsSlice = createSlice({
                 state.rawItems = state.rawItems.filter(i => i.id !== action.payload);
                 state.items = state.items.filter(i => i.id !== action.payload);
                 state.total -= 1;
+            })
+            .addCase(createRegistrationThunk.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(createRegistrationThunk.fulfilled, (state, { payload }) => {
+                state.loading = false;
+                state.rawItems = [payload, ...state.rawItems];
+                state.items = [payload, ...state.items];
+                state.total += 1;
+            })
+            .addCase(createRegistrationThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.error.message ?? 'Failed to create registration';
             });
     },
 });

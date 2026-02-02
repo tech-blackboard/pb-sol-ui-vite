@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import { searchAccRegistrations } from '../../../services/accRegistrations';
+import { searchAccRegistrations, createAccRegistration } from '../../../services/accRegistrations';
 
 export interface AccRegistrationFilters {
     search?: string;
@@ -34,6 +34,13 @@ export const fetchAccRegistrations = createAsyncThunk(
             limit: params.limit,
             ...params.filters,
         });
+    }
+);
+
+export const createAccRegistrationThunk = createAsyncThunk(
+    'accRegistrations/create',
+    async (data: any) => {
+        return await createAccRegistration(data);
     }
 );
 
@@ -98,6 +105,16 @@ const accRegistrationsSlice = createSlice({
             .addCase(fetchAccRegistrations.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.error.message ?? 'Failed to load';
+            })
+            .addCase(createAccRegistrationThunk.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(createAccRegistrationThunk.fulfilled, (state) => {
+                state.loading = false;
+            })
+            .addCase(createAccRegistrationThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.error.message ?? 'Failed to create';
             });
     },
 });
