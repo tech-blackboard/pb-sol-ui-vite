@@ -8,35 +8,35 @@ interface AccRegistrationRowProps {
 function AccRegistrationRow({ item, onView }: AccRegistrationRowProps) {
     return (
         <tr className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-            <td className="px-4 py-3 text-gray-700 truncate max-w-[12rem]">{item.website?.name ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">
+            <td className="px-3 py-1 text-gray-700" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-900 font-medium whitespace-nowrap" title={item.name}>
                 <span className="text-gray-500 mr-1.5 font-normal">{item.caption}</span>
                 {item.name}
             </td>
-            <td className="px-4 py-3">
+            <td className="px-3 py-1" title={item.email}>
                 <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">{item.email}</a>
             </td>
-            <td className="px-4 py-3 text-gray-700">{item.aemail ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{item.phone}</td>
-            <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{item.wphone ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.institution ? item.institution : '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.country ? item.country : '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.presentation ? item.presentation : '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.participants ? item.participants : '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.regtype ? item.regtype : '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.accomm ? item.accomm : '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.checkin ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.checkout ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.nights ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.accm ? item.accm : '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.acmpng ? item.acmpng : '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.acc_pr ? `$${item.acc_pr}` : '—'}</td>
-            <td className="px-4 py-3 text-gray-700 font-medium">{item.tot_price ? `$${item.tot_price}` : '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.transaction_id ? item.transaction_id : '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.status_flag ? item.status_flag : '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.alt_text ? item.alt_text : '—'}</td>
-            <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{item.now ? formatDate(item.now) : '—'}</td>
-            <td className="px-4 py-3 whitespace-nowrap">
+            <td className="px-3 py-1 text-gray-700" title={item.aemail ?? '—'}>{item.aemail ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700 whitespace-nowrap" title={item.phone}>{item.phone}</td>
+            <td className="px-3 py-1 text-gray-700 whitespace-nowrap" title={item.wphone ?? '—'}>{item.wphone ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.institution ? item.institution : '—'}>{item.institution ? item.institution : '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.country ? item.country : '—'}>{item.country ? item.country : '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.presentation ? item.presentation : '—'}>{item.presentation ? item.presentation : '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.participants ? item.participants : '—'}>{item.participants ? item.participants : '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.regtype ? item.regtype : '—'}>{item.regtype ? item.regtype : '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.accomm ?? '—'}>{item.accomm ? item.accomm : '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.checkin ?? '—'}>{item.checkin ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.checkout ?? '—'}>{item.checkout ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.nights ?? '—'}>{item.nights ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.accm ?? '—'}>{item.accm ? item.accm : '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.acmpng ?? '—'}>{item.acmpng ? item.acmpng : '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.acc_pr ? `$${item.acc_pr}` : '—'}>{item.acc_pr ? `$${item.acc_pr}` : '—'}</td>
+            <td className="px-3 py-1 text-gray-700 font-medium" title={item.tot_price ? `$${item.tot_price}` : '—'}>{item.tot_price ? `$${item.tot_price}` : '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.transaction_id ? item.transaction_id : '—'}>{item.transaction_id ? item.transaction_id : '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.status_flag ? item.status_flag : '—'}>{item.status_flag ? item.status_flag : '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.alt_text ? item.alt_text : '—'}>{item.alt_text ? item.alt_text : '—'}</td>
+            <td className="px-3 py-1 text-gray-700 whitespace-nowrap" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
+            <td className="px-3 py-1 whitespace-nowrap">
                 <button
                     onClick={onView}
                     className="p-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
@@ -67,7 +67,7 @@ export default function AccRegistrationTable({ rows, loading, error, onRetry, on
                 <table className="min-w-full text-left text-sm border-collapse">
                     <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10 border-b border-gray-200">
                         <tr>
-                            <th className="px-4 py-3 font-semibold min-w-[12rem]">Website Name</th>
+                            <th className="px-4 py-3 font-semibold min-w-[16rem]">Website Name</th>
                             <th className="px-4 py-3 font-semibold min-w-[10rem]">Name</th>
                             <th className="px-4 py-3 font-semibold min-w-[12rem]">Email</th>
                             <th className="px-4 py-3 font-semibold min-w-[12rem]">Aemail</th>

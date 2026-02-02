@@ -149,7 +149,7 @@ export default function AbstractsPage() {
     )
     if (sendPaymentReminderThunk.fulfilled.match(paymentReminderResult)) {
       toast.success(`${paymentReminderResult.payload.message}`)
-     
+
     } else {
       toast.error('Failed to send payment reminder')
     }
@@ -158,7 +158,7 @@ export default function AbstractsPage() {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col ">
       <AbstractHeader />
 
       < AbstractTable

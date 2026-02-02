@@ -8,17 +8,17 @@ interface SponsorshipRowProps {
 function SponsorshipRow({ item, onView }: SponsorshipRowProps) {
     return (
         <tr className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-            <td className="px-4 py-3 text-gray-700 truncate max-w-[12rem]">{item.website?.name ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">{item.name}</td>
-            <td className="px-4 py-3">
+            <td className="px-3 py-1 text-gray-700" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-900 font-medium whitespace-nowrap" title={item.name}>{item.name}</td>
+            <td className="px-3 py-1" title={item.email}>
                 <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">{item.email}</a>
             </td>
-            <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{item.phone}</td>
-            <td className="px-4 py-3 text-gray-700">{item.organization ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.country}</td>
-            <td className="px-4 py-3 text-gray-700 min-w-[14rem]">{item.message}</td>
-            <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{item.now ? formatDate(item.now) : '—'}</td>
-            <td className="px-4 py-3 whitespace-nowrap">
+            <td className="px-3 py-1 text-gray-700 whitespace-nowrap" title={item.phone}>{item.phone}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.organization ?? '—'}>{item.organization ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.country}>{item.country}</td>
+            <td className="px-3 py-1 text-gray-700 min-w-[14rem] max-w-[14rem] truncate" title={item.message}>{item.message}</td>
+            <td className="px-3 py-1 text-gray-700 whitespace-nowrap" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
+            <td className="px-3 py-1 whitespace-nowrap">
                 <button
                     onClick={onView}
                     className="p-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
@@ -49,7 +49,7 @@ export default function SponsorshipTable({ rows, loading, error, onRetry, onView
                 <table className="min-w-full text-left text-sm border-collapse">
                     <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10 border-b border-gray-200">
                         <tr>
-                            <th className="px-4 py-3 font-semibold min-w-[12rem]">Website Name</th>
+                            <th className="px-4 py-3 font-semibold min-w-[16rem]">Website Name</th>
                             <th className="px-4 py-3 font-semibold min-w-[10rem]">Name</th>
                             <th className="px-4 py-3 font-semibold min-w-[12rem]">Email</th>
                             <th className="px-4 py-3 font-semibold min-w-[8rem]">Phone</th>

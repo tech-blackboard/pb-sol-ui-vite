@@ -82,7 +82,7 @@ const DeviceManagement: React.FC = () => {
     }
 
     return (
-        <div className="h-full flex flex-col overflow-hidden">
+        <div className="h-full flex flex-col overflow-hidden ">
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Device Management</h1>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
