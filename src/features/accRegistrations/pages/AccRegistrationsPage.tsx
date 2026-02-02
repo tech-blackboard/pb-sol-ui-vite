@@ -7,11 +7,13 @@ import AccRegistrationTable from '../components/AccRegistrationTable'
 import AccRegistrationDetailsModal from '../components/AccRegistrationDetailsModal'
 import SectionHeader from '../../../components/SectionHeader'
 import AccRegistrationFiltersDrawer from '../components/AccRegistrationFiltersDrawer'
+import AccommodationForm from '../components/AccommodationForm'
 
 export default function AccRegistrationsPage() {
     const dispatch = useAppDispatch()
     const { items, loading, page, pageSize, total, error, appliedFilters, selected } = useAppSelector((s) => s.accRegistrations)
     const [filtersOpen, setFiltersOpen] = useState(false)
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
     useEffect(() => {
         dispatch(fetchAccRegistrations({ filters: appliedFilters, page, limit: pageSize }))
@@ -21,6 +23,8 @@ export default function AccRegistrationsPage() {
         <div className="h-full flex flex-col">
             <SectionHeader
                 title="All Conferences — Accommodation Registrations"
+                onAddClick={() => setIsAddModalOpen(true)}
+                addButtonText="Add Accommodation"
                 onFilterClick={() => setFiltersOpen(true)}
             />
 
@@ -53,6 +57,15 @@ export default function AccRegistrationsPage() {
                 <AccRegistrationDetailsModal
                     item={selected}
                     onClose={() => dispatch(clearSelected())}
+                />
+            )}
+
+            {isAddModalOpen && (
+                <AccommodationForm
+                    onClose={() => setIsAddModalOpen(false)}
+                    onSuccess={() => {
+                        dispatch(fetchAccRegistrations({ filters: appliedFilters, page, limit: pageSize }))
+                    }}
                 />
             )}
         </div>

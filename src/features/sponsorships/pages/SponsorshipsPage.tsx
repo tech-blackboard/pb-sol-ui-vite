@@ -7,11 +7,13 @@ import SponsorshipTable from '../components/SponsorshipTable'
 import SponsorshipDetailsModal from '../components/SponsorshipDetailsModal'
 import SectionHeader from '../../../components/SectionHeader'
 import SponsorshipFiltersDrawer from '../components/SponsorshipFiltersDrawer'
+import SponsorshipForm from '../components/SponsorshipForm'
 
 export default function SponsorshipsPage() {
     const dispatch = useAppDispatch()
     const { items, loading, page, pageSize, total, error, appliedFilters, selected } = useAppSelector((s) => s.sponsorships)
     const [filtersOpen, setFiltersOpen] = useState(false)
+    const [addOpen, setAddOpen] = useState(false)
 
     useEffect(() => {
         dispatch(fetchSponsorships({ filters: appliedFilters, page, limit: pageSize }))
@@ -22,6 +24,8 @@ export default function SponsorshipsPage() {
             <SectionHeader
                 title="All Conferences — Sponsorship Inquiries"
                 onFilterClick={() => setFiltersOpen(true)}
+                onAddClick={() => setAddOpen(true)}
+                addButtonText="Add Sponsorship"
             />
 
             {filtersOpen && (
@@ -53,6 +57,13 @@ export default function SponsorshipsPage() {
                 <SponsorshipDetailsModal
                     item={selected}
                     onClose={() => dispatch(clearSelected())}
+                />
+            )}
+
+            {addOpen && (
+                <SponsorshipForm
+                    onClose={() => setAddOpen(false)}
+                    onSuccess={() => dispatch(fetchSponsorships({ filters: appliedFilters, page, limit: pageSize }))}
                 />
             )}
         </div>

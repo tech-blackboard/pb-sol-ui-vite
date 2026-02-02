@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import { searchBrochures } from '../../../services/brochures';
+import { searchBrochures, createBrochure } from '../../../services/brochures';
 
 export interface BrochureFilters {
     search?: string;
@@ -32,6 +32,13 @@ export const fetchBrochures = createAsyncThunk(
             limit: params.limit,
             ...params.filters,
         });
+    }
+);
+
+export const createBrochureThunk = createAsyncThunk(
+    'brochures/create',
+    async (payload: any) => {
+        return await createBrochure(payload);
     }
 );
 
@@ -90,8 +97,8 @@ const brochuresSlice = createSlice({
             })
             .addCase(fetchBrochures.fulfilled, (state, { payload }) => {
                 state.loading = false;
-                state.items = payload.items;
-                state.total = payload.total;
+                state.items = payload.items || payload.data || [];
+                state.total = payload.total || 0;
             })
             .addCase(fetchBrochures.rejected, (state, action) => {
                 state.loading = false;
