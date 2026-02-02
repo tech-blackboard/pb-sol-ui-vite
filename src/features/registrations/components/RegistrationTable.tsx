@@ -8,31 +8,31 @@ interface RegistrationRowProps {
 function RegistrationRow({ item, onView }: RegistrationRowProps) {
     return (
         <tr className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-            <td className="px-4 py-3 text-gray-700 truncate max-w-[12rem]">{item.website?.name ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">{item.name}</td>
-            <td className="px-4 py-3">
+            <td className="px-3 text-gray-700" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
+            <td className="px-3 text-gray-900 font-medium whitespace-nowrap" title={item.name}>{item.name}</td>
+            <td className="px-3" title={item.email}>
                 <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">{item.email}</a>
             </td>
-            <td className="px-4 py-3 text-gray-700">{item.aemail ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{item.phone}</td>
-            <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{item.wphone ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.institution ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.country}</td>
-            <td className="px-4 py-3 text-gray-700">{item.presentation}</td>
-            <td className="px-4 py-3 text-gray-700">{item.participants}</td>
-            <td className="px-4 py-3 text-gray-700">{item.regtype}</td>
-            <td className="px-4 py-3 text-gray-700">{item.accomm}</td>
-            <td className="px-4 py-3 text-gray-700">{item.checkin ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.checkout ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.nights ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.accmvalue ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.acmpng ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.acc_price ? `$${item.acc_price}` : '—'}</td>
-            <td className="px-4 py-3 text-gray-700 font-medium">{item.tot_price ? `$${item.tot_price}` : '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.transaction_id ? item.transaction_id : '—'}</td>
-            <td className="px-4 py-3 text-gray-700">{item.status_flag ?? '—'}</td>
-            <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{item.now ? formatDate(item.now) : '—'}</td>
-            <td className="px-4 py-3 whitespace-nowrap">
+            <td className="px-3 text-gray-700" title={item.aemail ?? '—'}>{item.aemail ?? '—'}</td>
+            <td className="px-3 text-gray-700 whitespace-nowrap" title={item.phone}>{item.phone}</td>
+            <td className="px-3 text-gray-700 whitespace-nowrap" title={item.wphone ?? '—'}>{item.wphone ?? '—'}</td>
+            <td className="px-3 text-gray-700 truncate max-w-[12rem]" title={item.institution ?? '—'}>{item.institution ?? '—'}</td>
+            <td className="px-3 text-gray-700" title={item.country}>{item.country}</td>
+            <td className="px-3 text-gray-700 truncate max-w-[12rem]" title={item.presentation || '—'}>{item.presentation}</td>
+            <td className="px-3 text-gray-700" title={item.participants}>{item.participants}</td>
+            <td className="px-3 text-gray-700" title={item.regtype}>{item.regtype}</td>
+            <td className="px-3 text-gray-700" title={item.accomm}>{item.accomm}</td>
+            <td className="px-3 text-gray-700" title={item.checkin ?? '—'}>{item.checkin ?? '—'}</td>
+            <td className="px-3 text-gray-700" title={item.checkout ?? '—'}>{item.checkout ?? '—'}</td>
+            <td className="px-3 text-gray-700" title={item.nights ?? '—'}>{item.nights ?? '—'}</td>
+            <td className="px-3 text-gray-700" title={item.accmvalue ?? '—'}>{item.accmvalue ?? '—'}</td>
+            <td className="px-3 text-gray-700" title={item.acmpng ?? '—'}>{item.acmpng ?? '—'}</td>
+            <td className="px-3 text-gray-700" title={item.acc_price ? `$${item.acc_price}` : '—'}>{item.acc_price ? `$${item.acc_price}` : '—'}</td>
+            <td className="px-3 text-gray-700 font-medium" title={item.tot_price ? `$${item.tot_price}` : '—'}>{item.tot_price ? `$${item.tot_price}` : '—'}</td>
+            <td className="px-3 text-gray-700" title={item.transaction_id ? item.transaction_id : '—'}>{item.transaction_id ? item.transaction_id : '—'}</td>
+            <td className="px-3 text-gray-700" title={item.status_flag ?? '—'}>{item.status_flag ?? '—'}</td>
+            <td className="px-3 text-gray-700 whitespace-nowrap" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
+            <td className="px-3 whitespace-nowrap">
                 <button
                     onClick={onView}
                     className="p-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
@@ -63,29 +63,29 @@ export default function RegistrationTable({ rows, loading, error, onRetry, onVie
                 <table className="min-w-full text-left text-sm border-collapse">
                     <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10 border-b border-gray-200">
                         <tr>
-                            <th className="px-4 py-3 font-semibold min-w-[12rem]">Website Name</th>
-                            <th className="px-4 py-3 font-semibold min-w-[10rem]">Name</th>
-                            <th className="px-4 py-3 font-semibold min-w-[12rem]">Email</th>
-                            <th className="px-4 py-3 font-semibold min-w-[12rem]">Aemail</th>
-                            <th className="px-4 py-3 font-semibold min-w-[8rem]">Phone</th>
-                            <th className="px-4 py-3 font-semibold min-w-[8rem]">Wphone</th>
-                            <th className="px-4 py-3 font-semibold min-w-[12rem]">Institution</th>
-                            <th className="px-4 py-3 font-semibold min-w-[8rem]">Country</th>
-                            <th className="px-4 py-3 font-semibold min-w-[10rem]">Presentation</th>
-                            <th className="px-4 py-3 font-semibold min-w-[8rem]">Participants</th>
-                            <th className="px-4 py-3 font-semibold min-w-[8rem]">Regtype</th>
-                            <th className="px-4 py-3 font-semibold min-w-[10rem]">Accomm</th>
-                            <th className="px-4 py-3 font-semibold min-w-[8rem]">Checkin</th>
-                            <th className="px-4 py-3 font-semibold min-w-[8rem]">Checkout</th>
-                            <th className="px-4 py-3 font-semibold min-w-[6rem]">Nights</th>
-                            <th className="px-4 py-3 font-semibold min-w-[8rem]">Accmvalue</th>
-                            <th className="px-4 py-3 font-semibold min-w-[8rem]">Acmpng</th>
-                            <th className="px-4 py-3 font-semibold min-w-[8rem]">Acc_price</th>
-                            <th className="px-4 py-3 font-semibold min-w-[8rem]">Tot_price</th>
-                            <th className="px-4 py-3 font-semibold min-w-[12rem]">Transaction_id</th>
-                            <th className="px-4 py-3 font-semibold min-w-[8rem]">Status_flag</th>
-                            <th className="px-4 py-3 font-semibold min-w-[10rem]">Submitted On</th>
-                            <th className="px-4 py-3 font-semibold min-w-[5rem]">Actions</th>
+                            <th className="px-3 py-2 font-semibold min-w-[16rem]">Website Name</th>
+                            <th className="px-3 py-2 font-semibold min-w-[10rem]">Name</th>
+                            <th className="px-3 py-2 font-semibold min-w-[12rem]">Email</th>
+                            <th className="px-3 py-2 font-semibold min-w-[12rem]">Aemail</th>
+                            <th className="px-3 py-2 font-semibold min-w-[8rem]">Phone</th>
+                            <th className="px-3 py-2 font-semibold min-w-[8rem]">Wphone</th>
+                            <th className="px-3 py-2 font-semibold min-w-[12rem]">Institution</th>
+                            <th className="px-3 py-2 font-semibold min-w-[8rem]">Country</th>
+                            <th className="px-3 py-2 font-semibold min-w-[10rem]">Presentation</th>
+                            <th className="px-3 py-2 font-semibold min-w-[8rem]">Participants</th>
+                            <th className="px-3 py-2 font-semibold min-w-[8rem]">Regtype</th>
+                            <th className="px-3 py-2 font-semibold min-w-[10rem]">Accomm</th>
+                            <th className="px-3 py-2 font-semibold min-w-[8rem]">Checkin</th>
+                            <th className="px-3 py-2 font-semibold min-w-[8rem]">Checkout</th>
+                            <th className="px-3 py-2 font-semibold min-w-[6rem]">Nights</th>
+                            <th className="px-3 py-2 font-semibold min-w-[8rem]">Accmvalue</th>
+                            <th className="px-3 py-2 font-semibold min-w-[8rem]">Acmpng</th>
+                            <th className="px-3 py-2 font-semibold min-w-[8rem]">Acc_price</th>
+                            <th className="px-3 py-2 font-semibold min-w-[8rem]">Tot_price</th>
+                            <th className="px-3 py-2 font-semibold min-w-[12rem]">Transaction_id</th>
+                            <th className="px-3 py-2 font-semibold min-w-[8rem]">Status_flag</th>
+                            <th className="px-3 py-2 font-semibold min-w-[10rem]">Submitted On</th>
+                            <th className="px-3 py-2 font-semibold min-w-[5rem]">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">

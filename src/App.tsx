@@ -25,6 +25,7 @@ function App() {
   const dispatch = useDispatch<AppDispatch>()
   const [activeId, setActiveId] = useState<string>('abstracts')
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false)
+  const [navCollapsed, setNavCollapsed] = useState<boolean>(false)
   const [showNetwork, setShowNetwork] = useState(false)
   const [showServer, setShowServer] = useState(false)
   const [showServerUnavailable, setShowServerUnavailable] = useState(false)
@@ -145,6 +146,8 @@ function App() {
           onNavigate={setActiveId}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
+          isCollapsed={navCollapsed}
+          onToggleCollapse={() => setNavCollapsed((prev) => !prev)}
         />
 
         {/* Main content area */}
@@ -157,7 +160,7 @@ function App() {
             />
           )}
           <main className="w-full h-full px-4 sm:px-6 lg:px-8 py-6 overflow-hidden">
-            <div className="h-full overflow-hidden flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm text-left">
+            <div className="h-full overflow-hidden flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 shadow-sm text-left">
               {activeId === 'abstracts' ? (
                 <AbstractsPage />
               ) : activeId === 'registrations' ? (
