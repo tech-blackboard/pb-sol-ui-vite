@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { X, CheckCircle, Info, AlertCircle } from 'lucide-react'
-import { useAppDispatch } from '../store/hooks'
-import { createRegistrationThunk } from '../store/slices/registrations/registrations.thunks'
+import { useAppDispatch } from '../../../store/hooks'
+import { createRegistrationThunk } from '../../../store/slices/registrations/registrations.thunks'
 
-import { listWebsites, type SourceWebsite } from '../services/sourcedb'
+import { listWebsites, type SourceWebsite } from '../../../services/sourcedb'
 import toast from 'react-hot-toast'
 
 interface RegistrationFormProps {
@@ -331,6 +331,7 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
                             <InputField label="Institution/Organization*" name="institution" value={formData.institution} onChange={handleChange} error={errors.institution} />
 
                             <SelectField label="Country*" name="country" value={formData.country} options={COUNTRIES} onChange={handleChange} error={errors.country} />
+                            <SelectField label="Interested In (Presentation)*" name="presentation" value={formData.presentation} options={PRESENTATION_OPTIONS} onChange={handleChange} error={errors.presentation} />
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Website/Conference*
@@ -360,19 +361,12 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
                                     </p>
                                 )}
                             </div>
-                            <SelectField label="Interested In (Presentation)*" name="presentation" value={formData.presentation} options={PRESENTATION_OPTIONS} onChange={handleChange} error={errors.presentation} />
-
-
                         </div>
                     </div>
-
 
                     {/* Section 3: Accommodation */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-semibold uppercase tracking-wider text-sm border-b pb-2">
-
-
-
                             <Info className="w-4 h-4" />
                             Accommodation Details
                         </div>

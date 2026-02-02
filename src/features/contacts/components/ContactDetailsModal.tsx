@@ -44,16 +44,16 @@ export default function ContactDetailsModal({ item, onClose }: Props) {
 
                     <div className="mt-8 pt-6 border-t border-gray-100">
                         <h3 className="text-sm font-semibold text-purple-600 uppercase tracking-wider mb-4">Message</h3>
-                        <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap min-h-[120px] hover:overflow-visible hover:whitespace-normal hover:max-w-[16rem]" >
+                        <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap min-h-[120px]" >
                             {item.message || 'No additional message provided.'}
                         </div>
                     </div>
                 </div>
 
-                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex justify-end">
+                <div className="px-4 py-2 border-t border-gray-100 bg-gray-50/50 flex justify-end">
                     <button
                         onClick={onClose}
-                        className="w-full sm:w-auto px-8 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-semibold transition-all shadow-sm active:scale-95"
+                        className="w-full sm:w-auto px-3 py-1 rounded-lg border border-gray-300 bg-white text-gray-700  text-[13px] hover:bg-gray-50 font-semibold transition-all shadow-sm active:scale-95"
                     >
                         Close
                     </button>

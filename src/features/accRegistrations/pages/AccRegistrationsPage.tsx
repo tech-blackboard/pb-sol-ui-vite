@@ -7,7 +7,7 @@ import AccRegistrationTable from '../components/AccRegistrationTable'
 import AccRegistrationDetailsModal from '../components/AccRegistrationDetailsModal'
 import SectionHeader from '../../../components/SectionHeader'
 import AccRegistrationFiltersDrawer from '../components/AccRegistrationFiltersDrawer'
-import AccommodationForm from '../../../components/AccommodationForm'
+import AccommodationForm from '../components/AccommodationForm'
 
 export default function AccRegistrationsPage() {
     const dispatch = useAppDispatch()

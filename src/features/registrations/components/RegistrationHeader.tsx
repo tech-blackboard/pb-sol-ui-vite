@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import RegistrationFiltersDrawer from './RegistrationFiltersDrawer'
-import RegistrationForm from '../../../components/RegistrationForm'
+import RegistrationForm from './RegistrationForm'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { fetchRegistrations } from '../../../store/slices/registrations/registrations.thunks'
 import SectionHeader from '../../../components/SectionHeader'

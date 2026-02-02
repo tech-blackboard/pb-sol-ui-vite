@@ -242,7 +242,7 @@ export default function SponsorshipForm({ websiteId, onClose, onSuccess }: Spons
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="px-8 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow-lg shadow-purple-600/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                            className="px-8 py-2 rounded-lg bg-[#0066cc] hover:bg-[#0052a3] text-white font-bold shadow-lg transition-all flex items-center gap-2 disabled:opacity-50"
                         >
                             {submitting ? 'Adding...' : 'Submit Now'}
                         </button>

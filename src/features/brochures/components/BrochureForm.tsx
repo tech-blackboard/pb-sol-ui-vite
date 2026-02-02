@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { X, AlertCircle } from 'lucide-react'
-import { useAppDispatch } from '../store/hooks'
-import { createBrochureThunk } from '../store/slices/brochures/brochures.slice'
-import { listWebsites, type SourceWebsite } from '../services/sourcedb'
+import { useAppDispatch } from '../../../store/hooks'
+import { createBrochureThunk } from '../../../store/slices/brochures/brochures.slice'
+import { listWebsites, type SourceWebsite } from '../../../services/sourcedb'
 import toast from 'react-hot-toast'
 
 interface BrochureFormProps {
@@ -205,7 +205,7 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="px-8 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow-lg shadow-purple-600/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                            className="px-8 py-2 rounded-lg bg-[#0066cc] hover:bg-[#0052a3] text-white font-bold shadow-lg transition-all flex items-center gap-2 disabled:opacity-50"
                         >
                             {submitting ? 'Submitting...' : 'Submit Now'}
                         </button>

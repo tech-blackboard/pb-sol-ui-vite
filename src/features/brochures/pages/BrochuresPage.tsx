@@ -7,7 +7,7 @@ import BrochureTable from '../components/BrochureTable'
 import BrochureDetailsModal from '../components/BrochureDetailsModal'
 import SectionHeader from '../../../components/SectionHeader'
 import BrochureFiltersDrawer from '../components/BrochureFiltersDrawer'
-import BrochureForm from '../../../components/BrochureForm'
+import BrochureForm from '../components/BrochureForm'
 
 export default function BrochuresPage() {
     const dispatch = useAppDispatch()

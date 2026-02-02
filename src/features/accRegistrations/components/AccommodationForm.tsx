@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { X, CheckCircle, Info, AlertCircle } from 'lucide-react'
-import { useAppDispatch } from '../store/hooks'
-import { createAccRegistrationThunk } from '../store/slices/accRegistrations/accRegistrations.slice'
-import { listWebsites, type SourceWebsite } from '../services/sourcedb'
+import { useAppDispatch } from '../../../store/hooks'
+import { createAccRegistrationThunk } from '../../../store/slices/accRegistrations/accRegistrations.slice'
+import { listWebsites, type SourceWebsite } from '../../../services/sourcedb'
 import toast from 'react-hot-toast'
 
 interface AccommodationFormProps {
