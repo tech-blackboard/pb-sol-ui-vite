@@ -9,7 +9,10 @@ function AccRegistrationRow({ item, onView }: AccRegistrationRowProps) {
     return (
         <tr className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
             <td className="px-3 py-1 text-gray-700" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
-            <td className="px-3 py-1 text-gray-900 font-medium whitespace-nowrap" title={item.name}>{item.name}</td>
+            <td className="px-3 py-1 text-gray-900 font-medium whitespace-nowrap" title={item.name}>
+                <span className="text-gray-500 mr-1.5 font-normal">{item.caption}</span>
+                {item.name}
+            </td>
             <td className="px-3 py-1" title={item.email}>
                 <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">{item.email}</a>
             </td>
@@ -21,12 +24,12 @@ function AccRegistrationRow({ item, onView }: AccRegistrationRowProps) {
             <td className="px-3 py-1 text-gray-700" title={item.presentation ? item.presentation : '—'}>{item.presentation ? item.presentation : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.participants ? item.participants : '—'}>{item.participants ? item.participants : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.regtype ? item.regtype : '—'}>{item.regtype ? item.regtype : '—'}</td>
-            <td className="px-3 py-1 text-gray-700" title={item.accomm ?? '—'}>{item.accomm ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.accomm ?? '—'}>{item.accomm ? item.accomm : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.checkin ?? '—'}>{item.checkin ?? '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.checkout ?? '—'}>{item.checkout ?? '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.nights ?? '—'}>{item.nights ?? '—'}</td>
-            <td className="px-3 py-1 text-gray-700" title={item.accm ?? '—'}>{item.accm ?? '—'}</td>
-            <td className="px-3 py-1 text-gray-700" title={item.acmpng ?? '—'}>{item.acmpng ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.accm ?? '—'}>{item.accm ? item.accm : '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.acmpng ?? '—'}>{item.acmpng ? item.acmpng : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.acc_pr ? `$${item.acc_pr}` : '—'}>{item.acc_pr ? `$${item.acc_pr}` : '—'}</td>
             <td className="px-3 py-1 text-gray-700 font-medium" title={item.tot_price ? `$${item.tot_price}` : '—'}>{item.tot_price ? `$${item.tot_price}` : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.transaction_id ? item.transaction_id : '—'}>{item.transaction_id ? item.transaction_id : '—'}</td>
