@@ -98,11 +98,11 @@ export default function Nav({ links, activeId, onNavigate, headerSlot, isOpen, o
           <div className="text-base font-semibold">Navigation</div>
           <div className="ml-auto flex items-center gap-2">{headerSlot}
             <button
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-gray-100"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md "
               aria-label="Close sidebar"
               onClick={onClose}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor" className="h-5 w-5">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor" className="h-5 w-5  ">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6m0 12L6 6" />
               </svg>
             </button>
@@ -113,7 +113,7 @@ export default function Nav({ links, activeId, onNavigate, headerSlot, isOpen, o
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            className="hidden md:flex absolute top-4 right-2 h-8 w-8 items-center justify-center rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="hidden md:flex absolute top-6 right-3  h-7 w-7   items-center justify-center rounded-md transition-colors"
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
@@ -123,15 +123,15 @@ export default function Nav({ links, activeId, onNavigate, headerSlot, isOpen, o
               fill="none"
               strokeWidth="1.5"
               stroke="currentColor"
-              className={`h-5 w-5 transition-transform ${isCollapsed ? 'rotate-180' : ''}`}
+              className={`h-5 w-5 transition-transform   ${isCollapsed ? 'rotate-180 top-0 md:top-0.5   items-center justify-center rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 p-1   left-5 absolute' : '  h-7 w-7   items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 p-1 rounded-md '}`}
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
             </svg>
           </button>
         )}
 
-        <nav className="px-3 py-4 md:pt-4 md:pb-6 md:px-2 overflow-y-auto h-[calc(100%-4rem)] md:h-auto">
-          <ul className="space-y-1">
+        <nav className="px-3 py-4 md:pt-4 md:pb-6 md:px-2 overflow-y-auto h-[calc(100%-4rem)] md:h-auto ">
+          <ul className="space-y-1 ">
             {links.map((link) => {
               const isActive = link.id === activeId
               return (
@@ -153,7 +153,7 @@ export default function Nav({ links, activeId, onNavigate, headerSlot, isOpen, o
                     title={isCollapsed ? link.label : undefined}
                   >
                     {getIcon(link.id)}
-                    <span className={isCollapsed ? 'md:hidden' : ''}>{link.label}</span>
+                    <span className={isCollapsed ? 'md:hidden ' : ''}>{link.label}</span>
                   </button>
                 </li>
               )

@@ -126,7 +126,7 @@ export default function AbstractRow({ record, raw, onView }: Props) {
       </td>
 
       {/* Abstract File */}
-      <td className=" px-3 py-1 text-gray-700 max-w-[4px] truncate  hover:max-w-[16rem] ">
+      <td className=" px-3 py-1 text-gray-700 max-w-[4px] truncate  hover:max-w-[16rem] " title={name}>
         {href ? (
           <a
             href={href}
