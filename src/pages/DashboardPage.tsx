@@ -395,7 +395,7 @@ export default function DashboardPage() {
                 !error &&
                 recent.map((r) => (
 
-                  <tr key={r.id ?? r.uuid ?? r.email ?? `${r.website_id}-${r.now}`} className="border-t border-gray-100 dark:border-gray-800">
+                  <tr key={r.id ?? r.uuid ?? r.email ?? `${r.website?.id ?? r.website_id ?? ''}-${r.now}`} className="border-t border-gray-100 dark:border-gray-800">
                     <td className="px-3 py-1 text-gray-900 dark:text-gray-100 truncate max-w-[150px]" title={r.website_name ?? r.website?.name ?? '—'}>
                       {r.website_name ?? r.website?.name ?? '—'}
                     </td>
