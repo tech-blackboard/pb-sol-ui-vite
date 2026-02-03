@@ -1,9 +1,10 @@
+import type { AbstractItem } from '../../../services/abstracts'
 import type { AbstractRecord } from '../types'
 import { formatDate } from '../../../utils/utils'
 
 interface Props {
   record: AbstractRecord
-  raw: any
+  raw: AbstractItem | null
   onView: () => void
 }
 

@@ -184,13 +184,14 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
       toast.success('Abstract submitted successfully!')
       onSuccess?.()
       onClose()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Submit error:', err)
+      const axiosError = err as { response?: { data?: { message?: string; error?: string } }; message?: string }
 
       const errorMsg =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err?.message ||
+        axiosError?.response?.data?.message ||
+        axiosError?.response?.data?.error ||
+        axiosError?.message ||
         'Failed to submit abstract'
 
       toast.error(errorMsg, { duration: 5000 })
@@ -211,7 +212,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
     try {
       // Create JSON payload matching the backend expected format
-      const payload: any = {
+      const payload = {
         name: `${formData.caption} ${formData.name}`,
         email: formData.email, // Add email field if you have it in the form
         aemail: formData.aemail, // Add alternate email if you have it
@@ -239,19 +240,27 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
       toast.success('Abstract submitted successfully!')
       onSuccess?.()
       onClose()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Submit error:', err)
+      const axiosError = err as {
+        response?: {
+          status?: number;
+          statusText?: string;
+          data?: { message?: string; error?: string }
+        };
+        message?: string
+      }
       console.error('Error details:', {
-        status: err?.response?.status,
-        statusText: err?.response?.statusText,
-        data: err?.response?.data,
-        message: err?.message
+        status: axiosError?.response?.status,
+        statusText: axiosError?.response?.statusText,
+        data: axiosError?.response?.data,
+        message: axiosError?.message
       })
 
-      const errorMsg = err?.response?.data?.message
-        || err?.response?.data?.error
-        || (err?.response?.status === 500 ? 'Internal Server Error. Please check all required fields.' : '')
-        || err?.message
+      const errorMsg = axiosError?.response?.data?.message
+        || axiosError?.response?.data?.error
+        || (axiosError?.response?.status === 500 ? 'Internal Server Error. Please check all required fields.' : '')
+        || axiosError?.message
         || 'Failed to submit abstract'
 
       toast.error(errorMsg, { duration: 5000 })

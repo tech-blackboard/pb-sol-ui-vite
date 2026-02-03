@@ -2,12 +2,13 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { AbstractFilters } from './abstracts.types'
 import { fetchAbstracts, sendConfirmationEmailThunk, sendInvoiceThunk, sendPaymentReceiptThunk, sendPaymentReminderThunk, updateStatusThunk } from './abstracts.thunks'
 import { normalizeAbstract } from '../../../features/abstracts/utils/normalizeAbstract'
-import type { AbstractStatus } from '../../../features/abstracts/types'
+import type { AbstractStatus, AbstractRecord } from '../../../features/abstracts/types'
+import type { AbstractItem } from '../../../services/abstracts'
 
 interface AbstractsState {
-  items: any[]
-  rawItems: any[]
-  selected: any | null
+  items: AbstractRecord[]
+  rawItems: AbstractItem[]
+  selected: AbstractItem | null
   modalStatus: AbstractStatus | null
 
   loading: boolean
@@ -45,7 +46,7 @@ interface AbstractsState {
     abstractId: string | null
     abstractName: string
   }
-  
+
 }
 
 const initialFilters: AbstractFilters = {
@@ -94,7 +95,7 @@ const initialState: AbstractsState = {
     abstractId: null,
     abstractName: '',
   },
-  
+
 }
 
 const abstractsSlice = createSlice({
@@ -102,11 +103,11 @@ const abstractsSlice = createSlice({
   initialState,
   reducers: {
     /* ---------- selection ---------- */
-    setSelected(state, action: PayloadAction<any>) {
+    setSelected(state, action: PayloadAction<AbstractItem>) {
       state.selected = action.payload
+      const status = action.payload.status
       state.modalStatus =
-        action.payload?.status?.actionType ??
-        action.payload?.status ??
+        ((typeof status === 'object' ? status?.actionType : status) as AbstractStatus) ??
         'Under Review'
     },
 
@@ -129,9 +130,9 @@ const abstractsSlice = createSlice({
     },
 
     /* ---------- filters ---------- */
-    updateDraftFilter(
-      state,
-      action: PayloadAction<{ key: keyof AbstractFilters; value: any }>
+    updateDraftFilter<K extends keyof AbstractFilters>(
+      state: AbstractsState,
+      action: PayloadAction<{ key: K; value: AbstractFilters[K] }>
     ) {
       state.draftFilters[action.payload.key] = action.payload.value
     },
@@ -171,7 +172,7 @@ const abstractsSlice = createSlice({
       state.paymentReceiptModal.abstractId = action.payload.id
       state.paymentReceiptModal.abstractName = action.payload.name
     },
-    
+
     closePaymentReceiptModal(state) {
       state.paymentReceiptModal.open = false
       state.paymentReceiptModal.abstractId = null
@@ -221,7 +222,7 @@ const abstractsSlice = createSlice({
         state.actionLoading.status = false
 
         const idx = state.rawItems.findIndex(
-          (x: any) => String(x.id ?? x._id) === String(payload.id ?? payload.id)
+          (x) => String(x.id) === String(payload.id)
         )
 
         if (idx !== -1) {
@@ -281,29 +282,29 @@ const abstractsSlice = createSlice({
       .addCase(sendPaymentReceiptThunk.pending, (state) => {
         state.actionLoading.receipt = true
       })
-      
+
       .addCase(sendPaymentReceiptThunk.fulfilled, (state, { payload }) => {
         state.actionLoading.receipt = false
-      
+
         const updated = payload.updated
-      
+
         const idx = state.rawItems.findIndex(
-          (x) => String(x.id ?? x._id) === String(updated.id ?? updated.id)
+          (x) => String(x.id) === String(updated.id)
         )
-      
+
         if (idx !== -1) {
           state.rawItems[idx] = updated
           state.items[idx] = normalizeAbstract(updated)
         }
-      
+
         state.selected = updated
         state.modalStatus = 'Registered'
-      
+
         state.paymentReceiptModal.open = false
         state.paymentReceiptModal.abstractId = null
         state.paymentReceiptModal.abstractName = ''
       })
-      
+
       .addCase(sendPaymentReceiptThunk.rejected, (state) => {
         state.actionLoading.receipt = false
       })
@@ -312,16 +313,16 @@ const abstractsSlice = createSlice({
       .addCase(sendConfirmationEmailThunk.pending, (state) => {
         state.actionLoading.confirmation = true
       })
-      
+
       .addCase(sendConfirmationEmailThunk.fulfilled, (state, { payload }) => {
         state.actionLoading.confirmation = false
-      
+
         const { id } = payload
-      
+
         const idx = state.rawItems.findIndex(
-          (x) => String(x.id ?? x._id) === String(id)
+          (x) => String(x.id) === String(id)
         )
-      
+
         if (idx !== -1) {
           state.rawItems[idx] = {
             ...state.rawItems[idx],
@@ -329,15 +330,15 @@ const abstractsSlice = createSlice({
           }
           state.items[idx] = normalizeAbstract(state.rawItems[idx])
         }
-      
-        if (state.selected && String(state.selected.id ?? state.selected._id) === String(id)) {
+
+        if (state.selected && String(state.selected.id) === String(id)) {
           state.selected = {
             ...state.selected,
             isEmailSent: true,
           }
         }
       })
-      
+
       .addCase(sendConfirmationEmailThunk.rejected, (state) => {
         state.actionLoading.confirmation = false
       })

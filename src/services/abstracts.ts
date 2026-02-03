@@ -1,5 +1,5 @@
 import { api } from '../lib/api';
-
+import { ABSTRACT_BASE } from '../config/env';
 export type AbstractRole = { id: number | string; name: string }
 
 export type AbstractUser = {
@@ -47,9 +47,10 @@ export type AbstractItem = {
   paymentLink?: string
 
   now?: string
+  website_name?: string
+  fileS3Url?: string
 }
 
-const ABSTRACT_BASE = import.meta.env.VITE_ABSTRACT_BASE;
 
 export function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
@@ -96,7 +97,7 @@ export async function createAbstractWithFormDataFileUpload(body: Partial<Abstrac
   const isFormData = body instanceof FormData
 
   // For FormData, we need to handle headers differently
-  const config: any = {
+  const config: { withCredentials: boolean; headers?: Record<string, string> } = {
     withCredentials: true,
   }
 
@@ -186,10 +187,9 @@ export type AbstractSearchResult = {
 }
 
 export async function searchAbstracts(params: AbstractSearchParams = {}): Promise<AbstractSearchResult> {
-  const q: any = { ...params }
+  const q: Omit<AbstractSearchParams, 'isEmailSent'> & { isEmailSent?: boolean | number } = { ...params }
   if (typeof q.isEmailSent === 'boolean') {
     q.isEmailSent = q.isEmailSent === true ? 1 : 0
-    // delete q.isEmailSent
   }
   const { data } = await api.get(`${ABSTRACT_BASE}/search`, {
     params: q,
@@ -363,8 +363,15 @@ export type DashboardFilters = {
   status_id?: number
 }
 
-export async function fetchDashboard(filters: DashboardFilters) {
-  const { data } = await api.get(`${ABSTRACT_BASE}/dashboard`, {
+export type DashboardStatusCount = { status_id: number; count: number | string }
+export type DashboardData = {
+  total: number
+  statusCounts: DashboardStatusCount[]
+  recentAbstracts: AbstractItem[]
+}
+
+export async function fetchDashboard(filters: DashboardFilters): Promise<DashboardData> {
+  const { data } = await api.get<DashboardData>(`${ABSTRACT_BASE}/dashboard`, {
     params: filters,
     headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     withCredentials: true,

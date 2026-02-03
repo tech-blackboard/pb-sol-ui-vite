@@ -1,3 +1,4 @@
+import type { AbstractItem } from '../../../services/abstracts'
 import type { AbstractRecord, AbstractStatus } from '../types'
 import { formatDate } from '../../../utils/utils'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
@@ -9,7 +10,7 @@ import toast from 'react-hot-toast'
 type StatusAction = AbstractStatus
 
 interface Props {
-  item: any | null
+  item: AbstractItem | null
   record: AbstractRecord | null
   modalStatus: StatusAction
   onClose: () => void
@@ -33,9 +34,9 @@ export default function AbstractDetailsModal({
   /* -------------------- status -------------------- */
 
   const currentStatus: StatusAction =
-    typeof item.status === 'object'
+    (typeof item.status === 'object'
       ? item.status?.actionType ?? 'Under Review'
-      : record.status
+      : item.status ?? 'Under Review') as StatusAction
   const isSameStatus = modalStatus === currentStatus
   const showUpdateButton = modalStatus !== 'Sent Invoice'
   const statusClass =
@@ -93,7 +94,7 @@ export default function AbstractDetailsModal({
         {/* Body */}
         <div className="max-h-[70vh] overflow-auto px-4 py-4">
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <Field label="ID" value={String(item.id ?? item._id)} />
+            <Field label="ID" value={String(item.id)} />
             <Field label="Website" value={item.website?.name ?? '—'} />
             <Field label="Name" value={record.name} />
             <Field
@@ -165,7 +166,7 @@ export default function AbstractDetailsModal({
               label="User Role"
               value={
                 (item.user?.roles ?? [])
-                  .map((r: any) => (typeof r === 'string' ? r : r?.name))
+                  .map((r) => (typeof r === 'string' ? r : (r as { name: string })?.name))
                   .filter(Boolean)
                   .join(', ') || '—'
               }
@@ -230,12 +231,12 @@ export default function AbstractDetailsModal({
               <button
                 onClick={async () => {
                   const result = await dispatch(
-                    sendConfirmationEmailThunk(String(item.id ?? item._id))
+                    sendConfirmationEmailThunk(String(item.id))
                   )
 
                   if (sendConfirmationEmailThunk.fulfilled.match(result)) {
                     toast.success(
-                      result.payload.message || 'Confirmation email sent successfully!'
+                      (result.payload as { message: string })?.message || 'Confirmation email sent successfully!'
                     )
                   } else {
                     toast.error('Failed to send confirmation email')
@@ -252,7 +253,7 @@ export default function AbstractDetailsModal({
               <>
                 <button
                   onClick={() => dispatch(openInvoiceModal({
-                    id: String(item.id ?? item._id),
+                    id: String(item.id),
                     name: record.name,
                   }))}
                   className={`rounded-md border px-2.5 py-1.5 text-xs ${actionLoading.invoice ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'}`}
@@ -263,7 +264,7 @@ export default function AbstractDetailsModal({
 
                 <button
                   onClick={() => dispatch(openPaymentReminderModal({
-                    id: String(item.id ?? item._id),
+                    id: String(item.id),
                     name: record.name,
                   }))}
                   className={`rounded-md border px-2.5 py-1.5 text-xs ${actionLoading.reminder ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'text-black border-gray-300 hover:bg-gray-100'}`}
@@ -280,7 +281,7 @@ export default function AbstractDetailsModal({
                 onClick={() =>
                   dispatch(
                     openPaymentReceiptModal({
-                      id: String(item.id ?? item._id),
+                      id: String(item.id),
                       name: record.name,
                     })
                   )

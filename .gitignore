@@ -42,4 +42,8 @@ dist-ssr
 .env.stage.production.local
 .env.*
 .husky/
+#jest config 
 coverage/
+coverage-final.json
+clover.xml
+lcov.info

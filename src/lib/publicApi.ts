@@ -1,7 +1,7 @@
 // lib/publicApi.ts
 import axios from 'axios';
-
+import { API_BASE } from '../config/env';
 export const publicApi = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE,
+    baseURL: API_BASE,
     withCredentials: true,
 });
