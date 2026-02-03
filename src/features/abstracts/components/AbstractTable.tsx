@@ -27,23 +27,23 @@ export default function AbstractTable({
         <table className="min-w-full text-left text-sm">
           <thead className="bg-gray-50 text-gray-600 sticky top-0 ">
             <tr>
+              <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[5rem] ">Actions</th>
               <th className="px-3 py-2 text-gray-700 font-semibold text-sm min-w-[14rem]">Website</th>
               <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[14rem]">Name</th>
               <th className="px-1 py-2  text-gray-700 font-semibold text-sm">Email</th>
-              <th className="px-3 py-2  text-gray-700 font-semibold text-sm">Alternate Email</th>
+              <th className="px-4 py-2  text-gray-700 font-semibold text-sm min-w-[8rem] ">Status</th>
+              <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[8rem] ">Email Sent</th>
+              <th className="px-1 py-2  text-gray-700 font-semibold text-sm">Alternate Email</th>
               <th className="px-4 py-2  text-gray-700 font-semibold text-sm min-w-[10rem]">Phone</th>
               <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[10rem]">WhatsApp</th>
               <th className="px-2 py-2 text-gray-700 font-semibold text-sm">City</th>
               <th className="px-6 py-2  text-gray-700 font-semibold text-sm">Country</th>
-              <th className="px-0 py-2  text-gray-700 font-semibold text-sm min-w-[14rem]">University</th>
+              <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[14rem]">University</th>
               <th className="px-3 py-2  text-gray-700 font-semibold text-sm  min-w-[14rem] overflow-hidden">Title</th>
               <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[14rem] overflow-hidden">Message</th>
               <th className="px-3 py-2   text-gray-700 font-semibold text-sm  min-w-[14rem] ">Presentation</th>
               <th className="px-3 py-2  text-gray-700 font-semibold text-sm  min-w-[18rem] ">Abstract File</th>
               <th className="px-3 py-2  text-gray-700 font-semibold text-sm ">Submitted On</th>
-              <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[8rem] ">Email Sent</th>
-              <th className="px-4 py-2  text-gray-700 font-semibold text-sm min-w-[8rem] ">Status</th>
-              <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[5rem] ">Actions</th>
             </tr>
           </thead>
 

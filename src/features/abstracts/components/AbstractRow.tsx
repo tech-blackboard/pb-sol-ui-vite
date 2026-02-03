@@ -39,6 +39,35 @@ export default function AbstractRow({ record, raw, onView }: Props) {
 
   return (
     <tr className="border-t border-gray-100">
+
+
+      {/* Actions */}
+      <td className="px-3 py-1">
+        <div className="flex flex-wrap gap-1">
+          <button
+            onClick={onView}
+            className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-2 py-1  text-xs hover:bg-gray-50"
+            title="Edit"
+            aria-label="Edit"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              strokeWidth="1.5"
+              stroke="currentColor"
+              className="h-4 w-4"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M16.862 3.487a2.25 2.25 0 0 1 3.182 3.182L7.125 19.588l-3.682.409.409-3.682L16.862 3.487z"
+              />
+            </svg>
+          </button>
+        </div>
+      </td>
+
       {/* Website */}
       <td className="px-3 py-1 text-gray-700">
         <div className="max-w-[16rem] truncate" title={raw?.website?.name ?? '—'}>
@@ -63,8 +92,33 @@ export default function AbstractRow({ record, raw, onView }: Props) {
         </a>
       </td>
 
+      {/* Status */}
+      <td className="px-3 py-1">
+        <span
+          className={[
+            'inline-flex items-center rounded-full px-1.5 py-1 text-xs font-medium',
+            statusClass,
+          ].join(' ')}
+        >
+          {record.status}
+        </span>
+      </td>
+
+      {/* Email Sent */}
+      <td className="px-3 py-1">
+        <span
+          className={[
+            'inline-flex items-center rounded-full px-1.5 py-1 text-xs font-medium',
+            record.isEmailSent
+              ? 'bg-green-50 text-green-700'
+              : 'bg-gray-100 text-gray-700',
+          ].join(' ')}
+        >
+          {record.isEmailSent ? 'Yes' : 'No'}
+        </span>
+      </td>
       {/* Alternate Email */}
-      <td className="px-3 py-1 text-gray-700">
+      <td className="px-1 py-1 text-gray-700">
         <div className="max-w-[12rem] truncate" title={record.altEmail ?? '—'}>
           {record.altEmail ?? '—'}
         </div>
@@ -99,7 +153,7 @@ export default function AbstractRow({ record, raw, onView }: Props) {
       </td>
 
       {/* University / Organization */}
-      <td className="px-0  py-1 text-gray-700">
+      <td className="px-3  py-1 text-gray-700">
         <div className=" max-w-[12rem] truncate" title={raw?.organization ?? '—'}>
           {raw?.organization ?? '—'}
         </div>
@@ -107,14 +161,14 @@ export default function AbstractRow({ record, raw, onView }: Props) {
 
       {/* Title */}
       <td className="px-3 py-1 text-gray-700">
-        <div className="max-w-[16rem] truncate" title={raw?.title ?? '—'}>
+        <div className="max-w-[12rem] truncate" title={raw?.title ?? '—'}>
           {raw?.title ?? '—'}
         </div>
       </td>
 
       {/* Message */}
       <td className="px-3 py-1  text-gray-700">
-        <div className="max-w-[16rem] truncate" title={raw?.message ?? '—'}>
+        <div className="max-w-[200px] truncate" title={raw?.message ?? '—'}>
           {raw?.message ?? '—'}
         </div>
       </td>
@@ -127,7 +181,7 @@ export default function AbstractRow({ record, raw, onView }: Props) {
       </td>
 
       {/* Abstract File */}
-      <td className=" px-3 py-1  text-gray-700 max-w-[4px] truncate  hover:max-w-[16rem] " title={name}>
+      <td className=" px-3 py-1  text-gray-700 max-w-[9rem] truncate" title={name}>
         {href ? (
           <a
             href={href}
@@ -149,58 +203,10 @@ export default function AbstractRow({ record, raw, onView }: Props) {
         </div>
       </td>
 
-      {/* Email Sent */}
-      <td className="px-3 py-1">
-        <span
-          className={[
-            'inline-flex items-center rounded-full px-1.5 py-1 text-xs font-medium',
-            record.isEmailSent
-              ? 'bg-green-50 text-green-700'
-              : 'bg-gray-100 text-gray-700',
-          ].join(' ')}
-        >
-          {record.isEmailSent ? 'Yes' : 'No'}
-        </span>
-      </td>
 
-      {/* Status */}
-      <td className="px-3 py-1">
-        <span
-          className={[
-            'inline-flex items-center rounded-full px-1.5 py-1 text-xs font-medium',
-            statusClass,
-          ].join(' ')}
-        >
-          {record.status}
-        </span>
-      </td>
 
-      {/* Actions */}
-      <td className="px-3 py-1">
-        <div className="flex flex-wrap gap-1">
-          <button
-            onClick={onView}
-            className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-2  text-xs hover:bg-gray-50"
-            title="Edit"
-            aria-label="Edit"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              strokeWidth="1.5"
-              stroke="currentColor"
-              className="h-4 w-4"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M16.862 3.487a2.25 2.25 0 0 1 3.182 3.182L7.125 19.588l-3.682.409.409-3.682L16.862 3.487z"
-              />
-            </svg>
-          </button>
-        </div>
-      </td>
+
+
     </tr>
   )
 }

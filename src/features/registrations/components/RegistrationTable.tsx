@@ -8,6 +8,18 @@ interface RegistrationRowProps {
 function RegistrationRow({ item, onView }: RegistrationRowProps) {
     return (
         <tr className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+            <td className="px-3 py-1 whitespace-nowrap">
+                <button
+                    onClick={onView}
+                    className="p-1  rounded-md border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
+                    title="View Details"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                </button>
+            </td>
             <td className="px-3 py-1 text-gray-700" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
             <td className="px-3 py-1 text-gray-900 font-medium whitespace-nowrap" title={item.name}>{item.name}</td>
             <td className="px-3 py-1 text-gray-700" title={item.email}>
@@ -32,18 +44,7 @@ function RegistrationRow({ item, onView }: RegistrationRowProps) {
             <td className="px-3 py-1 text-gray-700" title={item.transaction_id ? item.transaction_id : '—'}>{item.transaction_id ? item.transaction_id : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.status_flag ?? '—'}>{item.status_flag ?? '—'}</td>
             <td className="px-3 py-1 text-gray-700 whitespace-nowrap" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
-            <td className="px-3 py-1 whitespace-nowrap">
-                <button
-                    onClick={onView}
-                    className="p-1  rounded-md border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
-                    title="View Details"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                </button>
-            </td>
+
         </tr>
     );
 }
@@ -63,6 +64,7 @@ export default function RegistrationTable({ rows, loading, error, onRetry, onVie
                 <table className="min-w-full text-left text-sm border-collapse">
                     <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10 border-b border-gray-200">
                         <tr>
+                            <th className="px-3 py-2 font-semibold min-w-[5rem]">Actions</th>
                             <th className="px-3 py-2 font-semibold min-w-[16rem]">Website Name</th>
                             <th className="px-3 py-2 font-semibold min-w-[10rem]">Name</th>
                             <th className="px-3 py-2 font-semibold min-w-[12rem]">Email</th>
@@ -85,7 +87,6 @@ export default function RegistrationTable({ rows, loading, error, onRetry, onVie
                             <th className="px-3 py-2 font-semibold min-w-[12rem]">Transaction_id</th>
                             <th className="px-3 py-2 font-semibold min-w-[8rem]">Status_flag</th>
                             <th className="px-3 py-2 font-semibold min-w-[10rem]">Submitted On</th>
-                            <th className="px-3 py-2 font-semibold min-w-[5rem]">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
