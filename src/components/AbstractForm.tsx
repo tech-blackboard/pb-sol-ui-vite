@@ -212,7 +212,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
     try {
       // Create JSON payload matching the backend expected format
-      const payload = {
+      const payload: any = {
         name: `${formData.caption} ${formData.name}`,
         email: formData.email, // Add email field if you have it in the form
         aemail: formData.aemail, // Add alternate email if you have it
