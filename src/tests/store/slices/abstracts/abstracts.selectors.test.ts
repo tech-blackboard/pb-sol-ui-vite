@@ -3,7 +3,7 @@ import type { RootState } from '../../../../store/index'
 import type { AbstractRecord, AbstractStatus } from '../../../../features/abstracts/types'
 
 describe('abstracts selectors', () => {
-  const baseState: RootState = {
+  const baseState = {
     abstracts: {
       items: [],
       rawItems: [],
@@ -38,7 +38,12 @@ describe('abstracts selectors', () => {
     theme: {
       mode: 'light',
     },
-  } as RootState
+    registrations: { items: [], loading: false, error: null },
+    sponsorships: { items: [], loading: false, error: null },
+    brochures: { items: [], loading: false, error: null },
+    accRegistrations: { items: [], loading: false, error: null },
+    contacts: { items: [], loading: false, error: null },
+  } as unknown as RootState
 
   const createMockItem = (id: string, name: string): AbstractRecord => ({
     id,
