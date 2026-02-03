@@ -62,7 +62,7 @@ export default function AbstractsPage() {
 
     const result = await dispatch(
       updateStatusThunk({
-        id: String(viewItem.id ?? viewItem._id),
+        id: String(viewItem.id),
         statusId: STATUS_TO_ID[modalStatus],
       })
     )
@@ -138,7 +138,6 @@ export default function AbstractsPage() {
   }
 
   const handlePaymentReminderSubmit = async (paymentReminderData: PaymentReminderData) => {
-    console.log('paymentReminderData in handlePaymentReminderSubmit --->', paymentReminderData)
     if (!paymentReminderModal.abstractId) return
     // 1️⃣ Send payment reminder email
     const paymentReminderResult = await dispatch(
@@ -170,7 +169,7 @@ export default function AbstractsPage() {
         onRetry={() =>
           dispatch(fetchAbstracts({ page, limit: pageSize, filters: appliedFilters }))
         }
-        onView={(item) => dispatch(setSelected(item))}
+        onView={(item) => item && dispatch(setSelected(item))}
       />
       <AbstractPagination
         totalPages={Math.ceil(total / pageSize)}

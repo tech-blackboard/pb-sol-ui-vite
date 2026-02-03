@@ -1,7 +1,7 @@
 import { api } from '../lib/api';
+import { API_DEVICE } from '../config/env';
 
-const API_BASE = import.meta.env.VITE_API_BASE;
-const Device_BACE = import.meta.env.VITE_DEVICE_BASE;
+const Device_BACE = API_DEVICE;
 export type Device = {
     id: string;
     userId: number;
@@ -46,7 +46,6 @@ export async function getDevicesByUser(userId: number): Promise<Device[]> {
     });
     return data.data;
 }
-console.log(API_BASE)
 export async function getAllDevices(page = 1, limit = 50): Promise<DeviceListResponse> {
     const { data } = await api.get<DeviceListResponse>(`${Device_BACE}/all`, {
 

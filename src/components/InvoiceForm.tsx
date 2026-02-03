@@ -75,7 +75,8 @@ export function InvoiceForm({
   isLoading = false,
 }: InvoiceFormProps) {
   // Read default payment link from environment variable
-  const DEFAULT_PAYMENT_LINK = import.meta.env.VITE_DEFAULT_PAYMENT_LINK || ''
+  const DEFAULT_PAYMENT_LINK = ''
+
 
   const [formData, setFormData] = useState<InvoiceData>({
     invoiceAmount: 0,
@@ -414,10 +415,11 @@ export function InvoiceForm({
 
                 {/* Interested In */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="interestedIn" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Interested in <span className="text-red-500">*</span>
                   </label>
                   <select
+                    id="interestedIn"
                     value={formData.interestedIn}
                     onChange={(e) => handleInterestedInChange(e.target.value)}
                     disabled={isLoading}
@@ -439,10 +441,11 @@ export function InvoiceForm({
                 </div>
                 {/* Registration Fee */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="registrationFee" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Registration Fee : <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="registrationFee"
                     type="number"
                     value={formData.registrationFee}
                     onChange={(e) => handleregistrationFeeChange('registrationFee', e.target.value)}
@@ -460,10 +463,11 @@ export function InvoiceForm({
                 </div>
                 {/* Number of participants */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="numberOfParticipants" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Number of participants : <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="numberOfParticipants"
                     type="number"
                     min="1"
                     max="100"
@@ -484,8 +488,9 @@ export function InvoiceForm({
                 </div>
                 {/* Looking for Accommodation */}
                 <div className="space-y-4">
-                  <label className="flex items-center space-x-2 cursor-pointer">
+                  <label htmlFor='accommodation' className="flex items-center space-x-2 cursor-pointer">
                     <input
+                      id='accommodation'
                       type="checkbox"
                       checked={showAccommodation}
                       onChange={(e) => handleAccommodationCheckbox(e.target.checked)}
@@ -499,8 +504,9 @@ export function InvoiceForm({
                   {showAccommodation && (
                     <>
                       {OCCUPANCY_OPTIONS.map((label) => (
-                        <label key={label} className="flex items-center space-x-2">
+                        <label htmlFor={label} key={label} className="flex items-center space-x-2">
                           <input
+                            id={label}
                             type="radio"
                             name="occupancy"
                             value={label}
@@ -519,16 +525,17 @@ export function InvoiceForm({
 
                           {/* Check In */}
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label htmlFor="checkIn" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                               Check In <span className="text-red-500">*</span>
                             </label>
                             <input
+                              id="checkIn"
                               type="date"
                               value={checkIn}
                               onChange={(e) => handleCheckInChange(e.target.value)}
                               className={`w-full mt-1 rounded-md border px-3 py-2 dark:bg-gray-700 dark:text-white ${accommodationErrors.checkIn
-                                  ? 'border-red-500 focus:ring-red-500'
-                                  : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
+                                ? 'border-red-500 focus:ring-red-500'
+                                : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
                                 }`}
                             />
                             {accommodationErrors.checkIn && (
@@ -538,16 +545,17 @@ export function InvoiceForm({
 
                           {/* Check Out */}
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label htmlFor="checkOut" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                               Check Out <span className="text-red-500">*</span>
                             </label>
                             <input
+                              id="checkOut"
                               type="date"
                               value={checkOut}
                               onChange={(e) => handleCheckOutChange(e.target.value)}
                               className={`w-full mt-1 rounded-md border px-3 py-2 dark:bg-gray-700 dark:text-white ${accommodationErrors.checkOut
-                                  ? 'border-red-500 focus:ring-red-500'
-                                  : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
+                                ? 'border-red-500 focus:ring-red-500'
+                                : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
                                 }`}
                             />
                             {accommodationErrors.checkOut && (
@@ -557,16 +565,17 @@ export function InvoiceForm({
 
                           {/* Nights */}
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label htmlFor="numberOfNights" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                               Number of Nights <span className="text-red-500">*</span>
                             </label>
                             <input
+                              id="numberOfNights"
                               type="number"
                               readOnly
                               value={numberOfNights}
                               className={`w-full mt-1 rounded-md border px-3 py-2 dark:bg-gray-700 dark:text-white bg-gray-50 dark:bg-gray-600 ${accommodationErrors.numberOfNights
-                                  ? 'border-red-500'
-                                  : 'border-gray-300 dark:border-gray-600'
+                                ? 'border-red-500'
+                                : 'border-gray-300 dark:border-gray-600'
                                 }`}
                             />
                             {accommodationErrors.numberOfNights && (
@@ -577,10 +586,11 @@ export function InvoiceForm({
                           {/* Accommodation Price */}
                           <div>
 
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label htmlFor="pricePerNight" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                               Price per Night ($) <span className="text-red-500">*</span>
                             </label>
                             <input
+                              id="pricePerNight"
                               type="number"
                               value={formData.accommodationFee}
                               onChange={(e) => handleAccommodationFeeChange('accommodationFee', e.target.value)}

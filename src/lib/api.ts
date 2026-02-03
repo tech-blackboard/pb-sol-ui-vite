@@ -1,8 +1,8 @@
 import axios from 'axios'
-
+import { API_BASE, AUTH_BASE } from '../config/env';
 import { getCachedDeviceFingerprint } from '../services/deviceFingerprint';
-const API_BASE = import.meta.env.VITE_API_BASE;
-const AUTH_BASE = import.meta.env.VITE_AUTH_BASE;
+// const API_BASE = import.meta.env.VITE_API_BASE;
+// const AUTH_BASE = import.meta.env.VITE_AUTH_BASE;
 
 function getToken() {
   return localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
@@ -44,24 +44,16 @@ export const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = getToken()
   if (token) {
-    if (config.headers && typeof (config.headers as any).set === 'function') {
-      ; (config.headers as any).set('Authorization', `Bearer ${token}`)
-    } else {
-      const headers = (config.headers as Record<string, any>) || {}
-      headers.Authorization = headers.Authorization ?? `Bearer ${token}`
-      config.headers = headers as any
+    if (config.headers) {
+      config.headers.set('Authorization', `Bearer ${token}`)
     }
   }
 
   // Add device ID header
   const deviceId = getCachedDeviceFingerprint()
   if (deviceId) {
-    if (config.headers && typeof (config.headers as any).set === 'function') {
-      ; (config.headers as any).set('x-device-id', deviceId)
-    } else {
-      const headers = (config.headers as Record<string, any>) || {}
-      headers['x-device-id'] = deviceId
-      config.headers = headers as any
+    if (config.headers) {
+      config.headers.set('x-device-id', deviceId)
     }
   }
 
@@ -75,12 +67,15 @@ const refreshApi = axios.create({
 let refreshPromise: Promise<string> | null = null
 async function refreshAccessToken(): Promise<string> {
   if (!refreshPromise) {
+    console.log('refreshing token');
+    const deviceId = getCachedDeviceFingerprint()
     refreshPromise = refreshApi.post(
       `${AUTH_BASE}/refresh-token`,
       {},
       {
         headers: {
           Authorization: `Bearer ${getRefreshToken()}`,
+          ...(deviceId ? { 'x-device-id': deviceId } : {}),
         },
       },
     )
@@ -123,7 +118,7 @@ api.interceptors.response.use(
     if (typeof status === 'number' && status >= 500) {
       // Server error (5xx)
       window.dispatchEvent(new CustomEvent('app:server-error'))
-    } else if (!status && (code === 'ECONNREFUSED' || code === 'ERR_CONNECTION_REFUSED' || code === 'ERR_NETWORK')) {
+    } else if (!status && (code === 'ECONNREFUSED' || code === 'ERR_CONNECTION_REFUSED')) {
       // Server stopped/unreachable
       window.dispatchEvent(new CustomEvent('app:server-unavailable'))
     } else if ((code === 'ERR_NETWORK' && !status) || !navigator.onLine) {
@@ -139,7 +134,7 @@ api.interceptors.response.use(
     }
 
     const isAuthFailure = [401, 403, 419, 498].includes(status as number)
-    const isRefreshCall = String(original?.url || '').includes('/refresh-token')
+    const isRefreshCall = String(original.url || '').includes('/refresh-token')
 
     // 🛑 2. If we already know the session is dead, stop everything
     if (isAuthFailure && isAuthFailureDispatched) {
@@ -166,10 +161,10 @@ api.interceptors.response.use(
       const sentToken = original.headers?.Authorization?.replace('Bearer ', '')
       if (currentToken && sentToken && currentToken !== sentToken) {
         original.headers = original.headers || {}
-        if (typeof (original.headers as any).set === 'function') {
-          ; (original.headers as any).set('Authorization', `Bearer ${currentToken}`)
+        if (typeof original.headers.set === 'function') {
+          original.headers.set('Authorization', `Bearer ${currentToken}`)
         } else {
-          ; (original.headers as any).Authorization = `Bearer ${currentToken}`
+          original.headers['Authorization'] = `Bearer ${currentToken}`
         }
         return api(original)
       }
@@ -177,10 +172,10 @@ api.interceptors.response.use(
       try {
         const newToken = await refreshAccessToken()
         original.headers = original.headers || {}
-        if (typeof (original.headers as any).set === 'function') {
-          ; (original.headers as any).set('Authorization', `Bearer ${newToken}`)
+        if (typeof original.headers.set === 'function') {
+          original.headers.set('Authorization', `Bearer ${newToken}`)
         } else {
-          ; (original.headers as any).Authorization = `Bearer ${newToken}`
+          original.headers['Authorization'] = `Bearer ${newToken}`
         }
         return api(original)
       } catch (e) {

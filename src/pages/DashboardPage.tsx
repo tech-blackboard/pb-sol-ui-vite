@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { fetchDashboard } from '../services/abstracts'
 import { formatDate } from '../utils/utils'
 import { listWebsites, type SourceWebsite } from '../services/sourcedb'
@@ -30,7 +30,7 @@ type LoadDashboardParams = {
 export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [stats, setStats] = useState<Record<string, StatCard>>({})
-  const [recent, setRecent] = useState<any[]>([])
+  const [recent, setRecent] = useState<import('../services/abstracts').AbstractItem[]>([])
   const [selectedStatus, setSelectedStatus] = useState<number | null>(null)
   const [statsLoading, setStatsLoading] = useState(true)
   const [tableLoading, setTableLoading] = useState(true)
@@ -39,7 +39,7 @@ export default function DashboardPage() {
   const [loadingWebsites, setLoadingWebsites] = useState(false)
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
-  const [dashboardData, setDashboardData] = useState<any | null>(null)
+  const [dashboardData, setDashboardData] = useState<import('../services/abstracts').DashboardData | null>(null)
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false)
 
   const [appliedFilters, setAppliedFilters] = useState<LoadDashboardParams>({
@@ -58,12 +58,11 @@ export default function DashboardPage() {
       ...appliedFilters,
       statusId,
     }
-    console.log('newFilters onStatusClick', newFilters)
     setAppliedFilters(newFilters)
     loadDashboard(newFilters)
   }
 
-  const loadDashboard = async (filters: LoadDashboardParams) => {
+  const loadDashboard = useCallback(async (filters: LoadDashboardParams) => {
     try {
       setStatsLoading(true)
       setTableLoading(true)
@@ -99,13 +98,13 @@ export default function DashboardPage() {
       setStatsLoading(false)
       setTableLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     loadDashboard(appliedFilters)
-  }, [])
+  }, [appliedFilters, loadDashboard])
 
-  function mapStatusCounts(statusCounts: any[]) {
+  function mapStatusCounts(statusCounts: import('../services/abstracts').DashboardStatusCount[]) {
     const map: Record<number, number> = {}
 
     statusCounts.forEach((s) => {
@@ -194,6 +193,7 @@ export default function DashboardPage() {
               </h2>
               <button
                 onClick={() => setIsFilterDrawerOpen(false)}
+                aria-label="Close filters"
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -393,7 +393,7 @@ export default function DashboardPage() {
               )}
               {!tableLoading &&
                 !error &&
-                recent.map((r: any) => (
+                recent.map((r) => (
 
                   <tr key={r.id ?? r.uuid ?? r.email ?? `${r.website_id}-${r.now}`} className="border-t border-gray-100 dark:border-gray-800">
                     <td className="px-3 py-1 text-gray-900 dark:text-gray-100 truncate max-w-[150px]" title={r.website_name ?? r.website?.name ?? '—'}>

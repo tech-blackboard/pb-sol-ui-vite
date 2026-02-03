@@ -17,7 +17,7 @@ export function PaymentReminderModal({
   onSubmit,
   isLoading = false,
 }: PaymentReminderModalProps) {
-  const DEFAULT_PAYMENT_LINK = import.meta.env.VITE_DEFAULT_PAYMENT_LINK || ''
+  const DEFAULT_PAYMENT_LINK = ''
 
   const [existingPaymentLink, setExistingPaymentLink] = useState<string | null>(null)
   const [formData, setFormData] = useState<PaymentReminderData>({
@@ -36,9 +36,7 @@ export function PaymentReminderModal({
       try {
         setIsDataLoaded(false)
         const res = await getAbstractById(abstractId)
-        console.log('res paymetnlibk bfr if ', res.paymentLink)
         if (res.paymentLink) {
-          console.log('res paymetnlibk', res.paymentLink)
           setExistingPaymentLink(res.paymentLink)
         } else {
           setExistingPaymentLink(null)
@@ -62,6 +60,11 @@ export function PaymentReminderModal({
   }
 
   function handleSend() {
+    if (!existingPaymentLink && !formData.paymentLink) {
+      setErrors({ paymentLink: 'Payment link is required' })
+      return
+    }
+
     const payload: PaymentReminderData = {
       paymentLink: existingPaymentLink ?? formData.paymentLink,
     }
@@ -120,8 +123,8 @@ export function PaymentReminderModal({
                 <p className="text-sm font-medium text-green-700 mb-2">
                   ✅ Payment link already available
                 </p>
-                
-                  <a href={existingPaymentLink}
+
+                <a href={existingPaymentLink}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block break-all rounded-md bg-white px-3 py-2 text-sm text-blue-600 underline hover:bg-blue-50 transition"
@@ -150,8 +153,8 @@ export function PaymentReminderModal({
                 onChange={(e) => handleChange('paymentLink', e.target.value)}
                 disabled={isLoading}
                 className={`w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 ${errors.paymentLink
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:ring-blue-500 dark:border-gray-600'
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 focus:ring-blue-500 dark:border-gray-600'
                   } dark:bg-gray-700 dark:text-white`}
                 placeholder="https://payment.example.com/..."
               />
