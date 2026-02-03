@@ -40,21 +40,21 @@ export default function AbstractRow({ record, raw, onView }: Props) {
   return (
     <tr className="border-t border-gray-100">
       {/* Website */}
-      <td className="px-4 py-3 text-gray-700">
-        <div className="max-w-[16rem] truncate">
+      <td className="px-3 py-1 text-gray-700">
+        <div className="max-w-[16rem] truncate" title={raw?.website?.name ?? '—'}>
           {raw?.website?.name ?? '—'}
         </div>
       </td>
 
       {/* Name */}
-      <td className="px-4 py-3 text-gray-900">
-        <div className="max-w-[16rem] truncate">
+      <td className="px-3 py-1 text-gray-900">
+        <div className="max-w-[16rem] truncate" title={record.name}>
           {record.name}
         </div>
       </td>
 
       {/* Email */}
-      <td className="px-4 py-3">
+      <td className="px-3 py-1">
         <a
           href={`mailto:${record.email}`}
           className="text-blue-600 hover:underline"
@@ -64,70 +64,70 @@ export default function AbstractRow({ record, raw, onView }: Props) {
       </td>
 
       {/* Alternate Email */}
-      <td className="px-4 py-3 text-gray-700">
-        <div className="max-w-[12rem] truncate">
+      <td className="px-3 py-1 text-gray-700">
+        <div className="max-w-[12rem] truncate" title={record.altEmail ?? '—'}>
           {record.altEmail ?? '—'}
         </div>
       </td>
 
       {/* Phone */}
-      <td className="px-4 py-3 text-gray-700">
-        <div className="max-w-[12rem] truncate">
+      <td className=" px-3 py-1 text-gray-700">
+        <div className="max-w-[12rem] truncate" title={record.phone ?? '—'}>
           {record.phone ?? '—'}
         </div>
       </td>
 
       {/* WhatsApp */}
-      <td className="px-4 py-3 text-gray-700">
-        <div className="max-w-[12rem] truncate">
+      <td className="px-3 py-1 text-gray-700">
+        <div className="max-w-[12rem] truncate" title={raw?.wphone ?? '—'}>
           {raw?.wphone ?? '—'}
         </div>
       </td>
 
       {/* City */}
-      <td className="px-4 py-3 text-gray-700">
-        <div className="max-w-[12rem] truncate">
+      <td className="px-3 py-1 text-gray-700">
+        <div className="max-w-[12rem] truncate" title={raw?.city ?? '—'}>
           {raw?.city ?? '—'}
         </div>
       </td>
 
       {/* Country */}
-      <td className="px-4 py-3 text-gray-700">
-        <div className="max-w-[12rem] truncate">
+      <td className=" px-3 py-1 text-gray-700">
+        <div className="max-w-[12rem] truncate" title={raw?.country ?? '—'}>
           {raw?.country ?? '—'}
         </div>
       </td>
 
       {/* University / Organization */}
-      <td className="px-4 py-3 text-gray-700">
-        <div className="max-w-[12rem] truncate">
+      <td className="px-3 py-1 text-gray-700">
+        <div className="max-w-[12rem] truncate" title={raw?.organization ?? '—'}>
           {raw?.organization ?? '—'}
         </div>
       </td>
 
       {/* Title */}
-      <td className="px-4 py-3 text-gray-700">
-        <div className="max-w-[16rem] truncate">
+      <td className="px-3 py-1  text-gray-700">
+        <div className="max-w-[16rem] truncate" title={raw?.title ?? '—'}>
           {raw?.title ?? '—'}
         </div>
       </td>
 
       {/* Message */}
-      <td className="px-4 py-3 text-gray-700">
-        <div className="max-w-[16rem] truncate">
+      <td className="px-3 py-1 text-gray-700">
+        <div className="max-w-[16rem] truncate" title={raw?.message ?? '—'}>
           {raw?.message ?? '—'}
         </div>
       </td>
 
       {/* Presentation */}
-      <td className="px-4 py-3 text-gray-700">
-        <div className="max-w-[12rem] truncate">
+      <td className=" px-3 py-1 text-gray-700">
+        <div className="max-w-[12rem] truncate" title={raw?.intrested ?? '—'}>
           {raw?.intrested ?? '—'}
         </div>
       </td>
 
       {/* Abstract File */}
-      <td className="px-4 py-3 text-gray-700">
+      <td className=" px-3 py-1 text-gray-700 max-w-[4px] truncate  hover:max-w-[16rem] ">
         {href ? (
           <a
             href={href}
@@ -143,14 +143,14 @@ export default function AbstractRow({ record, raw, onView }: Props) {
       </td>
 
       {/* Submitted On */}
-      <td className="px-4 py-3 text-gray-700">
-        <div className="max-w-[12rem] truncate">
+      <td className="px-3 py-1 text-gray-700">
+        <div className="max-w-[12rem] truncate" title={raw?.now ? formatDate(raw.now) : '—'}>
           {raw?.now ? formatDate(raw.now) : '—'}
         </div>
       </td>
 
       {/* Email Sent */}
-      <td className="px-4 py-3">
+      <td className="px-3 py-1">
         <span
           className={[
             'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
@@ -164,7 +164,7 @@ export default function AbstractRow({ record, raw, onView }: Props) {
       </td>
 
       {/* Status */}
-      <td className="px-4 py-3">
+      <td className="px-3 py-1">
         <span
           className={[
             'inline-flex items-center rounded-full px-2 py-1 text-xs font-medium',
@@ -176,7 +176,7 @@ export default function AbstractRow({ record, raw, onView }: Props) {
       </td>
 
       {/* Actions */}
-      <td className="px-2 py-3">
+      <td className="px-3 py-1">
         <div className="flex flex-wrap gap-1">
           <button
             onClick={onView}

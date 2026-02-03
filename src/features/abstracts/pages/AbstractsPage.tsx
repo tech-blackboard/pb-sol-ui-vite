@@ -157,7 +157,7 @@ export default function AbstractsPage() {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col ">
       <AbstractHeader />
 
       < AbstractTable

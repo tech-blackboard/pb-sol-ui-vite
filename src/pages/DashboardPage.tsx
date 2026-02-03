@@ -159,7 +159,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col overflow-hidden space-y-6 text-left">
+    <div className="flex-1 min-h-0 flex flex-col overflow-hidden space-y-6 text-left my-4">
       {/* Dashboard Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
@@ -345,12 +345,12 @@ export default function DashboardPage() {
           <table className="min-w-full text-left text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300 sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-3 font-medium">Website</th>
-                <th className="px-4 py-3 font-medium">Name</th>
+                <th className="px-4 py-3 font-medium ">Website</th>
+                <th className="px-4 py-3 font-medium ">Name</th>
                 <th className="px-4 py-3 font-medium">Email</th>
-                <th className="px-4 py-3 font-medium">Country</th>
+                <th className="px-4 py-3 font-medium ">Country</th>
                 <th className="px-4 py-3 font-medium">Submitted On</th>
-                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium ">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -399,12 +399,12 @@ export default function DashboardPage() {
                     <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
                       {r.website_name ?? r.website?.name ?? '—'}
                     </td>
-                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
+                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100" title={r.name ?? ([r.user?.firstname, r.user?.lastname].filter(Boolean).join(' ') || '—')}>
                       {r.name ??
                         ([r.user?.firstname, r.user?.lastname].filter(Boolean).join(' ') ||
                           '—')}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" title={r.email ?? r.user?.useremail ?? '—'}>
 
                       <a href={`mailto:${r.email ?? r.user?.useremail ?? ''}`}
                         className="text-blue-600 hover:underline"
@@ -412,13 +412,13 @@ export default function DashboardPage() {
                         {r.email ?? r.user?.useremail ?? '—'}
                       </a>
                     </td>
-                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
+                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100" title={r.country ?? '—'}>
                       {r.country ?? '—'}
                     </td>
-                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
+                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100" title={r.now ? formatDate(r.now ?? '') : '—'}>
                       {r.now ? formatDate(r.now ?? '') : '—'}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" title={r.status?.actionType ?? 'Under Review'}>
                       <span
                         className={[
                           'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
