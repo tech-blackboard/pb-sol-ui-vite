@@ -8,37 +8,37 @@ interface RegistrationRowProps {
 function RegistrationRow({ item, onView }: RegistrationRowProps) {
     return (
         <tr className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-            <td className="px-3 text-gray-700" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
-            <td className="px-3 text-gray-900 font-medium whitespace-nowrap" title={item.name}>{item.name}</td>
-            <td className="px-3" title={item.email}>
+            <td className="px-3 py-1 text-gray-700" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-900 font-medium whitespace-nowrap" title={item.name}>{item.name}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.email}>
                 <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">{item.email}</a>
             </td>
-            <td className="px-3 text-gray-700" title={item.aemail ?? '—'}>{item.aemail ?? '—'}</td>
-            <td className="px-3 text-gray-700 whitespace-nowrap" title={item.phone}>{item.phone}</td>
-            <td className="px-3 text-gray-700 whitespace-nowrap" title={item.wphone ?? '—'}>{item.wphone ?? '—'}</td>
-            <td className="px-3 text-gray-700 truncate max-w-[12rem]" title={item.institution ?? '—'}>{item.institution ?? '—'}</td>
-            <td className="px-3 text-gray-700" title={item.country}>{item.country}</td>
-            <td className="px-3 text-gray-700 truncate max-w-[12rem]" title={item.presentation || '—'}>{item.presentation}</td>
-            <td className="px-3 text-gray-700" title={item.participants}>{item.participants}</td>
-            <td className="px-3 text-gray-700" title={item.regtype}>{item.regtype}</td>
-            <td className="px-3 text-gray-700" title={item.accomm}>{item.accomm}</td>
-            <td className="px-3 text-gray-700" title={item.checkin ?? '—'}>{item.checkin ?? '—'}</td>
-            <td className="px-3 text-gray-700" title={item.checkout ?? '—'}>{item.checkout ?? '—'}</td>
-            <td className="px-3 text-gray-700" title={item.nights ?? '—'}>{item.nights ?? '—'}</td>
-            <td className="px-3 text-gray-700" title={item.accmvalue ?? '—'}>{item.accmvalue ?? '—'}</td>
-            <td className="px-3 text-gray-700" title={item.acmpng ?? '—'}>{item.acmpng ?? '—'}</td>
-            <td className="px-3 text-gray-700" title={item.acc_price ? `$${item.acc_price}` : '—'}>{item.acc_price ? `$${item.acc_price}` : '—'}</td>
-            <td className="px-3 text-gray-700 font-medium" title={item.tot_price ? `$${item.tot_price}` : '—'}>{item.tot_price ? `$${item.tot_price}` : '—'}</td>
-            <td className="px-3 text-gray-700" title={item.transaction_id ? item.transaction_id : '—'}>{item.transaction_id ? item.transaction_id : '—'}</td>
-            <td className="px-3 text-gray-700" title={item.status_flag ?? '—'}>{item.status_flag ?? '—'}</td>
-            <td className="px-3 text-gray-700 whitespace-nowrap" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
-            <td className="px-3 whitespace-nowrap">
+            <td className="px-3 py-1 text-gray-700" title={item.aemail ?? '—'}>{item.aemail ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700 whitespace-nowrap" title={item.phone}>{item.phone}</td>
+            <td className="px-3 py-1 text-gray-700 whitespace-nowrap" title={item.wphone ?? '—'}>{item.wphone ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.institution ?? '—'}>{item.institution ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.country}>{item.country}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.presentation || '—'}>{item.presentation}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.participants}>{item.participants}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.regtype}>{item.regtype}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.accomm}>{item.accomm}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.checkin ?? '—'}>{item.checkin ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.checkout ?? '—'}>{item.checkout ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.nights ?? '—'}>{item.nights ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.accmvalue ?? '—'}>{item.accmvalue ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.acmpng ?? '—'}>{item.acmpng ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.acc_price ? `$${item.acc_price}` : '—'}>{item.acc_price ? `$${item.acc_price}` : '—'}</td>
+            <td className="px-3 py-1 text-gray-700 font-medium" title={item.tot_price ? `$${item.tot_price}` : '—'}>{item.tot_price ? `$${item.tot_price}` : '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.transaction_id ? item.transaction_id : '—'}>{item.transaction_id ? item.transaction_id : '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.status_flag ?? '—'}>{item.status_flag ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700 whitespace-nowrap" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
+            <td className="px-3 py-1 whitespace-nowrap">
                 <button
                     onClick={onView}
-                    className="p-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
+                    className="p-1  rounded-md border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
                     title="View Details"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>

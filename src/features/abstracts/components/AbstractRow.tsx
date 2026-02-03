@@ -46,14 +46,14 @@ export default function AbstractRow({ record, raw, onView }: Props) {
       </td>
 
       {/* Name */}
-      <td className="px-3 py-1 text-gray-900">
+      <td className="px-3  py-1 text-gray-900">
         <div className="max-w-[16rem] truncate" title={record.name}>
           {record.name}
         </div>
       </td>
 
       {/* Email */}
-      <td className="px-3 py-1">
+      <td className="px-1 py-1">
         <a
           href={`mailto:${record.email}`}
           className="text-blue-600 hover:underline"
@@ -70,8 +70,8 @@ export default function AbstractRow({ record, raw, onView }: Props) {
       </td>
 
       {/* Phone */}
-      <td className=" px-3 py-1 text-gray-700">
-        <div className="max-w-[12rem] truncate" title={record.phone ?? '—'}>
+      <td className=" px-2 py-1 text-gray-700">
+        <div className=" px-2 max-w-[12rem] truncate" title={record.phone ?? '—'}>
           {record.phone ?? '—'}
         </div>
       </td>
@@ -84,35 +84,35 @@ export default function AbstractRow({ record, raw, onView }: Props) {
       </td>
 
       {/* City */}
-      <td className="px-3 py-1 text-gray-700">
+      <td className="px-1 py-1 text-gray-700">
         <div className="max-w-[12rem] truncate" title={raw?.city ?? '—'}>
           {raw?.city ?? '—'}
         </div>
       </td>
 
       {/* Country */}
-      <td className=" px-3 py-1 text-gray-700">
-        <div className="max-w-[12rem] truncate" title={raw?.country ?? '—'}>
+      <td className="px-3 py-1 text-gray-700">
+        <div className=" px-3 max-w-[9rem] truncate" title={raw?.country ?? '—'}>
           {raw?.country ?? '—'}
         </div>
       </td>
 
       {/* University / Organization */}
-      <td className="px-3 py-1 text-gray-700">
-        <div className="max-w-[12rem] truncate" title={raw?.organization ?? '—'}>
+      <td className="px-0  py-1 text-gray-700">
+        <div className=" max-w-[12rem] truncate" title={raw?.organization ?? '—'}>
           {raw?.organization ?? '—'}
         </div>
       </td>
 
       {/* Title */}
-      <td className="px-3 py-1  text-gray-700">
+      <td className="px-3 py-1 text-gray-700">
         <div className="max-w-[16rem] truncate" title={raw?.title ?? '—'}>
           {raw?.title ?? '—'}
         </div>
       </td>
 
       {/* Message */}
-      <td className="px-3 py-1 text-gray-700">
+      <td className="px-3 py-1  text-gray-700">
         <div className="max-w-[16rem] truncate" title={raw?.message ?? '—'}>
           {raw?.message ?? '—'}
         </div>
@@ -126,7 +126,7 @@ export default function AbstractRow({ record, raw, onView }: Props) {
       </td>
 
       {/* Abstract File */}
-      <td className=" px-3 py-1 text-gray-700 max-w-[4px] truncate  hover:max-w-[16rem] " title={name}>
+      <td className=" px-3 py-1  text-gray-700 max-w-[4px] truncate  hover:max-w-[16rem] " title={name}>
         {href ? (
           <a
             href={href}
@@ -152,7 +152,7 @@ export default function AbstractRow({ record, raw, onView }: Props) {
       <td className="px-3 py-1">
         <span
           className={[
-            'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
+            'inline-flex items-center rounded-full px-1.5 py-1 text-xs font-medium',
             record.isEmailSent
               ? 'bg-green-50 text-green-700'
               : 'bg-gray-100 text-gray-700',
@@ -166,7 +166,7 @@ export default function AbstractRow({ record, raw, onView }: Props) {
       <td className="px-3 py-1">
         <span
           className={[
-            'inline-flex items-center rounded-full px-2 py-1 text-xs font-medium',
+            'inline-flex items-center rounded-full px-1.5 py-1 text-xs font-medium',
             statusClass,
           ].join(' ')}
         >
@@ -179,7 +179,7 @@ export default function AbstractRow({ record, raw, onView }: Props) {
         <div className="flex flex-wrap gap-1">
           <button
             onClick={onView}
-            className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs hover:bg-gray-50"
+            className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-2  text-xs hover:bg-gray-50"
             title="Edit"
             aria-label="Edit"
           >
