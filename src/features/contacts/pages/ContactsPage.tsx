@@ -7,11 +7,13 @@ import ContactTable from '../components/ContactTable'
 import ContactDetailsModal from '../components/ContactDetailsModal'
 import SectionHeader from '../../../components/SectionHeader'
 import ContactFiltersDrawer from '../components/ContactFiltersDrawer'
+import ContactForm from '../components/ContactForm'
 
 export default function ContactsPage() {
     const dispatch = useAppDispatch()
     const { items, loading, page, pageSize, total, error, appliedFilters, selected } = useAppSelector((s) => s.contacts)
     const [filtersOpen, setFiltersOpen] = useState(false)
+    const [contactFormOpen, setContactFormOpen] = useState(false)
 
     useEffect(() => {
         dispatch(fetchContacts({ filters: appliedFilters, page, limit: pageSize }))
@@ -22,12 +24,21 @@ export default function ContactsPage() {
             <SectionHeader
                 title="All Conferences — Contact Requests"
                 onFilterClick={() => setFiltersOpen(true)}
+                onAddClick={() => setContactFormOpen(true)}
+                addButtonText="Add Contact"
             />
 
             {filtersOpen && (
                 <ContactFiltersDrawer
                     open={filtersOpen}
                     onClose={() => setFiltersOpen(false)}
+                />
+            )}
+
+            {contactFormOpen && (
+                <ContactForm
+                    onClose={() => setContactFormOpen(false)}
+                    onSuccess={() => dispatch(fetchContacts({ filters: appliedFilters, page, limit: pageSize }))}
                 />
             )}
 

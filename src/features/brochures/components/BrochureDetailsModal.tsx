@@ -50,10 +50,10 @@ export default function BrochureDetailsModal({ item, onClose }: Props) {
                     </div>
                 </div>
 
-                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex justify-end">
+                <div className="px-4 py-2 border-t border-gray-100 bg-gray-50/50 flex justify-end">
                     <button
                         onClick={onClose}
-                        className="w-full sm:w-auto px-8 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-semibold transition-all shadow-sm active:scale-95"
+                        className="w-full sm:w-auto px-3 py-1 rounded-lg border border-gray-300 bg-white text-gray-700  text-[13px] hover:bg-gray-50 font-semibold transition-all shadow-sm active:scale-95"
                     >
                         Close
                     </button>

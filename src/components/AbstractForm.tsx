@@ -229,14 +229,13 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
         isEmailSent: false,
       }
 
-      const finalPayload = {
-        ...payload,
-        website_id: formData.websiteId,
+      if (formData.websiteId) {
+        payload.website_id = formData.websiteId
       }
 
-      console.log('Sending payload:', finalPayload)
+      console.log('Sending payload:', payload)
 
-      await createAbstract(finalPayload)
+      await createAbstract(payload)
 
       toast.success('Abstract submitted successfully!')
       onSuccess?.()
@@ -299,8 +298,8 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 value={formData.caption}
                 onChange={(e) => handleChange('caption', e.target.value)}
                 className={`w-full px-4 py-2.5 rounded-lg border ${errors.caption
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
                   } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               >
                 <option value="">--Caption*--</option>
@@ -328,8 +327,8 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 value={formData.name}
                 onChange={(e) => handleChange('name', e.target.value)}
                 className={`w-full px-4 py-2.5 rounded-lg border ${errors.name
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
                   } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               />
               {errors.name && (
@@ -350,8 +349,8 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 value={formData.email}
                 onChange={(e) => handleChange('email', e.target.value)}
                 className={`w-full px-4 py-2.5 rounded-lg border ${errors.email
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
                   } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               />
               {errors.email && (
@@ -384,8 +383,8 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 onChange={(e) => handleChange('websiteId', e.target.value)}
                 disabled={webLoading}
                 className={`w-full px-4 py-2.5 rounded-lg border ${errors.websiteId
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
                   } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 <option value="">
@@ -415,8 +414,8 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 value={formData.phone}
                 onChange={(e) => handleChange('phone', e.target.value)}
                 className={`w-full px-4 py-2.5 rounded-lg border ${errors.phone
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
                   } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               />
               {errors.phone && (
@@ -437,8 +436,15 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 placeholder="WhatsApp Number"
                 value={formData.whatsapp}
                 onChange={(e) => handleChange('whatsapp', e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className={`w-full px-4 py-2.5 rounded-lg border ${errors.whatsapp ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                  } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500`}
               />
+              {errors.whatsapp && (
+                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {errors.whatsapp}
+                </p>
+              )}
             </div>
 
             {/* Country */}
@@ -450,8 +456,8 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 value={formData.country}
                 onChange={(e) => handleChange('country', e.target.value)}
                 className={`w-full px-4 py-2.5 rounded-lg border ${errors.country
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
                   } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               >
                 <option value="">Select Country*</option>
@@ -480,8 +486,8 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 value={formData.city}
                 onChange={(e) => handleChange('city', e.target.value)}
                 className={`w-full px-4 py-2.5 rounded-lg border ${errors.city
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
                   } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               />
               {errors.city && (
@@ -503,8 +509,8 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 value={formData.organization}
                 onChange={(e) => handleChange('organization', e.target.value)}
                 className={`w-full px-4 py-2.5 rounded-lg border ${errors.organization
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
                   } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               />
               {errors.organization && (
@@ -524,8 +530,8 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 value={formData.interestedIn}
                 onChange={(e) => handleChange('interestedIn', e.target.value)}
                 className={`w-full px-4 py-2.5 rounded-lg border ${errors.interestedIn
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
                   } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               >
                 <option value="">--Interested in*--</option>
@@ -555,8 +561,8 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
               value={formData.title}
               onChange={(e) => handleChange('title', e.target.value)}
               className={`w-full px-4 py-2.5 rounded-lg border ${errors.title
-                  ? 'border-red-500 focus:ring-red-500'
-                  : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
+                ? 'border-red-500 focus:ring-red-500'
+                : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
                 } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
             />
             {errors.title && (
@@ -623,8 +629,8 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 value={formData.captcha}
                 onChange={(e) => handleChange('captcha', e.target.value)}
                 className={`flex-1 px-4 py-2.5 rounded-lg border ${errors.captcha
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
+                  ? 'border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
                   } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               />
             </div>
