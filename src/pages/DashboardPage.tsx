@@ -159,16 +159,16 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col overflow-hidden space-y-6 text-left my-4">
+    <div className="flex-1 min-h-0 flex flex-col overflow-hidden space-y-4 text-left my-2">
       {/* Dashboard Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-xl font-semibold text-gray-900">Dashboard</h1>
 
         <button
           onClick={() => setIsFilterDrawerOpen(true)}
-          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
           </svg>
           Filters
@@ -306,14 +306,14 @@ export default function DashboardPage() {
             <button
               key={k}
               onClick={() => onStatusClick(statusId)}
-              className={`rounded-lg p-4 shadow-sm text-left transition cursor-pointer
+              className={`rounded-lg p-2 shadow-sm text-left transition cursor-pointer
                 ${isActive ? activeColor : 'bg-white hover:bg-gray-50 border-gray-200'}
               `}
             >
-              <div className="text-xs text-gray-700 font-semibold">
+              <div className="text-xs text-gray-700 text-center font-semibold">
                 {card?.label}
               </div>
-              <div className={`mt-1 text-2xl font-semibold ${card?.color}`}>
+              <div className={`text-xl text-center font-semibold ${card?.color}`}>
                 {statsLoading ? '—' : card?.value ?? 0}
               </div>
             </button>
@@ -323,8 +323,8 @@ export default function DashboardPage() {
 
       {/* Recent abstracts */}
       <div className="flex-1 min-h-[12rem] rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm flex flex-col">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-          <div className="font-medium text-gray-900 dark:text-gray-100">Recent Abstracts  [{dashboardData?.recentAbstracts?.length}]</div>
+        <div className="flex items-center justify-between px-2 py-1.5 border-b border-gray-200 dark:border-gray-800">
+          <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">Recent Abstracts  [{dashboardData?.recentAbstracts?.length}]</div>
           <button
             onClick={() => {
               setSelectedStatus(null)
@@ -336,7 +336,7 @@ export default function DashboardPage() {
                 statusId: null,
               })
             }}
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs hover:bg-gray-50 cursor-pointer"
+            className="rounded-md border border-gray-300 bg-white px-3 py-1 text-xs hover:bg-gray-50 cursor-pointer"
           >
             Reload
           </button>
@@ -345,12 +345,12 @@ export default function DashboardPage() {
           <table className="min-w-full text-left text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300 sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-3 font-medium ">Website</th>
-                <th className="px-4 py-3 font-medium ">Name</th>
-                <th className="px-4 py-3 font-medium">Email</th>
-                <th className="px-4 py-3 font-medium ">Country</th>
-                <th className="px-4 py-3 font-medium">Submitted On</th>
-                <th className="px-4 py-3 font-medium ">Status</th>
+                <th className="px-4 py-1 font-bold text-gray-900">Website</th>
+                <th className="px-4 py-1 font-bold text-gray-900 ">Name</th>
+                <th className="px-0 py-1 font-bold text-gray-900 ">Email</th>
+                <th className="px-1 py-1 font-bold text-gray-900 ">Country</th>
+                <th className="px-2 py-1 font-bold text-gray-900">Submitted On</th>
+                <th className="px-4 py-1 font-bold text-gray-900">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -395,30 +395,30 @@ export default function DashboardPage() {
                 !error &&
                 recent.map((r) => (
 
-                  <tr key={r.id || r.email || `${r.website?.id}-${r.now}`} className="border-t border-gray-100 dark:border-gray-800">
-                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
+                  <tr key={r.id ?? r.uuid ?? r.email ?? `${r.website_id}-${r.now}`} className="border-t border-gray-100 dark:border-gray-800">
+                    <td className="px-3 py-1 text-gray-900 dark:text-gray-100 truncate max-w-[150px]" title={r.website_name ?? r.website?.name ?? '—'}>
                       {r.website_name ?? r.website?.name ?? '—'}
                     </td>
-                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100" title={r.name ?? ([r.user?.firstname, r.user?.lastname].filter(Boolean).join(' ') || '—')}>
+                    <td className="px-4 py-1 text-gray-900 truncate max-w-[150px]" title={r.name ?? ([r.user?.firstname, r.user?.lastname].filter(Boolean).join(' ') || '—')}>
                       {r.name ??
                         ([r.user?.firstname, r.user?.lastname].filter(Boolean).join(' ') ||
                           '—')}
                     </td>
-                    <td className="px-4 py-3" title={r.email ?? r.user?.useremail ?? '—'}>
+                    <td className=" py-1 px-0 max-w-[150px] truncate" title={r.email ?? r.user?.useremail ?? '—'}>
 
                       <a href={`mailto:${r.email ?? r.user?.useremail ?? ''}`}
-                        className="text-blue-600 hover:underline"
+                        className="text-blue-600 hover:underline py-1 px-0"
                       >
                         {r.email ?? r.user?.useremail ?? '—'}
                       </a>
                     </td>
-                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100" title={r.country ?? '—'}>
+                    <td className="px-1 py-1 text-gray-900 dark:text-gray-100 truncate max-w-[100px]" title={r.country ?? '—'}>
                       {r.country ?? '—'}
                     </td>
-                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100" title={r.now ? formatDate(r.now ?? '') : '—'}>
+                    <td className="px-2 py-1 text-gray-900 dark:text-gray-100 truncate max-w-[160px]" title={r.now ? formatDate(r.now ?? '') : '—'}>
                       {r.now ? formatDate(r.now ?? '') : '—'}
                     </td>
-                    <td className="px-4 py-3" title={r.status?.actionType ?? 'Under Review'}>
+                    <td className="px-2 py-1" title={r.status?.actionType ?? 'Under Review'}>
                       <span
                         className={[
                           'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',

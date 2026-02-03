@@ -18,9 +18,9 @@ export default function SectionHeader({
     filterButtonText = 'Filters',
 }: SectionHeaderProps) {
     return (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between my-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between my-1.5">
             {/* Title */}
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-700 dark:text-gray-100">
+            <h2 className="text-base sm:text-xl font-semibold text-gray-700 dark:text-gray-100 md:ml-2 ">
                 {title}
             </h2>
 
@@ -35,12 +35,12 @@ export default function SectionHeader({
               items-center justify-center gap-2
               rounded-md border border-purple-600
               bg-purple-600 text-white
-              px-3 py-2 text-sm font-medium
+              px-2 py-1 text-sm font-medium
               hover:bg-purple-700 transition-colors
             "
                     >
                         <svg
-                            className="h-4 w-4"
+                            className="h-3 w-3"
                             fill="none"
                             stroke="currentColor"
                             strokeWidth="2"
@@ -61,7 +61,7 @@ export default function SectionHeader({
             inline-flex flex-1 sm:flex-none
             items-center justify-center gap-2
             rounded-md border border-gray-300
-            bg-white px-3 py-2
+            bg-white px-3 py-1
             text-sm font-medium text-gray-700
             hover:bg-gray-50 transition-colors
           "
@@ -75,7 +75,7 @@ export default function SectionHeader({
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="1.5"
-                        className="h-5 w-5"
+                        className="h-4 w-4"
                     >
                         <path
                             strokeLinecap="round"

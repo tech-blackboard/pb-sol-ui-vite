@@ -139,7 +139,7 @@ function App() {
       />
 
 
-      <div className="flex flex-1 pt-16 pb-12 overflow-hidden">
+      <div className="flex flex-1 pt-11 pb-12 overflow-hidden">
         {/* Sidebar */}
         <Nav
           links={links}
@@ -160,8 +160,8 @@ function App() {
               onClick={() => setSidebarOpen(false)}
             />
           )}
-          <main className="w-full h-full px-4 sm:px-6 lg:px-8 py-6 overflow-hidden">
-            <div className="h-full overflow-hidden flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 shadow-sm text-left">
+          <main className="w-full h-full px-2 sm:px-2 lg:px-2 py-2 overflow-hidden">
+            <div className="h-full overflow-hidden flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 shadow-sm text-left">
               {activeId === 'abstracts' ? (
                 <AbstractsPage />
               ) : activeId === 'registrations' ? (
