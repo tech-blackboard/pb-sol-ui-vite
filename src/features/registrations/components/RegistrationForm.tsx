@@ -366,15 +366,17 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
 
                     {/* Section 3: Accommodation */}
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-semibold uppercase tracking-wider text-sm border-b pb-2">
-                            <Info className="w-4 h-4" />
-                            Accommodation Details
-                        </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <InputField label="Registration Price ($)*" name="reg_price" type="number" value={formData.reg_price} onWheel={(e: any) => (e.target as HTMLInputElement).blur()} onChange={handleChange} error={errors.reg_price} />
                             <InputField label="Number of Participants" name="participants" type="number" value={formData.participants} onWheel={(e: any) => (e.target as HTMLInputElement).blur()} onChange={handleChange} error={errors.participants} />
                         </div>
+
+                        <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-semibold uppercase tracking-wider text-sm border-b pb-2">
+                            <Info className="w-4 h-4" />
+                            Accommodation Details
+                        </div>
+
 
                         <div className="space-y-4">
                             <label className="flex items-center space-x-2 cursor-pointer">
