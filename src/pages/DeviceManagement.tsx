@@ -7,6 +7,7 @@ import {
     forceLogoutDevice,
     type Device
 } from '../services/deviceService';
+import { Trash2, Undo } from 'lucide-react';
 
 const DeviceManagement: React.FC = () => {
     const [devices, setDevices] = useState<Device[]>([]);
@@ -164,8 +165,8 @@ const DeviceManagement: React.FC = () => {
                                                 ? new Date(device.lastUsedAt).toLocaleString()
                                                 : 'Never'}
                                         </td>
-                                        <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex justify-end gap-2">
+                                        <td className="px-6  py-2 whitespace-nowrap text-right text-sm font-medium">
+                                            <div className="flex justify-end gap-5">
                                                 {!device.isAllowed && (
                                                     <button
                                                         onClick={() => handleApprove(device.id)}
@@ -177,16 +178,19 @@ const DeviceManagement: React.FC = () => {
                                                 {device.isAllowed && (
                                                     <button
                                                         onClick={() => handleRevoke(device.id)}
-                                                        className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
+                                                        className="text-yellow-600 cursor-pointer hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
+                                                        title='Revoke'
                                                     >
-                                                        Revoke
+                                                        <Undo onClick={() => handleRevoke(device.id)} size={18} className="text-gray-700 cursor-pointer" />
                                                     </button>
                                                 )}
                                                 <button
                                                     onClick={() => openDeleteModal(device.id)}
-                                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                                    className="text-red-600 cursor-pointer hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                                    title="Delete"
                                                 >
-                                                    Delete
+                                                    <Trash2 size={18} className="text-gray-700 cursor-pointer" color='red' />
+
                                                 </button>
                                             </div>
                                         </td>
