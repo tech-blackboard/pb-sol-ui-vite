@@ -50,7 +50,7 @@ export interface CreateAbstractPayload {
   website_id?: number;
 }
 export interface RegistrationRecord {
-  id: number;
+  id?: number;
   name: string;
   email: string;
   aemail?: string;
@@ -80,7 +80,7 @@ export interface RegistrationRecord {
 }
 
 export interface accRegistrationRecord {
-  id: number;
+  id?: number;
   name?: string;
   email?: string;
   aemail?: string;
@@ -100,7 +100,7 @@ export interface accRegistrationRecord {
   acc_pr?: string;
   tot_price?: string;
   transaction_id?: string;
-  status_flag?: number;
+  status_flag?: number | string;
   now?: string;
   status_id?: number;
   website_id?: number;
@@ -108,7 +108,7 @@ export interface accRegistrationRecord {
 };
 
 export interface brochureRecord {
-  id: number;
+  id?: number;
   name: string;
   email: string;
   phone: string;
@@ -119,7 +119,7 @@ export interface brochureRecord {
 }
 
 export interface SponsorshipRecord {
-  id: number;
+  id?: number;
   name?: string;
   email?: string;
   phone?: string;
@@ -131,7 +131,7 @@ export interface SponsorshipRecord {
 };
 
 export interface ContactRecord {
-  id: number;
+  id?: number;
   name?: string;
   email?: string;
   phone?: string;

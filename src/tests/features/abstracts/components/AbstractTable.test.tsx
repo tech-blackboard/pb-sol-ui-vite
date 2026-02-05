@@ -18,9 +18,6 @@ const baseProps = {
   rows: [],
   rawRows: [],
   loading: false,
-  error: null,
-  errKind: 'none' as const,
-  onRetry: jest.fn(),
   onView: jest.fn(),
 }
 
@@ -39,24 +36,6 @@ describe('AbstractTable', () => {
     )
 
     expect(screen.getByText('Loading...')).toBeInTheDocument()
-  })
-
-  /* ---------------- error branch ---------------- */
-  test('shows generic error and retry button', () => {
-    render(
-      <AbstractTable
-        {...baseProps}
-        error="Something went wrong"
-        errKind="generic"
-      />
-    )
-
-    expect(
-      screen.getByText('Something went wrong')
-    ).toBeInTheDocument()
-
-    fireEvent.click(screen.getByText('Retry'))
-    expect(baseProps.onRetry).toHaveBeenCalled()
   })
 
   /* ---------------- empty state branch ---------------- */

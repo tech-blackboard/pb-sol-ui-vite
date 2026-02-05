@@ -16,7 +16,7 @@ export default function RegistrationHeader({ error, onClearError }: Registration
 
     const dispatch = useAppDispatch()
 
-    const { page, pageSize, appliedFilters, error: registrationsError } = useAppSelector((s) => s.registrations)
+    const { page, pageSize, appliedFilters } = useAppSelector((s) => s.registrations)
 
     return (
         <>

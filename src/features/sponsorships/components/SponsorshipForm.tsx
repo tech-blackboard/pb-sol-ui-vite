@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
-import Alert from '../../../components/Alert'
+import AlertBanner from '../../../components/AlertBanner'
 import { useAppDispatch } from '../../../store/hooks'
 import { createSponsorshipThunk } from '../../../store/slices/sponsorships/sponsorships.slice'
 import { listWebsites, type SourceWebsite } from '../../../services/sourcedb'
@@ -151,7 +151,7 @@ export default function SponsorshipForm({ websiteId, onClose, onSuccess }: Spons
                 {/* Form Body */}
                 <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6">
                     {submitError && (
-                        <Alert message={submitError} onClose={() => setSubmitError(null)} />
+                        <AlertBanner type="error" message={submitError} onClose={() => setSubmitError(null)} className="mb-4" />
                     )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormInput

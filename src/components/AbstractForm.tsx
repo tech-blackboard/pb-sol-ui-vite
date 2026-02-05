@@ -6,7 +6,7 @@ import {
 } from '../services/abstracts'
 import { listWebsites, type SourceWebsite } from '../services/sourcedb'
 import toast from 'react-hot-toast';
-import type { CreateAbstractPayload } from '../features/abstracts/types';
+import AlertBanner from './AlertBanner';
 
 interface AbstractFormProps {
   websiteId?: number
@@ -80,6 +80,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
   const [captchaCode] = useState(() => Math.random().toString(36).substring(2, 8))
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [bannerError, setBannerError] = useState<string | null>(null)
   const [websites, setWebsites] = useState<SourceWebsite[]>([])
   const [webLoading, setWebLoading] = useState(false)
 
@@ -201,17 +202,19 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
         message?: string
       }
 
+      let errorMsg = ''
       // Handle common Network Error / Connection Reset issues
       if (axiosError?.code === 'ERR_NETWORK' || axiosError?.message === 'Network Error') {
-        toast.error('Server connection error. This often happens if you do not have permission to upload files.', { duration: 6000 })
+        errorMsg = 'Server connection error. This often happens if you do not have permission to upload files.'
       } else {
-        const errorMsg = axiosError?.response?.data?.message
+        errorMsg = axiosError?.response?.data?.message
           || axiosError?.response?.data?.error
           || (axiosError?.response?.status === 500 ? 'Internal Server Error.' : '')
           || axiosError?.message
           || 'Failed to submit abstract'
-        toast.error(errorMsg, { duration: 5000 })
       }
+      setBannerError(errorMsg)
+      toast.error(errorMsg, { duration: 5000 })
     } finally {
       setSubmitting(false)
     }
@@ -236,6 +239,14 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
         {/* Form */}
         <form id="abstract-form" onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+          {bannerError && (
+            <AlertBanner
+              type="error"
+              message={bannerError}
+              onClose={() => setBannerError(null)}
+              className="mb-6"
+            />
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Caption */}
             <div>
