@@ -20,21 +20,21 @@ function AccRegistrationRow({ item, onView }: AccRegistrationRowProps) {
                     </svg>
                 </button>
             </td>
-            <td className="px-3 py-1 text-gray-700" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
-            <td className="px-3 py-1 text-gray-900 font-medium whitespace-nowrap" title={item.name}>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[20rem]" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-900 font-medium truncate max-w-[20rem]" title={item.name}>
                 <span className="text-gray-500  font-normal">{item.caption}</span>
                 {item.name}
             </td>
             <td className="px-3 py-1" title={item.email}>
                 <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">{item.email}</a>
             </td>
-            <td className="px-3 py-1 text-gray-700" title={item.aemail ?? '—'}>{item.aemail ?? '—'}</td>
-            <td className="px-3 py-1 text-gray-700 whitespace-nowrap" title={item.phone}>{item.phone}</td>
-            <td className="px-3 py-1 text-gray-700 whitespace-nowrap" title={item.wphone ?? '—'}>{item.wphone ?? '—'}</td>
-            <td className="px-3 py-1 text-gray-700" title={item.institution ? item.institution : '—'}>{item.institution ? item.institution : '—'}</td>
-            <td className="px-3 py-1 text-gray-700" title={item.country ? item.country : '—'}>{item.country ? item.country : '—'}</td>
-            <td className="px-3 py-1 text-gray-700" title={item.presentation ? item.presentation : '—'}>{item.presentation ? item.presentation : '—'}</td>
-            <td className="px-3 py-1 text-gray-700" title={item.participants ? item.participants : '—'}>{item.participants ? item.participants : '—'}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.aemail ?? '—'}>{item.aemail ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700  truncate max-w-[12rem]" title={item.phone}>{item.phone}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.wphone ?? '—'}>{item.wphone ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.institution ? item.institution : '—'}>{item.institution ? item.institution : '—'}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[16rem]" title={item.country ? item.country : '—'}>{item.country ? item.country : '—'}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.presentation ? item.presentation : '—'}>{item.presentation ? item.presentation : '—'}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.participants ? item.participants : '—'}>{item.participants ? item.participants : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.regtype ? item.regtype : '—'}>{item.regtype ? item.regtype : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.accomm ?? '—'}>{item.accomm ? item.accomm : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.checkin ?? '—'}>{item.checkin ?? '—'}</td>
@@ -47,7 +47,7 @@ function AccRegistrationRow({ item, onView }: AccRegistrationRowProps) {
             <td className="px-3 py-1 text-gray-700" title={item.transaction_id ? item.transaction_id : '—'}>{item.transaction_id ? item.transaction_id : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.status_flag ? item.status_flag : '—'}>{item.status_flag ? item.status_flag : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.alt_text ? item.alt_text : '—'}>{item.alt_text ? item.alt_text : '—'}</td>
-            <td className="px-3 py-1 text-gray-700 whitespace-nowrap" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[16rem]" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
 
         </tr>
     );

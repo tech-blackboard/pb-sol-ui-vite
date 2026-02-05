@@ -348,7 +348,7 @@ export default function DashboardPage() {
                 <th className="px-4 py-1 font-bold text-gray-900">Website</th>
                 <th className="px-4 py-1 font-bold text-gray-900 ">Name</th>
                 <th className="px-0 py-1 font-bold text-gray-900 ">Email</th>
-                <th className="px-1 py-1 font-bold text-gray-900 ">Country</th>
+                <th className="px-4 py-1 font-bold text-gray-900 ">Country</th>
                 <th className="px-2 py-1 font-bold text-gray-900">Submitted On</th>
                 <th className="px-4 py-1 font-bold text-gray-900">Status</th>
               </tr>
@@ -412,7 +412,7 @@ export default function DashboardPage() {
                         {r.email ?? r.user?.useremail ?? '—'}
                       </a>
                     </td>
-                    <td className="px-1 py-1 text-gray-900 dark:text-gray-100 truncate max-w-[100px]" title={r.country ?? '—'}>
+                    <td className="px-4 py-1 text-gray-900 dark:text-gray-100 truncate max-w-[100px]" title={r.country ?? '—'}>
                       {r.country ?? '—'}
                     </td>
                     <td className="px-2 py-1 text-gray-900 dark:text-gray-100 truncate max-w-[160px]" title={r.now ? formatDate(r.now ?? '') : '—'}>

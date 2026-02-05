@@ -36,7 +36,7 @@ export default function AbstractTable({
               <th className="px-1 py-2  text-gray-700 font-semibold text-sm">Alternate Email</th>
               <th className="px-4 py-2  text-gray-700 font-semibold text-sm min-w-[10rem]">Phone</th>
               <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[10rem]">WhatsApp</th>
-              <th className="px-2 py-2 text-gray-700 font-semibold text-sm">City</th>
+              <th className="px-1 py-2 text-gray-700 font-semibold text-sm">City</th>
               <th className="px-6 py-2  text-gray-700 font-semibold text-sm">Country</th>
               <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[14rem]">University</th>
               <th className="px-3 py-2  text-gray-700 font-semibold text-sm  min-w-[14rem] overflow-hidden">Title</th>
