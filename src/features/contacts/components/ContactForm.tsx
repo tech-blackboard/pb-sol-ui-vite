@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, User, Mail, Phone, Globe } from 'lucide-react'
-import Alert from '../../../components/Alert'
+import AlertBanner from '../../../components/AlertBanner'
 import { useAppDispatch } from '../../../store/hooks'
 import { createContactThunk } from '../../../store/slices/contacts/contacts.slice'
 import { listWebsites, type SourceWebsite } from '../../../services/sourcedb'
@@ -150,7 +150,7 @@ export default function ContactForm({ websiteId, onClose, onSuccess }: ContactFo
                 {/* Form Body */}
                 <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6">
                     {submitError && (
-                        <Alert message={submitError} onClose={() => setSubmitError(null)} />
+                        <AlertBanner type="error" message={submitError} onClose={() => setSubmitError(null)} className="mb-4" />
                     )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormInput

@@ -46,7 +46,7 @@ function AccRegistrationRow({ item, onView }: AccRegistrationRowProps) {
             <td className="px-3 py-1 text-gray-700" title={item.acc_pr ? `$${item.acc_pr}` : '—'}>{item.acc_pr ? `$${item.acc_pr}` : '—'}</td>
             <td className="px-3 py-1 text-gray-700 font-medium" title={item.tot_price ? `$${item.tot_price}` : '—'}>{item.tot_price ? `$${item.tot_price}` : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.transaction_id ? item.transaction_id : '—'}>{item.transaction_id ? item.transaction_id : '—'}</td>
-            <td className="px-3 py-1 text-gray-700" title={item.status_flag ? item.status_flag : '—'}>{item.status_flag ? item.status_flag : '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.status_flag !== undefined ? String(item.status_flag) : '—'}>{item.status_flag ? item.status_flag : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.alt_text ? item.alt_text : '—'}>{item.alt_text ? item.alt_text : '—'}</td>
             <td className="px-3 py-1 text-gray-700 truncate max-w-[16rem]" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
 

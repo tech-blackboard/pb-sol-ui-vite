@@ -69,12 +69,12 @@ function App() {
   const links: NavLink[] = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'abstracts', label: 'Abstracts' },
-    ...(!isAdmin ? [{ id: 'registrations', label: 'Registrations' }] : []),
-    ...(!isAdmin ? [{ id: 'accRegistrations', label: 'Accommodation Registrations' }] : []),
-    ...(!isAdmin ? [{ id: 'brochures', label: 'Brochure' }] : []),
-    ...(!isAdmin ? [{ id: 'sponsorships', label: 'Sponsorship' }] : []),
-    ...(!isAdmin ? [{ id: 'contacts', label: 'Contact' }] : []),
-    ...(!isAdmin ? [{ id: 'deviceManagment', label: 'Device Management' }] : []),
+    { id: 'registrations', label: 'Registrations' },
+    { id: 'accRegistrations', label: 'Accommodation Registrations' },
+    { id: 'brochures', label: 'Brochure' },
+    { id: 'sponsorships', label: 'Sponsorship' },
+    { id: 'contacts', label: 'Contact' },
+    ...(isAdmin ? [{ id: 'deviceManagment', label: 'Device Management' }] : []),
   ];
 
   const user: User | null = (authUser as unknown as User) ?? null
@@ -164,17 +164,17 @@ function App() {
             <div className="h-full overflow-hidden flex flex-col rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 shadow-sm text-left">
               {activeId === 'abstracts' ? (
                 <AbstractsPage />
-              ) : activeId === 'registrations' && !isAdmin ? (
+              ) : activeId === 'registrations' ? (
                 <RegistrationsPage />
-              ) : activeId === 'accRegistrations' && !isAdmin ? (
+              ) : activeId === 'accRegistrations' ? (
                 <AccRegistrationsPage />
-              ) : activeId === 'brochures' && !isAdmin ? (
+              ) : activeId === 'brochures' ? (
                 <BrochuresPage />
-              ) : activeId === 'sponsorships' && !isAdmin ? (
+              ) : activeId === 'sponsorships' ? (
                 <SponsorshipsPage />
-              ) : activeId === 'contacts' && !isAdmin ? (
+              ) : activeId === 'contacts' ? (
                 <ContactsPage />
-              ) : activeId === 'deviceManagment' && !isAdmin ? (
+              ) : activeId === 'deviceManagment' ? (
                 <DeviceManagement />
               ) : (
                 <DashboardPage />
