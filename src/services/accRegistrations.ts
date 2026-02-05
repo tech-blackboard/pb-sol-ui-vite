@@ -3,13 +3,14 @@ import { getAuthHeaders } from './abstracts';
 
 export type AccRegistrationItem = {
     id: number;
-    name: string;
-    email: string;
+    user_id?: number;
+    name?: string;
+    email?: string;
     aemail?: string;
-    phone: string;
+    phone?: string;
     wphone?: string;
     institution?: string;
-    country: string;
+    country?: string;
     presentation?: string;
     participants?: string;
     regtype?: string;
@@ -23,9 +24,20 @@ export type AccRegistrationItem = {
     tot_price?: string;
     transaction_id?: string;
     status_flag?: number;
-    now: string;
+    alt_text?: string;
+    message?: string;
+    status_id?: number;
+    website_id?: number;
+    now?: string;
     status?: { id: number; actionType: string };
     website?: { id: number; name: string };
+};
+
+export type AccRegistrationSearchParams = {
+    page?: number;
+    limit?: number;
+    search?: string;
+    [key: string]: string | number | boolean | undefined;
 };
 
 export type AccRegistrationSearchResult = {
@@ -37,7 +49,7 @@ export type AccRegistrationSearchResult = {
 
 const VITE_ACC_REGISTRATION_BASE = import.meta.env.VITE_ACC_REGISTRATION_BASE;
 
-export async function searchAccRegistrations(params: any = {}): Promise<AccRegistrationSearchResult> {
+export async function searchAccRegistrations(params: AccRegistrationSearchParams = {}): Promise<AccRegistrationSearchResult> {
     const { data } = await api.get(`${VITE_ACC_REGISTRATION_BASE}/search`, {
         params,
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
@@ -59,7 +71,7 @@ export async function deleteAccRegistration(id: number | string): Promise<void> 
     });
 }
 
-export async function createAccRegistration(data: any): Promise<AccRegistrationItem> {
+export async function createAccRegistration(data: Partial<AccRegistrationItem>): Promise<AccRegistrationItem> {
     const { data: responseData } = await api.post(`${VITE_ACC_REGISTRATION_BASE}`, data, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,

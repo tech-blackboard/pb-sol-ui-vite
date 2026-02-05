@@ -7,12 +7,14 @@ import {
 } from '../services/abstracts'
 import { listWebsites, type SourceWebsite } from '../services/sourcedb'
 import toast from 'react-hot-toast';
+import type { CreateAbstractPayload } from '../features/abstracts/types';
 
 interface AbstractFormProps {
   websiteId?: number
   onClose: () => void
   onSuccess?: () => void
 }
+
 
 // All countries A-Z
 const COUNTRIES = [
@@ -212,7 +214,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
     try {
       // Create JSON payload matching the backend expected format
-      const payload: any = {
+      const payload: CreateAbstractPayload = {
         name: `${formData.caption} ${formData.name}`,
         email: formData.email, // Add email field if you have it in the form
         aemail: formData.aemail, // Add alternate email if you have it

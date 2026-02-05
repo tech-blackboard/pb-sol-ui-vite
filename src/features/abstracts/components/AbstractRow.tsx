@@ -1,6 +1,6 @@
 import type { AbstractItem } from '../../../services/abstracts'
-import type { AbstractRecord } from '../types'
 import { formatDate } from '../../../utils/utils'
+import type { AbstractRecord } from '../types'
 
 interface Props {
   record: AbstractRecord
@@ -181,7 +181,7 @@ export default function AbstractRow({ record, raw, onView }: Props) {
       </td>
 
       {/* Abstract File */}
-      <td className=" px-3 py-1  text-gray-700 max-w-[9rem] truncate" title={name}>
+      <td className=" px-3 py-1  text-gray-700 max-w-[12rem] truncate" title={name}>
         {href ? (
           <a
             href={href}

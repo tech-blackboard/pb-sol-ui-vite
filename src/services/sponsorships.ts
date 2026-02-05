@@ -2,15 +2,23 @@ import { api } from '../lib/api';
 import { getAuthHeaders } from './abstracts';
 
 export type SponsorshipItem = {
-    id: number;
-    name: string;
-    email: string;
-    phone: string;
-    organization: string;
-    country: string;
-    message: string;
-    now: string;
+    id?: number;
+    name?: string;
+    email?: string;
+    phone?: string;
+    organization?: string;
+    country?: string;
+    message?: string;
+    website_id?: number;
+    now?: string;
     website?: { id: number; name: string };
+};
+
+export type SponsorshipSearchParams = {
+    page?: number;
+    limit?: number;
+    search?: string;
+    [key: string]: string | number | boolean | undefined;
 };
 
 export type SponsorshipSearchResult = {
@@ -22,7 +30,7 @@ export type SponsorshipSearchResult = {
 
 const VITE_SPONSORSHIP_BASE = import.meta.env.VITE_SPONSORSHIP_BASE;
 
-export async function searchSponsorships(params: any = {}): Promise<SponsorshipSearchResult> {
+export async function searchSponsorships(params: SponsorshipSearchParams = {}): Promise<SponsorshipSearchResult> {
     const { data } = await api.get(`${VITE_SPONSORSHIP_BASE}/search`, {
         params,
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
@@ -37,7 +45,7 @@ export async function searchSponsorships(params: any = {}): Promise<SponsorshipS
     };
 }
 
-export async function createSponsorship(payload: any): Promise<SponsorshipItem> {
+export async function createSponsorship(payload: Partial<SponsorshipItem>): Promise<SponsorshipItem> {
     const { data } = await api.post(`${VITE_SPONSORSHIP_BASE}`, payload, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,

@@ -2,6 +2,7 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import { fetchRegistrations, deleteRegistrationThunk, createRegistrationThunk } from './registrations.thunks';
 import type { RegistrationFilters, RegistrationsState } from './registrations.types';
+import type { RegistrationItem } from '../../../services/registrations';
 
 const initialFilters: RegistrationFilters = {
     search: '',
@@ -26,7 +27,7 @@ const registrationsSlice = createSlice({
     name: 'registrations',
     initialState,
     reducers: {
-        setSelected(state, action: PayloadAction<any>) {
+        setSelected(state, action: PayloadAction<RegistrationItem | null>) {
             state.selected = action.payload;
         },
         clearSelected(state) {
@@ -39,7 +40,10 @@ const registrationsSlice = createSlice({
             state.pageSize = action.payload;
             state.page = 1;
         },
-        updateDraftFilter(state, action: PayloadAction<{ key: string; value: any }>) {
+        updateDraftFilter<K extends keyof RegistrationFilters>(
+            state: RegistrationsState,
+            action: PayloadAction<{ key: K; value: RegistrationFilters[K] }>
+        ) {
             state.draftFilters[action.payload.key] = action.payload.value;
         },
         applyFilters(state) {
