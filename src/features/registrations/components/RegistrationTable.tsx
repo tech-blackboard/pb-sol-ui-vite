@@ -21,18 +21,18 @@ function RegistrationRow({ item, onView }: RegistrationRowProps) {
                     </svg>
                 </button>
             </td>
-            <td className="px-3 py-1 text-gray-700 truncate max-w-[20rem]" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
-            <td className="px-3 py-1 text-gray-900 font-medium truncate max-w-[16rem]" title={item.name}>{item.name}</td>
-            <td className="px-3 py-1 text-gray-700 truncate max-w-[16rem]" title={item.email}>
+            <td className="px-3 py-1 text-gray-700 max-w-[20rem] truncate" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-900 font-medium truncate max-w-[20rem]" title={item.name}>{item.name}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.email}>
                 <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">{item.email}</a>
             </td>
-            <td className="px-3 py-1 text-gray-700 truncate max-w-[16rem]" title={item.aemail ?? '—'}>{item.aemail ?? '—'}</td>
-            <td className="px-3 py-1 text-gray-700 truncate max-w-[16rem]" title={item.phone}>{item.phone}</td>
-            <td className="px-3 py-1 text-gray-700 truncate max-w-[16rem]" title={item.wphone ?? '—'}>{item.wphone ?? '—'}</td>
-            <td className="px-3 py-1 text-gray-700 truncate max-w-[16rem]" title={item.institution ?? '—'}>{item.institution ?? '—'}</td>
-            <td className="px-3 py-1 text-gray-700 truncate max-w-[16rem]" title={item.country}>{item.country}</td>
-            <td className="px-3 py-1 text-gray-700 truncate max-w-[16rem]" title={item.presentation || '—'}>{item.presentation}</td>
-            <td className="px-3 py-1 text-gray-700 truncate max-w-[16rem]" title={item.participants}>{item.participants}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.aemail ?? '—'}>{item.aemail ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.phone}>{item.phone}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.wphone ?? '—'}>{item.wphone ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.institution ?? '—'}>{item.institution ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.country}>{item.country}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.presentation || '—'}>{item.presentation}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.participants}>{item.participants}</td>
             <td className="px-3 py-1 text-gray-700" title={item.regtype}>{item.regtype}</td>
             <td className="px-3 py-1 text-gray-700" title={item.accomm}>{item.accomm}</td>
             <td className="px-3 py-1 text-gray-700" title={item.checkin ?? '—'}>{item.checkin ?? '—'}</td>
@@ -43,8 +43,8 @@ function RegistrationRow({ item, onView }: RegistrationRowProps) {
             <td className="px-3 py-1 text-gray-700" title={item.acc_price ? `$${item.acc_price}` : '—'}>{item.acc_price ? `$${item.acc_price}` : '—'}</td>
             <td className="px-3 py-1 text-gray-700 font-medium" title={item.tot_price ? `$${item.tot_price}` : '—'}>{item.tot_price ? `$${item.tot_price}` : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.transaction_id ? item.transaction_id : '—'}>{item.transaction_id ? item.transaction_id : '—'}</td>
-            <td className="px-3 py-1 text-gray-700" title={item.status_flag ? `${item.status_flag}` : '—'}>{item.status_flag ?? '—'}</td>
-            <td className="px-3 py-1 text-gray-700 truncate max-w-[16rem]" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.status_flag ?? '—'}>{item.status_flag ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[14rem]" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
 
         </tr>
     );

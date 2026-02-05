@@ -21,15 +21,15 @@ function ContactRow({ item, onView }: ContactRowProps) {
                     </svg>
                 </button>
             </td>
-            <td className="px-3 py-1 text-gray-700 truncate max-w-[16rem]" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
-            <td className="px-3 py-1 text-gray-900 font-medium  truncate max-w-[16rem]" title={item.name}>{item.name}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-900 font-medium max-w-[14rem] truncate" title={item.name}>{item.name}</td>
             <td className="px-3 py-1" title={item.email}>
                 <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">{item.email}</a>
             </td>
-            <td className="px-3 py-1 text-gray-700  truncate max-w-[16rem]" title={item.phone}>{item.phone}</td>
-            <td className="px-3 py-1 text-gray-700  truncate max-w-[16rem]" title={item.country ? item.country : '—'}>{item.country ? item.country : '—'}</td>
-            <td className="px-3 py-1 text-gray-700 min-w-[14rem] max-w-[14rem] truncate" title={item.message}>{item.message}</td>
-            <td className="px-3 py-1 text-gray-700 truncate max-w-[16rem]" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
+            <td className="px-3 py-1 text-gray-700 trancate max-w-[14rem]" title={item.phone}>{item.phone}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[14rem]" title={item.country ? item.country : '—'}>{item.country ? item.country : '—'}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[14rem]" title={item.message}>{item.message}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[20rem]" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
 
         </tr>
     );
@@ -50,14 +50,14 @@ export default function ContactTable({ rows, loading, error, onRetry, onView }: 
                 <table className="min-w-full text-left text-sm border-collapse">
                     <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10 border-b border-gray-200">
                         <tr>
-                            <th className="px-4 py-2 text-gray-700 font-semibold min-w-[5rem]">Actions</th>
-                            <th className="px-4 py-2  text-gray-700 font-semibold min-w-[16rem]">Website Name</th>
-                            <th className="px-4 py-2 text-gray-700 font-semibold min-w-[10rem]">Name</th>
-                            <th className="px-4 py-2 text-gray-700 font-semibold min-w-[12rem]">Email</th>
-                            <th className="px-4 py-2 text-gray-700 font-semibold min-w-[8rem]">Phone</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[5rem]">Actions</th>
+                            <th className="px-3 py-2  text-gray-700 font-semibold min-w-[16rem]">Website Name</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[10rem]">Name</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[12rem]">Email</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[8rem]">Phone</th>
                             <th className="px-3 py-2 text-gray-700 font-semibold min-w-[8rem]">Country</th>
-                            <th className="px-4 py-2 text-gray-700 font-semibold min-w-[14rem]">Message</th>
-                            <th className="px-4 py-2 text-gray-700 font-semibold min-w-[10rem]">Submitted On</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[14rem]">Message</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[10rem]">Submitted On</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
