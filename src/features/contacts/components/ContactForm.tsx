@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, User, Mail, Phone, Globe } from 'lucide-react'
+import Alert from '../../../components/Alert'
 import { useAppDispatch } from '../../../store/hooks'
 import { createContactThunk } from '../../../store/slices/contacts/contacts.slice'
 import { listWebsites, type SourceWebsite } from '../../../services/sourcedb'
@@ -57,6 +58,7 @@ export default function ContactForm({ websiteId, onClose, onSuccess }: ContactFo
     })
 
     const [errors, setErrors] = useState<Record<string, string>>({})
+    const [submitError, setSubmitError] = useState<string | null>(null)
 
     useEffect(() => {
         let mounted = true
@@ -108,6 +110,7 @@ export default function ContactForm({ websiteId, onClose, onSuccess }: ContactFo
         }
 
         setSubmitting(true)
+        setSubmitError(null)
         try {
             const payload: ContactRecord = {
                 ...formData,
@@ -119,7 +122,9 @@ export default function ContactForm({ websiteId, onClose, onSuccess }: ContactFo
                 onSuccess?.()
                 onClose()
             } else {
-                toast.error('Failed to add contact')
+                const errorMsg = (result.payload as string) || 'Failed to add contact';
+                setSubmitError(errorMsg);
+                toast.error(errorMsg);
             }
         } catch (err) {
             toast.error('An error occurred')
@@ -144,6 +149,9 @@ export default function ContactForm({ websiteId, onClose, onSuccess }: ContactFo
 
                 {/* Form Body */}
                 <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6">
+                    {submitError && (
+                        <Alert message={submitError} onClose={() => setSubmitError(null)} />
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormInput
                             label="Name"

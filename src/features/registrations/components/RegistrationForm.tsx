@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, CheckCircle, Info, AlertCircle } from 'lucide-react'
+import Alert from '../../../components/Alert'
 import { useAppDispatch } from '../../../store/hooks'
 import { createRegistrationThunk } from '../../../store/slices/registrations/registrations.thunks'
 
@@ -136,6 +137,7 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
         checkout?: string
         nights?: string
     }>({})
+    const [submitError, setSubmitError] = useState<string | null>(null)
 
     // Derived values (Calculations during render)
     const currentNights = (() => {
@@ -238,6 +240,7 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
         }
 
         setSubmitting(true)
+        setSubmitError(null)
         try {
             const payload: RegistrationRecord = {
                 ...formData,
@@ -267,7 +270,9 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
                 onSuccess?.()
                 onClose()
             } else {
-                toast.error('Failed to create registration')
+                const errorMsg = (result.payload as string) || 'Failed to create registration';
+                setSubmitError(errorMsg);
+                toast.error(errorMsg);
             }
         } catch (err) {
             console.log("Error from registration form: ", err)
@@ -292,6 +297,9 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
 
                 {/* Form Body */}
                 <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-8">
+                    {submitError && (
+                        <Alert message={submitError} onClose={() => setSubmitError(null)} />
+                    )}
                     {/* Section 1: Basic Information */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-semibold uppercase tracking-wider text-sm border-b pb-2">

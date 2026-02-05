@@ -31,8 +31,8 @@ export const fetchAbstracts = createAsyncThunk(
         limit,
         ...filters, // 🔥 THIS IS CRITICAL
       })
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'An unknown error occurred'
+    } catch (err: any) {
+      const message = err.response?.data?.message || err.message || 'An unknown error occurred'
       return rejectWithValue(message)
     }
   }
@@ -40,24 +40,40 @@ export const fetchAbstracts = createAsyncThunk(
 
 export const updateStatusThunk = createAsyncThunk(
   'abstracts/status',
-  async ({ id, statusId }: { id: string; statusId: number }) => {
-    return await updateAbstractStatus(id, statusId)
+  async ({ id, statusId }: { id: string; statusId: number }, { rejectWithValue }) => {
+    try {
+      return await updateAbstractStatus(id, statusId)
+    } catch (err: any) {
+      const message = err.response?.data?.message || err.message || 'Failed to update status';
+      return rejectWithValue(message);
+    }
   }
 )
 
 export const sendInvoiceThunk = createAsyncThunk(
   'abstracts/sendInvoice',
   async (
-    { abstractId, invoiceData }: { abstractId: string; invoiceData: InvoiceData }
+    { abstractId, invoiceData }: { abstractId: string; invoiceData: InvoiceData },
+    { rejectWithValue }
   ) => {
-    return await sendInvoice(abstractId, invoiceData)
+    try {
+      return await sendInvoice(abstractId, invoiceData)
+    } catch (err: any) {
+      const message = err.response?.data?.message || err.message || 'Failed to send invoice';
+      return rejectWithValue(message);
+    }
   }
 )
 
 export const sendPaymentReminderThunk = createAsyncThunk(
   'abstracts/paymentReminder',
-  async ({ abstractId, paymentReminderData }: { abstractId: string; paymentReminderData: PaymentReminderData }) => {
-    return await sendPaymentReminder(abstractId, paymentReminderData)
+  async ({ abstractId, paymentReminderData }: { abstractId: string; paymentReminderData: PaymentReminderData }, { rejectWithValue }) => {
+    try {
+      return await sendPaymentReminder(abstractId, paymentReminderData)
+    } catch (err: any) {
+      const message = err.response?.data?.message || err.message || 'Failed to send payment reminder';
+      return rejectWithValue(message);
+    }
   }
 )
 export const sendPaymentReceiptThunk = createAsyncThunk(
@@ -66,16 +82,23 @@ export const sendPaymentReceiptThunk = createAsyncThunk(
     {
       abstractId,
       receiptData,
-    }: { abstractId: string; receiptData: PaymentReceiptData }) => {
-    // 1️⃣ Send receipt email
-    const receiptResult = await sendPaymentReceipt(abstractId, receiptData)
+    }: { abstractId: string; receiptData: PaymentReceiptData },
+    { rejectWithValue }
+  ) => {
+    try {
+      // 1️⃣ Send receipt email
+      const receiptResult = await sendPaymentReceipt(abstractId, receiptData)
 
-    // 2️⃣ Update status → Registered
-    const updated = await updateAbstractStatus(abstractId, STATUS_TO_ID.Registered)
+      // 2️⃣ Update status → Registered
+      const updated = await updateAbstractStatus(abstractId, STATUS_TO_ID.Registered)
 
-    return {
-      receiptResult,
-      updated,
+      return {
+        receiptResult,
+        updated,
+      }
+    } catch (err: any) {
+      const message = err.response?.data?.message || err.message || 'Failed to send payment receipt';
+      return rejectWithValue(message);
     }
   }
 )

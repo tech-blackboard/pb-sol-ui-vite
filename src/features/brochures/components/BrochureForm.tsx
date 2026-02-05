@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, AlertCircle } from 'lucide-react'
+import Alert from '../../../components/Alert'
 import { useAppDispatch } from '../../../store/hooks'
 import { createBrochureThunk } from '../../../store/slices/brochures/brochures.slice'
 import { listWebsites, type SourceWebsite } from '../../../services/sourcedb'
@@ -55,6 +56,7 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
     })
 
     const [errors, setErrors] = useState<Record<string, string>>({})
+    const [submitError, setSubmitError] = useState<string | null>(null)
 
     useEffect(() => {
         let mounted = true
@@ -110,6 +112,7 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
         }
 
         setSubmitting(true)
+        setSubmitError(null)
         try {
             const payload = {
                 ...formData,
@@ -121,7 +124,9 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
                 onSuccess?.()
                 onClose()
             } else {
-                toast.error('Failed to submit brochure request')
+                const errorMsg = (result.payload as string) || 'Failed to submit brochure request';
+                setSubmitError(errorMsg);
+                toast.error(errorMsg);
             }
         } catch (err) {
             toast.error('An error occurred')
@@ -146,6 +151,9 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
 
                 {/* Form Body */}
                 <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6">
+                    {submitError && (
+                        <Alert message={submitError} onClose={() => setSubmitError(null)} />
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <InputField label="Name" name="name" value={formData.name} onChange={handleChange} error={errors.name} />
                         <InputField label="Email" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} />

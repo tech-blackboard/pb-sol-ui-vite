@@ -1,7 +1,6 @@
-import { useState } from 'react'
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
-import { fetchContacts, setPage, setPageSize, setSelected, clearSelected } from '../../../store/slices/contacts/contacts.slice'
+import { fetchContacts, setPage, setPageSize, setSelected, clearSelected, clearError } from '../../../store/slices/contacts/contacts.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import ContactTable from '../components/ContactTable'
 import ContactDetailsModal from '../components/ContactDetailsModal'
@@ -19,6 +18,7 @@ export default function ContactsPage() {
         dispatch(fetchContacts({ filters: appliedFilters, page, limit: pageSize }))
     }, [page, pageSize, appliedFilters, dispatch])
 
+
     return (
         <div className="h-full flex flex-col">
             <SectionHeader
@@ -26,6 +26,8 @@ export default function ContactsPage() {
                 onFilterClick={() => setFiltersOpen(true)}
                 onAddClick={() => setContactFormOpen(true)}
                 addButtonText="Add Contact"
+                error={error}
+                onClearError={() => dispatch(clearError())}
             />
 
             {filtersOpen && (
@@ -45,9 +47,9 @@ export default function ContactsPage() {
             <ContactTable
                 rows={items}
                 loading={loading}
-                error={error}
-                onRetry={() => dispatch(fetchContacts({ filters: appliedFilters, page, limit: pageSize }))}
-                onView={(item) => dispatch(setSelected(item))}
+                onView={(row) => {
+                    dispatch(setSelected(row))
+                }}
             />
 
             <AbstractPagination

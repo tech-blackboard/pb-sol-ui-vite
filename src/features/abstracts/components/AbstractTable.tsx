@@ -6,9 +6,6 @@ interface Props {
   rows: AbstractRecord[]
   rawRows: AbstractItem[]
   loading: boolean
-  error: string | null
-  errKind: 'none' | 'generic'
-  onRetry: () => void
   onView: (item: AbstractItem | undefined) => void
 }
 
@@ -16,9 +13,6 @@ export default function AbstractTable({
   rows,
   rawRows,
   loading,
-  error,
-  errKind,
-  onRetry,
   onView,
 }: Props) {
   return (
@@ -56,23 +50,9 @@ export default function AbstractTable({
               </tr>
             )}
 
-            {!loading && error && errKind === 'generic' && (
-              <tr>
-                <td colSpan={17} className="px-4 py-6">
-                  <div className="flex justify-between items-center">
-                    <span className="text-red-600">{error}</span>
-                    <button
-                      onClick={onRetry}
-                      className="border px-3 py-1.5 text-xs rounded"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            )}
 
-            {!loading && !error && rows.length === 0 && (
+
+            {!loading && rows.length === 0 && (
               <tr>
                 <td colSpan={17} className="px-4 py-6 text-gray-500">
                   No records found
@@ -81,7 +61,6 @@ export default function AbstractTable({
             )}
 
             {!loading &&
-              !error &&
               rows.map((r) => {
                 const raw = rawRows.find(
                   (x) => String(x.id) === r.id

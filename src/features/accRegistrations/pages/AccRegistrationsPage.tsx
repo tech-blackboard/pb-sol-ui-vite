@@ -1,7 +1,6 @@
-import { useState } from 'react'
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
-import { fetchAccRegistrations, setPage, setPageSize, setSelected, clearSelected } from '../../../store/slices/accRegistrations/accRegistrations.slice'
+import { fetchAccRegistrations, setPage, setPageSize, setSelected, clearSelected, clearError } from '../../../store/slices/accRegistrations/accRegistrations.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import AccRegistrationTable from '../components/AccRegistrationTable'
 import AccRegistrationDetailsModal from '../components/AccRegistrationDetailsModal'
@@ -26,6 +25,8 @@ export default function AccRegistrationsPage() {
                 onAddClick={() => setIsAddModalOpen(true)}
                 addButtonText="Add Accommodation"
                 onFilterClick={() => setFiltersOpen(true)}
+                error={error}
+                onClearError={() => dispatch(clearError())}
             />
 
             {filtersOpen && (
@@ -38,8 +39,6 @@ export default function AccRegistrationsPage() {
             <AccRegistrationTable
                 rows={items}
                 loading={loading}
-                error={error}
-                onRetry={() => dispatch(fetchAccRegistrations({ filters: appliedFilters, page, limit: pageSize }))}
                 onView={(item) => dispatch(setSelected(item))}
             />
 

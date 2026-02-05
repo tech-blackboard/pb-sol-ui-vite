@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
-import { setSelected, clearSelected, setPage, setPageSize } from '../../../store/slices/registrations/registrations.slice'
+import { setSelected, clearSelected, setPage, setPageSize, clearError } from '../../../store/slices/registrations/registrations.slice'
 import { fetchRegistrations } from '../../../store/slices/registrations/registrations.thunks'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import RegistrationTable from '../components/RegistrationTable'
@@ -19,17 +19,15 @@ export default function RegistrationsPage() {
 
     return (
         <div className="h-full flex flex-col">
-            <RegistrationHeader />
+            <RegistrationHeader error={error} onClearError={() => dispatch(clearError())} />
 
 
             <RegistrationTable
                 rows={items}
                 loading={loading}
-                error={error}
-                onRetry={() =>
-                    dispatch(fetchRegistrations({ page, limit: pageSize, filters: appliedFilters }))
-                }
-                onView={(item) => dispatch(setSelected(item))}
+                onView={(row) => {
+                    dispatch(setSelected(row))
+                }}
             />
 
             <AbstractPagination

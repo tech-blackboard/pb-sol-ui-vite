@@ -6,13 +6,17 @@ import type { RegistrationRecord } from '../../../features/abstracts/types';
 
 export const fetchRegistrations = createAsyncThunk(
     'registrations/fetch',
-    async (params: { page: number; limit: number; filters: RegistrationFilters }) => {
-        const result = await searchRegistrations({
-            page: params.page,
-            limit: params.limit,
-            ...params.filters,
-        });
-        return result;
+    async (params: { page: number; limit: number; filters: RegistrationFilters }, { rejectWithValue }) => {
+        try {
+            const result = await searchRegistrations({
+                page: params.page,
+                limit: params.limit,
+                ...params.filters,
+            });
+            return result;
+        } catch (err: any) {
+            return rejectWithValue(err.response?.data?.message || err.message || 'Failed to load registrations');
+        }
     }
 );
 
@@ -26,8 +30,13 @@ export const deleteRegistrationThunk = createAsyncThunk(
 
 export const createRegistrationThunk = createAsyncThunk(
     'registrations/create',
-    async (data: RegistrationRecord) => {
-        const result = await createRegistration(data);
-        return result;
+    async (data: RegistrationRecord, { rejectWithValue }) => {
+        try {
+            const result = await createRegistration(data);
+            return result;
+        } catch (err: any) {
+            const message = err.response?.data?.message || err.message || 'Failed to create registration';
+            return rejectWithValue(message);
+        }
     }
 );

@@ -1,7 +1,6 @@
-import { useState } from 'react'
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
-import { fetchSponsorships, setPage, setPageSize, setSelected, clearSelected } from '../../../store/slices/sponsorships/sponsorships.slice'
+import { fetchSponsorships, setPage, setPageSize, setSelected, clearSelected, clearError } from '../../../store/slices/sponsorships/sponsorships.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import SponsorshipTable from '../components/SponsorshipTable'
 import SponsorshipDetailsModal from '../components/SponsorshipDetailsModal'
@@ -26,6 +25,8 @@ export default function SponsorshipsPage() {
                 onFilterClick={() => setFiltersOpen(true)}
                 onAddClick={() => setAddOpen(true)}
                 addButtonText="Add Sponsorship"
+                error={error}
+                onClearError={() => dispatch(clearError())}
             />
 
             {filtersOpen && (
@@ -38,9 +39,9 @@ export default function SponsorshipsPage() {
             <SponsorshipTable
                 rows={items}
                 loading={loading}
-                error={error}
-                onRetry={() => dispatch(fetchSponsorships({ filters: appliedFilters, page, limit: pageSize }))}
-                onView={(item) => dispatch(setSelected(item))}
+                onView={(row) => {
+                    dispatch(setSelected(row))
+                }}
             />
 
             <AbstractPagination
