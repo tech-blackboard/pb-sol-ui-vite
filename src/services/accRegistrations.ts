@@ -4,6 +4,7 @@ import { getAuthHeaders } from './abstracts';
 export type AccRegistrationItem = {
     id: number;
     user_id?: number;
+    caption?: string;
     name?: string;
     email?: string;
     aemail?: string;
@@ -23,7 +24,7 @@ export type AccRegistrationItem = {
     acc_pr?: string;
     tot_price?: string;
     transaction_id?: string;
-    status_flag?: number;
+    status_flag?: string | undefined;
     alt_text?: string;
     message?: string;
     status_id?: number;
