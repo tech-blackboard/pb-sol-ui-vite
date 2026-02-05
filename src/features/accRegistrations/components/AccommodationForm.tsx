@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X, CheckCircle, Info, AlertCircle } from 'lucide-react'
 import AlertBanner from '../../../components/AlertBanner'
 import { useAppDispatch } from '../../../store/hooks'
@@ -51,6 +51,7 @@ const OCCUPANCY_OPTIONS = [
 
 export default function AccommodationForm({ websiteId, onClose, onSuccess }: AccommodationFormProps) {
     const dispatch = useAppDispatch()
+    const formRef = useRef<HTMLFormElement>(null)
     const [submitting, setSubmitting] = useState(false)
     const [websites, setWebsites] = useState<SourceWebsite[]>([])
     const [webLoading, setWebLoading] = useState(false)
@@ -158,6 +159,7 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
         e.preventDefault()
         if (!validate()) {
             toast.error('Please fill the missing fields correctly')
+            formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
             return
         }
 
@@ -190,6 +192,7 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
                 const errorMsg = (result.payload as string) || 'Failed to create registration';
                 setSubmitError(errorMsg);
                 toast.error(errorMsg);
+                formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
             }
         } catch (err) {
             toast.error('An error occurred')
@@ -201,7 +204,7 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-            <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-5xl my-8 flex flex-col max-h-[90vh] border-2 ${Object.keys(errors).length > 0 ? 'border-red-500' : 'border-transparent'}`}>
+            <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-5xl my-8 flex flex-col max-h-[90vh] border-2 ${Object.keys(errors).length > 0 || !!submitError ? 'border-red-500' : 'border-transparent'}`}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -213,7 +216,7 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
                 </div>
 
                 {/* Form Body */}
-                <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-8">
+                <form ref={formRef} onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-8">
                     {submitError && (
                         <AlertBanner type="error" message={submitError} onClose={() => setSubmitError(null)} className="mb-6" />
                     )}

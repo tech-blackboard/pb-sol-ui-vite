@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent } from 'react'
+import { useState, useEffect, useRef, type FormEvent } from 'react'
 import { X, Upload, CheckCircle, AlertCircle } from 'lucide-react'
 import {
   createAbstractWithFormDataFileUpload,
@@ -79,6 +79,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
   const [captchaCode] = useState(() => Math.random().toString(36).substring(2, 8))
   const [submitting, setSubmitting] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [bannerError, setBannerError] = useState<string | null>(null)
   const [websites, setWebsites] = useState<SourceWebsite[]>([])
@@ -154,6 +155,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
     if (!validate()) {
       toast.error('Please fix all errors before submitting')
+      formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
@@ -215,6 +217,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
       }
       setBannerError(errorMsg)
       toast.error(errorMsg, { duration: 5000 })
+      formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
     } finally {
       setSubmitting(false)
     }
@@ -222,7 +225,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl my-8">
+      <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl my-8 border-2 ${Object.keys(errors).length > 0 || !!bannerError ? 'border-red-500' : 'border-transparent'}`}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -238,7 +241,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
         </div>
 
         {/* Form */}
-        <form id="abstract-form" onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+        <form ref={formRef} id="abstract-form" onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           {bannerError && (
             <AlertBanner
               type="error"
