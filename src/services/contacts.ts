@@ -2,7 +2,7 @@ import { api } from '../lib/api';
 import { getAuthHeaders } from './abstracts';
 
 export type ContactItem = {
-    id?: number;
+    id: number;
     name?: string;
     email?: string;
     phone?: string;
