@@ -69,12 +69,12 @@ function App() {
   const links: NavLink[] = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'abstracts', label: 'Abstracts' },
-    ...(!isAdmin ? [{ id: 'registrations', label: 'Registrations' }] : []),
-    ...(!isAdmin ? [{ id: 'accRegistrations', label: 'Accommodation Registrations' }] : []),
-    ...(!isAdmin ? [{ id: 'brochures', label: 'Brochure' }] : []),
-    ...(!isAdmin ? [{ id: 'sponsorships', label: 'Sponsorship' }] : []),
-    ...(!isAdmin ? [{ id: 'contacts', label: 'Contact' }] : []),
-    ...(!isAdmin ? [{ id: 'deviceManagment', label: 'Device Management' }] : []),
+    ...(isAdmin ? [{ id: 'registrations', label: 'Registrations' }] : []),
+    ...(isAdmin ? [{ id: 'accRegistrations', label: 'Accommodation Registrations' }] : []),
+    ...(isAdmin ? [{ id: 'brochures', label: 'Brochure' }] : []),
+    ...(isAdmin ? [{ id: 'sponsorships', label: 'Sponsorship' }] : []),
+    ...(isAdmin ? [{ id: 'contacts', label: 'Contact' }] : []),
+    ...(isAdmin ? [{ id: 'deviceManagment', label: 'Device Management' }] : []),
   ];
 
   const user: User | null = (authUser as unknown as User) ?? null
