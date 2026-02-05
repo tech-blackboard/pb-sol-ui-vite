@@ -1,3 +1,5 @@
+import type { RegistrationItem } from '../../../services/registrations';
+
 export interface RegistrationFilters {
     search?: string;
     name?: string;
@@ -10,13 +12,13 @@ export interface RegistrationFilters {
     status_flag?: string;
     sortBy?: string;
     sortOrder?: 'ASC' | 'DESC';
-    [key: string]: any;
+    [key: string]: string | number | boolean | undefined;
 }
 
 export interface RegistrationsState {
-    items: any[];
-    rawItems: any[];
-    selected: any | null;
+    items: RegistrationItem[];
+    rawItems: RegistrationItem[];
+    selected: RegistrationItem | null;
     loading: boolean;
     error: string | null;
     page: number;

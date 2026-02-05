@@ -2,14 +2,22 @@ import { api } from '../lib/api';
 import { getAuthHeaders } from './abstracts';
 
 export type ContactItem = {
-    id: number;
-    name: string;
-    email: string;
-    phone: string;
-    country: string;
-    message: string;
-    now: string;
+    id?: number;
+    name?: string;
+    email?: string;
+    phone?: string;
+    country?: string;
+    message?: string;
+    website_id?: number;
+    now?: string;
     website?: { id: number; name: string };
+};
+
+export type ContactSearchParams = {
+    page?: number;
+    limit?: number;
+    search?: string;
+    [key: string]: string | number | boolean | undefined;
 };
 
 export type ContactSearchResult = {
@@ -21,7 +29,7 @@ export type ContactSearchResult = {
 
 const VITE_CONTACT_BASE = import.meta.env.VITE_CONTACT_BASE;
 
-export async function searchContacts(params: any = {}): Promise<ContactSearchResult> {
+export async function searchContacts(params: ContactSearchParams = {}): Promise<ContactSearchResult> {
     const { data } = await api.get(`${VITE_CONTACT_BASE}/search`, {
         params,
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
@@ -36,7 +44,7 @@ export async function searchContacts(params: any = {}): Promise<ContactSearchRes
     };
 }
 
-export async function createContact(payload: any): Promise<ContactItem> {
+export async function createContact(payload: Partial<ContactItem>): Promise<ContactItem> {
     const { data } = await api.post(`${VITE_CONTACT_BASE}`, payload, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,

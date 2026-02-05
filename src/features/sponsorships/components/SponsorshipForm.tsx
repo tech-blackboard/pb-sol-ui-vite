@@ -4,6 +4,7 @@ import { useAppDispatch } from '../../../store/hooks'
 import { createSponsorshipThunk } from '../../../store/slices/sponsorships/sponsorships.slice'
 import { listWebsites, type SourceWebsite } from '../../../services/sourcedb'
 import toast from 'react-hot-toast'
+import type { SponsorshipRecord } from '../../abstracts/types'
 
 const COUNTRIES = [
     'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina',
@@ -75,7 +76,7 @@ export default function SponsorshipForm({ websiteId, onClose, onSuccess }: Spons
         return () => { mounted = false }
     }, [])
 
-    const handleChange = (field: string, value: any) => {
+    const handleChange = (field: string, value: string | number) => {
         setFormData((prev) => ({ ...prev, [field]: value }))
         if (errors[field]) {
             setErrors((prev) => {
@@ -109,7 +110,7 @@ export default function SponsorshipForm({ websiteId, onClose, onSuccess }: Spons
 
         setSubmitting(true)
         try {
-            const payload = {
+            const payload: SponsorshipRecord = {
                 ...formData,
                 website_id: Number(formData.website_id),
             }
@@ -123,6 +124,7 @@ export default function SponsorshipForm({ websiteId, onClose, onSuccess }: Spons
             }
         } catch (err) {
             toast.error('An error occurred')
+            console.log("Error in sponsorship form submission", err)
         } finally {
             setSubmitting(false)
         }
@@ -253,7 +255,18 @@ export default function SponsorshipForm({ websiteId, onClose, onSuccess }: Spons
     )
 }
 
-function FormInput({ label, name, value, onChange, error, type = 'text', icon, placeholder }: any) {
+interface FormInputProps {
+    label?: string
+    name: string
+    value?: string | number
+    onChange: (field: string, value: string | number) => void
+    error?: string
+    type?: string
+    icon?: React.ReactNode
+    placeholder?: string
+}
+
+function FormInput({ label, name, value, onChange, error, type = 'text', icon, placeholder }: FormInputProps) {
     return (
         <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}*</label>

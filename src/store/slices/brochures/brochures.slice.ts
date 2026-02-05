@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import { searchBrochures, createBrochure } from '../../../services/brochures';
+import { searchBrochures, createBrochure, type BrochureItem } from '../../../services/brochures';
 
 export interface BrochureFilters {
     search?: string;
@@ -13,7 +13,7 @@ export interface BrochureFilters {
 }
 
 export interface BrochuresState {
-    items: any[];
+    items: BrochureItem[];
     loading: boolean;
     error: string | null;
     page: number;
@@ -21,7 +21,7 @@ export interface BrochuresState {
     total: number;
     draftFilters: BrochureFilters;
     appliedFilters: BrochureFilters;
-    selected: any | null;
+    selected: BrochureItem | null;
 }
 
 export const fetchBrochures = createAsyncThunk(
@@ -37,7 +37,7 @@ export const fetchBrochures = createAsyncThunk(
 
 export const createBrochureThunk = createAsyncThunk(
     'brochures/create',
-    async (payload: any) => {
+    async (payload: Partial<BrochureItem>) => {
         return await createBrochure(payload);
     }
 );
@@ -70,7 +70,10 @@ const brochuresSlice = createSlice({
             state.draftFilters = action.payload;
             state.page = 1;
         },
-        updateDraftFilter(state, action: PayloadAction<{ key: keyof BrochureFilters; value: any }>) {
+        updateDraftFilter<K extends keyof BrochureFilters>(
+            state: BrochuresState,
+            action: PayloadAction<{ key: K; value: BrochureFilters[K] }>
+        ) {
             state.draftFilters[action.payload.key] = action.payload.value;
         },
         applyFilters(state) {
@@ -83,7 +86,7 @@ const brochuresSlice = createSlice({
             state.appliedFilters = initialFilters;
             state.page = 1;
         },
-        setSelected(state, action: PayloadAction<any>) {
+        setSelected(state, action: PayloadAction<BrochureItem | null>) {
             state.selected = action.payload;
         },
         clearSelected(state) {
