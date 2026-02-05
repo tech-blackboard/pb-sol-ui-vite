@@ -24,7 +24,7 @@ export type AccRegistrationItem = {
     acc_pr?: string;
     tot_price?: string;
     transaction_id?: string;
-    status_flag?: string | undefined;
+    status_flag?: string | number | undefined;
     alt_text?: string;
     message?: string;
     status_id?: number;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, CheckCircle, Info, AlertCircle } from 'lucide-react'
-import Alert from '../../../components/Alert'
+import AlertBanner from '../../../components/AlertBanner'
 import { useAppDispatch } from '../../../store/hooks'
 import { createRegistrationThunk } from '../../../store/slices/registrations/registrations.thunks'
 
@@ -298,7 +298,7 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
                 {/* Form Body */}
                 <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-8">
                     {submitError && (
-                        <Alert message={submitError} onClose={() => setSubmitError(null)} />
+                        <AlertBanner type="error" message={submitError} onClose={() => setSubmitError(null)} className="mb-6" />
                     )}
                     {/* Section 1: Basic Information */}
                     <div className="space-y-4">
