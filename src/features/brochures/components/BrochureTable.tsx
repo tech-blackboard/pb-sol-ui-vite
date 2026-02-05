@@ -1,7 +1,8 @@
 import { formatDate } from '../../../utils/utils';
+import type { BrochureItem } from '../../../services/brochures';
 
 interface BrochureRowProps {
-    item: any;
+    item: BrochureItem;
     onView: () => void;
 }
 
@@ -35,11 +36,11 @@ function BrochureRow({ item, onView }: BrochureRowProps) {
 }
 
 interface Props {
-    rows: any[];
+    rows: BrochureItem[];
     loading: boolean;
     error: string | null;
     onRetry: () => void;
-    onView: (item: any) => void;
+    onView: (item: BrochureItem) => void;
 }
 
 export default function BrochureTable({ rows, loading, error, onRetry, onView }: Props) {

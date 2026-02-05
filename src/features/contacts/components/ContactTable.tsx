@@ -1,14 +1,15 @@
 import { formatDate } from '../../../utils/utils';
+import type { ContactItem } from '../../../services/contacts';
 
 interface ContactRowProps {
-    item: any;
+    item: ContactItem;
     onView: () => void;
 }
 
 function ContactRow({ item, onView }: ContactRowProps) {
     return (
         <tr className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-            <td className="px-3 py-1 whitespace-nowrap">
+            <td className="px-3 py-1 ">
                 <button
                     onClick={onView}
                     className="p-1 rounded-md border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
@@ -35,11 +36,11 @@ function ContactRow({ item, onView }: ContactRowProps) {
 }
 
 interface Props {
-    rows: any[];
+    rows: ContactItem[];
     loading: boolean;
     error: string | null;
     onRetry: () => void;
-    onView: (item: any) => void;
+    onView: (item: ContactItem) => void;
 }
 
 export default function ContactTable({ rows, loading, error, onRetry, onView }: Props) {

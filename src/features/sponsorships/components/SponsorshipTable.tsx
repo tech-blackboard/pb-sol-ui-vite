@@ -1,14 +1,15 @@
 import { formatDate } from '../../../utils/utils';
+import type { SponsorshipItem } from '../../../services/sponsorships';
 
 interface SponsorshipRowProps {
-    item: any;
+    item: SponsorshipItem;
     onView: () => void;
 }
 
 function SponsorshipRow({ item, onView }: SponsorshipRowProps) {
     return (
         <tr className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-            <td className="px-3 py-1 whitespace-nowrap">
+            <td className="px-3 py-1">
                 <button
                     onClick={onView}
                     className="p-1 rounded-md border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
@@ -36,11 +37,11 @@ function SponsorshipRow({ item, onView }: SponsorshipRowProps) {
 }
 
 interface Props {
-    rows: any[];
+    rows: SponsorshipItem[];
     loading: boolean;
     error: string | null;
     onRetry: () => void;
-    onView: (item: any) => void;
+    onView: (item: SponsorshipItem) => void;
 }
 
 export default function SponsorshipTable({ rows, loading, error, onRetry, onView }: Props) {

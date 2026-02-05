@@ -1,7 +1,8 @@
 import { formatDate } from '../../../utils/utils';
+import type { RegistrationItem } from '../../../services/registrations';
 
 interface RegistrationRowProps {
-    item: any;
+    item: RegistrationItem;
     onView: () => void;
 }
 
@@ -38,7 +39,7 @@ function RegistrationRow({ item, onView }: RegistrationRowProps) {
             <td className="px-3 py-1 text-gray-700" title={item.checkout ?? '—'}>{item.checkout ?? '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.nights ?? '—'}>{item.nights ?? '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.accmvalue ?? '—'}>{item.accmvalue ?? '—'}</td>
-            <td className="px-3 py-1 text-gray-700" title={item.acmpng ?? '—'}>{item.acmpng ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.acmpng ? `${item.acmpng}` : '—'}>{item.acmpng ?? '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.acc_price ? `$${item.acc_price}` : '—'}>{item.acc_price ? `$${item.acc_price}` : '—'}</td>
             <td className="px-3 py-1 text-gray-700 font-medium" title={item.tot_price ? `$${item.tot_price}` : '—'}>{item.tot_price ? `$${item.tot_price}` : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.transaction_id ? item.transaction_id : '—'}>{item.transaction_id ? item.transaction_id : '—'}</td>
@@ -50,11 +51,11 @@ function RegistrationRow({ item, onView }: RegistrationRowProps) {
 }
 
 interface Props {
-    rows: any[];
+    rows: RegistrationItem[];
     loading: boolean;
     error: string | null;
     onRetry: () => void;
-    onView: (item: any) => void;
+    onView: (item: RegistrationItem) => void;
 }
 
 export default function RegistrationTable({ rows, loading, error, onRetry, onView }: Props) {

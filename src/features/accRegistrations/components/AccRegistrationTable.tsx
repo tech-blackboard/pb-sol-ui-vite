@@ -1,7 +1,8 @@
 import { formatDate } from '../../../utils/utils';
+import type { AccRegistrationItem } from '../../../services/accRegistrations';
 
 interface AccRegistrationRowProps {
-    item: any;
+    item: AccRegistrationItem;
     onView: () => void;
 }
 
@@ -54,11 +55,11 @@ function AccRegistrationRow({ item, onView }: AccRegistrationRowProps) {
 }
 
 interface Props {
-    rows: any[];
+    rows: AccRegistrationItem[];
     loading: boolean;
     error: string | null;
     onRetry: () => void;
-    onView: (item: any) => void;
+    onView: (item: AccRegistrationItem) => void;
 }
 
 export default function AccRegistrationTable({ rows, loading, error, onRetry, onView }: Props) {

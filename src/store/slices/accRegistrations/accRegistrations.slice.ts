@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import { searchAccRegistrations, createAccRegistration } from '../../../services/accRegistrations';
+import { searchAccRegistrations, createAccRegistration, type AccRegistrationItem } from '../../../services/accRegistrations';
 
 export interface AccRegistrationFilters {
     search?: string;
@@ -15,7 +15,7 @@ export interface AccRegistrationFilters {
 }
 
 export interface AccRegistrationsState {
-    items: any[];
+    items: AccRegistrationItem[];
     loading: boolean;
     error: string | null;
     page: number;
@@ -23,7 +23,7 @@ export interface AccRegistrationsState {
     total: number;
     draftFilters: AccRegistrationFilters;
     appliedFilters: AccRegistrationFilters;
-    selected: any | null;
+    selected: AccRegistrationItem | null;
 }
 
 export const fetchAccRegistrations = createAsyncThunk(
@@ -39,7 +39,7 @@ export const fetchAccRegistrations = createAsyncThunk(
 
 export const createAccRegistrationThunk = createAsyncThunk(
     'accRegistrations/create',
-    async (data: any) => {
+    async (data: Partial<AccRegistrationItem>) => {
         return await createAccRegistration(data);
     }
 );
@@ -72,7 +72,10 @@ const accRegistrationsSlice = createSlice({
             state.draftFilters = action.payload;
             state.page = 1;
         },
-        updateDraftFilter(state, action: PayloadAction<{ key: keyof AccRegistrationFilters; value: any }>) {
+        updateDraftFilter<K extends keyof AccRegistrationFilters>(
+            state: AccRegistrationsState,
+            action: PayloadAction<{ key: K; value: AccRegistrationFilters[K] }>
+        ) {
             state.draftFilters[action.payload.key] = action.payload.value;
         },
         applyFilters(state) {
@@ -85,7 +88,7 @@ const accRegistrationsSlice = createSlice({
             state.appliedFilters = initialFilters;
             state.page = 1;
         },
-        setSelected(state, action: PayloadAction<any>) {
+        setSelected(state, action: PayloadAction<AccRegistrationItem | null>) {
             state.selected = action.payload;
         },
         clearSelected(state) {

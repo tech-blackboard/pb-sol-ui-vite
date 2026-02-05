@@ -1,11 +1,11 @@
 import type { AbstractItem } from '../../../services/abstracts'
-import type { AbstractRecord, AbstractStatus } from '../types'
 import { formatDate } from '../../../utils/utils'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { selectActionLoading } from '../../../store/slices/abstracts/abstracts.selectors'
 import { sendConfirmationEmailThunk } from '../../../store/slices/abstracts/abstracts.thunks'
 import { openInvoiceModal, openPaymentReceiptModal, openPaymentReminderModal } from '../../../store/slices/abstracts/abstracts.slice'
 import toast from 'react-hot-toast'
+import type { AbstractRecord, AbstractStatus } from '../types'
 
 type StatusAction = AbstractStatus
 

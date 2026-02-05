@@ -77,7 +77,7 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
         }
     }, [])
 
-    const handleChange = (field: string, value: any) => {
+    const handleChange = (field: string, value: string | number) => {
         setFormData((prev) => ({ ...prev, [field]: value }))
         if (errors[field]) {
             setErrors((prev) => {
@@ -125,6 +125,7 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
             }
         } catch (err) {
             toast.error('An error occurred')
+            console.log("Error in brochure form submission", err)
         } finally {
             setSubmitting(false)
         }
@@ -216,7 +217,17 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
     )
 }
 
-function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false }: any) {
+interface InputFieldProps {
+    label?: string
+    name: string
+    value?: string | number
+    onChange: (field: string, value: string | number) => void
+    type?: string
+    error?: string
+    readOnly?: boolean
+}
+
+function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false }: InputFieldProps) {
     return (
         <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
@@ -228,14 +239,24 @@ function InputField({ label, name, value, onChange, type = 'text', error, readOn
     )
 }
 
-function SelectField({ label, name, value, options, onChange, error, isLoading = false }: any) {
+interface SelectFieldProps {
+    label?: string
+    name: string
+    value?: string | number
+    options?: (string | { value: string | number; label: string })[]
+    onChange: (field: string, value: string | number) => void
+    error?: string
+    isLoading?: boolean
+}
+
+function SelectField({ label, name, value, options, onChange, error, isLoading = false }: SelectFieldProps) {
     return (
         <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
             <select value={value} onChange={(e) => onChange(name, e.target.value)} disabled={isLoading}
                 className={`w-full px-4 py-2.5 rounded-lg border ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 outline-none`}>
                 <option value="">{label}</option>
-                {options.map((opt: any) => (
+                {options?.map((opt) => (
                     <option key={typeof opt === 'string' ? opt : opt.value} value={typeof opt === 'string' ? opt : opt.value}>
                         {typeof opt === 'string' ? opt : opt.label}
                     </option>
