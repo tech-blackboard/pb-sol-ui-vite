@@ -33,24 +33,24 @@ export interface AbstractRecord {
 }
 
 export interface CreateAbstractPayload {
-  name: string;
+  name?: string;
   email: string;
   aemail?: string;
-  phone: string;
-  wphone: string;
-  country: string;
-  city: string;
-  organization: string;
-  intrested: string;
-  title: string;
-  message: string;
-  file: string;
-  status_id: number;
-  isEmailSent: boolean;
+  phone?: string;
+  wphone?: string;
+  country?: string;
+  city?: string;
+  organization?: string;
+  intrested?: string;
+  title?: string;
+  message?: string;
+  file?: string;
+  status_id?: number;
+  isEmailSent?: boolean;
   website_id?: number;
 }
 export interface RegistrationRecord {
-  id?: number;
+  id: number;
   name: string;
   email: string;
   aemail?: string;
@@ -80,7 +80,7 @@ export interface RegistrationRecord {
 }
 
 export interface accRegistrationRecord {
-  id?: number;
+  id: number;
   name?: string;
   email?: string;
   aemail?: string;
@@ -119,7 +119,7 @@ export interface brochureRecord {
 }
 
 export interface SponsorshipRecord {
-  id?: number;
+  id: number;
   name?: string;
   email?: string;
   phone?: string;
@@ -131,7 +131,7 @@ export interface SponsorshipRecord {
 };
 
 export interface ContactRecord {
-  id?: number;
+  id: number;
   name?: string;
   email?: string;
   phone?: string;
