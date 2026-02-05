@@ -27,19 +27,28 @@ export interface SponsorshipsState {
 
 export const fetchSponsorships = createAsyncThunk(
     'sponsorships/fetch',
-    async (params: { page: number; limit: number; filters: SponsorshipFilters }) => {
-        return await searchSponsorships({
-            page: params.page,
-            limit: params.limit,
-            ...params.filters,
-        });
+    async (params: { page: number; limit: number; filters: SponsorshipFilters }, { rejectWithValue }) => {
+        try {
+            return await searchSponsorships({
+                page: params.page,
+                limit: params.limit,
+                ...params.filters,
+            });
+        } catch (err: any) {
+            return rejectWithValue(err.response?.data?.message || err.message || 'Failed to load sponsorships');
+        }
     }
 );
 
 export const createSponsorshipThunk = createAsyncThunk(
     'sponsorships/create',
-    async (payload: any) => {
-        return await createSponsorship(payload);
+    async (payload: any, { rejectWithValue }) => {
+        try {
+            return await createSponsorship(payload);
+        } catch (err: any) {
+            const message = err.response?.data?.message || err.message || 'Failed to create sponsorship';
+            return rejectWithValue(message);
+        }
     }
 );
 
@@ -89,6 +98,9 @@ const sponsorshipsSlice = createSlice({
         },
         clearSelected(state) {
             state.selected = null;
+        },
+        clearError(state) {
+            state.error = null;
         }
     },
     extraReducers: (builder) => {
@@ -103,7 +115,7 @@ const sponsorshipsSlice = createSlice({
             })
             .addCase(fetchSponsorships.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.error.message ?? 'Failed to load';
+                state.error = (action.payload as string) || action.error.message || 'Failed to load';
             })
             .addCase(createSponsorshipThunk.pending, (state) => {
                 state.loading = true;
@@ -113,10 +125,10 @@ const sponsorshipsSlice = createSlice({
             })
             .addCase(createSponsorshipThunk.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.error.message ?? 'Failed to create';
+                state.error = (action.payload as string) || action.error.message || 'Failed to create';
             });
     },
 });
 
-export const { setPage, setPageSize, setFilters, updateDraftFilter, applyFilters, resetFilters, setSelected, clearSelected } = sponsorshipsSlice.actions;
+export const { setPage, setPageSize, setFilters, updateDraftFilter, applyFilters, resetFilters, setSelected, clearSelected, clearError } = sponsorshipsSlice.actions;
 export default sponsorshipsSlice.reducer;

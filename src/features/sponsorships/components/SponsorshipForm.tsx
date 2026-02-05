@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
+import Alert from '../../../components/Alert'
 import { useAppDispatch } from '../../../store/hooks'
 import { createSponsorshipThunk } from '../../../store/slices/sponsorships/sponsorships.slice'
 import { listWebsites, type SourceWebsite } from '../../../services/sourcedb'
@@ -56,6 +57,7 @@ export default function SponsorshipForm({ websiteId, onClose, onSuccess }: Spons
     })
 
     const [errors, setErrors] = useState<Record<string, string>>({})
+    const [submitError, setSubmitError] = useState<string | null>(null)
 
     useEffect(() => {
         let mounted = true
@@ -108,6 +110,7 @@ export default function SponsorshipForm({ websiteId, onClose, onSuccess }: Spons
         }
 
         setSubmitting(true)
+        setSubmitError(null)
         try {
             const payload = {
                 ...formData,
@@ -119,7 +122,9 @@ export default function SponsorshipForm({ websiteId, onClose, onSuccess }: Spons
                 onSuccess?.()
                 onClose()
             } else {
-                toast.error('Failed to add sponsorship inquiry')
+                const errorMsg = (result.payload as string) || 'Failed to add sponsorship inquiry';
+                setSubmitError(errorMsg);
+                toast.error(errorMsg);
             }
         } catch (err) {
             toast.error('An error occurred')
@@ -143,6 +148,9 @@ export default function SponsorshipForm({ websiteId, onClose, onSuccess }: Spons
 
                 {/* Form Body */}
                 <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6">
+                    {submitError && (
+                        <Alert message={submitError} onClose={() => setSubmitError(null)} />
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormInput
                             label="Name"

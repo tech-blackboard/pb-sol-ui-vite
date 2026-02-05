@@ -26,19 +26,28 @@ export interface ContactsState {
 
 export const fetchContacts = createAsyncThunk(
     'contacts/fetch',
-    async (params: { page: number; limit: number; filters: ContactFilters }) => {
-        return await searchContacts({
-            page: params.page,
-            limit: params.limit,
-            ...params.filters,
-        });
+    async (params: { page: number; limit: number; filters: ContactFilters }, { rejectWithValue }) => {
+        try {
+            return await searchContacts({
+                page: params.page,
+                limit: params.limit,
+                ...params.filters,
+            });
+        } catch (err: any) {
+            return rejectWithValue(err.response?.data?.message || err.message || 'Failed to load contacts');
+        }
     }
 );
 
 export const createContactThunk = createAsyncThunk(
     'contacts/create',
-    async (payload: any) => {
-        return await createContact(payload);
+    async (payload: any, { rejectWithValue }) => {
+        try {
+            return await createContact(payload);
+        } catch (err: any) {
+            const message = err.response?.data?.message || err.message || 'Failed to create contact';
+            return rejectWithValue(message);
+        }
     }
 );
 
@@ -88,6 +97,9 @@ const contactsSlice = createSlice({
         },
         clearSelected(state) {
             state.selected = null;
+        },
+        clearError(state) {
+            state.error = null;
         }
     },
     extraReducers: (builder) => {
@@ -102,7 +114,7 @@ const contactsSlice = createSlice({
             })
             .addCase(fetchContacts.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.error.message ?? 'Failed to load';
+                state.error = (action.payload as string) || action.error.message || 'Failed to load';
             })
             .addCase(createContactThunk.fulfilled, (state, { payload }) => {
                 state.items = [payload, ...state.items];
@@ -111,5 +123,5 @@ const contactsSlice = createSlice({
     },
 });
 
-export const { setPage, setPageSize, setFilters, updateDraftFilter, applyFilters, resetFilters, setSelected, clearSelected } = contactsSlice.actions;
+export const { setPage, setPageSize, setFilters, updateDraftFilter, applyFilters, resetFilters, setSelected, clearSelected, clearError } = contactsSlice.actions;
 export default contactsSlice.reducer;

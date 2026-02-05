@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { toast } from 'react-hot-toast'
+import toast from 'react-hot-toast'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import {
   setPage,
@@ -10,6 +10,7 @@ import {
   closeInvoiceModal,
   closePaymentReceiptModal,
   closePaymentReminderModal,
+  clearError,
 } from '../../../store/slices/abstracts/abstracts.slice'
 import { fetchAbstracts, sendInvoiceThunk, sendPaymentReceiptThunk, sendPaymentReminderThunk, updateStatusThunk } from '../../../store/slices/abstracts/abstracts.thunks'
 import {
@@ -70,7 +71,8 @@ export default function AbstractsPage() {
     if (updateStatusThunk.fulfilled.match(result)) {
       toast.success(`Status updated to ${modalStatus}`)
     } else {
-      toast.error('Failed to update status')
+      const errorMsg = (result.payload as string) || 'Failed to update status';
+      toast.error(errorMsg);
     }
   }
 
@@ -86,7 +88,8 @@ export default function AbstractsPage() {
     )
 
     if (!sendInvoiceThunk.fulfilled.match(invoiceResult)) {
-      toast.error('Failed to send invoice')
+      const errorMsg = (invoiceResult.payload as string) || 'Failed to send invoice';
+      toast.error(errorMsg);
       return
     }
 
@@ -120,17 +123,14 @@ export default function AbstractsPage() {
         receiptData: paymentReceiptData,
       })
     )
-    if (!sendPaymentReceiptThunk.fulfilled.match(paymentReceiptResult)) {
-      toast.error('Failed to send payment receipt')
-      return
-    }
     if (sendPaymentReceiptThunk.fulfilled.match(paymentReceiptResult)) {
       toast.success(`${paymentReceiptResult.payload.receiptResult.message}`)
       setTimeout(() => {
         toast.success('Status updated to Registered')
       }, 400)
     } else {
-      toast.error('Failed to send payment receipt')
+      const errorMsg = (paymentReceiptResult.payload as string) || 'Failed to send payment receipt';
+      toast.error(errorMsg);
     }
 
     // 3️⃣ Close modal
@@ -150,7 +150,8 @@ export default function AbstractsPage() {
       toast.success(`${paymentReminderResult.payload.message}`)
 
     } else {
-      toast.error('Failed to send payment reminder')
+      const errorMsg = (paymentReminderResult.payload as string) || 'Failed to send payment reminder';
+      toast.error(errorMsg);
     }
     // 3️⃣ Close modal
     dispatch(closePaymentReminderModal())
@@ -158,17 +159,12 @@ export default function AbstractsPage() {
 
   return (
     <div className="h-full flex flex-col ">
-      <AbstractHeader />
+      <AbstractHeader error={error} onClearError={() => dispatch(clearError())} />
 
       < AbstractTable
         rows={items}
         rawRows={rawItems}
         loading={loading}
-        error={error}
-        errKind={error ? 'generic' : 'none'}
-        onRetry={() =>
-          dispatch(fetchAbstracts({ page, limit: pageSize, filters: appliedFilters }))
-        }
         onView={(item) => item && dispatch(setSelected(item))}
       />
       <AbstractPagination

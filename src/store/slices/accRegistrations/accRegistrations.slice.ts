@@ -28,19 +28,28 @@ export interface AccRegistrationsState {
 
 export const fetchAccRegistrations = createAsyncThunk(
     'accRegistrations/fetch',
-    async (params: { page: number; limit: number; filters: AccRegistrationFilters }) => {
-        return await searchAccRegistrations({
-            page: params.page,
-            limit: params.limit,
-            ...params.filters,
-        });
+    async (params: { page: number; limit: number; filters: AccRegistrationFilters }, { rejectWithValue }) => {
+        try {
+            return await searchAccRegistrations({
+                page: params.page,
+                limit: params.limit,
+                ...params.filters,
+            });
+        } catch (err: any) {
+            return rejectWithValue(err.response?.data?.message || err.message || 'Failed to load');
+        }
     }
 );
 
 export const createAccRegistrationThunk = createAsyncThunk(
     'accRegistrations/create',
-    async (data: any) => {
-        return await createAccRegistration(data);
+    async (data: any, { rejectWithValue }) => {
+        try {
+            return await createAccRegistration(data);
+        } catch (err: any) {
+            const message = err.response?.data?.message || err.message || 'Failed to create registration';
+            return rejectWithValue(message);
+        }
     }
 );
 
@@ -90,6 +99,9 @@ const accRegistrationsSlice = createSlice({
         },
         clearSelected(state) {
             state.selected = null;
+        },
+        clearError(state) {
+            state.error = null;
         }
     },
     extraReducers: (builder) => {
@@ -104,7 +116,7 @@ const accRegistrationsSlice = createSlice({
             })
             .addCase(fetchAccRegistrations.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.error.message ?? 'Failed to load';
+                state.error = (action.payload as string) || action.error.message || 'Failed to load';
             })
             .addCase(createAccRegistrationThunk.pending, (state) => {
                 state.loading = true;
@@ -114,10 +126,10 @@ const accRegistrationsSlice = createSlice({
             })
             .addCase(createAccRegistrationThunk.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.error.message ?? 'Failed to create';
+                state.error = (action.payload as string) || action.error.message || 'Failed to create';
             });
     },
 });
 
-export const { setPage, setPageSize, setFilters, updateDraftFilter, applyFilters, resetFilters, setSelected, clearSelected } = accRegistrationsSlice.actions;
+export const { setPage, setPageSize, setFilters, updateDraftFilter, applyFilters, resetFilters, setSelected, clearSelected, clearError } = accRegistrationsSlice.actions;
 export default accRegistrationsSlice.reducer;

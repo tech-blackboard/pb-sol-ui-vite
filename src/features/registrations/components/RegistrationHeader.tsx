@@ -5,13 +5,18 @@ import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { fetchRegistrations } from '../../../store/slices/registrations/registrations.thunks'
 import SectionHeader from '../../../components/SectionHeader'
 
-export default function RegistrationHeader() {
+interface RegistrationHeaderProps {
+    error?: string | null
+    onClearError?: () => void
+}
+
+export default function RegistrationHeader({ error, onClearError }: RegistrationHeaderProps) {
     const [showForm, setShowForm] = useState(false)
     const [filtersOpen, setFiltersOpen] = useState(false)
 
     const dispatch = useAppDispatch()
 
-    const { page, pageSize, appliedFilters } = useAppSelector((s) => s.registrations)
+    const { page, pageSize, appliedFilters, error: registrationsError } = useAppSelector((s) => s.registrations)
 
     return (
         <>
@@ -20,6 +25,8 @@ export default function RegistrationHeader() {
                 onAddClick={() => setShowForm(true)}
                 onFilterClick={() => setFiltersOpen(true)}
                 addButtonText="Add Registration"
+                error={error}
+                onClearError={onClearError}
             />
 
             {/* Filters Drawer */}

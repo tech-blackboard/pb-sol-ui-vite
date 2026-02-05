@@ -5,7 +5,12 @@ import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { fetchAbstracts } from '../../../store/slices/abstracts/abstracts.thunks'
 import SectionHeader from '../../../components/SectionHeader'
 
-export default function AbstractHeader() {
+interface AbstractHeaderProps {
+  error?: string | null
+  onClearError?: () => void
+}
+
+export default function AbstractHeader({ error, onClearError }: AbstractHeaderProps) {
   const [showForm, setShowForm] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
 
@@ -21,6 +26,8 @@ export default function AbstractHeader() {
         onAddClick={() => setShowForm(true)}
         onFilterClick={() => setFiltersOpen(true)}
         addButtonText="Add Abstract"
+        error={error}
+        onClearError={onClearError}
       />
 
       {/* Filters Drawer */}

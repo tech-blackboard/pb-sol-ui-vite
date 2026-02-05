@@ -37,12 +37,10 @@ function ContactRow({ item, onView }: ContactRowProps) {
 interface Props {
     rows: any[];
     loading: boolean;
-    error: string | null;
-    onRetry: () => void;
     onView: (item: any) => void;
 }
 
-export default function ContactTable({ rows, loading, error, onRetry, onView }: Props) {
+export default function ContactTable({ rows, loading, onView }: Props) {
     return (
         <div className="relative flex-1 min-h-0 rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden flex flex-col">
             <div className="overflow-x-auto overflow-y-auto h-full scrollbar-thin">
@@ -73,22 +71,13 @@ export default function ContactTable({ rows, loading, error, onRetry, onView }: 
                                 </td>
                             </tr>
                         )}
-                        {!loading && error && (
-                            <tr>
-                                <td colSpan={9} className="px-4 py-10 text-center text-red-500">
-                                    <div className="flex flex-col items-center gap-2">
-                                        <span>{error}</span>
-                                        <button onClick={onRetry} className="text-sm font-medium text-purple-600 hover:text-purple-700">Retry</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        )}
-                        {!loading && !error && rows.length === 0 && (
+
+                        {!loading && rows.length === 0 && (
                             <tr>
                                 <td colSpan={9} className="px-4 py-4 text-left text-gray-400">No requests found</td>
                             </tr>
                         )}
-                        {!loading && !error && rows.map((row) => (
+                        {!loading && rows.map((row) => (
                             <ContactRow key={row.id} item={row} onView={() => onView(row)} />
                         ))}
                     </tbody>

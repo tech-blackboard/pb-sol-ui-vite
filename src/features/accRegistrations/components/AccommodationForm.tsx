@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, CheckCircle, Info, AlertCircle } from 'lucide-react'
+import Alert from '../../../components/Alert'
 import { useAppDispatch } from '../../../store/hooks'
 import { createAccRegistrationThunk } from '../../../store/slices/accRegistrations/accRegistrations.slice'
 import { listWebsites, type SourceWebsite } from '../../../services/sourcedb'
@@ -74,6 +75,7 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
     })
 
     const [errors, setErrors] = useState<Record<string, string>>({})
+    const [submitError, setSubmitError] = useState<string | null>(null)
 
     useEffect(() => {
         let mounted = true
@@ -159,6 +161,7 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
         }
 
         setSubmitting(true)
+        setSubmitError(null)
         try {
             const payload = {
                 ...formData,
@@ -183,7 +186,9 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
                 onSuccess?.()
                 onClose()
             } else {
-                toast.error('Failed to create registration')
+                const errorMsg = (result.payload as string) || 'Failed to create registration';
+                setSubmitError(errorMsg);
+                toast.error(errorMsg);
             }
         } catch (err) {
             toast.error('An error occurred')
@@ -207,6 +212,9 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
 
                 {/* Form Body */}
                 <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-8">
+                    {submitError && (
+                        <Alert message={submitError} onClose={() => setSubmitError(null)} />
+                    )}
                     {/* Section 1: Basic Information */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-semibold uppercase tracking-wider text-sm border-b pb-2">

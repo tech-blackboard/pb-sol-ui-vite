@@ -51,6 +51,9 @@ const registrationsSlice = createSlice({
             state.appliedFilters = initialFilters;
             state.page = 1;
         },
+        clearError(state) {
+            state.error = null;
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -66,7 +69,7 @@ const registrationsSlice = createSlice({
             })
             .addCase(fetchRegistrations.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.error.message ?? 'Failed to load';
+                state.error = (action.payload as string) || action.error.message || 'Failed to load';
             })
             .addCase(deleteRegistrationThunk.fulfilled, (state, action) => {
                 state.rawItems = state.rawItems.filter(i => i.id !== action.payload);
@@ -85,7 +88,7 @@ const registrationsSlice = createSlice({
             })
             .addCase(createRegistrationThunk.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.error.message ?? 'Failed to create registration';
+                state.error = (action.payload as string) || action.error.message || 'Failed to create registration';
             });
     },
 });
@@ -98,6 +101,7 @@ export const {
     updateDraftFilter,
     applyFilters,
     resetFilters,
+    clearError,
 } = registrationsSlice.actions;
 
 export default registrationsSlice.reducer;

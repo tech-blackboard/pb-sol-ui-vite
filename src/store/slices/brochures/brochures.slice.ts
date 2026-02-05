@@ -26,19 +26,28 @@ export interface BrochuresState {
 
 export const fetchBrochures = createAsyncThunk(
     'brochures/fetch',
-    async (params: { page: number; limit: number; filters: BrochureFilters }) => {
-        return await searchBrochures({
-            page: params.page,
-            limit: params.limit,
-            ...params.filters,
-        });
+    async (params: { page: number; limit: number; filters: BrochureFilters }, { rejectWithValue }) => {
+        try {
+            return await searchBrochures({
+                page: params.page,
+                limit: params.limit,
+                ...params.filters,
+            });
+        } catch (err: any) {
+            return rejectWithValue(err.response?.data?.message || err.message || 'Failed to load brochures');
+        }
     }
 );
 
 export const createBrochureThunk = createAsyncThunk(
     'brochures/create',
-    async (payload: any) => {
-        return await createBrochure(payload);
+    async (payload: any, { rejectWithValue }) => {
+        try {
+            return await createBrochure(payload);
+        } catch (err: any) {
+            const message = err.response?.data?.message || err.message || 'Failed to create brochure request';
+            return rejectWithValue(message);
+        }
     }
 );
 
@@ -88,6 +97,9 @@ const brochuresSlice = createSlice({
         },
         clearSelected(state) {
             state.selected = null;
+        },
+        clearError(state) {
+            state.error = null;
         }
     },
     extraReducers: (builder) => {
@@ -102,10 +114,10 @@ const brochuresSlice = createSlice({
             })
             .addCase(fetchBrochures.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.error.message ?? 'Failed to load';
+                state.error = (action.payload as string) || action.error.message || 'Failed to load';
             });
     },
 });
 
-export const { setPage, setPageSize, setFilters, updateDraftFilter, applyFilters, resetFilters, setSelected, clearSelected } = brochuresSlice.actions;
+export const { setPage, setPageSize, setFilters, updateDraftFilter, applyFilters, resetFilters, setSelected, clearSelected, clearError } = brochuresSlice.actions;
 export default brochuresSlice.reducer;
