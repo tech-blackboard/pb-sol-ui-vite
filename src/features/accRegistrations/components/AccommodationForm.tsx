@@ -5,6 +5,7 @@ import { useAppDispatch } from '../../../store/hooks'
 import { createAccRegistrationThunk } from '../../../store/slices/accRegistrations/accRegistrations.slice'
 import { listWebsites, type SourceWebsite } from '../../../services/sourcedb'
 import toast from 'react-hot-toast'
+import type { accRegistrationRecord } from '../../abstracts/types'
 
 interface AccommodationFormProps {
     websiteId?: number
@@ -114,9 +115,9 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
     const internetHandlingFees = Math.round(totalAccommodationValue * 0.048)
     const totalPrice = totalAccommodationValue + internetHandlingFees
 
-    const handleChange = (field: string, value: any) => {
+    const handleChange = (field: string, value: string | number) => {
         setFormData((prev) => {
-            let newData = { ...prev, [field]: value }
+            const newData = { ...prev, [field]: value }
             return newData
         })
         if (errors[field]) {
@@ -163,10 +164,10 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
         setSubmitting(true)
         setSubmitError(null)
         try {
-            const payload = {
+            const payload: accRegistrationRecord = {
                 ...formData,
                 website_id: Number(formData.website_id),
-                user_id: 1,
+                user_id: 10,
                 status_id: 1,
                 status_flag: 1,
                 nights: String(currentNights),
@@ -192,6 +193,7 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
             }
         } catch (err) {
             toast.error('An error occurred')
+            console.log("Error from accommodation form:", err)
         } finally {
             setSubmitting(false)
         }
@@ -321,7 +323,7 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
                                 <InputField label="Check-in Date" name="checkin" type="date" value={formData.checkin} onChange={handleChange} error={errors.checkin} />
                                 <InputField label="Check-out Date" name="checkout" type="date" value={formData.checkout} onChange={handleChange} error={errors.checkout} />
                                 <InputField label="Nights" name="nights" type="number" value={currentNights} onChange={() => { }} readOnly />
-                                <InputField label="Price per Night ($)*" name="accomm" type="number" value={formData.accomm} onWheel={(e: any) => (e.target as HTMLInputElement).blur()} onChange={handleChange} error={errors.accomm} />
+                                <InputField label="Price per Night ($)*" name="accomm" type="number" value={formData.accomm} onWheel={(e: React.WheelEvent<HTMLInputElement>) => (e.target as HTMLInputElement).blur()} onChange={handleChange} error={errors.accomm} />
                             </div>
                         </div>
                     </div>
@@ -381,8 +383,18 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
     )
 }
 
+interface InputFieldProps {
+    label?: string
+    name: string
+    value?: string | number
+    onChange: (name: string, value: string) => void
+    type?: string
+    error?: string
+    readOnly?: boolean
+    onWheel?: React.WheelEventHandler<HTMLInputElement>
+}
 
-function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false, ...props }: any) {
+function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false, ...props }: InputFieldProps) {
     return (
         <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>

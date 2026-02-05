@@ -6,6 +6,7 @@ import { createRegistrationThunk } from '../../../store/slices/registrations/reg
 
 import { listWebsites, type SourceWebsite } from '../../../services/sourcedb'
 import toast from 'react-hot-toast'
+import type { RegistrationRecord } from '../../abstracts/types'
 
 interface RegistrationFormProps {
     websiteId?: number
@@ -160,9 +161,9 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
     const internetHandlingFees = Math.round(subtotal * 0.048)
     const totalPrice = subtotal + internetHandlingFees
 
-    const handleChange = (field: string, value: any) => {
+    const handleChange = (field: string, value: string) => {
         setFormData((prev) => {
-            let newData = { ...prev, [field]: value }
+            const newData = { ...prev, [field]: value }
 
             // Prevent negative values for participants
             if (field === 'participants') {
@@ -241,10 +242,10 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
         setSubmitting(true)
         setSubmitError(null)
         try {
-            const payload = {
+            const payload: RegistrationRecord = {
                 ...formData,
                 website_id: Number(formData.website_id),
-                user_id: 1, // Assuming admin/logged-in user id
+                user_id: 10, // Assuming admin/logged-in user id
                 status_id: 1,
                 status_flag: 1,
                 nights: String(currentNights),
@@ -274,6 +275,7 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
                 toast.error(errorMsg);
             }
         } catch (err) {
+            console.log("Error from registration form: ", err)
             toast.error('An error occurred')
         } finally {
             setSubmitting(false)
@@ -376,8 +378,8 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
                     <div className="space-y-4">
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <InputField label="Registration Price ($)*" name="reg_price" type="number" value={formData.reg_price} onWheel={(e: any) => (e.target as HTMLInputElement).blur()} onChange={handleChange} error={errors.reg_price} />
-                            <InputField label="Number of Participants" name="participants" type="number" value={formData.participants} onWheel={(e: any) => (e.target as HTMLInputElement).blur()} onChange={handleChange} error={errors.participants} />
+                            <InputField label="Registration Price ($)*" name="reg_price" type="number" value={formData.reg_price} onWheel={(e: React.WheelEvent<HTMLInputElement>) => (e.target as HTMLInputElement).blur()} onChange={handleChange} error={errors.reg_price} />
+                            <InputField label="Number of Participants" name="participants" type="number" value={formData.participants} onWheel={(e: React.WheelEvent<HTMLInputElement>) => (e.target as HTMLInputElement).blur()} onChange={handleChange} error={errors.participants} />
                         </div>
 
                         <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-semibold uppercase tracking-wider text-sm border-b pb-2">
@@ -430,7 +432,7 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
                                             <InputField label="Check-in Date" name="checkin" type="date" value={formData.checkin} onChange={handleChange} error={accommodationErrors.checkin} />
                                             <InputField label="Check-out Date" name="checkout" type="date" value={formData.checkout} onChange={handleChange} error={accommodationErrors.checkout} />
                                             <InputField label="Nights" name="nights" type="number" value={currentNights} onChange={() => { }} readOnly />
-                                            <InputField label="Price per Night ($)" name="acc_price" type="number" value={formData.acc_price} onWheel={(e: any) => (e.target as HTMLInputElement).blur()} onChange={handleChange} error={errors.acc_price} />
+                                            <InputField label="Price per Night ($)" name="acc_price" type="number" value={formData.acc_price} onWheel={(e: React.WheelEvent<HTMLInputElement>) => (e.target as HTMLInputElement).blur()} onChange={handleChange} error={errors.acc_price} />
                                         </div>
                                     )}
                                 </>
@@ -503,7 +505,18 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
     )
 }
 
-function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false, ...props }: any) {
+interface InputFieldProps {
+    label?: string
+    name: string
+    value?: string | number
+    onChange: (name: string, value: string) => void
+    type?: string
+    error?: string
+    readOnly?: boolean
+    onWheel?: React.WheelEventHandler<HTMLInputElement>
+}
+
+function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false, ...props }: InputFieldProps) {
     return (
         <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
@@ -514,14 +527,24 @@ function InputField({ label, name, value, onChange, type = 'text', error, readOn
     )
 }
 
-function SelectField({ label, name, value, options, onChange, error, isLoading = false }: any) {
+interface SelectFieldProps {
+    label?: string
+    name: string
+    value?: string | number
+    options: string[] | { value: string | number; label: string }[]
+    onChange: (name: string, value: string) => void
+    error?: string
+    isLoading?: boolean
+}
+
+function SelectField({ label, name, value, options, onChange, error, isLoading = false }: SelectFieldProps) {
     return (
         <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
             <select value={value} onChange={(e) => onChange(name, e.target.value)} disabled={isLoading}
                 className={`w-full px-4 py-2 rounded-lg border ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500 outline-none`}>
                 <option value="">Select Option</option>
-                {options.map((opt: any) => (
+                {options.map((opt) => (
                     <option key={typeof opt === 'string' ? opt : opt.value} value={typeof opt === 'string' ? opt : opt.value}>
                         {typeof opt === 'string' ? opt : opt.label}
                     </option>

@@ -1,7 +1,8 @@
 import { formatDate } from '../../../utils/utils';
+import type { BrochureItem } from '../../../services/brochures';
 
 interface BrochureRowProps {
-    item: any;
+    item: BrochureItem;
     onView: () => void;
 }
 
@@ -20,24 +21,24 @@ function BrochureRow({ item, onView }: BrochureRowProps) {
                     </svg>
                 </button>
             </td>
-            <td className="px-3 py-1 text-gray-700" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
-            <td className="px-3 py-1 text-gray-900 font-medium whitespace-nowrap" title={item.name}>{item.name}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[20rem]" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-900 font-medium truncate max-w-[20rem]" title={item.name}>{item.name}</td>
             <td className="px-3 py-1" title={item.email}>
                 <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">{item.email}</a>
             </td>
-            <td className="px-3 py-1 text-gray-700 whitespace-nowrap" title={item.phone}>{item.phone}</td>
-            <td className="px-3 py-1 text-gray-700" title={item.country}>{item.country}</td>
-            <td className="px-3 py-1 text-gray-700 min-w-[14rem] max-w-[12rem] truncate" title={item.message}>{item.message}</td>
-            <td className="px-3 py-1 text-gray-700 whitespace-nowrap" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.phone}>{item.phone}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.country}>{item.country}</td>
+            <td className="px-3 py-1 text-gray-700 max-w-[12rem] truncate" title={item.message}>{item.message}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[16rem]" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
 
         </tr>
     );
 }
 
 interface Props {
-    rows: any[];
+    rows: BrochureItem[];
     loading: boolean;
-    onView: (item: any) => void;
+    onView: (item: BrochureItem) => void;
 }
 
 export default function BrochureTable({ rows, loading, onView }: Props) {
@@ -51,7 +52,7 @@ export default function BrochureTable({ rows, loading, onView }: Props) {
                             <th className="px-3 py-2 text-gray-700 font-semibold min-w-[18rem]">Website Name</th>
                             <th className="px-3 py-2 text-gray-700 font-semibold min-w-[10rem]">Name</th>
                             <th className="px-3 py-2 text-gray-700 font-semibold min-w-[12rem]">Email</th>
-                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[8rem]">Phone</th>
+                            <th className="px-4 py-2 text-gray-700 font-semibold min-w-[8rem]">Phone</th>
                             <th className="px-3 py-2 text-gray-700 font-semibold min-w-[8rem]">Country</th>
                             <th className="px-3 py-2 text-gray-700 font-semibold min-w-[14rem]">Message</th>
                             <th className="px-3 py-2 text-gray-700 font-semibold min-w-[10rem]">Submitted On</th>

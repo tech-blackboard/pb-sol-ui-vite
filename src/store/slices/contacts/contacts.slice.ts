@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import { searchContacts, createContact } from '../../../services/contacts';
+import { searchContacts, createContact, type ContactItem } from '../../../services/contacts';
 
 export interface ContactFilters {
     search?: string;
@@ -13,7 +13,7 @@ export interface ContactFilters {
 }
 
 export interface ContactsState {
-    items: any[];
+    items: ContactItem[];
     loading: boolean;
     error: string | null;
     page: number;
@@ -21,7 +21,7 @@ export interface ContactsState {
     total: number;
     draftFilters: ContactFilters;
     appliedFilters: ContactFilters;
-    selected: any | null;
+    selected: ContactItem | null;
 }
 
 export const fetchContacts = createAsyncThunk(
@@ -41,7 +41,7 @@ export const fetchContacts = createAsyncThunk(
 
 export const createContactThunk = createAsyncThunk(
     'contacts/create',
-    async (payload: any, { rejectWithValue }) => {
+    async (payload: Partial<ContactItem>, { rejectWithValue }) => {
         try {
             return await createContact(payload);
         } catch (err: any) {
@@ -79,7 +79,10 @@ const contactsSlice = createSlice({
             state.draftFilters = action.payload;
             state.page = 1;
         },
-        updateDraftFilter(state, action: PayloadAction<{ key: keyof ContactFilters; value: any }>) {
+        updateDraftFilter<K extends keyof ContactFilters>(
+            state: ContactsState,
+            action: PayloadAction<{ key: K; value: ContactFilters[K] }>
+        ) {
             state.draftFilters[action.payload.key] = action.payload.value;
         },
         applyFilters(state) {
@@ -92,7 +95,7 @@ const contactsSlice = createSlice({
             state.appliedFilters = initialFilters;
             state.page = 1;
         },
-        setSelected(state, action: PayloadAction<any>) {
+        setSelected(state, action: PayloadAction<ContactItem | null>) {
             state.selected = action.payload;
         },
         clearSelected(state) {

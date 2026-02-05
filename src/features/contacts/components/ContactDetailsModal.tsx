@@ -1,7 +1,8 @@
 import { formatDate } from '../../../utils/utils'
+import type { ContactItem } from '../../../services/contacts'
 
 interface Props {
-    item: any | null
+    item: ContactItem | null
     onClose: () => void
 }
 

@@ -3,13 +3,21 @@ import { getAuthHeaders } from './abstracts';
 
 export type BrochureItem = {
     id: number;
-    name: string;
-    email: string;
-    phone: string;
-    country: string;
-    message: string;
-    now: string;
+    name?: string;
+    email?: string;
+    phone?: string;
+    country?: string;
+    message?: string;
+    website_id?: number;
+    now?: string;
     website?: { id: number; name: string };
+};
+
+export type BrochureSearchParams = {
+    page?: number;
+    limit?: number;
+    search?: string;
+    [key: string]: string | number | boolean | undefined;
 };
 
 export type BrochureSearchResult = {
@@ -22,7 +30,7 @@ export type BrochureSearchResult = {
 
 const VITE_BROCHURE_BASE = import.meta.env.VITE_BROCHURE_BASE;
 
-export async function createBrochure(payload: any): Promise<BrochureItem> {
+export async function createBrochure(payload: Partial<BrochureItem>): Promise<BrochureItem> {
     const { data } = await api.post(`${VITE_BROCHURE_BASE}`, payload, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
@@ -30,7 +38,7 @@ export async function createBrochure(payload: any): Promise<BrochureItem> {
     return data;
 }
 
-export async function searchBrochures(params: any = {}): Promise<BrochureSearchResult> {
+export async function searchBrochures(params: BrochureSearchParams = {}): Promise<BrochureSearchResult> {
     const { data } = await api.get(`${VITE_BROCHURE_BASE}/search`, {
         params,
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },

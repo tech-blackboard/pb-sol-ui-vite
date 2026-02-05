@@ -1,7 +1,8 @@
 import { formatDate } from '../../../utils/utils'
+import type { SponsorshipItem } from '../../../services/sponsorships'
 
 interface Props {
-    item: any | null
+    item: SponsorshipItem | null
     onClose: () => void
 }
 

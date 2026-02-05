@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import { searchSponsorships, createSponsorship } from '../../../services/sponsorships';
+import { searchSponsorships, createSponsorship, type SponsorshipItem } from '../../../services/sponsorships';
+import type { SponsorshipRecord } from '../../../features/abstracts/types';
 
 export interface SponsorshipFilters {
     search?: string;
@@ -14,7 +15,7 @@ export interface SponsorshipFilters {
 }
 
 export interface SponsorshipsState {
-    items: any[];
+    items: SponsorshipItem[];
     loading: boolean;
     error: string | null;
     page: number;
@@ -22,7 +23,7 @@ export interface SponsorshipsState {
     total: number;
     draftFilters: SponsorshipFilters;
     appliedFilters: SponsorshipFilters;
-    selected: any | null;
+    selected: SponsorshipItem | null;
 }
 
 export const fetchSponsorships = createAsyncThunk(
@@ -42,7 +43,7 @@ export const fetchSponsorships = createAsyncThunk(
 
 export const createSponsorshipThunk = createAsyncThunk(
     'sponsorships/create',
-    async (payload: any, { rejectWithValue }) => {
+    async (payload: SponsorshipRecord, { rejectWithValue }) => {
         try {
             return await createSponsorship(payload);
         } catch (err: any) {
@@ -80,7 +81,10 @@ const sponsorshipsSlice = createSlice({
             state.draftFilters = action.payload;
             state.page = 1;
         },
-        updateDraftFilter(state, action: PayloadAction<{ key: keyof SponsorshipFilters; value: any }>) {
+        updateDraftFilter<K extends keyof SponsorshipFilters>(
+            state: SponsorshipsState,
+            action: PayloadAction<{ key: K; value: SponsorshipFilters[K] }>
+        ) {
             state.draftFilters[action.payload.key] = action.payload.value;
         },
         applyFilters(state) {
@@ -93,7 +97,7 @@ const sponsorshipsSlice = createSlice({
             state.appliedFilters = initialFilters;
             state.page = 1;
         },
-        setSelected(state, action: PayloadAction<any>) {
+        setSelected(state, action: PayloadAction<SponsorshipItem | null>) {
             state.selected = action.payload;
         },
         clearSelected(state) {

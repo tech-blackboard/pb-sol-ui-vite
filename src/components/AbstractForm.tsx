@@ -6,12 +6,14 @@ import {
 } from '../services/abstracts'
 import { listWebsites, type SourceWebsite } from '../services/sourcedb'
 import toast from 'react-hot-toast';
+import type { CreateAbstractPayload } from '../features/abstracts/types';
 
 interface AbstractFormProps {
   websiteId?: number
   onClose: () => void
   onSuccess?: () => void
 }
+
 
 // All countries A-Z
 const COUNTRIES = [

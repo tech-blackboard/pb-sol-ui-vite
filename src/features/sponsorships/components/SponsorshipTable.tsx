@@ -1,14 +1,15 @@
 import { formatDate } from '../../../utils/utils';
+import type { SponsorshipItem } from '../../../services/sponsorships';
 
 interface SponsorshipRowProps {
-    item: any;
+    item: SponsorshipItem;
     onView: () => void;
 }
 
 function SponsorshipRow({ item, onView }: SponsorshipRowProps) {
     return (
         <tr className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-            <td className="px-3 py-1 whitespace-nowrap">
+            <td className="px-3 py-1">
                 <button
                     onClick={onView}
                     className="p-1 rounded-md border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
@@ -20,25 +21,25 @@ function SponsorshipRow({ item, onView }: SponsorshipRowProps) {
                     </svg>
                 </button>
             </td>
-            <td className="px-3 py-1 text-gray-700" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
-            <td className="px-3 py-1 text-gray-900 font-medium whitespace-nowrap" title={item.name}>{item.name}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[20rem]" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-900 font-medium truncate max-w-[20rem]" title={item.name}>{item.name}</td>
             <td className="px-3 py-1" title={item.email}>
                 <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">{item.email}</a>
             </td>
-            <td className="px-3 py-1 text-gray-700 whitespace-nowrap" title={item.phone}>{item.phone}</td>
-            <td className="px-3 py-1 text-gray-700" title={item.organization ?? '—'}>{item.organization ?? '—'}</td>
-            <td className="px-3 py-1 text-gray-700" title={item.country}>{item.country}</td>
-            <td className="px-3 py-1 text-gray-700 min-w-[14rem] max-w-[14rem] truncate" title={item.message}>{item.message}</td>
-            <td className="px-3 py-1 text-gray-700 whitespace-nowrap" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.phone}>{item.phone}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.organization ?? '—'}>{item.organization ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.country}>{item.country}</td>
+            <td className="px-3 py-1 text-gray-700 max-w-[14rem] truncate" title={item.message}>{item.message}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[16rem]" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
 
         </tr>
     );
 }
 
 interface Props {
-    rows: any[];
+    rows: SponsorshipItem[];
     loading: boolean;
-    onView: (item: any) => void;
+    onView: (item: SponsorshipItem) => void;
 }
 
 export default function SponsorshipTable({ rows, loading, onView }: Props) {
@@ -48,15 +49,15 @@ export default function SponsorshipTable({ rows, loading, onView }: Props) {
                 <table className="min-w-full text-left text-sm border-collapse">
                     <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10 border-b border-gray-200">
                         <tr>
-                            <th className="px-4 py-2 text-gray-700 font-semibold min-w-[5rem]">Actions</th>
-                            <th className="px-4 py-2 text-gray-700 font-semibold min-w-[16rem]">Website Name</th>
-                            <th className="px-4 py-2 text-gray-700 font-semibold min-w-[10rem]">Name</th>
-                            <th className="px-4 py-2 text-gray-700 font-semibold min-w-[12rem]">Email</th>
-                            <th className="px-4 py-2 text-gray-700 font-semibold min-w-[8rem]">Phone</th>
-                            <th className="px-4 py-2 text-gray-700 font-semibold min-w-[12rem]">Organization</th>
-                            <th className="px-4 py-2 text-gray-700 font-semibold min-w-[8rem]">Country</th>
-                            <th className="px-4 py-2 text-gray-700 font-semibold min-w-[14rem]">Message</th>
-                            <th className="px-4 py-2 text-gray-700 font-semibold min-w-[10rem]">Submitted On</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[5rem]">Actions</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[16rem]">Website Name</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[10rem]">Name</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[12rem]">Email</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[8rem]">Phone</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[12rem]">Organization</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[8rem]">Country</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[14rem]">Message</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[10rem]">Submitted On</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
