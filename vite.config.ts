@@ -10,6 +10,17 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-redux': ['@reduxjs/toolkit', 'react-redux'],
+          'vendor-utils': ['axios', 'lucide-react', 'react-hot-toast'],
+        },
+      },
+    },
+  },
   server: {
     proxy: {
       '/api': {
