@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
+import axios from 'axios';
 import { searchSponsorships, createSponsorship, type SponsorshipItem } from '../../../services/sponsorships';
 import type { SponsorshipRecord } from '../../../features/abstracts/types';
 
@@ -35,8 +36,8 @@ export const fetchSponsorships = createAsyncThunk(
                 limit: params.limit,
                 ...params.filters,
             });
-        } catch (err: any) {
-            return rejectWithValue(err.response?.data?.message || err.message || 'Failed to load sponsorships');
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to load sponsorships');
         }
     }
 );
@@ -46,8 +47,8 @@ export const createSponsorshipThunk = createAsyncThunk(
     async (payload: SponsorshipRecord, { rejectWithValue }) => {
         try {
             return await createSponsorship(payload);
-        } catch (err: any) {
-            const message = err.response?.data?.message || err.message || 'Failed to create sponsorship';
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to create sponsorship';
             return rejectWithValue(message);
         }
     }

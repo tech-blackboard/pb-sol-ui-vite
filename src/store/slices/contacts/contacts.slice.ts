@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
+import axios from 'axios';
 import { searchContacts, createContact, type ContactItem } from '../../../services/contacts';
 
 export interface ContactFilters {
@@ -33,8 +34,8 @@ export const fetchContacts = createAsyncThunk(
                 limit: params.limit,
                 ...params.filters,
             });
-        } catch (err: any) {
-            return rejectWithValue(err.response?.data?.message || err.message || 'Failed to load contacts');
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to load contacts');
         }
     }
 );
@@ -44,8 +45,8 @@ export const createContactThunk = createAsyncThunk(
     async (payload: Partial<ContactItem>, { rejectWithValue }) => {
         try {
             return await createContact(payload);
-        } catch (err: any) {
-            const message = err.response?.data?.message || err.message || 'Failed to create contact';
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to create contact';
             return rejectWithValue(message);
         }
     }
