@@ -239,7 +239,7 @@ export default function AbstractDetailsModal({
                       (result.payload as { message: string })?.message || 'Confirmation email sent successfully!'
                     )
                   } else {
-                    toast.error('Failed to send confirmation email')
+                    toast.error((result.payload as string) || 'Failed to send confirmation email')
                   }
                 }}
                 disabled={actionLoading.confirmation}
