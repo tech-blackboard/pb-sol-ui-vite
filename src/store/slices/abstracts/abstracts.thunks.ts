@@ -106,9 +106,14 @@ export const sendPaymentReceiptThunk = createAsyncThunk(
 
 export const sendConfirmationEmailThunk = createAsyncThunk(
   'abstracts/sendConfirmationEmail',
-  async (id: string) => {
-    const result = await sendConfirmationEmail(id)
-    return { id, message: result.message }
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const result = await sendConfirmationEmail(id)
+      return { id, message: result.message }
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to send confirmation email';
+      return rejectWithValue(message);
+    }
   }
 )
 
