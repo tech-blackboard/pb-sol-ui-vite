@@ -10,6 +10,7 @@ jobs:
   build-and-push:
     name: Build and Push
     runs-on: ubuntu-latest
+    environment: PB-SOL-DEV
     
     steps:
       - name: Checkout Code
