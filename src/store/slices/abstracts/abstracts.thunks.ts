@@ -1,4 +1,5 @@
 import { createAsyncThunk } from '@reduxjs/toolkit'
+import axios from 'axios'
 import {
   searchAbstracts,
   sendConfirmationEmail,
@@ -29,10 +30,10 @@ export const fetchAbstracts = createAsyncThunk(
       return await searchAbstracts({
         page,
         limit,
-        ...filters, // 🔥 THIS IS CRITICAL
+        ...filters,
       })
-    } catch (err: any) {
-      const message = err.response?.data?.message || err.message || 'An unknown error occurred'
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'An unknown error occurred'
       return rejectWithValue(message)
     }
   }
@@ -43,8 +44,8 @@ export const updateStatusThunk = createAsyncThunk(
   async ({ id, statusId }: { id: string; statusId: number }, { rejectWithValue }) => {
     try {
       return await updateAbstractStatus(id, statusId)
-    } catch (err: any) {
-      const message = err.response?.data?.message || err.message || 'Failed to update status';
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to update status';
       return rejectWithValue(message);
     }
   }
@@ -58,8 +59,8 @@ export const sendInvoiceThunk = createAsyncThunk(
   ) => {
     try {
       return await sendInvoice(abstractId, invoiceData)
-    } catch (err: any) {
-      const message = err.response?.data?.message || err.message || 'Failed to send invoice';
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to send invoice';
       return rejectWithValue(message);
     }
   }
@@ -70,8 +71,8 @@ export const sendPaymentReminderThunk = createAsyncThunk(
   async ({ abstractId, paymentReminderData }: { abstractId: string; paymentReminderData: PaymentReminderData }, { rejectWithValue }) => {
     try {
       return await sendPaymentReminder(abstractId, paymentReminderData)
-    } catch (err: any) {
-      const message = err.response?.data?.message || err.message || 'Failed to send payment reminder';
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to send payment reminder';
       return rejectWithValue(message);
     }
   }
@@ -96,8 +97,8 @@ export const sendPaymentReceiptThunk = createAsyncThunk(
         receiptResult,
         updated,
       }
-    } catch (err: any) {
-      const message = err.response?.data?.message || err.message || 'Failed to send payment receipt';
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to send payment receipt';
       return rejectWithValue(message);
     }
   }

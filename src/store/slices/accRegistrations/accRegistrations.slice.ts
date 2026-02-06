@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
+import axios from 'axios';
 import { searchAccRegistrations, createAccRegistration, type AccRegistrationItem } from '../../../services/accRegistrations';
 
 export interface AccRegistrationFilters {
@@ -35,8 +36,8 @@ export const fetchAccRegistrations = createAsyncThunk(
                 limit: params.limit,
                 ...params.filters,
             });
-        } catch (err: any) {
-            return rejectWithValue(err.response?.data?.message || err.message || 'Failed to load');
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to load');
         }
     }
 );
@@ -46,8 +47,8 @@ export const createAccRegistrationThunk = createAsyncThunk(
     async (data: Partial<AccRegistrationItem>, { rejectWithValue }) => {
         try {
             return await createAccRegistration(data);
-        } catch (err: any) {
-            const message = err.response?.data?.message || err.message || 'Failed to create registration';
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to create registration';
             return rejectWithValue(message);
         }
     }

@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
+import axios from 'axios';
 import { searchBrochures, createBrochure, type BrochureItem } from '../../../services/brochures';
 
 export interface BrochureFilters {
@@ -33,8 +34,8 @@ export const fetchBrochures = createAsyncThunk(
                 limit: params.limit,
                 ...params.filters,
             });
-        } catch (err: any) {
-            return rejectWithValue(err.response?.data?.message || err.message || 'Failed to load brochures');
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to load brochures');
         }
     }
 );
@@ -44,8 +45,8 @@ export const createBrochureThunk = createAsyncThunk(
     async (payload: Partial<BrochureItem>, { rejectWithValue }) => {
         try {
             return await createBrochure(payload);
-        } catch (err: any) {
-            const message = err.response?.data?.message || err.message || 'Failed to create brochure request';
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to create brochure request';
             return rejectWithValue(message);
         }
     }

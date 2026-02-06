@@ -1,4 +1,5 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
+import axios from 'axios';
 import { searchRegistrations, deleteRegistration, createRegistration } from '../../../services/registrations';
 import type { RegistrationFilters } from './registrations.types';
 import type { RegistrationRecord } from '../../../features/abstracts/types';
@@ -14,8 +15,8 @@ export const fetchRegistrations = createAsyncThunk(
                 ...params.filters,
             });
             return result;
-        } catch (err: any) {
-            return rejectWithValue(err.response?.data?.message || err.message || 'Failed to load registrations');
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to load registrations');
         }
     }
 );
@@ -34,8 +35,8 @@ export const createRegistrationThunk = createAsyncThunk(
         try {
             const result = await createRegistration(data);
             return result;
-        } catch (err: any) {
-            const message = err.response?.data?.message || err.message || 'Failed to create registration';
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to create registration';
             return rejectWithValue(message);
         }
     }
