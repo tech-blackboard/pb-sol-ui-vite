@@ -7,6 +7,7 @@ import {
     forceLogoutDevice,
     type Device
 } from '../services/deviceService';
+import { Trash2, Undo } from 'lucide-react';
 
 const DeviceManagement: React.FC = () => {
     const [devices, setDevices] = useState<Device[]>([]);
@@ -87,10 +88,10 @@ const DeviceManagement: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col overflow-hidden ">
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Device Management</h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Manage approved devices for all users
+            <div className="mb-1 mt-1 md:flex">
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white ml-2">Device Management</h1>
+                <p className="text-xs text-gray-600 dark:text-gray-400 md:mt-2 ml-2">
+                    (Manage approved devices for all users)
                 </p>
             </div>
 
@@ -100,29 +101,29 @@ const DeviceManagement: React.FC = () => {
                 </div>
             ) : (
                 <>
-                    <div className="flex-1 min-h-0 overflow-auto scrollbar-thin border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div className="flex-1 min-h-0 overflow-auto scrollbar-thin border border-gray-200 dark:border-gray-700 rounded-lg my-1 ">
                         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    <th className="px-4 py-2 text-left text-xs font-bold text-gray-800 dark:text-gray-400 uppercase tracking-wider">
                                         User
                                     </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    <th className="px-4 py-2 text-left text-xs font-bold text-gray-800 dark:text-gray-400 uppercase tracking-wider">
                                         Device ID
                                     </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    <th className="px-4 py-2 text-left text-xs font-bold text-gray-800 dark:text-gray-400 uppercase tracking-wider">
                                         Browser
                                     </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    <th className="px-4 py-2 text-left text-xs font-bold text-gray-800 dark:text-gray-400 uppercase tracking-wider">
                                         OS
                                     </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    <th className="px-4 py-2 text-left text-xs font-bold text-gray-800 dark:text-gray-400 uppercase tracking-wider">
                                         Status
                                     </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    <th className="px-4 py-2 text-left text-xs font-bold text-gray-800 dark:text-gray-400 uppercase tracking-wider">
                                         Last Used
                                     </th>
-                                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    <th className="px-6 py-2 text-left text-xs font-bold text-gray-800 dark:text-gray-400 uppercase tracking-wider">
                                         Actions
                                     </th>
                                 </tr>
@@ -130,7 +131,7 @@ const DeviceManagement: React.FC = () => {
                             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                                 {devices?.map((device) => (
                                     <tr key={device.id}>
-                                        <td className="px-4 py-4 whitespace-nowrap text-sm">
+                                        <td className="px-4 py-2  whitespace-nowrap text-sm">
                                             <div className="text-gray-900 dark:text-white">
                                                 {device.user?.firstname} {device.user?.lastname}
                                             </div>
@@ -138,18 +139,18 @@ const DeviceManagement: React.FC = () => {
                                                 {device.user?.useremail}
                                             </div>
                                         </td>
-                                        <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
                                                 {device.deviceId.substring(0, 12)}...
                                             </code>
                                         </td>
-                                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             {device.browser || 'Unknown'}
                                         </td>
-                                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             {device.os || 'Unknown'}
                                         </td>
-                                        <td className="px-4 py-4 whitespace-nowrap">
+                                        <td className="px-4 py-2  whitespace-nowrap">
                                             <span
                                                 className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${device.isAllowed
                                                     ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
@@ -159,13 +160,13 @@ const DeviceManagement: React.FC = () => {
                                                 {device.isAllowed ? 'Approved' : 'Pending'}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             {device.lastUsedAt
                                                 ? new Date(device.lastUsedAt).toLocaleString()
                                                 : 'Never'}
                                         </td>
-                                        <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex justify-end gap-2">
+                                        <td className="px-6  py-2 whitespace-nowrap text-right text-sm font-medium">
+                                            <div className="flex justify-end gap-5">
                                                 {!device.isAllowed && (
                                                     <button
                                                         onClick={() => handleApprove(device.id)}
@@ -177,16 +178,19 @@ const DeviceManagement: React.FC = () => {
                                                 {device.isAllowed && (
                                                     <button
                                                         onClick={() => handleRevoke(device.id)}
-                                                        className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
+                                                        className="text-yellow-600 cursor-pointer hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
+                                                        title='Revoke'
                                                     >
-                                                        Revoke
+                                                        <Undo onClick={() => handleRevoke(device.id)} size={18} className="text-gray-700 cursor-pointer" />
                                                     </button>
                                                 )}
                                                 <button
                                                     onClick={() => openDeleteModal(device.id)}
-                                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                                    className="text-red-600 cursor-pointer hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                                    title="Delete"
                                                 >
-                                                    Delete
+                                                    <Trash2 size={18} className="text-gray-700 cursor-pointer" color='red' />
+
                                                 </button>
                                             </div>
                                         </td>

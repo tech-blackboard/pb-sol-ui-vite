@@ -1,5 +1,7 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import { searchSponsorships, createSponsorship } from '../../../services/sponsorships';
+import axios from 'axios';
+import { searchSponsorships, createSponsorship, type SponsorshipItem } from '../../../services/sponsorships';
+import type { SponsorshipRecord } from '../../../features/abstracts/types';
 
 export interface SponsorshipFilters {
     search?: string;
@@ -14,7 +16,7 @@ export interface SponsorshipFilters {
 }
 
 export interface SponsorshipsState {
-    items: any[];
+    items: SponsorshipItem[];
     loading: boolean;
     error: string | null;
     page: number;
@@ -22,24 +24,33 @@ export interface SponsorshipsState {
     total: number;
     draftFilters: SponsorshipFilters;
     appliedFilters: SponsorshipFilters;
-    selected: any | null;
+    selected: SponsorshipItem | null;
 }
 
 export const fetchSponsorships = createAsyncThunk(
     'sponsorships/fetch',
-    async (params: { page: number; limit: number; filters: SponsorshipFilters }) => {
-        return await searchSponsorships({
-            page: params.page,
-            limit: params.limit,
-            ...params.filters,
-        });
+    async (params: { page: number; limit: number; filters: SponsorshipFilters }, { rejectWithValue }) => {
+        try {
+            return await searchSponsorships({
+                page: params.page,
+                limit: params.limit,
+                ...params.filters,
+            });
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to load sponsorships');
+        }
     }
 );
 
 export const createSponsorshipThunk = createAsyncThunk(
     'sponsorships/create',
-    async (payload: any) => {
-        return await createSponsorship(payload);
+    async (payload: SponsorshipRecord, { rejectWithValue }) => {
+        try {
+            return await createSponsorship(payload);
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to create sponsorship';
+            return rejectWithValue(message);
+        }
     }
 );
 
@@ -71,7 +82,10 @@ const sponsorshipsSlice = createSlice({
             state.draftFilters = action.payload;
             state.page = 1;
         },
-        updateDraftFilter(state, action: PayloadAction<{ key: keyof SponsorshipFilters; value: any }>) {
+        updateDraftFilter<K extends keyof SponsorshipFilters>(
+            state: SponsorshipsState,
+            action: PayloadAction<{ key: K; value: SponsorshipFilters[K] }>
+        ) {
             state.draftFilters[action.payload.key] = action.payload.value;
         },
         applyFilters(state) {
@@ -84,11 +98,14 @@ const sponsorshipsSlice = createSlice({
             state.appliedFilters = initialFilters;
             state.page = 1;
         },
-        setSelected(state, action: PayloadAction<any>) {
+        setSelected(state, action: PayloadAction<SponsorshipItem | null>) {
             state.selected = action.payload;
         },
         clearSelected(state) {
             state.selected = null;
+        },
+        clearError(state) {
+            state.error = null;
         }
     },
     extraReducers: (builder) => {
@@ -103,7 +120,7 @@ const sponsorshipsSlice = createSlice({
             })
             .addCase(fetchSponsorships.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.error.message ?? 'Failed to load';
+                state.error = (action.payload as string) || action.error.message || 'Failed to load';
             })
             .addCase(createSponsorshipThunk.pending, (state) => {
                 state.loading = true;
@@ -113,10 +130,10 @@ const sponsorshipsSlice = createSlice({
             })
             .addCase(createSponsorshipThunk.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.error.message ?? 'Failed to create';
+                state.error = (action.payload as string) || action.error.message || 'Failed to create';
             });
     },
 });
 
-export const { setPage, setPageSize, setFilters, updateDraftFilter, applyFilters, resetFilters, setSelected, clearSelected } = sponsorshipsSlice.actions;
+export const { setPage, setPageSize, setFilters, updateDraftFilter, applyFilters, resetFilters, setSelected, clearSelected, clearError } = sponsorshipsSlice.actions;
 export default sponsorshipsSlice.reducer;

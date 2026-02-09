@@ -1,7 +1,8 @@
 import { formatDate } from '../../../utils/utils'
+import type { AccRegistrationItem } from '../../../services/accRegistrations'
 
 interface Props {
-    item: any | null
+    item: AccRegistrationItem | null
     onClose: () => void
 }
 

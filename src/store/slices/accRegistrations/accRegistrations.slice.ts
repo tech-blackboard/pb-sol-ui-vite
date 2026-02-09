@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import { searchAccRegistrations, createAccRegistration } from '../../../services/accRegistrations';
+import axios from 'axios';
+import { searchAccRegistrations, createAccRegistration, type AccRegistrationItem } from '../../../services/accRegistrations';
 
 export interface AccRegistrationFilters {
     search?: string;
@@ -15,7 +16,7 @@ export interface AccRegistrationFilters {
 }
 
 export interface AccRegistrationsState {
-    items: any[];
+    items: AccRegistrationItem[];
     loading: boolean;
     error: string | null;
     page: number;
@@ -23,24 +24,33 @@ export interface AccRegistrationsState {
     total: number;
     draftFilters: AccRegistrationFilters;
     appliedFilters: AccRegistrationFilters;
-    selected: any | null;
+    selected: AccRegistrationItem | null;
 }
 
 export const fetchAccRegistrations = createAsyncThunk(
     'accRegistrations/fetch',
-    async (params: { page: number; limit: number; filters: AccRegistrationFilters }) => {
-        return await searchAccRegistrations({
-            page: params.page,
-            limit: params.limit,
-            ...params.filters,
-        });
+    async (params: { page: number; limit: number; filters: AccRegistrationFilters }, { rejectWithValue }) => {
+        try {
+            return await searchAccRegistrations({
+                page: params.page,
+                limit: params.limit,
+                ...params.filters,
+            });
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to load');
+        }
     }
 );
 
 export const createAccRegistrationThunk = createAsyncThunk(
     'accRegistrations/create',
-    async (data: any) => {
-        return await createAccRegistration(data);
+    async (data: Partial<AccRegistrationItem>, { rejectWithValue }) => {
+        try {
+            return await createAccRegistration(data);
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to create registration';
+            return rejectWithValue(message);
+        }
     }
 );
 
@@ -72,7 +82,10 @@ const accRegistrationsSlice = createSlice({
             state.draftFilters = action.payload;
             state.page = 1;
         },
-        updateDraftFilter(state, action: PayloadAction<{ key: keyof AccRegistrationFilters; value: any }>) {
+        updateDraftFilter<K extends keyof AccRegistrationFilters>(
+            state: AccRegistrationsState,
+            action: PayloadAction<{ key: K; value: AccRegistrationFilters[K] }>
+        ) {
             state.draftFilters[action.payload.key] = action.payload.value;
         },
         applyFilters(state) {
@@ -85,11 +98,14 @@ const accRegistrationsSlice = createSlice({
             state.appliedFilters = initialFilters;
             state.page = 1;
         },
-        setSelected(state, action: PayloadAction<any>) {
+        setSelected(state, action: PayloadAction<AccRegistrationItem | null>) {
             state.selected = action.payload;
         },
         clearSelected(state) {
             state.selected = null;
+        },
+        clearError(state) {
+            state.error = null;
         }
     },
     extraReducers: (builder) => {
@@ -104,7 +120,7 @@ const accRegistrationsSlice = createSlice({
             })
             .addCase(fetchAccRegistrations.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.error.message ?? 'Failed to load';
+                state.error = (action.payload as string) || action.error.message || 'Failed to load';
             })
             .addCase(createAccRegistrationThunk.pending, (state) => {
                 state.loading = true;
@@ -114,10 +130,10 @@ const accRegistrationsSlice = createSlice({
             })
             .addCase(createAccRegistrationThunk.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.error.message ?? 'Failed to create';
+                state.error = (action.payload as string) || action.error.message || 'Failed to create';
             });
     },
 });
 
-export const { setPage, setPageSize, setFilters, updateDraftFilter, applyFilters, resetFilters, setSelected, clearSelected } = accRegistrationsSlice.actions;
+export const { setPage, setPageSize, setFilters, updateDraftFilter, applyFilters, resetFilters, setSelected, clearSelected, clearError } = accRegistrationsSlice.actions;
 export default accRegistrationsSlice.reducer;

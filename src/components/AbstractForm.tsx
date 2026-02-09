@@ -1,18 +1,19 @@
-import { useState, useEffect, type FormEvent } from 'react'
+import { useState, useEffect, useRef, type FormEvent } from 'react'
 import { X, Upload, CheckCircle, AlertCircle } from 'lucide-react'
 import {
-  createAbstract,
   createAbstractWithFormDataFileUpload,
   // createAbstractWithFormDataFileUpload 
 } from '../services/abstracts'
 import { listWebsites, type SourceWebsite } from '../services/sourcedb'
 import toast from 'react-hot-toast';
+import AlertBanner from './AlertBanner';
 
 interface AbstractFormProps {
   websiteId?: number
   onClose: () => void
   onSuccess?: () => void
 }
+
 
 // All countries A-Z
 const COUNTRIES = [
@@ -78,7 +79,9 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
   const [captchaCode] = useState(() => Math.random().toString(36).substring(2, 8))
   const [submitting, setSubmitting] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [bannerError, setBannerError] = useState<string | null>(null)
   const [websites, setWebsites] = useState<SourceWebsite[]>([])
   const [webLoading, setWebLoading] = useState(false)
 
@@ -143,11 +146,16 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmitWithFileUpload = async (e: FormEvent) => {
+  // Consolidate into a single submission handler
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+
+    // Prevent double-submission
+    if (submitting) return
 
     if (!validate()) {
       toast.error('Please fix all errors before submitting')
+      formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
@@ -158,7 +166,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
       formDataToSend.append('name', `${formData.caption} ${formData.name}`)
       formDataToSend.append('email', formData.email)
-      formDataToSend.append('aemail', formData.aemail)
+      formDataToSend.append('aemail', formData.aemail || '')
       formDataToSend.append('phone', formData.phone)
       formDataToSend.append('wphone', formData.whatsapp || formData.phone)
       formDataToSend.append('country', formData.country)
@@ -166,7 +174,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
       formDataToSend.append('organization', formData.organization)
       formDataToSend.append('intrested', formData.interestedIn)
       formDataToSend.append('title', formData.title)
-      formDataToSend.append('message', formData.message)
+      formDataToSend.append('message', formData.message || '')
       formDataToSend.append('captcha', formData.captcha)
       formDataToSend.append('status_id', '1')
       formDataToSend.append('is_email_sent', 'false')
@@ -176,66 +184,10 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
       }
 
       if (formData.file) {
-        formDataToSend.append('file', formData.file) // ✅ REAL FILE
+        formDataToSend.append('file', formData.file)
       }
 
       await createAbstractWithFormDataFileUpload(formDataToSend)
-
-      toast.success('Abstract submitted successfully!')
-      onSuccess?.()
-      onClose()
-    } catch (err: unknown) {
-      console.error('Submit error:', err)
-      const axiosError = err as { response?: { data?: { message?: string; error?: string } }; message?: string }
-
-      const errorMsg =
-        axiosError?.response?.data?.message ||
-        axiosError?.response?.data?.error ||
-        axiosError?.message ||
-        'Failed to submit abstract'
-
-      toast.error(errorMsg, { duration: 5000 })
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-
-    if (!validate()) {
-      toast.error('Please fix all errors before submitting')
-      return
-    }
-
-    setSubmitting(true)
-
-    try {
-      // Create JSON payload matching the backend expected format
-      const payload = {
-        name: `${formData.caption} ${formData.name}`,
-        email: formData.email, // Add email field if you have it in the form
-        aemail: formData.aemail, // Add alternate email if you have it
-        phone: formData.phone,
-        wphone: formData.whatsapp || formData.phone,
-        country: formData.country,
-        city: formData.city,
-        organization: formData.organization,
-        intrested: formData.interestedIn,
-        title: formData.title,
-        message: formData.message || '',
-        file: formData.file?.name || '', // Send filename only
-        status_id: 1, // Default to "Under Review"
-        isEmailSent: false,
-      }
-
-      if (formData.websiteId) {
-        payload.website_id = formData.websiteId
-      }
-
-      console.log('Sending payload:', payload)
-
-      await createAbstract(payload)
 
       toast.success('Abstract submitted successfully!')
       onSuccess?.()
@@ -248,22 +200,24 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
           statusText?: string;
           data?: { message?: string; error?: string }
         };
+        code?: string;
         message?: string
       }
-      console.error('Error details:', {
-        status: axiosError?.response?.status,
-        statusText: axiosError?.response?.statusText,
-        data: axiosError?.response?.data,
-        message: axiosError?.message
-      })
 
-      const errorMsg = axiosError?.response?.data?.message
-        || axiosError?.response?.data?.error
-        || (axiosError?.response?.status === 500 ? 'Internal Server Error. Please check all required fields.' : '')
-        || axiosError?.message
-        || 'Failed to submit abstract'
-
+      let errorMsg = ''
+      // Handle common Network Error / Connection Reset issues
+      if (axiosError?.code === 'ERR_NETWORK' || axiosError?.message === 'Network Error') {
+        errorMsg = 'Server connection error. This often happens if you do not have permission to upload files.'
+      } else {
+        errorMsg = axiosError?.response?.data?.message
+          || axiosError?.response?.data?.error
+          || (axiosError?.response?.status === 500 ? 'Internal Server Error.' : '')
+          || axiosError?.message
+          || 'Failed to submit abstract'
+      }
+      setBannerError(errorMsg)
       toast.error(errorMsg, { duration: 5000 })
+      formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
     } finally {
       setSubmitting(false)
     }
@@ -271,7 +225,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl my-8">
+      <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl my-8 border-2 ${Object.keys(errors).length > 0 || !!bannerError ? 'border-red-500' : 'border-transparent'}`}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -287,7 +241,15 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+        <form ref={formRef} id="abstract-form" onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+          {bannerError && (
+            <AlertBanner
+              type="error"
+              message={bannerError}
+              onClose={() => setBannerError(null)}
+              className="mb-6"
+            />
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Caption */}
             <div>
@@ -654,7 +616,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
           </button>
           <button
             type="submit"
-            onClick={handleSubmitWithFileUpload}
+            form="abstract-form"
             disabled={submitting}
             className="px-6 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white font-semibold transition-colors flex items-center gap-2"
           >

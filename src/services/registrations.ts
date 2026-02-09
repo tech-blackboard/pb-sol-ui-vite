@@ -3,6 +3,7 @@ import { getAuthHeaders } from './abstracts';
 
 export type RegistrationItem = {
     id: number;
+    user_id?: number;
     name: string;
     email: string;
     aemail?: string;
@@ -18,11 +19,16 @@ export type RegistrationItem = {
     checkout?: string;
     nights?: string;
     accmvalue?: string;
-    acmpng?: string;
+    acmpng?: string | number;
+    accpng?: string | number;
     acc_price?: string;
     tot_price?: string;
+    message?: string;
+    alt_text?: string;
     transaction_id?: string;
     status_flag?: number;
+    status_id?: number;
+    website_id?: number;
     now?: string;
     status?: { id: number; actionType: string };
     website?: { id: number; name: string };
@@ -32,7 +38,7 @@ export type RegistrationSearchParams = {
     page?: number;
     limit?: number;
     search?: string;
-    [key: string]: any;
+    [key: string]: string | number | boolean | undefined;
 };
 
 export type RegistrationSearchResult = {

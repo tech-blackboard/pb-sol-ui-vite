@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X, User, Mail, Phone, Globe } from 'lucide-react'
+import AlertBanner from '../../../components/AlertBanner'
 import { useAppDispatch } from '../../../store/hooks'
 import { createContactThunk } from '../../../store/slices/contacts/contacts.slice'
 import { listWebsites, type SourceWebsite } from '../../../services/sourcedb'
 import toast from 'react-hot-toast'
+import type { ContactRecord } from '../../abstracts/types'
 
 const COUNTRIES = [
     'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina',
@@ -41,6 +43,7 @@ interface ContactFormProps {
 
 export default function ContactForm({ websiteId, onClose, onSuccess }: ContactFormProps) {
     const dispatch = useAppDispatch()
+    const formRef = useRef<HTMLFormElement>(null)
     const [submitting, setSubmitting] = useState(false)
     const [websites, setWebsites] = useState<SourceWebsite[]>([])
     const [webLoading, setWebLoading] = useState(false)
@@ -56,6 +59,7 @@ export default function ContactForm({ websiteId, onClose, onSuccess }: ContactFo
     })
 
     const [errors, setErrors] = useState<Record<string, string>>({})
+    const [submitError, setSubmitError] = useState<string | null>(null)
 
     useEffect(() => {
         let mounted = true
@@ -75,7 +79,7 @@ export default function ContactForm({ websiteId, onClose, onSuccess }: ContactFo
         return () => { mounted = false }
     }, [])
 
-    const handleChange = (field: string, value: any) => {
+    const handleChange = (field: string, value: string | number) => {
         setFormData((prev) => ({ ...prev, [field]: value }))
         if (errors[field]) {
             setErrors((prev) => {
@@ -103,12 +107,14 @@ export default function ContactForm({ websiteId, onClose, onSuccess }: ContactFo
         e.preventDefault()
         if (!validate()) {
             toast.error('Please fill all required fields correctly')
+            formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
             return
         }
 
         setSubmitting(true)
+        setSubmitError(null)
         try {
-            const payload = {
+            const payload: ContactRecord = {
                 ...formData,
                 website_id: Number(formData.website_id),
             }
@@ -118,10 +124,14 @@ export default function ContactForm({ websiteId, onClose, onSuccess }: ContactFo
                 onSuccess?.()
                 onClose()
             } else {
-                toast.error('Failed to add contact')
+                const errorMsg = (result.payload as string) || 'Failed to add contact';
+                setSubmitError(errorMsg);
+                toast.error(errorMsg);
+                formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
             }
         } catch (err) {
             toast.error('An error occurred')
+            console.log("Error from contact form:", err)
         } finally {
             setSubmitting(false)
         }
@@ -129,7 +139,7 @@ export default function ContactForm({ websiteId, onClose, onSuccess }: ContactFo
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-            <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl my-8 flex flex-col max-h-[90vh] border-2 ${Object.keys(errors).length > 0 ? 'border-red-500' : 'border-transparent'}`}>
+            <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl my-8 flex flex-col max-h-[90vh] border-2 ${(Object.keys(errors).length > 0 || !!submitError) ? 'border-red-500' : 'border-transparent'}`}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -141,7 +151,10 @@ export default function ContactForm({ websiteId, onClose, onSuccess }: ContactFo
                 </div>
 
                 {/* Form Body */}
-                <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6">
+                <form ref={formRef} onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6">
+                    {submitError && (
+                        <AlertBanner type="error" message={submitError} onClose={() => setSubmitError(null)} className="mb-4" />
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormInput
                             label="Name"
@@ -247,7 +260,18 @@ export default function ContactForm({ websiteId, onClose, onSuccess }: ContactFo
     )
 }
 
-function FormInput({ label, name, value, onChange, error, type = 'text', icon, placeholder }: any) {
+interface FormInputProps {
+    label?: string
+    name: string
+    value?: string | number
+    onChange: (field: string, value: string | number) => void
+    error?: string
+    type?: string
+    icon?: React.ReactNode
+    placeholder?: string
+}
+
+function FormInput({ label, name, value, onChange, error, type = 'text', icon, placeholder }: FormInputProps) {
     return (
         <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}*</label>

@@ -6,9 +6,6 @@ interface Props {
   rows: AbstractRecord[]
   rawRows: AbstractItem[]
   loading: boolean
-  error: string | null
-  errKind: 'none' | 'generic'
-  onRetry: () => void
   onView: (item: AbstractItem | undefined) => void
 }
 
@@ -16,9 +13,6 @@ export default function AbstractTable({
   rows,
   rawRows,
   loading,
-  error,
-  errKind,
-  onRetry,
   onView,
 }: Props) {
   return (
@@ -27,23 +21,23 @@ export default function AbstractTable({
         <table className="min-w-full text-left text-sm">
           <thead className="bg-gray-50 text-gray-600 sticky top-0 ">
             <tr>
-              <th className="px-4 py-3 font-medium min-w-[14rem]">Website</th>
-              <th className="px-4 py-3 font-medium min-w-[14rem]">Name</th>
-              <th className="px-4 py-3 font-medium">Email</th>
-              <th className="px-4 py-3 font-medium">Alternate Email</th>
-              <th className="px-4 py-3 font-medium min-w-[10rem]">Phone</th>
-              <th className="px-4 py-3 font-medium min-w-[10rem]">WhatsApp</th>
-              <th className="px-4 py-3 font-medium">City</th>
-              <th className="px-4 py-3 font-medium">Country</th>
-              <th className="px-4 py-3 font-medium min-w-[14rem]">University</th>
-              <th className="px-4 py-3 font-medium min-w-[14rem] overflow-hidden">Title</th>
-              <th className="px-4 py-3 font-medium min-w-[14rem] overflow-hidden">Message</th>
-              <th className="px-4 py-3 font-medium min-w-[14rem] ">Presentation</th>
-              <th className="px-4 py-3 font-medium min-w-[18rem] ">Abstract File</th>
-              <th className="px-4 py-3 font-medium">Submitted On</th>
-              <th className="px-4 py-3 font-medium min-w-[8rem] ">Email Sent</th>
-              <th className="px-4 py-3 font-medium min-w-[8rem] ">Status</th>
-              <th className="px-4 py-3 font-medium min-w-[5rem] ">Actions</th>
+              <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[5rem] ">Actions</th>
+              <th className="px-3 py-2 text-gray-700 font-semibold text-sm min-w-[14rem]">Website</th>
+              <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[14rem]">Name</th>
+              <th className="px-1 py-2  text-gray-700 font-semibold text-sm">Email</th>
+              <th className="px-4 py-2  text-gray-700 font-semibold text-sm min-w-[8rem] ">Status</th>
+              <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[8rem] ">Email Sent</th>
+              <th className="px-1 py-2  text-gray-700 font-semibold text-sm">Alternate Email</th>
+              <th className="px-4 py-2  text-gray-700 font-semibold text-sm min-w-[10rem]">Phone</th>
+              <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[10rem]">WhatsApp</th>
+              <th className="px-1 py-2 text-gray-700 font-semibold text-sm">City</th>
+              <th className="px-6 py-2  text-gray-700 font-semibold text-sm">Country</th>
+              <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[14rem]">University</th>
+              <th className="px-3 py-2  text-gray-700 font-semibold text-sm  min-w-[14rem] overflow-hidden">Title</th>
+              <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[14rem] overflow-hidden">Message</th>
+              <th className="px-3 py-2   text-gray-700 font-semibold text-sm  min-w-[14rem] ">Presentation</th>
+              <th className="px-3 py-2  text-gray-700 font-semibold text-sm  min-w-[18rem] ">Abstract File</th>
+              <th className="px-3 py-2  text-gray-700 font-semibold text-sm ">Submitted On</th>
             </tr>
           </thead>
 
@@ -56,23 +50,9 @@ export default function AbstractTable({
               </tr>
             )}
 
-            {!loading && error && errKind === 'generic' && (
-              <tr>
-                <td colSpan={17} className="px-4 py-6">
-                  <div className="flex justify-between items-center">
-                    <span className="text-red-600">{error}</span>
-                    <button
-                      onClick={onRetry}
-                      className="border px-3 py-1.5 text-xs rounded"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            )}
 
-            {!loading && !error && rows.length === 0 && (
+
+            {!loading && rows.length === 0 && (
               <tr>
                 <td colSpan={17} className="px-4 py-6 text-gray-500">
                   No records found
@@ -81,7 +61,6 @@ export default function AbstractTable({
             )}
 
             {!loading &&
-              !error &&
               rows.map((r) => {
                 const raw = rawRows.find(
                   (x) => String(x.id) === r.id

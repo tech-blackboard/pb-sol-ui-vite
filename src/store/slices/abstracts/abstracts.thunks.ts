@@ -1,4 +1,5 @@
 import { createAsyncThunk } from '@reduxjs/toolkit'
+import axios from 'axios'
 import {
   searchAbstracts,
   sendConfirmationEmail,
@@ -29,10 +30,10 @@ export const fetchAbstracts = createAsyncThunk(
       return await searchAbstracts({
         page,
         limit,
-        ...filters, // 🔥 THIS IS CRITICAL
+        ...filters,
       })
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'An unknown error occurred'
+      const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'An unknown error occurred'
       return rejectWithValue(message)
     }
   }
@@ -40,24 +41,40 @@ export const fetchAbstracts = createAsyncThunk(
 
 export const updateStatusThunk = createAsyncThunk(
   'abstracts/status',
-  async ({ id, statusId }: { id: string; statusId: number }) => {
-    return await updateAbstractStatus(id, statusId)
+  async ({ id, statusId }: { id: string; statusId: number }, { rejectWithValue }) => {
+    try {
+      return await updateAbstractStatus(id, statusId)
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to update status';
+      return rejectWithValue(message);
+    }
   }
 )
 
 export const sendInvoiceThunk = createAsyncThunk(
   'abstracts/sendInvoice',
   async (
-    { abstractId, invoiceData }: { abstractId: string; invoiceData: InvoiceData }
+    { abstractId, invoiceData }: { abstractId: string; invoiceData: InvoiceData },
+    { rejectWithValue }
   ) => {
-    return await sendInvoice(abstractId, invoiceData)
+    try {
+      return await sendInvoice(abstractId, invoiceData)
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to send invoice';
+      return rejectWithValue(message);
+    }
   }
 )
 
 export const sendPaymentReminderThunk = createAsyncThunk(
   'abstracts/paymentReminder',
-  async ({ abstractId, paymentReminderData }: { abstractId: string; paymentReminderData: PaymentReminderData }) => {
-    return await sendPaymentReminder(abstractId, paymentReminderData)
+  async ({ abstractId, paymentReminderData }: { abstractId: string; paymentReminderData: PaymentReminderData }, { rejectWithValue }) => {
+    try {
+      return await sendPaymentReminder(abstractId, paymentReminderData)
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to send payment reminder';
+      return rejectWithValue(message);
+    }
   }
 )
 export const sendPaymentReceiptThunk = createAsyncThunk(
@@ -66,25 +83,37 @@ export const sendPaymentReceiptThunk = createAsyncThunk(
     {
       abstractId,
       receiptData,
-    }: { abstractId: string; receiptData: PaymentReceiptData }) => {
-    // 1️⃣ Send receipt email
-    const receiptResult = await sendPaymentReceipt(abstractId, receiptData)
+    }: { abstractId: string; receiptData: PaymentReceiptData },
+    { rejectWithValue }
+  ) => {
+    try {
+      // 1️⃣ Send receipt email
+      const receiptResult = await sendPaymentReceipt(abstractId, receiptData)
 
-    // 2️⃣ Update status → Registered
-    const updated = await updateAbstractStatus(abstractId, STATUS_TO_ID.Registered)
+      // 2️⃣ Update status → Registered
+      const updated = await updateAbstractStatus(abstractId, STATUS_TO_ID.Registered)
 
-    return {
-      receiptResult,
-      updated,
+      return {
+        receiptResult,
+        updated,
+      }
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to send payment receipt';
+      return rejectWithValue(message);
     }
   }
 )
 
 export const sendConfirmationEmailThunk = createAsyncThunk(
   'abstracts/sendConfirmationEmail',
-  async (id: string) => {
-    const result = await sendConfirmationEmail(id)
-    return { id, message: result.message }
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const result = await sendConfirmationEmail(id)
+      return { id, message: result.message }
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to send confirmation email';
+      return rejectWithValue(message);
+    }
   }
 )
 

@@ -194,6 +194,9 @@ const abstractsSlice = createSlice({
       state.paymentReminderModal.abstractId = null
       state.paymentReminderModal.abstractName = ''
     },
+    clearError(state) {
+      state.error = null
+    },
   },
 
   extraReducers: (builder) => {
@@ -211,7 +214,7 @@ const abstractsSlice = createSlice({
       })
       .addCase(fetchAbstracts.rejected, (state, action) => {
         state.loading = false
-        state.error = action.error.message ?? 'Failed to load'
+        state.error = (action.payload as string) || action.error.message || 'Failed to load'
       })
 
       /* ---------- status update ---------- */
@@ -360,6 +363,7 @@ export const {
   closePaymentReceiptModal,
   openPaymentReminderModal,
   closePaymentReminderModal,
+  clearError,
 } = abstractsSlice.actions
 
 export default abstractsSlice.reducer

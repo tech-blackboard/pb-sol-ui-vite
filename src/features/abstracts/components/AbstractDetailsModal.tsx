@@ -1,11 +1,11 @@
 import type { AbstractItem } from '../../../services/abstracts'
-import type { AbstractRecord, AbstractStatus } from '../types'
 import { formatDate } from '../../../utils/utils'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { selectActionLoading } from '../../../store/slices/abstracts/abstracts.selectors'
 import { sendConfirmationEmailThunk } from '../../../store/slices/abstracts/abstracts.thunks'
 import { openInvoiceModal, openPaymentReceiptModal, openPaymentReminderModal } from '../../../store/slices/abstracts/abstracts.slice'
 import toast from 'react-hot-toast'
+import type { AbstractRecord, AbstractStatus } from '../types'
 
 type StatusAction = AbstractStatus
 
@@ -239,7 +239,7 @@ export default function AbstractDetailsModal({
                       (result.payload as { message: string })?.message || 'Confirmation email sent successfully!'
                     )
                   } else {
-                    toast.error('Failed to send confirmation email')
+                    toast.error((result.payload as string) || 'Failed to send confirmation email')
                   }
                 }}
                 disabled={actionLoading.confirmation}

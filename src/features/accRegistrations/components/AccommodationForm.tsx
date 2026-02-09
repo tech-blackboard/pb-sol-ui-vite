@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X, CheckCircle, Info, AlertCircle } from 'lucide-react'
+import AlertBanner from '../../../components/AlertBanner'
 import { useAppDispatch } from '../../../store/hooks'
 import { createAccRegistrationThunk } from '../../../store/slices/accRegistrations/accRegistrations.slice'
 import { listWebsites, type SourceWebsite } from '../../../services/sourcedb'
 import toast from 'react-hot-toast'
+import type { accRegistrationRecord } from '../../abstracts/types'
 
 interface AccommodationFormProps {
     websiteId?: number
@@ -49,6 +51,7 @@ const OCCUPANCY_OPTIONS = [
 
 export default function AccommodationForm({ websiteId, onClose, onSuccess }: AccommodationFormProps) {
     const dispatch = useAppDispatch()
+    const formRef = useRef<HTMLFormElement>(null)
     const [submitting, setSubmitting] = useState(false)
     const [websites, setWebsites] = useState<SourceWebsite[]>([])
     const [webLoading, setWebLoading] = useState(false)
@@ -74,6 +77,7 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
     })
 
     const [errors, setErrors] = useState<Record<string, string>>({})
+    const [submitError, setSubmitError] = useState<string | null>(null)
 
     useEffect(() => {
         let mounted = true
@@ -112,9 +116,9 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
     const internetHandlingFees = Math.round(totalAccommodationValue * 0.048)
     const totalPrice = totalAccommodationValue + internetHandlingFees
 
-    const handleChange = (field: string, value: any) => {
+    const handleChange = (field: string, value: string | number) => {
         setFormData((prev) => {
-            let newData = { ...prev, [field]: value }
+            const newData = { ...prev, [field]: value }
             return newData
         })
         if (errors[field]) {
@@ -155,15 +159,17 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
         e.preventDefault()
         if (!validate()) {
             toast.error('Please fill the missing fields correctly')
+            formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
             return
         }
 
         setSubmitting(true)
+        setSubmitError(null)
         try {
-            const payload = {
+            const payload: accRegistrationRecord = {
                 ...formData,
                 website_id: Number(formData.website_id),
-                user_id: 1,
+                user_id: 10,
                 status_id: 1,
                 status_flag: 1,
                 nights: String(currentNights),
@@ -183,10 +189,14 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
                 onSuccess?.()
                 onClose()
             } else {
-                toast.error('Failed to create registration')
+                const errorMsg = (result.payload as string) || 'Failed to create registration';
+                setSubmitError(errorMsg);
+                toast.error(errorMsg);
+                formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
             }
         } catch (err) {
             toast.error('An error occurred')
+            console.log("Error from accommodation form:", err)
         } finally {
             setSubmitting(false)
         }
@@ -194,7 +204,7 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-            <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-5xl my-8 flex flex-col max-h-[90vh] border-2 ${Object.keys(errors).length > 0 ? 'border-red-500' : 'border-transparent'}`}>
+            <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-5xl my-8 flex flex-col max-h-[90vh] border-2 ${Object.keys(errors).length > 0 || !!submitError ? 'border-red-500' : 'border-transparent'}`}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -206,7 +216,10 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
                 </div>
 
                 {/* Form Body */}
-                <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-8">
+                <form ref={formRef} onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-8">
+                    {submitError && (
+                        <AlertBanner type="error" message={submitError} onClose={() => setSubmitError(null)} className="mb-6" />
+                    )}
                     {/* Section 1: Basic Information */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-semibold uppercase tracking-wider text-sm border-b pb-2">
@@ -313,7 +326,7 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
                                 <InputField label="Check-in Date" name="checkin" type="date" value={formData.checkin} onChange={handleChange} error={errors.checkin} />
                                 <InputField label="Check-out Date" name="checkout" type="date" value={formData.checkout} onChange={handleChange} error={errors.checkout} />
                                 <InputField label="Nights" name="nights" type="number" value={currentNights} onChange={() => { }} readOnly />
-                                <InputField label="Price per Night ($)*" name="accomm" type="number" value={formData.accomm} onWheel={(e: any) => (e.target as HTMLInputElement).blur()} onChange={handleChange} error={errors.accomm} />
+                                <InputField label="Price per Night ($)*" name="accomm" type="number" value={formData.accomm} onWheel={(e: React.WheelEvent<HTMLInputElement>) => (e.target as HTMLInputElement).blur()} onChange={handleChange} error={errors.accomm} />
                             </div>
                         </div>
                     </div>
@@ -373,8 +386,18 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
     )
 }
 
+interface InputFieldProps {
+    label?: string
+    name: string
+    value?: string | number
+    onChange: (name: string, value: string) => void
+    type?: string
+    error?: string
+    readOnly?: boolean
+    onWheel?: React.WheelEventHandler<HTMLInputElement>
+}
 
-function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false, ...props }: any) {
+function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false, ...props }: InputFieldProps) {
     return (
         <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>

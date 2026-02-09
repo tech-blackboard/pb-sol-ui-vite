@@ -49,6 +49,8 @@ export type AbstractItem = {
   now?: string
   website_name?: string
   fileS3Url?: string
+  uuid?: string
+  website_id?: number | string
 }
 
 

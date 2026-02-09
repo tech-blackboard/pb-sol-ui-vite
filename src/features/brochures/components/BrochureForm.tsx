@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X, AlertCircle } from 'lucide-react'
+import AlertBanner from '../../../components/AlertBanner'
 import { useAppDispatch } from '../../../store/hooks'
 import { createBrochureThunk } from '../../../store/slices/brochures/brochures.slice'
 import { listWebsites, type SourceWebsite } from '../../../services/sourcedb'
@@ -41,6 +42,7 @@ const COUNTRIES = [
 
 export default function BrochureForm({ websiteId, onClose, onSuccess }: BrochureFormProps) {
     const dispatch = useAppDispatch()
+    const formRef = useRef<HTMLFormElement>(null)
     const [submitting, setSubmitting] = useState(false)
     const [websites, setWebsites] = useState<SourceWebsite[]>([])
     const [webLoading, setWebLoading] = useState(false)
@@ -55,6 +57,7 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
     })
 
     const [errors, setErrors] = useState<Record<string, string>>({})
+    const [submitError, setSubmitError] = useState<string | null>(null)
 
     useEffect(() => {
         let mounted = true
@@ -77,7 +80,7 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
         }
     }, [])
 
-    const handleChange = (field: string, value: any) => {
+    const handleChange = (field: string, value: string | number) => {
         setFormData((prev) => ({ ...prev, [field]: value }))
         if (errors[field]) {
             setErrors((prev) => {
@@ -106,10 +109,12 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
         e.preventDefault()
         if (!validate()) {
             toast.error('Please fill all required fields correctly')
+            formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
             return
         }
 
         setSubmitting(true)
+        setSubmitError(null)
         try {
             const payload = {
                 ...formData,
@@ -121,10 +126,14 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
                 onSuccess?.()
                 onClose()
             } else {
-                toast.error('Failed to submit brochure request')
+                const errorMsg = (result.payload as string) || 'Failed to submit brochure request';
+                setSubmitError(errorMsg);
+                toast.error(errorMsg);
+                formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
             }
         } catch (err) {
             toast.error('An error occurred')
+            console.log("Error in brochure form submission", err)
         } finally {
             setSubmitting(false)
         }
@@ -132,7 +141,7 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-            <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl my-8 flex flex-col max-h-[90vh] border-2 ${Object.keys(errors).length > 0 ? 'border-red-500' : 'border-transparent'}`}>
+            <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl my-8 flex flex-col max-h-[90vh] border-2 ${Object.keys(errors).length > 0 || !!submitError ? 'border-red-500' : 'border-transparent'}`}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 uppercase">
@@ -144,7 +153,10 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
                 </div>
 
                 {/* Form Body */}
-                <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6">
+                <form ref={formRef} onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6">
+                    {submitError && (
+                        <AlertBanner type="error" message={submitError} onClose={() => setSubmitError(null)} className="mb-4" />
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <InputField label="Name" name="name" value={formData.name} onChange={handleChange} error={errors.name} />
                         <InputField label="Email" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} />
@@ -216,7 +228,17 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
     )
 }
 
-function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false }: any) {
+interface InputFieldProps {
+    label?: string
+    name: string
+    value?: string | number
+    onChange: (field: string, value: string | number) => void
+    type?: string
+    error?: string
+    readOnly?: boolean
+}
+
+function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false }: InputFieldProps) {
     return (
         <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
@@ -228,14 +250,24 @@ function InputField({ label, name, value, onChange, type = 'text', error, readOn
     )
 }
 
-function SelectField({ label, name, value, options, onChange, error, isLoading = false }: any) {
+interface SelectFieldProps {
+    label?: string
+    name: string
+    value?: string | number
+    options?: (string | { value: string | number; label: string })[]
+    onChange: (field: string, value: string | number) => void
+    error?: string
+    isLoading?: boolean
+}
+
+function SelectField({ label, name, value, options, onChange, error, isLoading = false }: SelectFieldProps) {
     return (
         <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
             <select value={value} onChange={(e) => onChange(name, e.target.value)} disabled={isLoading}
                 className={`w-full px-4 py-2.5 rounded-lg border ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 outline-none`}>
                 <option value="">{label}</option>
-                {options.map((opt: any) => (
+                {options?.map((opt) => (
                     <option key={typeof opt === 'string' ? opt : opt.value} value={typeof opt === 'string' ? opt : opt.value}>
                         {typeof opt === 'string' ? opt : opt.label}
                     </option>

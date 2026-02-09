@@ -1,7 +1,6 @@
-import { useState } from 'react'
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
-import { fetchBrochures, setPage, setPageSize, setSelected, clearSelected } from '../../../store/slices/brochures/brochures.slice'
+import { fetchBrochures, setPage, setPageSize, setSelected, clearSelected, clearError } from '../../../store/slices/brochures/brochures.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import BrochureTable from '../components/BrochureTable'
 import BrochureDetailsModal from '../components/BrochureDetailsModal'
@@ -30,6 +29,8 @@ export default function BrochuresPage() {
                 onFilterClick={() => setFiltersOpen(true)}
                 onAddClick={() => setFormOpen(true)}
                 addButtonText="Add Brochure"
+                error={error}
+                onClearError={() => dispatch(clearError())}
             />
 
             {filtersOpen && (
@@ -49,8 +50,6 @@ export default function BrochuresPage() {
             <BrochureTable
                 rows={items}
                 loading={loading}
-                error={error}
-                onRetry={() => dispatch(fetchBrochures({ filters: appliedFilters, page, limit: pageSize }))}
                 onView={(item) => dispatch(setSelected(item))}
             />
 

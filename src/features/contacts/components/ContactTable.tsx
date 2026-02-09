@@ -1,61 +1,61 @@
 import { formatDate } from '../../../utils/utils';
+import type { ContactItem } from '../../../services/contacts';
 
 interface ContactRowProps {
-    item: any;
+    item: ContactItem;
     onView: () => void;
 }
 
 function ContactRow({ item, onView }: ContactRowProps) {
     return (
         <tr className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-            <td className="px-3 py-1 text-gray-700" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
-            <td className="px-3 py-1 text-gray-900 font-medium whitespace-nowrap" title={item.name}>{item.name}</td>
-            <td className="px-3 py-1" title={item.email}>
-                <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">{item.email}</a>
-            </td>
-            <td className="px-3 py-1 text-gray-700 whitespace-nowrap" title={item.phone}>{item.phone}</td>
-            <td className="px-3 py-1 text-gray-700" title={item.country ? item.country : '—'}>{item.country ? item.country : '—'}</td>
-            <td className="px-3 py-1 text-gray-700 min-w-[14rem] max-w-[14rem] truncate" title={item.message}>{item.message}</td>
-            <td className="px-3 py-1 text-gray-700 whitespace-nowrap" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
-            <td className="px-3 py-1 whitespace-nowrap">
+            <td className="px-3 py-1 ">
                 <button
                     onClick={onView}
-                    className="p-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
+                    className="p-1 rounded-md border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
                     title="View Details"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
                 </button>
             </td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.website?.name ?? '—'}>{item.website?.name ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-900 font-medium max-w-[14rem] truncate" title={item.name}>{item.name}</td>
+            <td className="px-3 py-1" title={item.email}>
+                <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">{item.email}</a>
+            </td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[14rem]" title={item.phone}>{item.phone}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[14rem]" title={item.country ? item.country : '—'}>{item.country ? item.country : '—'}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[14rem]" title={item.message}>{item.message}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[20rem]" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
+
         </tr>
     );
 }
 
 interface Props {
-    rows: any[];
+    rows: ContactItem[];
     loading: boolean;
-    error: string | null;
-    onRetry: () => void;
-    onView: (item: any) => void;
+    onView: (item: ContactItem) => void;
 }
 
-export default function ContactTable({ rows, loading, error, onRetry, onView }: Props) {
+export default function ContactTable({ rows, loading, onView }: Props) {
     return (
         <div className="relative flex-1 min-h-0 rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden flex flex-col">
             <div className="overflow-x-auto overflow-y-auto h-full scrollbar-thin">
                 <table className="min-w-full text-left text-sm border-collapse">
                     <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10 border-b border-gray-200">
                         <tr>
-                            <th className="px-4 py-3 font-semibold min-w-[16rem]">Website Name</th>
-                            <th className="px-4 py-3 font-semibold min-w-[10rem]">Name</th>
-                            <th className="px-4 py-3 font-semibold min-w-[12rem]">Email</th>
-                            <th className="px-4 py-3 font-semibold min-w-[8rem]">Phone</th>
-                            <th className="px-4 py-3 font-semibold min-w-[8rem]">Country</th>
-                            <th className="px-4 py-3 font-semibold min-w-[14rem]">Message</th>
-                            <th className="px-4 py-3 font-semibold min-w-[10rem]">Submitted On</th>
-                            <th className="px-4 py-3 font-semibold min-w-[5rem]">Actions</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[5rem]">Actions</th>
+                            <th className="px-3 py-2  text-gray-700 font-semibold min-w-[16rem]">Website Name</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[10rem]">Name</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[12rem]">Email</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[8rem]">Phone</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[8rem]">Country</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[14rem]">Message</th>
+                            <th className="px-3 py-2 text-gray-700 font-semibold min-w-[10rem]">Submitted On</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
@@ -72,22 +72,13 @@ export default function ContactTable({ rows, loading, error, onRetry, onView }: 
                                 </td>
                             </tr>
                         )}
-                        {!loading && error && (
-                            <tr>
-                                <td colSpan={9} className="px-4 py-10 text-center text-red-500">
-                                    <div className="flex flex-col items-center gap-2">
-                                        <span>{error}</span>
-                                        <button onClick={onRetry} className="text-sm font-medium text-purple-600 hover:text-purple-700">Retry</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        )}
-                        {!loading && !error && rows.length === 0 && (
+
+                        {!loading && rows.length === 0 && (
                             <tr>
                                 <td colSpan={9} className="px-4 py-4 text-left text-gray-400">No requests found</td>
                             </tr>
                         )}
-                        {!loading && !error && rows.map((row) => (
+                        {!loading && rows.map((row) => (
                             <ContactRow key={row.id} item={row} onView={() => onView(row)} />
                         ))}
                     </tbody>

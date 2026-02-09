@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import { searchContacts, createContact } from '../../../services/contacts';
+import axios from 'axios';
+import { searchContacts, createContact, type ContactItem } from '../../../services/contacts';
 
 export interface ContactFilters {
     search?: string;
@@ -13,7 +14,7 @@ export interface ContactFilters {
 }
 
 export interface ContactsState {
-    items: any[];
+    items: ContactItem[];
     loading: boolean;
     error: string | null;
     page: number;
@@ -21,24 +22,33 @@ export interface ContactsState {
     total: number;
     draftFilters: ContactFilters;
     appliedFilters: ContactFilters;
-    selected: any | null;
+    selected: ContactItem | null;
 }
 
 export const fetchContacts = createAsyncThunk(
     'contacts/fetch',
-    async (params: { page: number; limit: number; filters: ContactFilters }) => {
-        return await searchContacts({
-            page: params.page,
-            limit: params.limit,
-            ...params.filters,
-        });
+    async (params: { page: number; limit: number; filters: ContactFilters }, { rejectWithValue }) => {
+        try {
+            return await searchContacts({
+                page: params.page,
+                limit: params.limit,
+                ...params.filters,
+            });
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to load contacts');
+        }
     }
 );
 
 export const createContactThunk = createAsyncThunk(
     'contacts/create',
-    async (payload: any) => {
-        return await createContact(payload);
+    async (payload: Partial<ContactItem>, { rejectWithValue }) => {
+        try {
+            return await createContact(payload);
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to create contact';
+            return rejectWithValue(message);
+        }
     }
 );
 
@@ -70,7 +80,10 @@ const contactsSlice = createSlice({
             state.draftFilters = action.payload;
             state.page = 1;
         },
-        updateDraftFilter(state, action: PayloadAction<{ key: keyof ContactFilters; value: any }>) {
+        updateDraftFilter<K extends keyof ContactFilters>(
+            state: ContactsState,
+            action: PayloadAction<{ key: K; value: ContactFilters[K] }>
+        ) {
             state.draftFilters[action.payload.key] = action.payload.value;
         },
         applyFilters(state) {
@@ -83,11 +96,14 @@ const contactsSlice = createSlice({
             state.appliedFilters = initialFilters;
             state.page = 1;
         },
-        setSelected(state, action: PayloadAction<any>) {
+        setSelected(state, action: PayloadAction<ContactItem | null>) {
             state.selected = action.payload;
         },
         clearSelected(state) {
             state.selected = null;
+        },
+        clearError(state) {
+            state.error = null;
         }
     },
     extraReducers: (builder) => {
@@ -102,7 +118,7 @@ const contactsSlice = createSlice({
             })
             .addCase(fetchContacts.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.error.message ?? 'Failed to load';
+                state.error = (action.payload as string) || action.error.message || 'Failed to load';
             })
             .addCase(createContactThunk.fulfilled, (state, { payload }) => {
                 state.items = [payload, ...state.items];
@@ -111,5 +127,5 @@ const contactsSlice = createSlice({
     },
 });
 
-export const { setPage, setPageSize, setFilters, updateDraftFilter, applyFilters, resetFilters, setSelected, clearSelected } = contactsSlice.actions;
+export const { setPage, setPageSize, setFilters, updateDraftFilter, applyFilters, resetFilters, setSelected, clearSelected, clearError } = contactsSlice.actions;
 export default contactsSlice.reducer;
