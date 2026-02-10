@@ -168,12 +168,12 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
 
             // Prevent negative values for participants
             if (field === 'participants') {
-                const num = parseInt(value)
+                const num = parseInt(String(value))
                 if (num < 1) newData.participants = '1'
             }
 
             // Auto-update regtype when presentation changes
-            if (field === 'presentation' && REGISTRATION_FEES[value]) {
+            if (field === 'presentation' && typeof value === 'string' && REGISTRATION_FEES[value]) {
                 const fee = String(REGISTRATION_FEES[value])
                 newData.regtype = fee
                 newData.reg_price = fee
@@ -523,7 +523,7 @@ function InputField({ label, name, value, onChange, type = 'text', error, readOn
     return (
         <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-            <input type={type} value={value} onChange={(e) => onChange(name, e.target.value)} readOnly={readOnly} onWheel={props.onWheel}
+            <input type={type} value={value} onChange={(e) => onChange(name, e.target.value)} readOnly={readOnly} onWheel={onWheel}
                 className={`w-full px-4 py-2 rounded-lg border ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500 outline-none`} />
             {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
         </div>
@@ -555,5 +555,61 @@ function SelectField({ label, name, value, options, onChange, error, isLoading =
             </select>
             {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
         </div>
+    )
+}
+                </form >
+            </div >
+        </div >
+    )
+}
+
+interface InputFieldProps {
+    label?: string
+    name: string
+    value?: string | number
+    onChange: (name: string, value: string) => void
+    type?: string
+    error?: string
+    readOnly?: boolean
+    onWheel?: React.WheelEventHandler<HTMLInputElement>
+}
+
+function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false, ...props }: InputFieldProps) {
+    return (
+        <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+            <input type={type} value={value} onChange={(e) => onChange(name, e.target.value)} readOnly={readOnly} onWheel={onWheel}
+                className={`w-full px-4 py-2 rounded-lg border ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500 outline-none`} />
+            {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+        </div>
+    )
+}
+
+interface SelectFieldProps {
+    label?: string
+    name: string
+    value?: string | number
+    options: string[] | { value: string | number; label: string }[]
+    onChange: (name: string, value: string) => void
+    error?: string
+    isLoading?: boolean
+}
+
+function SelectField({ label, name, value, options, onChange, error, isLoading = false }: SelectFieldProps) {
+    return (
+        <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+            <select value={value} onChange={(e) => onChange(name, e.target.value)} disabled={isLoading}
+                className={`w-full px-4 py-2 rounded-lg border ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500 outline-none`}>
+                <option value="">Select Option</option>
+                {
+                    options.map((opt) => (
+                        <option key={typeof opt === 'string' ? opt : opt.value} value={typeof opt === 'string' ? opt : opt.value}>
+                            {typeof opt === 'string' ? opt : opt.label}
+                        </option>
+                    ))}
+            </select>
+            {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+        </div >
     )
 }

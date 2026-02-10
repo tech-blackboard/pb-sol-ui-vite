@@ -131,9 +131,8 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
                 toast.error(errorMsg);
                 formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
             }
-        } catch (err) {
+        } catch {
             toast.error('An error occurred')
-            console.log("Error in brochure form submission", err)
         } finally {
             setSubmitting(false)
         }

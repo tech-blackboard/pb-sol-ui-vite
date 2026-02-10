@@ -6,6 +6,7 @@ interface Props {
     onClose: () => void
 }
 
+
 export default function ContactDetailsModal({ item, onClose }: Props) {
     if (!item) return null
 

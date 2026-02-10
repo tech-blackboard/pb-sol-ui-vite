@@ -130,7 +130,7 @@ export default function SponsorshipForm({ websiteId, onClose, onSuccess }: Spons
                 toast.error(errorMsg);
                 formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
             }
-        } catch (err) {
+        } catch {
             toast.error('An error occurred')
             console.log("Error in sponsorship form submission", err)
         } finally {

@@ -1,6 +1,6 @@
 import { api } from '../lib/api';
 import { getAuthHeaders } from './abstracts';
-
+import { SPONSORSHIP_BASE } from '../config/env';
 export type SponsorshipItem = {
     id?: number;
     name?: string;
@@ -28,7 +28,7 @@ export type SponsorshipSearchResult = {
     limit: number;
 };
 
-const VITE_SPONSORSHIP_BASE = import.meta.env.VITE_SPONSORSHIP_BASE;
+// const VITE_SPONSORSHIP_BASE = import.meta.env.VITE_SPONSORSHIP_BASE;
 
 export async function searchSponsorships(params: SponsorshipSearchParams = {}): Promise<SponsorshipSearchResult> {
     const { data } = await api.get(`${VITE_SPONSORSHIP_BASE}/search`, {
@@ -54,7 +54,7 @@ export async function createSponsorship(payload: Partial<SponsorshipItem>): Prom
 }
 
 export async function deleteSponsorship(id: number | string): Promise<void> {
-    await api.delete(`${VITE_SPONSORSHIP_BASE}/${id}`, {
+    await api.delete(`${SPONSORSHIP_BASE}/${id}`, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });

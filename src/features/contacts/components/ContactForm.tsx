@@ -129,9 +129,8 @@ export default function ContactForm({ websiteId, onClose, onSuccess }: ContactFo
                 toast.error(errorMsg);
                 formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
             }
-        } catch (err) {
+        } catch {
             toast.error('An error occurred')
-            console.log("Error from contact form:", err)
         } finally {
             setSubmitting(false)
         }

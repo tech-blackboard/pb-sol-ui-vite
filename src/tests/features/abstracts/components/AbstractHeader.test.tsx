@@ -83,6 +83,9 @@ describe('AbstractHeader', () => {
   /* -------------------------------------------------- */
 
   test('dispatches fetchAbstracts on mount', () => {
+    const mockAction = { type: 'abstracts/fetch/pending', payload: undefined }
+      ; (fetchAbstracts as jest.Mock).mockReturnValue(mockAction)
+
     render(<AbstractHeader />)
 
     expect(fetchAbstracts).toHaveBeenCalledWith({
@@ -91,7 +94,7 @@ describe('AbstractHeader', () => {
       limit: 10,
     })
 
-    expect(dispatchMock).toHaveBeenCalled()
+    expect(dispatchMock).toHaveBeenCalledWith(mockAction)
   })
 
   /* -------------------------------------------------- */

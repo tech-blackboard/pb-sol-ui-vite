@@ -49,7 +49,7 @@ export default function AccRegistrationFiltersDrawer({ open, onClose }: Props) {
             <aside className="absolute right-0 top-0 h-full w-full max-w-md bg-white border-l shadow-xl flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-                    <h3 className="text-base font-semibold">Accommodation Registrations Filters</h3>
+                    <h3 className="text-base font-semibold">Accommodation Registration Filters</h3>
                     <button onClick={onClose} className="h-9 w-9 rounded hover:bg-gray-100">
                         ✕
                     </button>

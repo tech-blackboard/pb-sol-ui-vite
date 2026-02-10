@@ -1,6 +1,6 @@
 import { api } from '../lib/api';
 import { getAuthHeaders } from './abstracts';
-
+import { REGISTRATION_BASE } from '../config/env';
 export type RegistrationItem = {
     id: number;
     user_id?: number;
@@ -48,10 +48,10 @@ export type RegistrationSearchResult = {
     limit: number;
 };
 
-const VITE_REGISTRATION_BASE = import.meta.env.VITE_REGISTRATION_BASE;
+// const VITE_REGISTRATION_BASE = import.meta.env.VITE_REGISTRATION_BASE;
 
 export async function searchRegistrations(params: RegistrationSearchParams = {}): Promise<RegistrationSearchResult> {
-    const { data } = await api.get(`${VITE_REGISTRATION_BASE}/search`, {
+    const { data } = await api.get(`${REGISTRATION_BASE}/search`, {
         params,
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
@@ -66,7 +66,7 @@ export async function searchRegistrations(params: RegistrationSearchParams = {})
 }
 
 export async function getRegistrationById(id: number | string): Promise<RegistrationItem> {
-    const { data } = await api.get(`${VITE_REGISTRATION_BASE}/${id}`, {
+    const { data } = await api.get(`${REGISTRATION_BASE}/${id}`, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });
@@ -74,14 +74,14 @@ export async function getRegistrationById(id: number | string): Promise<Registra
 }
 
 export async function deleteRegistration(id: number | string): Promise<void> {
-    await api.delete(`${VITE_REGISTRATION_BASE}/${id}`, {
+    await api.delete(`${REGISTRATION_BASE}/${id}`, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });
 }
 
 export async function createRegistration(data: Partial<RegistrationItem>): Promise<RegistrationItem> {
-    const { data: result } = await api.post(`${VITE_REGISTRATION_BASE}`, data, {
+    const { data: result } = await api.post(`${REGISTRATION_BASE}`, data, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });
