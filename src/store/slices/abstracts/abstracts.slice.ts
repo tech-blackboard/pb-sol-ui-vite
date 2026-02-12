@@ -224,18 +224,20 @@ const abstractsSlice = createSlice({
       .addCase(updateStatusThunk.fulfilled, (state, { payload }) => {
         state.actionLoading.status = false
 
+        const { updatedAbstract } = payload
+
         const idx = state.rawItems.findIndex(
-          (x) => String(x.id) === String(payload.id)
+          (x) => String(x.id) === String(updatedAbstract.id)
         )
 
         if (idx !== -1) {
-          state.rawItems[idx] = payload
-          state.items[idx] = normalizeAbstract(payload)
+          state.rawItems[idx] = updatedAbstract
+          state.items[idx] = normalizeAbstract(updatedAbstract)
         }
 
         // 🔥 keep modal + table in sync
-        state.selected = payload
-        state.modalStatus = (payload.status?.actionType ?? payload.status ?? 'Under Review') as AbstractStatus
+        state.selected = updatedAbstract
+        state.modalStatus = (updatedAbstract.status?.actionType ?? updatedAbstract.status ?? 'Under Review') as AbstractStatus
       })
       .addCase(updateStatusThunk.rejected, (state) => {
         state.actionLoading.status = false
@@ -289,18 +291,18 @@ const abstractsSlice = createSlice({
       .addCase(sendPaymentReceiptThunk.fulfilled, (state, { payload }) => {
         state.actionLoading.receipt = false
 
-        const updated = payload.updated
+        const { updatedAbstract } = payload.updated
 
         const idx = state.rawItems.findIndex(
-          (x) => String(x.id) === String(updated.id)
+          (x) => String(x.id) === String(updatedAbstract.id)
         )
 
         if (idx !== -1) {
-          state.rawItems[idx] = updated
-          state.items[idx] = normalizeAbstract(updated)
+          state.rawItems[idx] = updatedAbstract
+          state.items[idx] = normalizeAbstract(updatedAbstract)
         }
 
-        state.selected = updated
+        state.selected = updatedAbstract
         state.modalStatus = 'Registered'
 
         state.paymentReceiptModal.open = false

@@ -70,6 +70,15 @@ export default function AbstractsPage() {
 
     if (updateStatusThunk.fulfilled.match(result)) {
       toast.success(`Status updated to ${modalStatus}`)
+
+      // Show WhatsApp success toast if message was sent
+      if (result.payload.whatsappSent) {
+        const phoneNumber = viewItem.wphone || viewItem.phone || '';
+        toast.success(`WhatsApp message sent successfully to ${phoneNumber}`, {
+          duration: 5000,
+          icon: '📱',
+        });
+      }
     } else {
       const errorMsg = (result.payload as string) || 'Failed to update status';
       toast.error(errorMsg);
@@ -102,7 +111,7 @@ export default function AbstractsPage() {
     )
 
     if (updateStatusThunk.fulfilled.match(statusResult)) {
-      toast.success(` Invoice sent successfully to ${statusResult.payload.email}`)
+      toast.success(` Invoice sent successfully to ${statusResult.payload.updatedAbstract.email}`)
       setTimeout(() => {
         toast.success('Status updated to Sent Invoice')
       }, 500)
