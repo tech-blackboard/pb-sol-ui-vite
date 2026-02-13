@@ -26,9 +26,9 @@ function ContactRow({ item, onView }: ContactRowProps) {
             <td className="px-3 py-1" title={item.email}>
                 <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">{item.email}</a>
             </td>
-            <td className="px-3 py-1 text-gray-700 truncate max-w-[14rem]" title={item.phone}>{item.phone}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[14rem]" title={item.phone ? item.phone : '—'}>{item.phone ? item.phone : '—'}</td>
             <td className="px-3 py-1 text-gray-700 truncate max-w-[14rem]" title={item.country ? item.country : '—'}>{item.country ? item.country : '—'}</td>
-            <td className="px-3 py-1 text-gray-700 truncate max-w-[14rem]" title={item.message}>{item.message}</td>
+            <td className="px-3 py-1 text-gray-700 truncate max-w-[14rem]" title={item.message ? item.message : '—'}>{item.message ? item.message : '—'}</td>
             <td className="px-3 py-1 text-gray-700 truncate max-w-[20rem]" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
 
         </tr>

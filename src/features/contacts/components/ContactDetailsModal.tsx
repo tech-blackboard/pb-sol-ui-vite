@@ -38,7 +38,7 @@ export default function ContactDetailsModal({ item, onClose }: Props) {
                                 </a>
                             }
                         />
-                        <Field label="Phone" value={item.phone ?? '—'} />
+                        <Field label="Phone" value={item.phone ? item.phone : '—'} />
                         <Field label="Country" value={item.country ? item.country : '—'} />
                         <Field label="Submitted On" value={item.now ? formatDate(item.now) : '—'} />
                     </div>

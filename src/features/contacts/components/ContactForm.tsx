@@ -95,7 +95,6 @@ export default function ContactForm({ websiteId, onClose, onSuccess }: ContactFo
         if (!formData.name.trim()) newErrors.name = 'Name is required'
         if (!formData.email.trim()) newErrors.email = 'Email is required'
         else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Invalid email format'
-        if (!formData.phone.trim()) newErrors.phone = 'Phone is required'
         if (!formData.country.trim()) newErrors.country = 'Country is required'
         if (!formData.website_id) newErrors.website_id = 'Website is required'
 
@@ -274,7 +273,7 @@ interface FormInputProps {
 function FormInput({ label, name, value, onChange, error, type = 'text', icon, placeholder }: FormInputProps) {
     return (
         <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}*</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
             <div className="relative">
                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400">
                     {icon}
