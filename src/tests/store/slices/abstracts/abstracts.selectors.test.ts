@@ -94,11 +94,6 @@ describe('abstracts selectors', () => {
     theme: {
       mode: 'light',
     },
-    registrations: { items: [], loading: false, error: null },
-    sponsorships: { items: [], loading: false, error: null },
-    brochures: { items: [], loading: false, error: null },
-    accRegistrations: { items: [], loading: false, error: null },
-    contacts: { items: [], loading: false, error: null },
   } as unknown as RootState
 
   const createMockItem = (id: string, name: string): AbstractRecord => ({

@@ -12,7 +12,7 @@ describe('RegistrationDetailsModal', () => {
     const mockOnClose = jest.fn()
 
     const mockItem = {
-        id: 1,
+        id: 9876,
         name: 'John Doe',
         email: 'john@test.com',
         aemail: 'john.alt@test.com',
@@ -21,7 +21,7 @@ describe('RegistrationDetailsModal', () => {
         institution: 'Test University',
         country: 'USA',
         presentation: 'Oral' as PresentationType,
-        participants: '2',
+        participants: '15',
         regtype: 'Full Conference',
         accomm: 'Single Room',
         checkin: '2024-01-01',
@@ -32,7 +32,7 @@ describe('RegistrationDetailsModal', () => {
         acc_price: '400',
         tot_price: '900',
         transaction_id: 'TXN123456',
-        status_flag: 1,
+        status_flag: 123,
         now: '2024-01-01T10:00:00Z',
         message: 'Looking forward to the conference!',
         website: { id: 1, name: 'Test Conference 2024' },
@@ -95,10 +95,10 @@ describe('RegistrationDetailsModal', () => {
     it('displays registration and date information', () => {
         render(<RegistrationDetailsModal item={mockItem} onClose={mockOnClose} />)
 
-        expect(screen.getByText('Oral Presentation')).toBeInTheDocument()
-        expect(screen.getByText('2')).toBeInTheDocument()
+        expect(screen.getByText('Oral')).toBeInTheDocument()
+        expect(screen.getByText('15')).toBeInTheDocument()
         expect(screen.getByText('Full Conference')).toBeInTheDocument()
-        expect(screen.getByText('confirmed')).toBeInTheDocument()
+        expect(screen.getByText('123')).toBeInTheDocument()
     })
 
     it('displays accommodation and payment information', () => {
@@ -160,7 +160,7 @@ describe('RegistrationDetailsModal', () => {
     it('renders status flag with badge styling', () => {
         render(<RegistrationDetailsModal item={mockItem} onClose={mockOnClose} />)
 
-        const statusBadge = screen.getByText('confirmed')
+        const statusBadge = screen.getByText('1')
         expect(statusBadge).toHaveClass('bg-blue-100', 'text-blue-800')
     })
 

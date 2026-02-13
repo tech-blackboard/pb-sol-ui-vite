@@ -28,6 +28,10 @@ describe('AbstractForm', () => {
   const onClose = jest.fn()
   const onSuccess = jest.fn()
 
+  beforeAll(() => {
+    Element.prototype.scrollTo = jest.fn()
+  })
+
   beforeEach(() => {
     jest.clearAllMocks()
   })

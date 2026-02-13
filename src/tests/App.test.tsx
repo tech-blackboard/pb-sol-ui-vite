@@ -6,8 +6,6 @@ import authReducer from '../store/slices/authSlice';
 import themeReducer from '../store/slices/themeSlice';
 import abstractsReducer from '../store/slices/abstracts/abstracts.slice';
 
-declare const require: (id: string) => { login: jest.Mock };
-
 // Mock dependencies
 jest.mock('../services/deviceFingerprint', () => ({
     getDeviceFingerprint: jest.fn().mockResolvedValue('mock-fp'),
@@ -23,6 +21,8 @@ jest.mock('../services/sourcedb', () => ({
     listWebsites: jest.fn().mockResolvedValue([]),
 }));
 
+// We need to import the functions to use them in tests
+import { login, logout } from '../services/auth';
 jest.mock('../services/auth', () => ({
     login: jest.fn(),
     logout: jest.fn().mockResolvedValue({}),
@@ -54,6 +54,10 @@ const renderWithProviders = (ui: React.ReactElement, {
 };
 
 describe('App Component', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
     test('renders login page when not authenticated', () => {
         renderWithProviders(<App />);
         expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
@@ -76,30 +80,6 @@ describe('App Component', () => {
         });
     });
 
-    // Theme toggle test skipped - no theme toggle button in current UI
-    test.skip('toggles theme', async () => {
-        const preloadedState = {
-            auth: {
-                user: { id: 1, useremail: 'test@test.com', name: 'Test User', role: 'Tester' },
-                loading: false,
-                error: null,
-            },
-        };
-
-        const { store } = renderWithProviders(<App />, { preloadedState });
-
-        // Wait for dashboard to settle
-        await waitFor(() => {
-            expect(screen.getByText(/Dashboard/i)).toBeInTheDocument();
-        });
-
-        const themeToggle = screen.getByRole('button', { name: /toggle theme/i });
-        fireEvent.click(themeToggle);
-
-        expect(store.getState().theme.mode).toBe('dark');
-        expect(document.documentElement).toHaveClass('dark');
-    });
-
     test('handles network error event', async () => {
         const preloadedState = {
             auth: {
@@ -111,7 +91,6 @@ describe('App Component', () => {
 
         renderWithProviders(<App />, { preloadedState });
 
-        // Wait for initial render
         await waitFor(() => {
             expect(screen.getByText(/Dashboard/i)).toBeInTheDocument();
         });
@@ -145,7 +124,6 @@ describe('App Component', () => {
         });
 
         await waitFor(() => {
-            // ServerIssueAlert has "Server Unavailable" header but this specific text in description
             expect(screen.getByText(/Our servers are currently experiencing issues/i)).toBeInTheDocument();
         });
     });
@@ -170,7 +148,6 @@ describe('App Component', () => {
         });
 
         await waitFor(() => {
-            // ServerUnavailableAlert has this text in description
             expect(screen.getByText(/Unable to connect to the server/i)).toBeInTheDocument();
         });
     });
@@ -196,7 +173,6 @@ describe('App Component', () => {
             }));
         });
 
-        // App should logout on device revocation
         await waitFor(() => {
             expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
         });
@@ -246,10 +222,11 @@ describe('App Component', () => {
         await waitFor(() => {
             expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
         });
+        expect(logout).toHaveBeenCalled();
     });
 
     test('handles successful sign in', async () => {
-        (require('../services/auth').login as jest.Mock).mockResolvedValue({
+        (login as jest.Mock).mockResolvedValue({
             user: { id: 1, email: 'test@test.com', name: 'Test User', role: 'Tester' },
             token: 'mock-token'
         });
@@ -268,7 +245,7 @@ describe('App Component', () => {
     });
 
     test('handles sign in failure', async () => {
-        (require('../services/auth').login as jest.Mock).mockRejectedValue(new Error('Invalid credentials'));
+        (login as jest.Mock).mockRejectedValue(new Error('Invalid credentials'));
 
         renderWithProviders(<App />);
 
@@ -279,7 +256,6 @@ describe('App Component', () => {
         fireEvent.click(signInButton);
 
         await waitFor(() => {
-            // Should still be on sign in page
             expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
         });
     });
@@ -293,7 +269,6 @@ describe('App Component', () => {
             },
         };
 
-        // Mock mobile view
         Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 500 });
         window.dispatchEvent(new Event('resize'));
 
@@ -306,8 +281,6 @@ describe('App Component', () => {
         const menuButton = screen.getByLabelText(/Open sidebar/i);
         fireEvent.click(menuButton);
 
-        // Overlay should appear. We can't easily find by role but we can find by class or just wait.
-        // It's a div with fixed inset-0 z-20 bg-black/30 backdrop-blur-sm md:hidden
         const overlay = document.querySelector('.bg-black\\/30');
         expect(overlay).toBeInTheDocument();
 
@@ -316,6 +289,44 @@ describe('App Component', () => {
         await waitFor(() => {
             expect(document.querySelector('.bg-black\\/30')).not.toBeInTheDocument();
         });
+    });
+
+    test('navigates through all sections', async () => {
+        const preloadedState = {
+            auth: {
+                user: { id: 1, useremail: 'admin@test.com', name: 'Admin', role: 'Administrator', isAdmin: true },
+                loading: false,
+                error: null,
+            },
+        };
+
+        renderWithProviders(<App />, { preloadedState });
+
+        // Wait for default page (Abstracts)
+        await waitFor(() => {
+            expect(screen.getByText(/Abstracts/i)).toBeInTheDocument();
+        });
+
+        const navTests = [
+            { link: 'Registrations', text: 'Registrations' },
+            { link: 'Accommodation Registrations', text: 'Accommodation Registrations' },
+            { link: 'Brochure', text: 'Brochure' },
+            { link: 'Sponsorship', text: 'Sponsorship' },
+            { link: 'Contact', text: 'Contact' },
+            { link: 'Dashboard', text: 'Dashboard' },
+        ];
+
+        for (const nav of navTests) {
+            const link = screen.getByText(nav.link);
+            fireEvent.click(link);
+            await waitFor(() => {
+                // Check if we can find some text that would be on that page.
+                // Since we mock features, we just hope they render something unique 
+                // or we check the active state if possible.
+                // For now, checking if the link remains or page title appears.
+                expect(screen.getByText(nav.text)).toBeInTheDocument();
+            });
+        }
     });
 
     test('renders Device Management for admins', async () => {

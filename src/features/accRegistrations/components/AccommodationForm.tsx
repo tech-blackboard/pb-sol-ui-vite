@@ -196,7 +196,7 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
             }
         } catch {
             toast.error('An error occurred')
-            console.log("Error from accommodation form:", err)
+
         } finally {
             setSubmitting(false)
         }
@@ -228,10 +228,11 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <label htmlFor="caption-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Caption*
                                 </label>
                                 <select
+                                    id="caption-select"
                                     value={formData.caption}
                                     onChange={(e) => handleChange('caption', e.target.value)}
                                     className={`w-full px-4 py-2.5 rounded-lg border ${errors.caption
@@ -262,10 +263,11 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
 
                             <SelectField label="Country*" name="country" value={formData.country} options={COUNTRIES} onChange={handleChange} error={errors.country} /> */}
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <label htmlFor="website-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Website/Conference*
                                 </label>
                                 <select
+                                    id="website-select"
                                     value={formData.website_id || ''}
                                     onChange={(e) => handleChange('website_id', e.target.value)}
                                     disabled={webLoading}
@@ -397,12 +399,19 @@ interface InputFieldProps {
     onWheel?: React.WheelEventHandler<HTMLInputElement>
 }
 
-function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false, ...props }: InputFieldProps) {
+function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false, onWheel }: InputFieldProps) {
     return (
         <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-            <input type={type} value={value} onChange={(e) => onChange(name, e.target.value)} readOnly={readOnly} onWheel={onWheel}
-                className={`w-full px-4 py-2.5 rounded-lg border ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 outline-none`} />
+            <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+            <input
+                id={name}
+                type={type}
+                value={value}
+                onChange={(e) => onChange(name, e.target.value)}
+                readOnly={readOnly}
+                onWheel={onWheel}
+                className={`w-full px-4 py-2.5 rounded-lg border ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 outline-none`}
+            />
             {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
         </div>
     )

@@ -19,7 +19,7 @@ import {
     closePaymentReceiptModal,
     closePaymentReminderModal,
 } from '../../../../store/slices/abstracts/abstracts.slice'
-import { toast } from 'react-hot-toast'
+import toast from 'react-hot-toast'
 import type { AbstractItem } from '../../../../services/abstracts'
 import type { AbstractRecord } from '../../../../features/abstracts/types'
 
@@ -60,7 +60,8 @@ jest.mock('../../../../store/slices/abstracts/abstracts.slice', () => ({
 }))
 
 jest.mock('react-hot-toast', () => ({
-    toast: {
+    __esModule: true,
+    default: {
         success: jest.fn(),
         error: jest.fn(),
     },

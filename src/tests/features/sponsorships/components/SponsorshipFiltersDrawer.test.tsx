@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import SponsorshipFiltersDrawer from '../../../../features/sponsorships/components/SponsorshipFiltersDrawer'
 import '@testing-library/jest-dom'
 import { Provider } from 'react-redux'
@@ -27,15 +27,23 @@ describe('SponsorshipFiltersDrawer', () => {
         expect(container.firstChild).toBeNull()
     })
 
-    it('renders drawer', () => {
+    it('renders drawer', async () => {
         const store = createMockStore()
         render(<Provider store={store}><SponsorshipFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
-        expect(screen.getByText('Sponsorship Filters')).toBeInTheDocument()
+
+        await waitFor(() => {
+            expect(screen.getByText('Sponsorship Filters')).toBeInTheDocument()
+        })
     })
 
-    it('calls onClose', () => {
+    it('calls onClose', async () => {
         const store = createMockStore()
         render(<Provider store={store}><SponsorshipFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
+
+        await waitFor(() => {
+            expect(screen.getByText('Sponsorship Filters')).toBeInTheDocument()
+        })
+
         fireEvent.click(screen.getByText('✕'))
         expect(mockOnClose).toHaveBeenCalled()
     })

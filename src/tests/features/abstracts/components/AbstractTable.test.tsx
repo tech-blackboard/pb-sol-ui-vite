@@ -47,16 +47,31 @@ describe('AbstractTable', () => {
     ).toBeInTheDocument()
   })
 
+  /* ---------------- headers ---------------- */
+  test('renders all table headers', () => {
+    render(<AbstractTable {...baseProps} />)
+
+    expect(screen.getByText('Website')).toBeInTheDocument()
+    expect(screen.getByText('Name')).toBeInTheDocument()
+    expect(screen.getByText('Email')).toBeInTheDocument()
+    expect(screen.getByText('Status')).toBeInTheDocument()
+    expect(screen.getByText('Email Sent')).toBeInTheDocument()
+    expect(screen.getByText('Phone')).toBeInTheDocument()
+    expect(screen.getByText('WhatsApp')).toBeInTheDocument()
+    expect(screen.getByText('Country')).toBeInTheDocument()
+    expect(screen.getByText('Submitted On')).toBeInTheDocument()
+  })
+
   /* ---------------- rows rendering ---------------- */
-  test('renders rows and passes correct raw record', () => {
+  test('renders rows and passes correct raw record even with ID type differences', () => {
     const rows = [
       { id: '1', name: 'John Doe' },
       { id: '2', name: 'Jane Doe' },
     ] as import('../../../../features/abstracts/types').AbstractRecord[]
 
     const rawRows = [
-      { id: '1', extra: 'raw-1' },
-      { id: '2', extra: 'raw-2' },
+      { id: 1, extra: 'raw-1' }, // numeric ID
+      { id: '2', extra: 'raw-2' }, // string ID
     ] as unknown as import('../../../../services/abstracts').AbstractItem[]
 
     render(
@@ -69,6 +84,8 @@ describe('AbstractTable', () => {
 
     expect(screen.getByTestId('row-1')).toBeInTheDocument()
     expect(screen.getByTestId('row-2')).toBeInTheDocument()
+    expect(screen.getByText('John Doe')).toBeInTheDocument()
+    expect(screen.getByText('Jane Doe')).toBeInTheDocument()
   })
 
   /* ---------------- onView callback ---------------- */

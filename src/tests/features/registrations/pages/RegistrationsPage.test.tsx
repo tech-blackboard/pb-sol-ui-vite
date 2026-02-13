@@ -1,33 +1,46 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import RegistrationsPage from '../../../../features/registrations/pages/RegistrationsPage'
 import '@testing-library/jest-dom'
 import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
 import registrationsReducer from '../../../../store/slices/registrations/registrations.slice'
+import type { RegistrationsState } from '../../../../store/slices/registrations/registrations.types'
+import type { RegistrationItem } from '../../../../services/registrations'
 
 // Mock child components
 jest.mock('../../../../features/registrations/components/RegistrationHeader', () => ({
     __esModule: true,
-    default: () => <div data-testid="registration-header">Registration Header</div>,
+    default: ({ error, onClearError }: { error: string | null, onClearError: () => void }) => (
+        <div data-testid="registration-header">
+            Registration Header
+            {error && (
+                <div>
+                    <span>{error}</span>
+                    <button onClick={onClearError}>Clear Error</button>
+                </div>
+            )}
+        </div>
+    ),
 }))
 
 jest.mock('../../../../features/registrations/components/RegistrationTable', () => ({
     __esModule: true,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    default: ({ rows, loading, error }: Record<string, any>) => (
+    default: ({ rows, loading, error, onView }: { rows: RegistrationItem[], loading: boolean, error: string | null, onView: (item: RegistrationItem) => void }) => (
         <div data-testid="registration-table">
             {loading && <div>Loading...</div>}
             {error && <div>{error}</div>}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            {rows.map((row: Record<string, any>) => <div key={row.id}>{row.name}</div>)}
+            {rows.map((row) => (
+                <div key={row.id} onClick={() => onView?.(row)}>
+                    {row.name}
+                </div>
+            ))}
         </div>
     ),
 }))
 
 jest.mock('../../../../features/registrations/components/RegistrationDetailsModal', () => ({
     __esModule: true,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    default: ({ item, onClose }: Record<string, any>) => (
+    default: ({ item, onClose }: { item: RegistrationItem | null, onClose: () => void }) => (
         <div data-testid="details-modal">
             {item?.name}
             <button onClick={onClose}>Close</button>
@@ -37,8 +50,7 @@ jest.mock('../../../../features/registrations/components/RegistrationDetailsModa
 
 jest.mock('../../../../features/abstracts/components/AbstractPagination', () => ({
     __esModule: true,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    default: ({ page, total }: Record<string, any>) => (
+    default: ({ page, total }: { page: number, total: number }) => (
         <div data-testid="pagination">Page {page} of {total}</div>
     ),
 }))
@@ -93,7 +105,7 @@ const createMockStore = (initialState = {}) => {
                 draftFilters: {},
                 selected: null,
                 ...initialState,
-            },
+            } as unknown as RegistrationsState,
         },
     })
 }
@@ -140,7 +152,9 @@ describe('RegistrationsPage', () => {
         )
 
         // Change page
-        store.dispatch({ type: 'registrations/setPage', payload: 2 })
+        await act(async () => {
+            store.dispatch({ type: 'registrations/setPage', payload: 2 })
+        })
 
         rerender(
             <Provider store={store}>
@@ -156,8 +170,8 @@ describe('RegistrationsPage', () => {
     it('displays registration items', () => {
         const store = createMockStore({
             items: [
-                { id: 1, name: 'John Doe' },
-                { id: 2, name: 'Jane Smith' },
+                { id: 101, name: 'Unique John' },
+                { id: 102, name: 'Unique Jane' },
             ],
         })
 
@@ -167,8 +181,8 @@ describe('RegistrationsPage', () => {
             </Provider>
         )
 
-        expect(screen.getByText('John Doe')).toBeInTheDocument()
-        expect(screen.getByText('Jane Smith')).toBeInTheDocument()
+        expect(screen.getByText('Unique John')).toBeInTheDocument()
+        expect(screen.getByText('Unique Jane')).toBeInTheDocument()
     })
 
     it('does not render details modal when no item selected', () => {
@@ -224,7 +238,7 @@ describe('RegistrationsPage', () => {
         expect(screen.getByText('Loading...')).toBeInTheDocument()
     })
 
-    it.skip('shows error state', () => {
+    it('shows error state', () => {
         const store = createMockStore({ error: 'Failed to load data' })
         render(
             <Provider store={store}>
@@ -233,5 +247,32 @@ describe('RegistrationsPage', () => {
         )
 
         expect(screen.getByText('Failed to load data')).toBeInTheDocument()
+    })
+
+    it('sets selected item when table row is clicked', async () => {
+        const store = createMockStore({
+            items: [{ id: 101, name: 'Selectable John' }],
+        })
+        render(
+            <Provider store={store}>
+                <RegistrationsPage />
+            </Provider>
+        )
+
+        fireEvent.click(screen.getByText('Selectable John'))
+
+        expect(store.getState().registrations.selected).toEqual({ id: 101, name: 'Selectable John' })
+    })
+
+    it('clears error when requested', () => {
+        const store = createMockStore({ error: 'Some error' })
+        render(
+            <Provider store={store}>
+                <RegistrationsPage />
+            </Provider>
+        )
+
+        fireEvent.click(screen.getByLabelText('Close alert'))
+        expect(store.getState().registrations.error).toBeNull()
     })
 })

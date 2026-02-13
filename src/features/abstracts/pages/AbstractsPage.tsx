@@ -53,6 +53,10 @@ export default function AbstractsPage() {
     dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }))
   }, [page, pageSize, appliedFilters, dispatch])
 
+  const refreshData = async () => {
+    dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }))
+  }
+
   async function handleUpdateStatus() {
     if (!viewItem || !modalStatus) return
 
@@ -166,6 +170,7 @@ export default function AbstractsPage() {
         rawRows={rawItems}
         loading={loading}
         onView={(item) => item && dispatch(setSelected(item))}
+        onRetry={refreshData}
       />
       <AbstractPagination
         totalPages={Math.ceil(total / pageSize)}

@@ -20,8 +20,12 @@ jest.mock('../../../../features/abstracts/components/AbstractPagination', () => 
 jest.mock('../../../../store/slices/contacts/contacts.slice', () => {
     const actual = jest.requireActual('../../../../store/slices/contacts/contacts.slice')
     return {
+        __esModule: true,
         ...actual,
-        fetchContacts: jest.fn(() => ({ type: 'contacts/fetch/pending' })),
+        fetchContacts: Object.assign(
+            jest.fn(() => ({ type: 'contacts/fetch/pending' })),
+            actual.fetchContacts
+        )
     }
 })
 
@@ -29,7 +33,20 @@ import { fetchContacts } from '../../../../store/slices/contacts/contacts.slice'
 
 const createMockStore = (initialState = {}) => configureStore({
     reducer: { contacts: contactsReducer },
-    preloadedState: { contacts: { items: [], loading: false, error: null, page: 1, pageSize: 10, total: 0, appliedFilters: {}, draftFilters: {}, selected: null, ...initialState } },
+    preloadedState: {
+        contacts: {
+            items: [],
+            loading: false,
+            error: null,
+            page: 1,
+            pageSize: 10,
+            total: 0,
+            appliedFilters: { search: '', sortBy: 'now', sortOrder: 'DESC' as const },
+            draftFilters: { search: '', sortBy: 'now', sortOrder: 'DESC' as const },
+            selected: null,
+            ...initialState
+        }
+    },
 })
 
 describe('ContactsPage', () => {

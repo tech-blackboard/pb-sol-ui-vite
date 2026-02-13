@@ -20,15 +20,32 @@ jest.mock('../../../../features/abstracts/components/AbstractPagination', () => 
 jest.mock('../../../../store/slices/sponsorships/sponsorships.slice', () => {
     const actual = jest.requireActual('../../../../store/slices/sponsorships/sponsorships.slice')
     return {
+        __esModule: true,
         ...actual,
-        fetchSponsorships: jest.fn(() => ({ type: 'sponsorships/fetch/pending' })),
+        fetchSponsorships: Object.assign(
+            jest.fn(() => ({ type: 'sponsorships/fetch/pending' })),
+            actual.fetchSponsorships
+        ),
     }
 })
 
 
 const createMockStore = (initialState = {}) => configureStore({
     reducer: { sponsorships: sponsorshipsReducer },
-    preloadedState: { sponsorships: { items: [], loading: false, error: null, page: 1, pageSize: 10, total: 0, appliedFilters: {}, draftFilters: {}, selected: null, ...initialState } },
+    preloadedState: {
+        sponsorships: {
+            items: [],
+            loading: false,
+            error: null,
+            page: 1,
+            pageSize: 10,
+            total: 0,
+            appliedFilters: { search: '', sortBy: 'now', sortOrder: 'DESC' as const },
+            draftFilters: { search: '', sortBy: 'now', sortOrder: 'DESC' as const },
+            selected: null,
+            ...initialState,
+        },
+    },
 })
 
 describe('SponsorshipsPage', () => {

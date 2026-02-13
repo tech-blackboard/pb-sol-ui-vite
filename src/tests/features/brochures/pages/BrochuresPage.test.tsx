@@ -4,19 +4,19 @@ import '@testing-library/jest-dom'
 import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
 import brochuresReducer, { fetchBrochures } from '../../../../store/slices/brochures/brochures.slice'
+import type { BrochureItem } from '../../../../services/brochures'
 
 jest.mock('../../../../features/brochures/components/BrochureTable', () => ({
     __esModule: true,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    default: ({ rows, loading }: Record<string, any>) => (
-        <div data-testid="brochure-table">{loading ? 'Loading...' : rows.map((r: Record<string, any>) => <div key={r.id}>{r.name}</div>)}</div>
+    default: ({ rows, loading }: { rows: BrochureItem[], loading: boolean }) => (
+        <div data-testid="brochure-table">{loading ? 'Loading...' : rows.map((r) => <div key={r.id}>{r.name}</div>)}</div>
     ),
 }))
 
 jest.mock('../../../../features/brochures/components/BrochureDetailsModal', () => ({
     __esModule: true,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    default: ({ item }: Record<string, any>) => <div data-testid="details-modal">{item?.name}</div>,
+
+    default: ({ item }: { item: BrochureItem | null }) => <div data-testid="details-modal">{item?.name}</div>,
 }))
 
 jest.mock('../../../../features/abstracts/components/AbstractPagination', () => ({
@@ -27,8 +27,12 @@ jest.mock('../../../../features/abstracts/components/AbstractPagination', () => 
 jest.mock('../../../../store/slices/brochures/brochures.slice', () => {
     const actual = jest.requireActual('../../../../store/slices/brochures/brochures.slice')
     return {
+        __esModule: true,
         ...actual,
-        fetchBrochures: jest.fn(() => ({ type: 'brochures/fetch/pending' })),
+        fetchBrochures: Object.assign(
+            jest.fn(() => ({ type: 'brochures/fetch/pending' })),
+            actual.fetchBrochures
+        ),
     }
 })
 
@@ -43,8 +47,8 @@ const createMockStore = (initialState = {}) => configureStore({
             page: 1,
             pageSize: 10,
             total: 0,
-            appliedFilters: {},
-            draftFilters: {},
+            appliedFilters: { search: '', sortBy: 'now', sortOrder: 'DESC' as const },
+            draftFilters: { search: '', sortBy: 'now', sortOrder: 'DESC' as const },
             selected: null,
             ...initialState,
         },

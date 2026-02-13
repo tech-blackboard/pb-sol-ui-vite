@@ -31,7 +31,7 @@ export type SponsorshipSearchResult = {
 // const VITE_SPONSORSHIP_BASE = import.meta.env.VITE_SPONSORSHIP_BASE;
 
 export async function searchSponsorships(params: SponsorshipSearchParams = {}): Promise<SponsorshipSearchResult> {
-    const { data } = await api.get(`${VITE_SPONSORSHIP_BASE}/search`, {
+    const { data } = await api.get(`${SPONSORSHIP_BASE}/search`, {
         params,
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
@@ -46,7 +46,7 @@ export async function searchSponsorships(params: SponsorshipSearchParams = {}): 
 }
 
 export async function createSponsorship(payload: Partial<SponsorshipItem>): Promise<SponsorshipItem> {
-    const { data } = await api.post(`${VITE_SPONSORSHIP_BASE}`, payload, {
+    const { data } = await api.post(`${SPONSORSHIP_BASE}`, payload, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });
