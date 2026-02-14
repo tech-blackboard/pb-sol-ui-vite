@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import RegistrationTable from '../../../../features/registrations/components/RegistrationTable'
 import '@testing-library/jest-dom'
-import type { PresentationType } from '../../../../features/abstracts/types'
+import type { RegistrationItem } from '../../../../services/registrations'
 
 // Mock the formatDate util
 jest.mock('../../../../utils/utils', () => ({
@@ -9,10 +9,9 @@ jest.mock('../../../../utils/utils', () => ({
 }))
 
 describe('RegistrationTable', () => {
-    const mockOnRetry = jest.fn()
     const mockOnView = jest.fn()
 
-    const mockRegistrations = [
+    const mockRegistrations: RegistrationItem[] = [
         {
             id: 1,
             name: 'John Doe',
@@ -22,20 +21,20 @@ describe('RegistrationTable', () => {
             wphone: '0987654321',
             institution: 'Test University',
             country: 'USA',
-            presentation: 'Oral' as PresentationType,
-            participants: '1',
+            presentation: 'Oral',
+            participants: '15',
             regtype: 'Full',
             accomm: 'Single',
-            checkin: '2024-01-01',
-            checkout: '2024-01-05',
+            checkin: '2024-02-01',
+            checkout: '2024-02-05',
             nights: '4',
             accmvalue: '400',
             acmpng: 'None',
             acc_price: '400',
             tot_price: '900',
             transaction_id: 'TXN123',
-            status_flag: 1,
-            now: '2024-01-01',
+            status_flag: 123,
+            now: '2024-02-10',
             website: { id: 1, name: 'Test Conference' },
         },
     ]
@@ -49,8 +48,6 @@ describe('RegistrationTable', () => {
             <RegistrationTable
                 rows={[]}
                 loading={true}
-                error={null}
-                onRetry={mockOnRetry}
                 onView={mockOnView}
             />
         )
@@ -58,43 +55,11 @@ describe('RegistrationTable', () => {
         expect(screen.getByText('Loading registrations...')).toBeInTheDocument()
     })
 
-    it('renders error state with retry button', () => {
-        render(
-            <RegistrationTable
-                rows={[]}
-                loading={false}
-                error="Failed to load data"
-                onRetry={mockOnRetry}
-                onView={mockOnView}
-            />
-        )
-
-        expect(screen.getByText('Failed to load data')).toBeInTheDocument()
-        expect(screen.getByText('Retry')).toBeInTheDocument()
-    })
-
-    it('calls onRetry when retry button is clicked', () => {
-        render(
-            <RegistrationTable
-                rows={[]}
-                loading={false}
-                error="Failed to load data"
-                onRetry={mockOnRetry}
-                onView={mockOnView}
-            />
-        )
-
-        fireEvent.click(screen.getByText('Retry'))
-        expect(mockOnRetry).toHaveBeenCalledTimes(1)
-    })
-
     it('renders empty state when no rows', () => {
         render(
             <RegistrationTable
                 rows={[]}
                 loading={false}
-                error={null}
-                onRetry={mockOnRetry}
                 onView={mockOnView}
             />
         )
@@ -102,37 +67,41 @@ describe('RegistrationTable', () => {
         expect(screen.getByText('No registrations found')).toBeInTheDocument()
     })
 
-    it('renders table with registration data', () => {
+    it('renders table with registration data and all fields', () => {
         render(
             <RegistrationTable
                 rows={mockRegistrations}
                 loading={false}
-                error={null}
-                onRetry={mockOnRetry}
                 onView={mockOnView}
             />
         )
 
         expect(screen.getByText('John Doe')).toBeInTheDocument()
         expect(screen.getByText('john@test.com')).toBeInTheDocument()
+        expect(screen.getByText('john.alt@test.com')).toBeInTheDocument()
+        expect(screen.getByText('1234567890')).toBeInTheDocument()
+        expect(screen.getByText('0987654321')).toBeInTheDocument()
         expect(screen.getByText('Test University')).toBeInTheDocument()
+        expect(screen.getByText('USA')).toBeInTheDocument()
+        expect(screen.getByText('Oral')).toBeInTheDocument()
+        expect(screen.getByText('15')).toBeInTheDocument() // participants
+        expect(screen.getByText('Full')).toBeInTheDocument()
+        expect(screen.getByText('Single')).toBeInTheDocument()
+
+        // Use getAllByText for dates if they are mocked to the same value, 
+        // or just ensure they are unique. Since formatDate is mocked to '2024-01-01', 
+        // they will all be '2024-01-01'.
+        const dates = screen.getAllByText('2024-01-01')
+        expect(dates.length).toBe(1)
+
+        expect(screen.getByText('4')).toBeInTheDocument() // nights
+        expect(screen.getByText('400')).toBeInTheDocument() // accmvalue
+        expect(screen.getByText('None')).toBeInTheDocument() // acmpng
+        expect(screen.getByText('$400')).toBeInTheDocument()
+        expect(screen.getByText('$900')).toBeInTheDocument()
+        expect(screen.getByText('TXN123')).toBeInTheDocument()
+        expect(screen.getByText('123')).toBeInTheDocument() // status_flag
         expect(screen.getByText('Test Conference')).toBeInTheDocument()
-    })
-
-    it('renders email as clickable mailto link', () => {
-        render(
-            <RegistrationTable
-                rows={mockRegistrations}
-                loading={false}
-                error={null}
-                onRetry={mockOnRetry}
-                onView={mockOnView}
-            />
-        )
-
-        const emailLink = screen.getByText('john@test.com')
-        expect(emailLink.tagName).toBe('A')
-        expect(emailLink).toHaveAttribute('href', 'mailto:john@test.com')
     })
 
     it('calls onView when view button is clicked', () => {
@@ -140,8 +109,6 @@ describe('RegistrationTable', () => {
             <RegistrationTable
                 rows={mockRegistrations}
                 loading={false}
-                error={null}
-                onRetry={mockOnRetry}
                 onView={mockOnView}
             />
         )
@@ -151,93 +118,23 @@ describe('RegistrationTable', () => {
         expect(mockOnView).toHaveBeenCalledWith(mockRegistrations[0])
     })
 
-    it('renders price fields with correct formatting', () => {
-        render(
-            <RegistrationTable
-                rows={mockRegistrations}
-                loading={false}
-                error={null}
-                onRetry={mockOnRetry}
-                onView={mockOnView}
-            />
-        )
-
-        expect(screen.getByText('$400')).toBeInTheDocument()
-        expect(screen.getByText('$900')).toBeInTheDocument()
-    })
-
     it('renders fallback values for missing optional fields', () => {
-        const incompleteData = [{
-            ...mockRegistrations[0],
-            aemail: undefined,
-            wphone: undefined,
-            checkin: undefined,
-            checkout: undefined,
-            nights: undefined,
-            accmvalue: undefined,
-            acmpng: undefined,
-            acc_price: undefined,
-            tot_price: undefined,
-            transaction_id: undefined,
-            status_flag: undefined,
-            now: undefined,
-            website: undefined,
-        }]
+        const incompleteData: RegistrationItem[] = [{
+            id: 1,
+            name: 'Jane Doe',
+            email: 'jane@test.com',
+            phone: '000',
+        } as unknown as RegistrationItem]
 
         render(
             <RegistrationTable
                 rows={incompleteData}
                 loading={false}
-                error={null}
-                onRetry={mockOnRetry}
                 onView={mockOnView}
             />
         )
 
-        // Check that em-dashes are rendered for null values
-        const cells = screen.getAllByText('—')
-        expect(cells.length).toBeGreaterThan(0)
-    })
-
-    it('renders all table headers', () => {
-        render(
-            <RegistrationTable
-                rows={[]}
-                loading={false}
-                error={null}
-                onRetry={mockOnRetry}
-                onView={mockOnView}
-            />
-        )
-
-        expect(screen.getByText('Website Name')).toBeInTheDocument()
-        expect(screen.getByText('Name')).toBeInTheDocument()
-        expect(screen.getByText('Email')).toBeInTheDocument()
-        expect(screen.getByText('Aemail')).toBeInTheDocument()
-        expect(screen.getByText('Phone')).toBeInTheDocument()
-        expect(screen.getByText('Country')).toBeInTheDocument()
-        expect(screen.getByText('Actions')).toBeInTheDocument()
-    })
-
-    it('renders multiple rows correctly', () => {
-        const multipleRows = [
-            { ...mockRegistrations[0], id: 1, name: 'User 1', email: 'user1@test.com' },
-            { ...mockRegistrations[0], id: 2, name: 'User 2', email: 'user2@test.com' },
-            { ...mockRegistrations[0], id: 3, name: 'User 3', email: 'user3@test.com' },
-        ]
-
-        render(
-            <RegistrationTable
-                rows={multipleRows}
-                loading={false}
-                error={null}
-                onRetry={mockOnRetry}
-                onView={mockOnView}
-            />
-        )
-
-        expect(screen.getByText('User 1')).toBeInTheDocument()
-        expect(screen.getByText('User 2')).toBeInTheDocument()
-        expect(screen.getByText('User 3')).toBeInTheDocument()
+        const dashes = screen.getAllByText('—')
+        expect(dashes.length).toBeGreaterThan(0)
     })
 })

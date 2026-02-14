@@ -71,9 +71,9 @@ describe('DeviceManagement Page', () => {
 
     it('handles device revocation', async () => {
         render(<DeviceManagement />)
-        await waitFor(() => expect(screen.getByText('Revoke')).toBeInTheDocument())
+        await waitFor(() => expect(screen.getByTitle('Revoke')).toBeInTheDocument())
 
-        fireEvent.click(screen.getByText('Revoke'))
+        fireEvent.click(screen.getByTitle('Revoke'))
 
         await waitFor(() => {
             expect(deviceService.revokeDevice).toHaveBeenCalledWith('2')
@@ -83,10 +83,10 @@ describe('DeviceManagement Page', () => {
 
     it('handles device deletion through confirmation modal', async () => {
         render(<DeviceManagement />)
-        await waitFor(() => expect(screen.getAllByText('Delete')[0]).toBeInTheDocument())
+        await waitFor(() => expect(screen.getAllByTitle('Delete')[0]).toBeInTheDocument())
 
         // Click delete button in row
-        const deleteButtons = screen.getAllByRole('button', { name: /Delete/i })
+        const deleteButtons = screen.getAllByTitle('Delete')
         fireEvent.click(deleteButtons[0])
 
         // Verify modal appears

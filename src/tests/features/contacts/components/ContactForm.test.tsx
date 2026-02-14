@@ -20,6 +20,9 @@ describe('ContactForm', () => {
     beforeEach(() => {
         jest.clearAllMocks()
             ; (listWebsites as jest.Mock).mockResolvedValue([{ id: 1, name: 'Test Conf' }])
+
+        // Mock scrollTo for JSDOM
+        Element.prototype.scrollTo = jest.fn()
     })
 
     const renderForm = (props = {}) => {

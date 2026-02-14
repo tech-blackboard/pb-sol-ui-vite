@@ -30,7 +30,7 @@ export type ContactSearchResult = {
 // const VITE_CONTACT_BASE = import.meta.env.VITE_CONTACT_BASE;
 
 export async function searchContacts(params: ContactSearchParams = {}): Promise<ContactSearchResult> {
-    const { data } = await api.get(`${VITE_CONTACT_BASE}/search`, {
+    const { data } = await api.get(`${CONTACT_BASE}/search`, {
         params,
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
@@ -45,7 +45,7 @@ export async function searchContacts(params: ContactSearchParams = {}): Promise<
 }
 
 export async function createContact(payload: Partial<ContactItem>): Promise<ContactItem> {
-    const { data } = await api.post(`${VITE_CONTACT_BASE}`, payload, {
+    const { data } = await api.post(`${CONTACT_BASE}`, payload, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });

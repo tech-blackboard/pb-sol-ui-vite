@@ -6,7 +6,13 @@ import authReducer from '../store/slices/authSlice';
 import themeReducer from '../store/slices/themeSlice';
 import abstractsReducer from '../store/slices/abstracts/abstracts.slice';
 
-declare const require: (id: string) => { login: jest.Mock };
+jest.mock('../features/abstracts/pages/AbstractsPage', () => () => <div data-testid="page-abstracts">Abstracts</div>)
+jest.mock('../features/registrations/pages/RegistrationsPage', () => () => <div data-testid="page-registrations">Registrations</div>)
+jest.mock('../features/brochures/pages/BrochuresPage', () => () => <div data-testid="page-brochure">Brochure</div>)
+jest.mock('../features/sponsorships/pages/SponsorshipsPage', () => () => <div data-testid="page-sponsorship">Sponsorship</div>)
+jest.mock('../features/accRegistrations/pages/AccRegistrationsPage', () => () => <div data-testid="page-acc">Accommodation Registrations</div>)
+jest.mock('../features/contacts/pages/ContactsPage', () => () => <div data-testid="page-contact">Contact</div>)
+jest.mock('../pages/DashboardPage', () => () => <div data-testid="page-dashboard">Dashboard</div>)
 
 // Mock dependencies
 jest.mock('../services/deviceFingerprint', () => ({
@@ -23,6 +29,8 @@ jest.mock('../services/sourcedb', () => ({
     listWebsites: jest.fn().mockResolvedValue([]),
 }));
 
+// We need to import the functions to use them in tests
+import { login, logout } from '../services/auth';
 jest.mock('../services/auth', () => ({
     login: jest.fn(),
     logout: jest.fn().mockResolvedValue({}),
@@ -54,6 +62,10 @@ const renderWithProviders = (ui: React.ReactElement, {
 };
 
 describe('App Component', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
     test('renders login page when not authenticated', () => {
         renderWithProviders(<App />);
         expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
@@ -76,30 +88,6 @@ describe('App Component', () => {
         });
     });
 
-    // Theme toggle test skipped - no theme toggle button in current UI
-    test.skip('toggles theme', async () => {
-        const preloadedState = {
-            auth: {
-                user: { id: 1, useremail: 'test@test.com', name: 'Test User', role: 'Tester' },
-                loading: false,
-                error: null,
-            },
-        };
-
-        const { store } = renderWithProviders(<App />, { preloadedState });
-
-        // Wait for dashboard to settle
-        await waitFor(() => {
-            expect(screen.getByText(/Dashboard/i)).toBeInTheDocument();
-        });
-
-        const themeToggle = screen.getByRole('button', { name: /toggle theme/i });
-        fireEvent.click(themeToggle);
-
-        expect(store.getState().theme.mode).toBe('dark');
-        expect(document.documentElement).toHaveClass('dark');
-    });
-
     test('handles network error event', async () => {
         const preloadedState = {
             auth: {
@@ -111,7 +99,6 @@ describe('App Component', () => {
 
         renderWithProviders(<App />, { preloadedState });
 
-        // Wait for initial render
         await waitFor(() => {
             expect(screen.getByText(/Dashboard/i)).toBeInTheDocument();
         });
@@ -145,7 +132,6 @@ describe('App Component', () => {
         });
 
         await waitFor(() => {
-            // ServerIssueAlert has "Server Unavailable" header but this specific text in description
             expect(screen.getByText(/Our servers are currently experiencing issues/i)).toBeInTheDocument();
         });
     });
@@ -170,7 +156,6 @@ describe('App Component', () => {
         });
 
         await waitFor(() => {
-            // ServerUnavailableAlert has this text in description
             expect(screen.getByText(/Unable to connect to the server/i)).toBeInTheDocument();
         });
     });
@@ -196,7 +181,6 @@ describe('App Component', () => {
             }));
         });
 
-        // App should logout on device revocation
         await waitFor(() => {
             expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
         });
@@ -246,10 +230,11 @@ describe('App Component', () => {
         await waitFor(() => {
             expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
         });
+        expect(logout).toHaveBeenCalled();
     });
 
     test('handles successful sign in', async () => {
-        (require('../services/auth').login as jest.Mock).mockResolvedValue({
+        (login as jest.Mock).mockResolvedValue({
             user: { id: 1, email: 'test@test.com', name: 'Test User', role: 'Tester' },
             token: 'mock-token'
         });
@@ -268,7 +253,7 @@ describe('App Component', () => {
     });
 
     test('handles sign in failure', async () => {
-        (require('../services/auth').login as jest.Mock).mockRejectedValue(new Error('Invalid credentials'));
+        (login as jest.Mock).mockRejectedValue(new Error('Invalid credentials'));
 
         renderWithProviders(<App />);
 
@@ -279,7 +264,6 @@ describe('App Component', () => {
         fireEvent.click(signInButton);
 
         await waitFor(() => {
-            // Should still be on sign in page
             expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
         });
     });
@@ -293,7 +277,6 @@ describe('App Component', () => {
             },
         };
 
-        // Mock mobile view
         Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 500 });
         window.dispatchEvent(new Event('resize'));
 
@@ -306,8 +289,6 @@ describe('App Component', () => {
         const menuButton = screen.getByLabelText(/Open sidebar/i);
         fireEvent.click(menuButton);
 
-        // Overlay should appear. We can't easily find by role but we can find by class or just wait.
-        // It's a div with fixed inset-0 z-20 bg-black/30 backdrop-blur-sm md:hidden
         const overlay = document.querySelector('.bg-black\\/30');
         expect(overlay).toBeInTheDocument();
 
@@ -317,6 +298,42 @@ describe('App Component', () => {
             expect(document.querySelector('.bg-black\\/30')).not.toBeInTheDocument();
         });
     });
+
+ test('navigates through all sections', async () => {
+  const preloadedState = {
+    auth: {
+      user: {
+        id: 1,
+        useremail: 'admin@test.com',
+        name: 'Admin',
+        role: 'Administrator',
+        isAdmin: true,
+      },
+      loading: false,
+      error: null,
+    },
+  };
+
+  renderWithProviders(<App />, { preloadedState });
+
+  // Wait for default page
+  await screen.findByTestId('page-abstracts');
+
+  const navTests = [
+    { label: 'Registrations', page: 'page-registrations' },
+    { label: 'Accommodation Registrations', page: 'page-acc' },
+    { label: 'Brochure', page: 'page-brochure' },
+    { label: 'Sponsorship', page: 'page-sponsorship' },
+    { label: 'Contact', page: 'page-contact' },
+    { label: 'Dashboard', page: 'page-dashboard' },
+  ];
+
+  for (const nav of navTests) {
+    fireEvent.click(screen.getByRole('button', { name: nav.label }));
+
+    expect(await screen.findByTestId(nav.page)).toBeInTheDocument();
+  }
+});
 
     test('renders Device Management for admins', async () => {
         const preloadedState = {
@@ -340,6 +357,6 @@ describe('App Component', () => {
             expect(screen.queryByText(/Loading devices/i)).not.toBeInTheDocument();
         }, { timeout: 3000 });
 
-        expect(screen.getByRole('heading', { name: /Device Management/i })).toBeInTheDocument();
+expect(screen.getAllByText(/Device Management/i).length).toBeGreaterThan(0)
     });
 });

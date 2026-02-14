@@ -58,7 +58,7 @@ export interface RegistrationRecord {
   wphone?: string;
   institution: string;
   country: string;
-  presentation: PresentationType
+  presentation: string;
   participants: string;
   reg_price: string;
   regtype: string;
@@ -89,7 +89,7 @@ export interface accRegistrationRecord {
   wphone?: string;
   institution?: string;
   country: string;
-  presentation?: PresentationType
+  presentation?: string;
   participants?: string;
   regtype?: string;
   accomm?: string;

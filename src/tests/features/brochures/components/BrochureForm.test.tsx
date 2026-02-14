@@ -25,6 +25,10 @@ describe('BrochureForm', () => {
     const mockOnClose = jest.fn()
     const mockOnSuccess = jest.fn()
 
+    beforeAll(() => {
+        Element.prototype.scrollTo = jest.fn()
+    })
+
     beforeEach(() => {
         jest.clearAllMocks()
             ; (listWebsites as jest.Mock).mockResolvedValue([{ id: 1, name: 'Test Conf' }])

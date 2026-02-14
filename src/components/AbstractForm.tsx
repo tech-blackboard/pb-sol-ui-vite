@@ -253,10 +253,11 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Caption */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="Caption" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Caption*
               </label>
               <select
+                id="Caption"
                 value={formData.caption}
                 onChange={(e) => handleChange('caption', e.target.value)}
                 className={`w-full px-4 py-2.5 rounded-lg border ${errors.caption
@@ -272,7 +273,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 ))}
               </select>
               {errors.caption && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <p role="alert" className="mt-1 text-sm text-red-600 flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
                   {errors.caption}
                 </p>
@@ -280,10 +281,11 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
             </div>
             {/* Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="Name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Name*
               </label>
               <input
+                id="Name"
                 type="text"
                 placeholder="Name"
                 value={formData.name}
@@ -294,7 +296,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                   } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               />
               {errors.name && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <p role="alert" className="mt-1 text-sm text-red-600 flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
                   {errors.name}
                 </p>
@@ -302,10 +304,11 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
             </div>
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Email*
               </label>
               <input
+                id="email"
                 type="email"
                 placeholder="john@example.com"
                 value={formData.email}
@@ -316,7 +319,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                   } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               />
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <p role="alert" className="mt-1 text-sm text-red-600 flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
                   {errors.email}
                 </p>
@@ -324,10 +327,11 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
             </div>
             {/* Alternate Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="Alternate Email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Alternate Email
               </label>
               <input
+                id="Alternate Email"
                 type="email"
                 placeholder="alternate@example.com"
                 value={formData.aemail}
@@ -337,10 +341,11 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
             </div>
             {/* Website */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="Website/Conference" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Website/Conference*
               </label>
               <select
+                id="Website/Conference"
                 value={formData.websiteId || ''}
                 onChange={(e) => handleChange('websiteId', e.target.value)}
                 disabled={webLoading}
@@ -359,7 +364,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 ))}
               </select>
               {errors.websiteId && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <p role="alert" className="mt-1 text-sm text-red-600 flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
                   {errors.websiteId}
                 </p>
@@ -367,10 +372,11 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
             </div>
             {/* Phone */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="Phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Phone*
               </label>
               <input
+                id="Phone"
                 type="tel"
                 placeholder="Phone"
                 value={formData.phone}
@@ -381,7 +387,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                   } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               />
               {errors.phone && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <p role="alert" className="mt-1 text-sm text-red-600 flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
                   {errors.phone}
                 </p>
@@ -390,10 +396,11 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
             {/* WhatsApp Number */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="WhatsApp Number" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 WhatsApp Number
               </label>
               <input
+                id="WhatsApp Number"
                 type="tel"
                 placeholder="WhatsApp Number"
                 value={formData.whatsapp}
@@ -402,7 +409,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                   } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500`}
               />
               {errors.whatsapp && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <p role="alert" className="mt-1 text-sm text-red-600 flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
                   {errors.whatsapp}
                 </p>
@@ -411,10 +418,11 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
             {/* Country */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="Country" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Country*
               </label>
               <select
+                id="Country"
                 value={formData.country}
                 onChange={(e) => handleChange('country', e.target.value)}
                 className={`w-full px-4 py-2.5 rounded-lg border ${errors.country
@@ -430,7 +438,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 ))}
               </select>
               {errors.country && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <p role="alert" className="mt-1 text-sm text-red-600 flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
                   {errors.country}
                 </p>
@@ -439,10 +447,11 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
             {/* City */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="City" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 City*
               </label>
               <input
+                id="City"
                 type="text"
                 placeholder="Hyderabad"
                 value={formData.city}
@@ -453,7 +462,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                   } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               />
               {errors.city && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <p role="alert" className="mt-1 text-sm text-red-600 flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
                   {errors.city}
                 </p>
@@ -462,10 +471,11 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
             {/* Organization */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="Organization" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Organization*
               </label>
               <input
+                id="Organization"
                 type="text"
                 placeholder="Organization"
                 value={formData.organization}
@@ -476,7 +486,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                   } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
               />
               {errors.organization && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <p role="alert" className="mt-1 text-sm text-red-600 flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
                   {errors.organization}
                 </p>
@@ -485,10 +495,11 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
             {/* Interested In */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="Interested in" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Interested in*
               </label>
               <select
+                id="Interested in"
                 value={formData.interestedIn}
                 onChange={(e) => handleChange('interestedIn', e.target.value)}
                 className={`w-full px-4 py-2.5 rounded-lg border ${errors.interestedIn
@@ -504,7 +515,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 ))}
               </select>
               {errors.interestedIn && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <p role="alert" className="mt-1 text-sm text-red-600 flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
                   {errors.interestedIn}
                 </p>
@@ -514,10 +525,11 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
           {/* Abstract Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="Abstract Title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Abstract Title*
             </label>
             <input
+              id="Abstract Title"
               type="text"
               placeholder="Abstract Title*"
               value={formData.title}
@@ -528,7 +540,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
             />
             {errors.title && (
-              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+              <p role="alert" className="mt-1 text-sm text-red-600 flex items-center gap-1">
                 <AlertCircle className="w-4 h-4" />
                 {errors.title}
               </p>
@@ -537,7 +549,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
           {/* File Upload */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Upload File*
             </label>
             <div className="relative">
@@ -555,7 +567,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
               )}
             </div>
             {errors.file && (
-              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+              <p role="alert" className="mt-1 text-sm text-red-600 flex items-center gap-1">
                 <AlertCircle className="w-4 h-4" />
                 {errors.file}
               </p>
@@ -564,10 +576,11 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
           {/* Message */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="Message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Message
             </label>
             <textarea
+              id="Message"
               placeholder="Message"
               value={formData.message}
               onChange={(e) => handleChange('message', e.target.value)}
@@ -578,7 +591,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
 
           {/* Captcha */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor=" Captcha Code" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Captcha Code*
             </label>
             <div className="flex items-center gap-4">
@@ -586,6 +599,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
                 {captchaCode}
               </div>
               <input
+                id="Captcha Code"
                 type="text"
                 placeholder="Enter captcha"
                 value={formData.captcha}
@@ -597,7 +611,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
               />
             </div>
             {errors.captcha && (
-              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+              <p role="alert" className="mt-1 text-sm text-red-600 flex items-center gap-1">
                 <AlertCircle className="w-4 h-4" />
                 {errors.captcha}
               </p>

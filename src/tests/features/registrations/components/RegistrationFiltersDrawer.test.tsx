@@ -55,7 +55,7 @@ describe('RegistrationFiltersDrawer', () => {
         expect(container.firstChild).toBeNull()
     })
 
-    it('renders drawer when open', () => {
+    it('renders drawer when open', async () => {
         const store = createMockStore()
         render(
             <Provider store={store}>
@@ -63,16 +63,22 @@ describe('RegistrationFiltersDrawer', () => {
             </Provider>
         )
 
-        expect(screen.getByText('Registration Filters')).toBeInTheDocument()
+        await waitFor(() => {
+            expect(screen.getByText('Registration Filters')).toBeInTheDocument()
+        })
     })
 
-    it('calls onClose when close button is clicked', () => {
+    it('calls onClose when close button is clicked', async () => {
         const store = createMockStore()
         render(
             <Provider store={store}>
                 <RegistrationFiltersDrawer open={true} onClose={mockOnClose} />
             </Provider>
         )
+
+        await waitFor(() => {
+            expect(screen.getByText('Registration Filters')).toBeInTheDocument()
+        })
 
         fireEvent.click(screen.getByText('✕'))
         expect(mockOnClose).toHaveBeenCalledTimes(1)
