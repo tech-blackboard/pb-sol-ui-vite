@@ -53,7 +53,7 @@ describe('AccommodationForm', () => {
 
     it('loads websites', async () => {
         renderForm()
-        await waitFor(() => expect(listWebsites).toHaveBeenCalled())
+await waitFor(() => expect(listWebsites).toHaveBeenCalled())
     })
 
     it('shows validation errors on empty submit', async () => {
@@ -93,74 +93,72 @@ describe('AccommodationForm', () => {
         expect(screen.getByText('$210')).toBeInTheDocument() // Total Accommodation Price
     })
 
-    it('successfully submits the form', async () => {
-        const store = createMockStore()
-        render(
-            <Provider store={store}>
-                <AccommodationForm onClose={mockOnClose} onSuccess={mockOnSuccess} />
-            </Provider>
-        )
+   it('successfully submits the form', async () => {
+  const mockDispatch = jest.fn().mockResolvedValue({
+    type: 'accRegistrations/create/fulfilled',
+    payload: {}
+  })
 
-        // Fill required fields
-        fireEvent.change(screen.getByLabelText('Caption*'), { target: { value: 'Mr.' } })
-        fireEvent.change(screen.getByLabelText('Full Name*'), { target: { value: 'John Doe' } })
-        fireEvent.change(screen.getByLabelText('Email*'), { target: { value: 'john@test.com' } })
-        fireEvent.change(screen.getByLabelText('Phone*'), { target: { value: '1234567890' } })
+  const hooks = await import('../../../../store/hooks')
+  jest.spyOn(hooks, 'useAppDispatch').mockReturnValue(mockDispatch)
 
-        await waitFor(() => expect(listWebsites).toHaveBeenCalled())
-        fireEvent.change(screen.getByLabelText('Website/Conference*'), { target: { value: '1' } })
+  renderForm()
 
-        fireEvent.change(screen.getByLabelText('Check-in Date'), { target: { value: '2024-01-01' } })
-        fireEvent.change(screen.getByLabelText('Check-out Date'), { target: { value: '2024-01-02' } })
-        fireEvent.change(screen.getByLabelText('Price per Night ($)*'), { target: { value: '100' } })
+  fireEvent.change(screen.getByLabelText('Caption*'), { target: { value: 'Mr.' } })
+  fireEvent.click(screen.getByRole('radio', { name: 'Single Occupancy' }))
+  fireEvent.change(screen.getByLabelText('Full Name*'), { target: { value: 'John Doe' } })
+  fireEvent.change(screen.getByLabelText('Email*'), { target: { value: 'john@test.com' } })
+  fireEvent.change(screen.getByLabelText('Phone*'), { target: { value: '1234567890' } })
 
-        fireEvent.click(screen.getByText('Add Accommodation'))
+  await waitFor(() => expect(listWebsites).toHaveBeenCalled())
 
-        await waitFor(() => {
-            expect(toast.success).toHaveBeenCalledWith('Accommodation Registration created successfully')
-            expect(mockOnSuccess).toHaveBeenCalled()
-            expect(mockOnClose).toHaveBeenCalled()
-        })
-    })
+  fireEvent.change(screen.getByLabelText('Website/Conference*'), { target: { value: '1' } })
+  fireEvent.change(screen.getByLabelText('Check-in Date'), { target: { value: '2024-01-01' } })
+  fireEvent.change(screen.getByLabelText('Check-out Date'), { target: { value: '2024-01-02' } })
+  fireEvent.change(screen.getByLabelText('Price per Night ($)*'), { target: { value: '100' } })
 
-    it('handles submission error', async () => {
-        // Redefine createAccRegistrationThunk specifically for this test to fail
-        const errorMessage = 'API Error'
-        const store = configureStore({
-            reducer: {
-                accRegistrations: (state) => ({ ...state }) // Mock reducer
-            }
-        })
+  fireEvent.click(screen.getByText('Add Accommodation'))
 
-        // Use a real store but mock the dispatch result
-        const mockDispatch = jest.fn().mockResolvedValue({
-            type: 'accRegistrations/create/rejected',
-            payload: errorMessage
-        })
+  await waitFor(() => {
+    expect(toast.success).toHaveBeenCalledWith(
+      'Accommodation Registration created successfully'
+    )
+    expect(mockOnSuccess).toHaveBeenCalled()
+    expect(mockOnClose).toHaveBeenCalled()
+  })
+})
 
-        const hooks = await import('../../../../store/hooks')
-        jest.spyOn(hooks, 'useAppDispatch').mockReturnValue(mockDispatch)
+  it('handles submission error', async () => {
+  const errorMessage = 'Failed to create registration'
 
-        render(
-            <Provider store={store}>
-                <AccommodationForm onClose={mockOnClose} />
-            </Provider>
-        )
+  const mockDispatch = jest.fn().mockResolvedValue({
+    type: 'accRegistrations/create/rejected',
+    payload: errorMessage,
+  })
 
-        // Fill enough to pass client validation
-        fireEvent.change(screen.getByLabelText('Caption*'), { target: { value: 'Mr.' } })
-        fireEvent.change(screen.getByLabelText('Full Name*'), { target: { value: 'John Doe' } })
-        fireEvent.change(screen.getByLabelText('Email*'), { target: { value: 'john@test.com' } })
-        fireEvent.change(screen.getByLabelText('Phone*'), { target: { value: '1234567890' } })
-        fireEvent.change(screen.getByLabelText('Website/Conference*'), { target: { value: '1' } })
-        fireEvent.change(screen.getByLabelText('Check-in Date'), { target: { value: '2024-01-01' } })
-        fireEvent.change(screen.getByLabelText('Check-out Date'), { target: { value: '2024-01-02' } })
-        fireEvent.change(screen.getByLabelText('Price per Night ($)*'), { target: { value: '100' } })
+  const hooks = await import('../../../../store/hooks')
+  jest.spyOn(hooks, 'useAppDispatch').mockReturnValue(mockDispatch)
 
-        fireEvent.click(screen.getByText('Add Accommodation'))
+  renderForm()
 
-        await waitFor(() => {
-            expect(toast.error).toHaveBeenCalledWith(errorMessage)
-        })
-    })
+  // WAIT FOR WEBSITES
+  await waitFor(() => expect(listWebsites).toHaveBeenCalled())
+
+  // VALID DATA
+  fireEvent.change(screen.getByLabelText('Caption*'), { target: { value: 'Mr.' } })
+  fireEvent.click(screen.getByRole('radio', { name: 'Single Occupancy' }))
+  fireEvent.change(screen.getByLabelText('Full Name*'), { target: { value: 'John Doe' } })
+  fireEvent.change(screen.getByLabelText('Email*'), { target: { value: 'john@test.com' } })
+  fireEvent.change(screen.getByLabelText('Phone*'), { target: { value: '1234567890' } })
+  fireEvent.change(screen.getByLabelText('Website/Conference*'), { target: { value: '1' } })
+  fireEvent.change(screen.getByLabelText('Check-in Date'), { target: { value: '2024-01-01' } })
+  fireEvent.change(screen.getByLabelText('Check-out Date'), { target: { value: '2024-01-02' } })
+  fireEvent.change(screen.getByLabelText('Price per Night ($)*'), { target: { value: '100' } })
+
+  fireEvent.click(screen.getByText('Add Accommodation'))
+
+  await waitFor(() => {
+    expect(toast.error).toHaveBeenCalledWith(errorMessage)
+  })
+})
 })

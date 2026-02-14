@@ -148,7 +148,7 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
         }
 
         if (accPrice <= 0) {
-            newErrors.acc_pr = 'Accommodation price is required'
+            newErrors.accomm = 'Accommodation price is required'
         }
 
         setErrors(newErrors)
@@ -169,7 +169,7 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
             const payload: accRegistrationRecord = {
                 ...formData,
                 website_id: Number(formData.website_id),
-                user_id: 10,
+                user_id: 1,
                 status_id: 1,
                 status_flag: 1,
                 nights: String(currentNights),

@@ -76,7 +76,6 @@ jest.mock('../../../../features/abstracts/components/AbstractHeader', () => ({
 interface AbstractTableProps {
     rawRows: AbstractItem[]
     onView: (item: AbstractItem) => void
-    onRetry: () => void
 }
 
 jest.mock('../../../../features/abstracts/components/AbstractTable', () => ({
@@ -85,7 +84,6 @@ jest.mock('../../../../features/abstracts/components/AbstractTable', () => ({
         <div data-testid="abstract-table">
             Table
             <button onClick={() => props.onView(props.rawRows[0])}>View First</button>
-            <button onClick={props.onRetry}>Retry</button>
         </div>
     )
 }))
@@ -230,11 +228,8 @@ describe('AbstractsPage', () => {
         expect(fetchAbstracts).toHaveBeenCalled()
     })
 
-    test('handles table retry and view actions', () => {
+    test('handles table view actions', () => {
         render(<AbstractsPage />)
-
-        fireEvent.click(screen.getByText('Retry'))
-        expect(fetchAbstracts).toHaveBeenCalledTimes(2) // mount + retry
 
         fireEvent.click(screen.getByText('View First'))
         expect(setSelected).toHaveBeenCalledWith(mockAbstractItem)
@@ -381,6 +376,10 @@ describe('AbstractsPage', () => {
         }
             ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithInvoice))
             ; (sendInvoiceThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
+dispatchMock.mockResolvedValueOnce({
+  type: 'rejected',
+  payload: undefined,
+})
 
         render(<AbstractsPage />)
 
@@ -401,7 +400,10 @@ describe('AbstractsPage', () => {
         }
             ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithReceipt))
             ; (sendPaymentReceiptThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
-
+dispatchMock.mockResolvedValueOnce({
+  type: 'rejected',
+  payload: undefined,
+})
         render(<AbstractsPage />)
 
         fireEvent.click(screen.getByText('Submit Receipt'))
@@ -421,6 +423,10 @@ describe('AbstractsPage', () => {
         }
             ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithReminder))
             ; (sendPaymentReminderThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
+        dispatchMock.mockResolvedValueOnce({
+            type: 'rejected',
+            payload: undefined,
+        })
 
         render(<AbstractsPage />)
 

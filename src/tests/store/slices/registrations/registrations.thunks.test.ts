@@ -15,7 +15,7 @@ import {
     deleteRegistration,
     createRegistration,
 } from '../../../../services/registrations'
-import type { RegistrationItem } from '../../../../services/registrations'
+import type { RegistrationRecord } from '../../../../features/abstracts/types'
 
 const dispatch = jest.fn()
 const getState = jest.fn()
@@ -98,26 +98,49 @@ describe('registrations thunks', () => {
     /* createRegistrationThunk                            */
     /* -------------------------------------------------- */
 
-    it('createRegistrationThunk → calls createRegistration and returns result', async () => {
-        const mockData: Partial<RegistrationItem> = { name: 'John Doe', email: 'john@example.com' }
-        const mockResponse = { id: 1, ...mockData }
-            ; (createRegistration as jest.Mock).mockResolvedValue(mockResponse)
+   it('createRegistrationThunk → calls createRegistration and returns result', async () => {
+  const mockData: RegistrationRecord = {
+    name: 'John Doe',
+    email: 'john@example.com',
+    phone: '1234567890',
+    institution: 'Test Org',
+    country: 'India',
+    presentation: 'Oral',
+    participants: '1',
+    reg_price: '100',
+    regtype: 'Standard',
+    accomm: 'No',
+  }
 
-        const thunk = createRegistrationThunk(mockData)
-        const result = await thunk(dispatch, getState, undefined)
+  const mockResponse = { id: 1, ...mockData }
+  ;(createRegistration as jest.Mock).mockResolvedValue(mockResponse)
 
-        expect(createRegistration).toHaveBeenCalledWith(mockData)
-        expect(result.payload).toEqual(mockResponse)
-    })
+  const thunk = createRegistrationThunk(mockData)
+  const result = await thunk(dispatch, getState, undefined)
 
-    it('createRegistrationThunk → rejects with value on error', async () => {
-        const mockData: Partial<RegistrationItem> = { name: 'John Doe' }
-            ; (createRegistration as jest.Mock).mockRejectedValue(new Error('Create Failed'))
+  expect(createRegistration).toHaveBeenCalledWith(mockData)
+  expect(result.payload).toEqual(mockResponse)
+})
+it('createRegistrationThunk → rejects with value on error', async () => {
+  const mockData: RegistrationRecord = {
+    name: 'John Doe',
+    email: 'john@example.com',
+    phone: '1234567890',
+    institution: 'Test Org',
+    country: 'India',
+    presentation: 'Oral',
+    participants: '1',
+    reg_price: '100',
+    regtype: 'Standard',
+    accomm: 'No',
+  }
 
-        const thunk = createRegistrationThunk(mockData)
-        const result = await thunk(dispatch, getState, undefined)
+  ;(createRegistration as jest.Mock).mockRejectedValue(new Error('Create Failed'))
 
-        expect(result.type).toBe('registrations/create/rejected')
-        expect(result.payload).toBe('Failed to create registration')
-    })
+  const thunk = createRegistrationThunk(mockData)
+  const result = await thunk(dispatch, getState, undefined)
+
+  expect(result.type).toBe('registrations/create/rejected')
+  expect(result.payload).toBe('Failed to create registration')
+})
 })

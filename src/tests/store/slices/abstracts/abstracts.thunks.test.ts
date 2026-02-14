@@ -59,19 +59,22 @@ describe('abstracts thunks', () => {
   })
 
   it('fetchAbstracts → rejects with value on error', async () => {
-    ; (searchAbstracts as jest.Mock).mockRejectedValue(new Error('API error'))
-
-    const thunk = fetchAbstracts({
-      page: 1,
-      limit: 10,
-      filters: { search: '', sortBy: 'now', sortOrder: 'DESC' },
-    })
-
-    const result = await thunk(dispatch, getState, undefined)
-
-    expect(result.type).toBe('abstracts/fetch/rejected')
-    expect(result.payload).toBe('API error')
+  (searchAbstracts as jest.Mock).mockRejectedValue({
+    isAxiosError: true,
+    response: { data: { message: 'API error' } },
   })
+
+  const thunk = fetchAbstracts({
+    page: 1,
+    limit: 10,
+    filters: { search: '', sortBy: 'now', sortOrder: 'DESC' },
+  })
+
+  const result = await thunk(dispatch, getState, undefined)
+
+  expect(result.type).toBe('abstracts/fetch/rejected')
+  expect(result.payload).toBe('API error')
+})
 
   /* -------------------------------------------------- */
   /* updateStatusThunk                                  */

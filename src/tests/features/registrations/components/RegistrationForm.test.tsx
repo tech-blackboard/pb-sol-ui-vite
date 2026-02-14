@@ -135,14 +135,18 @@ describe('RegistrationForm', () => {
         fireEvent.click(xButton)
         expect(mockOnClose).toHaveBeenCalledTimes(1)
     })
+it('pre-fills website_id when provided', async () => {
+  renderForm({ websiteId: 1 })
 
-    it('pre-fills website_id when provided', async () => {
-        renderForm({ websiteId: 1 })
-        await screen.findByText('Add New Registration')
+  // wait until website loads
+  const option = await screen.findByText('Test Conference')
+  expect(option).toBeInTheDocument()
 
-        const websiteSelect = screen.getByDisplayValue(/Test Conference|Select Website/)
-        expect(websiteSelect).toBeInTheDocument()
-    })
+  // now assert select value
+  const select = screen.getByRole('combobox', { name: /Website\/Conference/i })
+  expect(select).toHaveValue('1')
+})
+
 
     it('updates registration price when presentation type changes', async () => {
         renderForm()

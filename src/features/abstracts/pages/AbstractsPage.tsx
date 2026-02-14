@@ -53,10 +53,6 @@ export default function AbstractsPage() {
     dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }))
   }, [page, pageSize, appliedFilters, dispatch])
 
-  const refreshData = async () => {
-    dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }))
-  }
-
   async function handleUpdateStatus() {
     if (!viewItem || !modalStatus) return
 
@@ -92,7 +88,7 @@ export default function AbstractsPage() {
     )
 
     if (!sendInvoiceThunk.fulfilled.match(invoiceResult)) {
-      const errorMsg = (invoiceResult.payload as string) || 'Failed to send invoice';
+      const errorMsg = typeof invoiceResult.payload === 'string' ?invoiceResult.payload : 'Failed to send invoice';
       toast.error(errorMsg);
       return
     }
@@ -133,7 +129,7 @@ export default function AbstractsPage() {
         toast.success('Status updated to Registered')
       }, 400)
     } else {
-      const errorMsg = (paymentReceiptResult.payload as string) || 'Failed to send payment receipt';
+      const errorMsg = typeof paymentReceiptResult.payload === 'string' ? paymentReceiptResult.payload : 'Failed to send payment receipt';
       toast.error(errorMsg);
     }
 
@@ -154,7 +150,9 @@ export default function AbstractsPage() {
       toast.success(`${paymentReminderResult.payload.message}`)
 
     } else {
-      const errorMsg = (paymentReminderResult.payload as string) || 'Failed to send payment reminder';
+      // const errorMsg = (paymentReminderResult.payload as string) || 'Failed to send payment reminder';
+      const errorMsg =
+      typeof paymentReminderResult.payload === 'string' ? paymentReminderResult.payload : 'Failed to send payment reminder'
       toast.error(errorMsg);
     }
     // 3️⃣ Close modal
@@ -170,7 +168,6 @@ export default function AbstractsPage() {
         rawRows={rawItems}
         loading={loading}
         onView={(item) => item && dispatch(setSelected(item))}
-        onRetry={refreshData}
       />
       <AbstractPagination
         totalPages={Math.ceil(total / pageSize)}

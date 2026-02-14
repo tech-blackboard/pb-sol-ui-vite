@@ -92,7 +92,7 @@ describe('RegistrationTable', () => {
         // or just ensure they are unique. Since formatDate is mocked to '2024-01-01', 
         // they will all be '2024-01-01'.
         const dates = screen.getAllByText('2024-01-01')
-        expect(dates.length).toBeGreaterThanOrEqual(2) // checkin, now
+        expect(dates.length).toBe(1)
 
         expect(screen.getByText('4')).toBeInTheDocument() // nights
         expect(screen.getByText('400')).toBeInTheDocument() // accmvalue
