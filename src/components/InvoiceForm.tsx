@@ -21,6 +21,8 @@ interface InvoiceData {
   internetHandlingFees?: number
   checkIn?: string
   checkOut?: string
+  totalRegistrationValue?: number
+  totalAccommodationValue?: number
   // Legacy fields for backwards compatibility
   description?: string
   quantity?: number
@@ -73,7 +75,8 @@ export function InvoiceForm({
   isLoading = false,
 }: InvoiceFormProps) {
   // Read default payment link from environment variable
-  const DEFAULT_PAYMENT_LINK = import.meta.env.VITE_DEFAULT_PAYMENT_LINK || ''
+  const DEFAULT_PAYMENT_LINK = ''
+
 
   const [formData, setFormData] = useState<InvoiceData>({
     invoiceAmount: 0,
@@ -87,6 +90,11 @@ export function InvoiceForm({
   })
 
   const [errors, setErrors] = useState<Partial<Record<keyof InvoiceData, string>>>({})
+  const [accommodationErrors, setAccommodationErrors] = useState<{
+    checkIn?: string
+    checkOut?: string
+    numberOfNights?: string
+  }>({})
   const [registrationFee, setRegistrationFee] = useState(699)
   const [showAccommodation, setShowAccommodation] = useState(false)
   const [occupancyType, setOccupancyType] = useState<string>('')
@@ -144,6 +152,7 @@ export function InvoiceForm({
   function handleOccupancyChange(value: string) {
     setOccupancyType(value)
     // Reset price so user must enter manually
+    setFormData(prev => ({ ...prev, accommodationFee: 0 }))
     setAccommodationFee(0)
     setCheckIn('')
     setCheckOut('')
@@ -154,11 +163,14 @@ export function InvoiceForm({
     setShowAccommodation(checked)
     if (!checked) {
       // Reset all accommodation-related fields when unchecked
+      setFormData(prev => ({ ...prev, accommodationFee: 0 }))
       setOccupancyType('')
       setAccommodationFee(0)
       setCheckIn('')
       setCheckOut('')
       setNumberOfNights(0)
+    } else {
+      setOccupancyType('Single Occupancy')
     }
   }
 
@@ -240,10 +252,12 @@ export function InvoiceForm({
       })
     }
 
-    // Calculate internet handling fees (5% of total if accommodation is included)
-    const internetHandlingFees = occupancyType && numberOfNights > 0
-      ? (totalRegistrationValue + totalAccommodationValue) * 0.05
-      : 0
+    // Calculate internet handling fees (4.8% of total if accommodation is included)
+    const internetHandlingFees = Math.round(
+      (occupancyType && numberOfNights > 0
+        ? (totalRegistrationValue + totalAccommodationValue)
+        : totalRegistrationValue) * 0.048
+    )
 
     // Add internet handling fees if applicable
     if (internetHandlingFees > 0) {
@@ -292,9 +306,27 @@ export function InvoiceForm({
     }
 
     // Validate Accommodation Fee
-    if (!formData.accommodationFee || formData.accommodationFee <= 0) {
+    if (showAccommodation && (!formData.accommodationFee || formData.accommodationFee <= 0)) {
       newErrors.accommodationFee = 'Accommodation fee is required and must be greater than 0'
     }
+
+    // Validate Accommodation Date Fields
+    const newAccommodationErrors: { checkIn?: string; checkOut?: string; numberOfNights?: string } = {}
+    if (showAccommodation) {
+      if (!checkIn) {
+        newAccommodationErrors.checkIn = 'Check-in date is required'
+      }
+      if (!checkOut) {
+        newAccommodationErrors.checkOut = 'Check-out date is required'
+      } else if (checkIn && checkOut && new Date(checkOut) <= new Date(checkIn)) {
+        newAccommodationErrors.checkOut = 'Check-out must be after check-in date'
+      }
+      if (numberOfNights <= 0) {
+        newAccommodationErrors.numberOfNights = 'Number of nights must be greater than 0'
+      }
+    }
+    setAccommodationErrors(newAccommodationErrors)
+
     // Validate Number of participants
     if (!formData.quantity || formData.quantity <= 0) {
       newErrors.quantity = 'Number of participants is required and must be at least 1'
@@ -305,7 +337,7 @@ export function InvoiceForm({
     }
 
     setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    return Object.keys(newErrors).length === 0 && Object.keys(newAccommodationErrors).length === 0
   }
 
   function handleClose() {
@@ -320,6 +352,7 @@ export function InvoiceForm({
       note: '',
     })
     setErrors({})
+    setAccommodationErrors({})
     setShowAccommodation(false)
     setOccupancyType('')
     setAccommodationFee(0)
@@ -335,14 +368,16 @@ export function InvoiceForm({
       : registrationFee) * (formData.quantity || 1)
 
   const totalAccommodationValue = formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) * numberOfNights : accommodationFee * numberOfNights
-  const totalPrice = totalRegistrationValue + totalAccommodationValue
+
+  const internetHandlingFees = Math.round((totalRegistrationValue + totalAccommodationValue) * 0.048)
+  const totalPrice = totalRegistrationValue + totalAccommodationValue + internetHandlingFees
 
 
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 ">
-      <div className="relative w-full max-w-4xl rounded-lg bg-white shadow-xl dark:bg-gray-800 max-h-[98vh] ">
+      <div className={`relative w-full max-w-4xl rounded-lg bg-white shadow-xl dark:bg-gray-800 max-h-[98vh] border-2 ${Object.keys(errors).length > 0 || Object.keys(accommodationErrors).length > 0 ? 'border-red-500' : 'border-transparent'}`}>
 
         {!showPreview ? (
           <>
@@ -380,10 +415,11 @@ export function InvoiceForm({
 
                 {/* Interested In */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="interestedIn" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Interested in <span className="text-red-500">*</span>
                   </label>
                   <select
+                    id="interestedIn"
                     value={formData.interestedIn}
                     onChange={(e) => handleInterestedInChange(e.target.value)}
                     disabled={isLoading}
@@ -405,10 +441,11 @@ export function InvoiceForm({
                 </div>
                 {/* Registration Fee */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="registrationFee" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Registration Fee : <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="registrationFee"
                     type="number"
                     value={formData.registrationFee}
                     onChange={(e) => handleregistrationFeeChange('registrationFee', e.target.value)}
@@ -426,10 +463,11 @@ export function InvoiceForm({
                 </div>
                 {/* Number of participants */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="numberOfParticipants" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Number of participants : <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="numberOfParticipants"
                     type="number"
                     min="1"
                     max="100"
@@ -450,8 +488,9 @@ export function InvoiceForm({
                 </div>
                 {/* Looking for Accommodation */}
                 <div className="space-y-4">
-                  <label className="flex items-center space-x-2 cursor-pointer">
+                  <label htmlFor='accommodation' className="flex items-center space-x-2 cursor-pointer">
                     <input
+                      id='accommodation'
                       type="checkbox"
                       checked={showAccommodation}
                       onChange={(e) => handleAccommodationCheckbox(e.target.checked)}
@@ -465,8 +504,9 @@ export function InvoiceForm({
                   {showAccommodation && (
                     <>
                       {OCCUPANCY_OPTIONS.map((label) => (
-                        <label key={label} className="flex items-center space-x-2">
+                        <label htmlFor={label} key={label} className="flex items-center space-x-2">
                           <input
+                            id={label}
                             type="radio"
                             name="occupancy"
                             value={label}
@@ -485,64 +525,86 @@ export function InvoiceForm({
 
                           {/* Check In */}
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Check In
+                            <label htmlFor="checkIn" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Check In <span className="text-red-500">*</span>
                             </label>
                             <input
+                              id="checkIn"
                               type="date"
                               value={checkIn}
                               onChange={(e) => handleCheckInChange(e.target.value)}
-                              className="w-full mt-1 rounded-md border px-3 py-2 dark:bg-gray-700 dark:text-white"
+                              className={`w-full mt-1 rounded-md border px-3 py-2 dark:bg-gray-700 dark:text-white ${accommodationErrors.checkIn
+                                ? 'border-red-500 focus:ring-red-500'
+                                : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
+                                }`}
                             />
+                            {accommodationErrors.checkIn && (
+                              <p className="mt-1 text-sm text-red-600">{accommodationErrors.checkIn}</p>
+                            )}
                           </div>
 
                           {/* Check Out */}
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Check Out
+                            <label htmlFor="checkOut" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Check Out <span className="text-red-500">*</span>
                             </label>
                             <input
+                              id="checkOut"
                               type="date"
                               value={checkOut}
                               onChange={(e) => handleCheckOutChange(e.target.value)}
-                              className="w-full mt-1 rounded-md border px-3 py-2 dark:bg-gray-700 dark:text-white"
+                              className={`w-full mt-1 rounded-md border px-3 py-2 dark:bg-gray-700 dark:text-white ${accommodationErrors.checkOut
+                                ? 'border-red-500 focus:ring-red-500'
+                                : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
+                                }`}
                             />
+                            {accommodationErrors.checkOut && (
+                              <p className="mt-1 text-sm text-red-600">{accommodationErrors.checkOut}</p>
+                            )}
                           </div>
 
                           {/* Nights */}
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Number of Nights
+                            <label htmlFor="numberOfNights" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Number of Nights <span className="text-red-500">*</span>
                             </label>
                             <input
+                              id="numberOfNights"
                               type="number"
                               readOnly
                               value={numberOfNights}
-                              className="w-full mt-1 rounded-md border px-3 py-2 dark:bg-gray-700 dark:text-white"
+                              className={`w-full mt-1 rounded-md border px-3 py-2 dark:bg-gray-700 dark:text-white bg-gray-50 dark:bg-gray-600 ${accommodationErrors.numberOfNights
+                                ? 'border-red-500'
+                                : 'border-gray-300 dark:border-gray-600'
+                                }`}
                             />
+                            {accommodationErrors.numberOfNights && (
+                              <p className="mt-1 text-sm text-red-600">{accommodationErrors.numberOfNights}</p>
+                            )}
                           </div>
 
                           {/* Accommodation Price */}
                           <div>
-                            
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Price per Night ($) <span className="text-red-500">*</span>
-                            </label> 
-                              <input
-                                type="number"
-                                value={formData.accommodationFee}
-                                onChange={(e) => handleAccommodationFeeChange('accommodationFee', e.target.value)}
-                                onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                                disabled={isLoading}
-                                className={`w-full px-4 py-2.5 rounded-lg border ${errors.accommodationFee
-                                  ? 'border-red-500 focus:ring-red-500'
-                                  : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
-                                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 disabled:opacity-50`}
-                              />
 
-                              {errors.accommodationFee && (
-                                <p className="mt-1 text-sm text-red-600">{errors.accommodationFee}</p>
-                              )}
+                            <label htmlFor="pricePerNight" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Price per Night ($) <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              id="pricePerNight"
+                              type="number"
+                              value={formData.accommodationFee}
+                              onChange={(e) => handleAccommodationFeeChange('accommodationFee', e.target.value)}
+                              onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                              disabled={isLoading}
+                              className={`w-full px-4 py-2.5 rounded-lg border ${errors.accommodationFee
+                                ? 'border-red-500 focus:ring-red-500'
+                                : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
+                                } bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 disabled:opacity-50`}
+                            />
+
+                            {errors.accommodationFee && (
+                              <p className="mt-1 text-sm text-red-600">{errors.accommodationFee}</p>
+                            )}
                           </div>
                         </div>
                       )}
@@ -551,77 +613,85 @@ export function InvoiceForm({
                 </div>
 
                 {/* Registration Summary Table */}
-                      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                          Registration Summary
-                        </h3>
-                        <div className="overflow-hidden rounded-lg border border-gray-300 dark:border-gray-600">
-                          <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-600">
-                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                              <tr>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                                  Registration Price:
-                                </td>
-                                <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
-                                  ${formData.registrationFee && Number(formData.registrationFee) > 0 ? Number(formData.registrationFee) : registrationFee}
-                                </td>
-                              </tr>
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Registration Summary
+                  </h3>
+                  <div className="overflow-hidden rounded-lg border border-gray-300 dark:border-gray-600">
+                    <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-600">
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                        <tr>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                            Registration Price:
+                          </td>
+                          <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
+                            ${formData.registrationFee && Number(formData.registrationFee) > 0 ? Number(formData.registrationFee) : registrationFee}
+                          </td>
+                        </tr>
 
-                              <tr>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                                  Number of participants:
-                                </td>
-                                <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
-                                  {formData.quantity || 1}
-                                </td>
-                              </tr>
-                              <tr className="bg-gray-50 dark:bg-gray-900">
-                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                                  Total Registration Value
-                                </td>
-                                <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
-                                  ${totalRegistrationValue}
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                                  Accommodation
-                                </td>
-                                <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
-                                  ${formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) : accommodationFee}
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                                  Number of Nights:
-                                </td>
-                                <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
-                                  {numberOfNights}
-                                </td>
-                              </tr>
-                              <tr className="bg-gray-50 dark:bg-gray-900">
-                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                                  Total Accommodation Value
-                                </td>
-                                <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
-                                  ${totalAccommodationValue}
-                                </td>
-                              </tr>
-                              <tr className="bg-blue-50 dark:bg-blue-900">
-                                <td className="px-6 py-4 text-base font-bold text-gray-900 dark:text-white">
-                                  Total Registration Price:
-                                </td>
-                                <td className="px-6 py-4 text-base text-right font-bold text-blue-600 dark:text-blue-400">
-                                  ${totalPrice}
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
+                        <tr>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                            Number of participants:
+                          </td>
+                          <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
+                            {formData.quantity || 1}
+                          </td>
+                        </tr>
+                        <tr className="bg-gray-50 dark:bg-gray-900">
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                            Total Registration Value
+                          </td>
+                          <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
+                            ${totalRegistrationValue}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                            Accommodation
+                          </td>
+                          <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
+                            ${formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) : accommodationFee}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                            Number of Nights:
+                          </td>
+                          <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
+                            {numberOfNights}
+                          </td>
+                        </tr>
+                        <tr className="bg-gray-50 dark:bg-gray-900">
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                            Total Accommodation Value
+                          </td>
+                          <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
+                            ${totalAccommodationValue}
+                          </td>
+                        </tr>
+                        <tr className="bg-gray-50 dark:bg-gray-900">
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                            Internet Handling Fees (4.8%)
+                          </td>
+                          <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900 dark:text-white">
+                            ${internetHandlingFees}
+                          </td>
+                        </tr>
+                        <tr className="bg-blue-50 dark:bg-blue-900">
+                          <td className="px-6 py-4 text-base font-bold text-gray-900 dark:text-white">
+                            Invoice Amount
+                          </td>
+                          <td className="px-6 py-4 text-base text-right font-bold text-blue-600 dark:text-blue-400">
+                            ${totalPrice}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
 
-                      {/* Invoice Amount */}
-                      {/* <div>
+                {/* Invoice Amount */}
+                {/* <div>
                   <label
                     htmlFor="invoiceAmount"
                     className="block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -652,8 +722,8 @@ export function InvoiceForm({
                   )}
                 </div> */}
 
-                      {/* Description */}
-                      {/* <div>
+                {/* Description */}
+                {/* <div>
                   <label
                     htmlFor="description"
                     className="block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -677,9 +747,9 @@ export function InvoiceForm({
                   )}
                 </div> */}
 
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        {/* Quantity */}
-                        {/* <div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {/* Quantity */}
+                  {/* <div>
                     <label
                       htmlFor="quantity"
                       className="block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -704,8 +774,8 @@ export function InvoiceForm({
                     )}
                   </div> */}
 
-                        {/* Price */}
-                        {/* <div>
+                  {/* Price */}
+                  {/* <div>
                     <label
                       htmlFor="price"
                       className="block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -735,122 +805,122 @@ export function InvoiceForm({
                       <p className="mt-1 text-sm text-red-600">{errors.price}</p>
                     )}
                   </div> */}
-                      </div>
-
-                      {/* Payment Link */}
-                      <div>
-                        <label
-                          htmlFor="paymentLink"
-                          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                        >
-                          Payment Link (Optional)
-                        </label>
-                        <input
-                          type="url"
-                          id="paymentLink"
-                          value={formData.paymentLink || ''}
-                          onChange={(e) => handleChange('paymentLink', e.target.value)}
-                          disabled={isLoading}
-                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                          placeholder="https://payment.example.com/..."
-                        />
-                      </div>
-
-                      {/* Note */}
-                      <div>
-                        <label
-                          htmlFor="note"
-                          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                        >
-                          Note (Optional)
-                        </label>
-                        <textarea
-                          id="note"
-                          rows={4}
-                          value={formData.note || ''}
-                          onChange={(e) => handleChange('note', e.target.value)}
-                          disabled={isLoading}
-                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white resize-none"
-                          placeholder="Add any additional notes or special requests..."
-                        />
-                      </div>
-                    </div>
                 </div>
 
-                {/* Footer */}
-                <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-4 py-1 dark:border-gray-700">
-                  <button
-                    type="button"
-                    onClick={handleClose}
-                    disabled={isLoading}
-                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                {/* Payment Link */}
+                <div>
+                  <label
+                    htmlFor="paymentLink"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
-                    Cancel
-                  </button>
+                    Payment Link (Optional)
+                  </label>
+                  <input
+                    type="url"
+                    id="paymentLink"
+                    value={formData.paymentLink || ''}
+                    onChange={(e) => handleChange('paymentLink', e.target.value)}
+                    disabled={isLoading}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    placeholder="https://payment.example.com/..."
+                  />
+                </div>
 
-                  {/* <div className="flex items-center justify-end gap-3 px-4 py-4 dark:border-gray-700"> */}
-                  <button
-                    type="button"
-                    onClick={handlePreviewInvoice}
-                    disabled={isLoading}
-                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                {/* Note */}
+                <div>
+                  <label
+                    htmlFor="note"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
-                    Preview Invoice
+                    Note (Optional)
+                  </label>
+                  <textarea
+                    id="note"
+                    rows={4}
+                    value={formData.note || ''}
+                    onChange={(e) => handleChange('note', e.target.value)}
+                    disabled={isLoading}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white resize-none"
+                    placeholder="Add any additional notes or special requests..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-4 py-1 dark:border-gray-700">
+              <button
+                type="button"
+                onClick={handleClose}
+                disabled={isLoading}
+                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+
+              {/* <div className="flex items-center justify-end gap-3 px-4 py-4 dark:border-gray-700"> */}
+              <button
+                type="button"
+                onClick={handlePreviewInvoice}
+                disabled={isLoading}
+                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              >
+                Preview Invoice
+              </button>
+            </div>
+            {/* </div> */}
+          </>
+        ) : (
+          <>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <div className="w-full max-w-3xl rounded-lg bg-white dark:bg-gray-900 shadow-xl border border-gray-200 dark:border-gray-800">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Preview Details</h2>
+                  <button
+                    onClick={() => handleClosePreview()}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+                    aria-label="Close"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor" className="h-5 w-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6m0 12L6 6" />
+                    </svg>
                   </button>
                 </div>
-                {/* </div> */}
-              </>
-              ) : (
-              <>
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                  <div className="w-full max-w-3xl rounded-lg bg-white dark:bg-gray-900 shadow-xl border border-gray-200 dark:border-gray-800">
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Preview Details</h2>
-                      <button
-                        onClick={() => handleClosePreview()}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
-                        aria-label="Close"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor" className="h-5 w-5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6m0 12L6 6" />
-                        </svg>
-                      </button>
+                <div className="max-h-[70vh] overflow-auto px-4 py-4">
+                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                    <div>
+                      <dt className="text-gray-500 dark:text-gray-400"><strong>Interested In:</strong></dt>
+                      <dd className="text-gray-900 dark:text-gray-100">{formData.interestedIn || 'Oral Presenter (In-Person)'}</dd>
                     </div>
-                    <div className="max-h-[70vh] overflow-auto px-4 py-4">
-                      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                        <div>
-                          <dt className="text-gray-500 dark:text-gray-400"><strong>Interested In:</strong></dt>
-                          <dd className="text-gray-900 dark:text-gray-100">{formData.interestedIn || 'Oral Presenter (In-Person)'}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-gray-500 dark:text-gray-400"><strong>Registration Fee:</strong></dt>
-                          <dd className="text-gray-900 dark:text-gray-100">$ {formData.registrationFee || '699'}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-gray-500 dark:text-gray-400"><strong>Number of participants:</strong></dt>
-                          <dd className="text-gray-900 dark:text-gray-100">{formData.quantity || 1}</dd>
-                        </div>
-                        <div className="sm:col-span-2">
-                          <dt className="text-gray-500 dark:text-gray-400"><strong>Occupancy Type:</strong></dt>
-                          <dd className="text-gray-900 dark:text-gray-100">{occupancyType || '—'}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-gray-500 dark:text-gray-400"><strong>Check In:</strong></dt>
-                          <dd className="text-blue-700 dark:text-blue-300">{checkIn || '—'}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-gray-500 dark:text-gray-400"><strong>Check Out:</strong></dt>
-                          <dd className="text-gray-900 dark:text-gray-100">{checkOut || '—'}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-gray-500 dark:text-gray-400"><strong>Number of Nights:</strong></dt>
-                          <dd className="text-gray-900 dark:text-gray-100">{numberOfNights}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-gray-500 dark:text-gray-400"><strong>Accommodation Fee:</strong></dt>
-                          <dd className="text-gray-900 dark:text-gray-100">$ {formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) : accommodationFee}</dd>
-                        </div>
-                        {/* <div>
+                    <div>
+                      <dt className="text-gray-500 dark:text-gray-400"><strong>Registration Fee:</strong></dt>
+                      <dd className="text-gray-900 dark:text-gray-100">$ {formData.registrationFee || '699'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-gray-500 dark:text-gray-400"><strong>Number of participants:</strong></dt>
+                      <dd className="text-gray-900 dark:text-gray-100">{formData.quantity || 1}</dd>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <dt className="text-gray-500 dark:text-gray-400"><strong>Occupancy Type:</strong></dt>
+                      <dd className="text-gray-900 dark:text-gray-100">{occupancyType || '—'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-gray-500 dark:text-gray-400"><strong>Check In:</strong></dt>
+                      <dd className="text-blue-700 dark:text-blue-300">{checkIn || '—'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-gray-500 dark:text-gray-400"><strong>Check Out:</strong></dt>
+                      <dd className="text-gray-900 dark:text-gray-100">{checkOut || '—'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-gray-500 dark:text-gray-400"><strong>Number of Nights:</strong></dt>
+                      <dd className="text-gray-900 dark:text-gray-100">{numberOfNights}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-gray-500 dark:text-gray-400"><strong>Accommodation Fee:</strong></dt>
+                      <dd className="text-gray-900 dark:text-gray-100">$ {formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) : accommodationFee}</dd>
+                    </div>
+                    {/* <div>
                       <dt className="text-gray-500 dark:text-gray-400"><strong>Invoice Amount:</strong></dt>
                       <dd className="text-gray-900 dark:text-gray-100">{formData.invoiceAmount}</dd>
                     </div>
@@ -866,138 +936,142 @@ export function InvoiceForm({
                       <dt className="text-gray-500 dark:text-gray-400"><strong>Unit Price:</strong></dt>
                       <dd className="text-gray-900 dark:text-gray-100">{formData.price ?? '—'}</dd>
                     </div> */}
-                        <div>
-                          <dt className="text-gray-500 dark:text-gray-400"><strong>Payment Link:</strong></dt>
-                          <dd className="text-gray-900 dark:text-gray-100">{formData.paymentLink || '—'}</dd>
-                        </div>
-                        <div className="sm:col-span-2">
-                          <dt className="text-gray-500 dark:text-gray-400"><strong>Note:</strong></dt>
-                          <dd className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{formData.note || '—'}</dd>
-                        </div>
-                        {/* Registration Summary */}
-                        <div className="mt-6 sm:col-span-2">
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                            Registration Summary
-                          </h3>
-                          <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-600">
-                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
-
-                              <tr>
-                                <td className="px-3 py-2">Registration Price</td>
-                                <td className="px-3 py-2 text-right">
-                                  ${formData.registrationFee && formData.registrationFee > 0
-                                    ? formData.registrationFee
-                                    : registrationFee}
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2">Number of participants</td>
-                                <td className="px-3 py-2 text-right">{formData.quantity || 1}</td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2">Total Registration Value</td>
-                                <td className="px-3 py-2 text-right">${totalRegistrationValue}</td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2">Accommodation</td>
-                                <td className="px-3 py-2 text-right">${formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) : accommodationFee}</td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2">Number of Nights</td>
-                                <td className="px-3 py-2 text-right">{numberOfNights}</td>
-                              </tr>
-
-                              <tr>
-                                <td className="px-3 py-2">Total Accommodation Value</td>
-                                <td className="px-3 py-2 text-right">${totalAccommodationValue}</td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-bold">Grand Total</td>
-                                <td className="px-3 py-2 text-right font-bold">${totalPrice}</td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </dl>
+                    <div>
+                      <dt className="text-gray-500 dark:text-gray-400"><strong>Payment Link:</strong></dt>
+                      <dd className="text-gray-900 dark:text-gray-100">{formData.paymentLink || '—'}</dd>
                     </div>
-
-                    {/* Preview Footer */}
-                    <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4 dark:border-gray-700">
-                      <button
-                        type="button"
-                        onClick={handleClosePreview}
-                        className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                      >
-                        Back to Form
-                      </button>
-                      <button
-                        onClick={handleConfirmClick}
-                        disabled={isLoading}
-                        className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-                      >
-                        {isLoading ? (
-                          <>
-                            <svg
-                              className="h-4 w-4 animate-spin text-white"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                              />
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              />
-                            </svg>
-                            Sending...
-                          </>
-                        ) : (
-                          'Send Invoice'
-                        )}
-                      </button>
+                    <div className="sm:col-span-2">
+                      <dt className="text-gray-500 dark:text-gray-400"><strong>Note:</strong></dt>
+                      <dd className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{formData.note || '—'}</dd>
                     </div>
-                  </div>
+                    {/* Registration Summary */}
+                    <div className="mt-6 sm:col-span-2">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        Registration Summary
+                      </h3>
+                      <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-600">
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+
+                          <tr>
+                            <td className="px-3 py-2">Registration Price</td>
+                            <td className="px-3 py-2 text-right">
+                              $ {(formData.registrationFee && formData.registrationFee > 0
+                                ? formData.registrationFee
+                                : registrationFee)}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="px-3 py-2">Number of participants</td>
+                            <td className="px-3 py-2 text-right">{formData.quantity || 1}</td>
+                          </tr>
+                          <tr>
+                            <td className="px-3 py-2">Total Registration Value</td>
+                            <td className="px-3 py-2 text-right">${totalRegistrationValue}</td>
+                          </tr>
+                          <tr>
+                            <td className="px-3 py-2">Accommodation</td>
+                            <td className="px-3 py-2 text-right">${formData.accommodationFee && Number(formData.accommodationFee) > 0 ? Number(formData.accommodationFee) : accommodationFee}</td>
+                          </tr>
+                          <tr>
+                            <td className="px-3 py-2">Number of Nights</td>
+                            <td className="px-3 py-2 text-right">{numberOfNights}</td>
+                          </tr>
+
+                          <tr>
+                            <td className="px-3 py-2">Total Accommodation Value</td>
+                            <td className="px-3 py-2 text-right">${totalAccommodationValue}</td>
+                          </tr>
+                          <tr>
+                            <td className="px-3 py-2">Internet Handling Fees (4.8%)</td>
+                            <td className="px-3 py-2 text-right">${internetHandlingFees}</td>
+                          </tr>
+                          <tr>
+                            <td className="px-3 py-2 font-bold">Grand Total</td>
+                            <td className="px-3 py-2 text-right font-bold">${totalPrice}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </dl>
                 </div>
-              </>
+
+                {/* Preview Footer */}
+                <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4 dark:border-gray-700">
+                  <button
+                    type="button"
+                    onClick={handleClosePreview}
+                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                  >
+                    Back to Form
+                  </button>
+                  <button
+                    onClick={handleConfirmClick}
+                    disabled={isLoading}
+                    className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                  >
+                    {isLoading ? (
+                      <>
+                        <svg
+                          className="h-4 w-4 animate-spin text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        Sending...
+                      </>
+                    ) : (
+                      'Send Invoice'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
         )}
 
 
-              {showConfirmModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                      Confirm Invoice Submission
-                    </h2>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-6">
-                      You're about to send this invoice. Please verify all details including registration, accommodation, and payment information. This action cannot be undone.
-                    </p>
-                    <div className="flex justify-end gap-3">
-                      <button
-                        onClick={handleCancelConfirm}
-                        className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleFinalSubmit}
-                        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                      >
-                        Confirm & Send
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
+        {showConfirmModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Confirm Invoice Submission
+              </h2>
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-6">
+                You're about to send this invoice. Please verify all details including registration, accommodation, and payment information. This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={handleCancelConfirm}
+                  className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleFinalSubmit}
+                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
+                  Confirm & Send
+                </button>
+              </div>
             </div>
           </div>
-        )
+        )}
+
+      </div>
+    </div>
+  )
 }

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { toast } from 'react-hot-toast'
+import toast from 'react-hot-toast'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import {
   setPage,
@@ -10,6 +10,7 @@ import {
   closeInvoiceModal,
   closePaymentReceiptModal,
   closePaymentReminderModal,
+  clearError,
 } from '../../../store/slices/abstracts/abstracts.slice'
 import { fetchAbstracts, sendInvoiceThunk, sendPaymentReceiptThunk, sendPaymentReminderThunk, updateStatusThunk } from '../../../store/slices/abstracts/abstracts.thunks'
 import {
@@ -62,15 +63,25 @@ export default function AbstractsPage() {
 
     const result = await dispatch(
       updateStatusThunk({
-        id: String(viewItem.id ?? viewItem._id),
+        id: String(viewItem.id),
         statusId: STATUS_TO_ID[modalStatus],
       })
     )
 
     if (updateStatusThunk.fulfilled.match(result)) {
       toast.success(`Status updated to ${modalStatus}`)
+
+      // Show WhatsApp success toast if message was sent
+      if (result.payload.whatsappSent) {
+        const phoneNumber = viewItem.wphone || viewItem.phone || '';
+        toast.success(`WhatsApp message sent successfully to ${phoneNumber}`, {
+          duration: 5000,
+          icon: '📱',
+        });
+      }
     } else {
-      toast.error('Failed to update status')
+      const errorMsg = (result.payload as string) || 'Failed to update status';
+      toast.error(errorMsg);
     }
   }
 
@@ -86,7 +97,8 @@ export default function AbstractsPage() {
     )
 
     if (!sendInvoiceThunk.fulfilled.match(invoiceResult)) {
-      toast.error('Failed to send invoice')
+      const errorMsg = (invoiceResult.payload as string) || 'Failed to send invoice';
+      toast.error(errorMsg);
       return
     }
 
@@ -99,7 +111,7 @@ export default function AbstractsPage() {
     )
 
     if (updateStatusThunk.fulfilled.match(statusResult)) {
-      toast.success(` Invoice sent successfully to ${statusResult.payload.email}`)
+      toast.success(` Invoice sent successfully to ${statusResult.payload.updatedAbstract.email}`)
       setTimeout(() => {
         toast.success('Status updated to Sent Invoice')
       }, 500)
@@ -120,17 +132,14 @@ export default function AbstractsPage() {
         receiptData: paymentReceiptData,
       })
     )
-    if (!sendPaymentReceiptThunk.fulfilled.match(paymentReceiptResult)) {
-      toast.error('Failed to send payment receipt')
-      return
-    }
     if (sendPaymentReceiptThunk.fulfilled.match(paymentReceiptResult)) {
       toast.success(`${paymentReceiptResult.payload.receiptResult.message}`)
       setTimeout(() => {
         toast.success('Status updated to Registered')
       }, 400)
     } else {
-      toast.error('Failed to send payment receipt')
+      const errorMsg = (paymentReceiptResult.payload as string) || 'Failed to send payment receipt';
+      toast.error(errorMsg);
     }
 
     // 3️⃣ Close modal
@@ -138,7 +147,6 @@ export default function AbstractsPage() {
   }
 
   const handlePaymentReminderSubmit = async (paymentReminderData: PaymentReminderData) => {
-    console.log('paymentReminderData in handlePaymentReminderSubmit --->', paymentReminderData)
     if (!paymentReminderModal.abstractId) return
     // 1️⃣ Send payment reminder email
     const paymentReminderResult = await dispatch(
@@ -149,28 +157,24 @@ export default function AbstractsPage() {
     )
     if (sendPaymentReminderThunk.fulfilled.match(paymentReminderResult)) {
       toast.success(`${paymentReminderResult.payload.message}`)
-     
+
     } else {
-      toast.error('Failed to send payment reminder')
+      const errorMsg = (paymentReminderResult.payload as string) || 'Failed to send payment reminder';
+      toast.error(errorMsg);
     }
     // 3️⃣ Close modal
     dispatch(closePaymentReminderModal())
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <AbstractHeader />
+    <div className="h-full flex flex-col ">
+      <AbstractHeader error={error} onClearError={() => dispatch(clearError())} />
 
       < AbstractTable
         rows={items}
         rawRows={rawItems}
         loading={loading}
-        error={error}
-        errKind={error ? 'generic' : 'none'}
-        onRetry={() =>
-          dispatch(fetchAbstracts({ page, limit: pageSize, filters: appliedFilters }))
-        }
-        onView={(item) => dispatch(setSelected(item))}
+        onView={(item) => item && dispatch(setSelected(item))}
       />
       <AbstractPagination
         totalPages={Math.ceil(total / pageSize)}

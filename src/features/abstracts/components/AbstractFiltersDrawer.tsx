@@ -4,10 +4,10 @@ import {
   updateDraftFilter,
   applyFilters,
   resetFilters,
-  } from '../../../store/slices/abstracts/abstracts.slice'
-  import { selectDraftFilters } from '../../../store/slices/abstracts/abstracts.selectors'
-  import { listWebsites } from '../../../services/sourcedb'
-  import type { SourceWebsite } from '../../../services/sourcedb'
+} from '../../../store/slices/abstracts/abstracts.slice'
+import { selectDraftFilters } from '../../../store/slices/abstracts/abstracts.selectors'
+import { listWebsites } from '../../../services/sourcedb'
+import type { SourceWebsite } from '../../../services/sourcedb'
 
 interface Props {
   open: boolean
@@ -26,15 +26,17 @@ export default function AbstractFiltersDrawer({ open, onClose }: Props) {
     if (!open) return
     let mounted = true
 
-    ;(async () => {
-      try {
-        setLoadingWebsites(true)
-        const data = await listWebsites()
-        if (mounted) setWebsites(data)
-      } finally {
-        if (mounted) setLoadingWebsites(false)
-      }
-    })()
+      ; (async () => {
+        try {
+          setLoadingWebsites(true)
+          const data = await listWebsites()
+          if (mounted) setWebsites(data)
+        } catch (err) {
+          console.error(err)
+        } finally {
+          if (mounted) setLoadingWebsites(false)
+        }
+      })()
 
     return () => {
       mounted = false
@@ -59,14 +61,14 @@ export default function AbstractFiltersDrawer({ open, onClose }: Props) {
         {/* Body */}
         <div className="flex-1 overflow-auto p-4 space-y-3">
           <Input
-            
+
             placeholder="Keyword search..."
             value={filters.search ?? ''}
             onChange={(v) =>
               dispatch(updateDraftFilter({ key: 'search', value: v }))
             }
           />
-          
+
 
           <Input
             placeholder="Name"
@@ -110,7 +112,7 @@ export default function AbstractFiltersDrawer({ open, onClose }: Props) {
 
           <div className="flex gap-2">
             <select
-              className="rounded-md border border-gray-300 bg-white px-2.5 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"              value={filters.status_id ?? ''}
+              className="rounded-md border border-gray-300 bg-white px-2.5 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value={filters.status_id ?? ''}
               onChange={(e) =>
                 dispatch(
                   updateDraftFilter({
@@ -129,6 +131,7 @@ export default function AbstractFiltersDrawer({ open, onClose }: Props) {
               <option value={4}>Rejected</option>
               <option value={5}>Sent Invoice</option>
               <option value={6}>Registered</option>
+              <option value={7}>Deleted</option>
             </select>
 
             <select
@@ -217,11 +220,11 @@ export default function AbstractFiltersDrawer({ open, onClose }: Props) {
         </div>
 
         {/* Footer */}
-       {/* Footer */}
-<div className="px-4 py-3 border-t border-gray-200 bg-white flex items-center justify-end gap-3">
-  <button
-    onClick={() => dispatch(resetFilters())}
-    className="
+        {/* Footer */}
+        <div className="px-4 py-3 border-t border-gray-200 bg-white flex items-center justify-end gap-3">
+          <button
+            onClick={() => dispatch(resetFilters())}
+            className="
       inline-flex items-center justify-center
       rounded-md border border-gray-300
       bg-white px-4 py-2
@@ -229,16 +232,16 @@ export default function AbstractFiltersDrawer({ open, onClose }: Props) {
       hover:bg-gray-50
       focus:outline-none focus:ring-2 focus:ring-blue-500
     "
-  >
-    Reset
-  </button>
+          >
+            Reset
+          </button>
 
-  <button
-    onClick={() => {
-      dispatch(applyFilters())
-      onClose()
-    }}
-    className="
+          <button
+            onClick={() => {
+              dispatch(applyFilters())
+              onClose()
+            }}
+            className="
       inline-flex items-center justify-center
       rounded-md
       bg-blue-600 px-4 py-2
@@ -246,10 +249,10 @@ export default function AbstractFiltersDrawer({ open, onClose }: Props) {
       hover:bg-blue-700
       focus:outline-none focus:ring-2 focus:ring-blue-500
     "
-  >
-    Apply
-  </button>
-</div>
+          >
+            Apply
+          </button>
+        </div>
 
       </aside>
     </div>
@@ -269,11 +272,11 @@ function Input({
 }) {
   return (
     <input
-    className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      
+
     />
   )
 }

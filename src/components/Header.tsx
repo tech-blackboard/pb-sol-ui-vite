@@ -33,7 +33,7 @@ export default function Header({ user, onLogout, onToggleSidebar }: HeaderProps)
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-800">
-      <div className="h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="h-11 flex items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -46,7 +46,7 @@ export default function Header({ user, onLogout, onToggleSidebar }: HeaderProps)
             </svg>
           </button>
           <img src="/logo-min.jpg" alt="Logo" className="h-8 w-auto" />
-          <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">APT</div>
+          <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">CRM</div>
         </div>
 
         <div className="flex items-center gap-2">

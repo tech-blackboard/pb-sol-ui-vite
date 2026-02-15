@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 export type SignInCredentials = {
   useremail: string
   userpassword: string
+  deviceid: string
   remember?: boolean
 }
 
@@ -15,14 +16,17 @@ type SignInPageProps = {
 export default function SignInPage({ onSignIn, isLoading = false, error = null }: SignInPageProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [deviceid, setDeviceid] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [remember, setRemember] = useState(true)
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail')
     const savedPassword = localStorage.getItem('rememberedPassword')
+    const savedDeviceId = localStorage.getItem('deviceFingerprint')
     if (savedEmail) setEmail(savedEmail)
     if (savedPassword) setPassword(savedPassword)
+    if (savedDeviceId) setDeviceid(savedDeviceId)
     if (savedEmail || savedPassword) setRemember(true)
   }, [])
 
@@ -38,7 +42,7 @@ export default function SignInPage({ onSignIn, isLoading = false, error = null }
         localStorage.removeItem('rememberedEmail')
         localStorage.removeItem('rememberedPassword')
       }
-      await Promise.resolve(onSignIn({ useremail: email, userpassword: password, remember }))
+      await Promise.resolve(onSignIn({ useremail: email, userpassword: password, deviceid: deviceid, remember }))
     } finally {
       setSubmitting(false)
     }

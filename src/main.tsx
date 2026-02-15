@@ -4,11 +4,14 @@ import './index.css'
 import App from './App.tsx'
 import { Provider } from 'react-redux'
 import { store } from './store'
+import { DeviceFingerprintProvider } from './components/DeviceFingerprintProvider.tsx'
 
 createRoot(document.getElementById('root')!).render(
 	<StrictMode>
-		<Provider store={store}>
-			<App />
-		</Provider>
+		<DeviceFingerprintProvider>
+			<Provider store={store}>
+				<App />
+			</Provider>
+		</DeviceFingerprintProvider>
 	</StrictMode>,
 )
