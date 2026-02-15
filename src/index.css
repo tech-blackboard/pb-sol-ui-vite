@@ -1,1 +1,9 @@
 @import "tailwindcss";
+
+:root {
+  font-family: "Lato", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+}
+
+body {
+  font-family: inherit;
+}

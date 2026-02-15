@@ -1,0 +1,51 @@
+import { api } from '../lib/api';
+import { publicApi } from '../lib/publicApi';
+import { getBrowserAndOS } from '../utils/deviceInfo';
+import { AUTH_BASE } from '../config/env';
+import { getDeviceFingerprint } from './deviceFingerprint';
+export type LoginRequest = { useremail: string; userpassword: string; deviceId: string }
+export type LoginResponse = {
+  message?: string
+  token?: string
+  accessToken?: string
+  access_token?: string
+  user: { id: string | number; email: string; roles?: string[] }
+  isAdmin?: boolean
+  refreshToken?: string
+  refresh_token?: string
+}
+
+
+// const AUTH_BASE = import.meta.env.VITE_AUTH_BASE;
+
+export async function login(body: LoginRequest): Promise<LoginResponse> {
+
+  const deviceId = await getDeviceFingerprint();
+
+  const { browser, os } = getBrowserAndOS();
+  const { data } = await publicApi.post<LoginResponse>(`${AUTH_BASE}/login`, {
+    ...body,
+    deviceId,
+    browser,
+    os,
+  }, {
+    headers: { 'Content-Type': 'application/json' },
+    withCredentials: true,
+  })
+  return data
+}
+
+export async function logout(): Promise<void> {
+  await api.post(`${AUTH_BASE}/logout`, null)
+}
+
+export async function refreshToken(): Promise<string> {
+  const { data } = await api.post(
+    `${AUTH_BASE}/refresh-token`,
+    {},
+    { withCredentials: true, headers: { 'Content-Type': 'application/json' } },
+  )
+  const token = data?.access_token || data?.accessToken || data?.token
+  if (token) localStorage.setItem('accessToken', token)
+  return token
+}
