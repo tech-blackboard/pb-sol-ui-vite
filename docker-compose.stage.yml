@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  frontend:
+    image: 495417556644.dkr.ecr.ap-south-2.amazonaws.com/pb-sol-ui-vite:latest
+    container_name: frontend-stage
+    restart: always
+    ports:
+      - "80:80"
+    environment:
+      - NODE_ENV=production
+      - API_BACKEND_HOST=pb-api-stage
+    networks:
+      app-network:
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/" ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+networks:
+  app-network:
+    external: true # Use the network created by backend

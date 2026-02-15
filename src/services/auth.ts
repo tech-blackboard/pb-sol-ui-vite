@@ -1,6 +1,9 @@
 import { api } from '../lib/api';
-
-export type LoginRequest = { useremail: string; userpassword: string }
+import { publicApi } from '../lib/publicApi';
+import { getBrowserAndOS } from '../utils/deviceInfo';
+import { AUTH_BASE } from '../config/env';
+import { getDeviceFingerprint } from './deviceFingerprint';
+export type LoginRequest = { useremail: string; userpassword: string; deviceId: string }
 export type LoginResponse = {
   message?: string
   token?: string
@@ -8,17 +11,27 @@ export type LoginResponse = {
   access_token?: string
   user: { id: string | number; email: string; roles?: string[] }
   isAdmin?: boolean
+  refreshToken?: string
+  refresh_token?: string
 }
 
 
-const AUTH_BASE = (import.meta as any).env?.VITE_AUTH_BASE || '/auth'
+// const AUTH_BASE = import.meta.env.VITE_AUTH_BASE;
 
 export async function login(body: LoginRequest): Promise<LoginResponse> {
-  const { data } = await api.post<LoginResponse>(`${AUTH_BASE}/login`, body, {
+
+  const deviceId = await getDeviceFingerprint();
+
+  const { browser, os } = getBrowserAndOS();
+  const { data } = await publicApi.post<LoginResponse>(`${AUTH_BASE}/login`, {
+    ...body,
+    deviceId,
+    browser,
+    os,
+  }, {
     headers: { 'Content-Type': 'application/json' },
     withCredentials: true,
   })
-
   return data
 }
 
@@ -28,7 +41,7 @@ export async function logout(): Promise<void> {
 
 export async function refreshToken(): Promise<string> {
   const { data } = await api.post(
-    `${(import.meta as any).env?.VITE_AUTH_BASE || import.meta.env.VITE_AUTH_BASE}/refresh-token`,
+    `${AUTH_BASE}/refresh-token`,
     {},
     { withCredentials: true, headers: { 'Content-Type': 'application/json' } },
   )
