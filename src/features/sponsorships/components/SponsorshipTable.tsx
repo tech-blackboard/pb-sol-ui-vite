@@ -29,7 +29,7 @@ function SponsorshipRow({ item, onView }: SponsorshipRowProps) {
             <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.phone}>{item.phone}</td>
             <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.organization ?? '—'}>{item.organization ?? '—'}</td>
             <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.country}>{item.country}</td>
-            <td className="px-3 py-1 text-gray-700 max-w-[14rem] truncate" title={item.message}>{item.message}</td>
+            <td className="px-3 py-1 text-gray-700 max-w-[14rem] truncate" title={item.message ? item.message : '—'}>{item.message ? item.message : '—'}</td>
             <td className="px-3 py-1 text-gray-700 truncate max-w-[16rem]" title={item.now ? formatDate(item.now) : '—'}>{item.now ? formatDate(item.now) : '—'}</td>
 
         </tr>

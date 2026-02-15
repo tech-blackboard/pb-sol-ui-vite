@@ -138,7 +138,7 @@ export async function updateAbstract(id: string | number, body: Partial<Abstract
 export async function updateAbstractStatus(
   id: string | number,
   statusId: number,
-): Promise<AbstractItem> {
+): Promise<{ updatedAbstract: AbstractItem; whatsappSent: boolean }> {
   const headers = {
     'Content-Type': 'application/json',
     ...getAuthHeaders(),
@@ -149,7 +149,7 @@ export async function updateAbstractStatus(
     { status_id: statusId },
     { headers, withCredentials: true },
   )
-  return data
+  return data as unknown as { updatedAbstract: AbstractItem; whatsappSent: boolean }
 }
 
 export async function deleteAbstract(id: string | number): Promise<void> {

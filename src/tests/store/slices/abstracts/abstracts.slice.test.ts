@@ -188,10 +188,10 @@ describe('abstracts slice', () => {
 
   it('should handle updateStatusThunk.fulfilled when ID is not in rawItems', () => {
     const startState = { ...initialState, rawItems: [{ id: '2' }] as AbstractItem[] }
-    const payload = { id: '1', status: 'Approved' } as unknown as AbstractItem
+    const payload = { updatedAbstract: { id: '1', status: 'Approved' } as unknown as AbstractItem, whatsappSent: false }
     const state = reducer(startState, updateStatusThunk.fulfilled(payload, '', { id: '1', statusId: 1 }))
     expect(state.rawItems[0].id).toBe('2')
-    expect(state.selected).toBe(payload)
+    expect(state.selected).toEqual(payload.updatedAbstract)
   });
 
   it('should handle sendPaymentReceiptThunk.fulfilled', () => {
@@ -202,7 +202,7 @@ describe('abstracts slice', () => {
       actionLoading: { ...initialState.actionLoading, receipt: true },
       paymentReceiptModal: { open: true, abstractId: '1', abstractName: 'Test' }
     }
-    const payload = { updated: { id: '1', name: 'Updated' } } as unknown as { receiptResult: SendPaymentReceiptResponse; updated: AbstractItem }
+    const payload = { receiptResult: {} as SendPaymentReceiptResponse, updated: { updatedAbstract: { id: '1', name: 'Updated' } as AbstractItem, whatsappSent: false } }
     const state = reducer(startState, sendPaymentReceiptThunk.fulfilled(payload, '', { abstractId: '1', receiptData: {} as PaymentReceiptData }))
 
     expect(state.rawItems[0].name).toBe('Updated')
@@ -256,15 +256,15 @@ describe('abstracts slice', () => {
       items: [{ id: '1', status: 'Old' as AbstractStatus }] as unknown as AbstractRecord[],
     }
 
-    const payload = { id: '1', status: { id: 1, actionType: 'Approved' } } as unknown as AbstractItem
+    const payload = { updatedAbstract: { id: '1', status: { id: 1, actionType: 'Approved' } } as unknown as AbstractItem, whatsappSent: false }
 
     const state = reducer(
       startState,
-      updateStatusThunk.fulfilled(payload as AbstractItem, '', { id: '1', statusId: 2 })
+      updateStatusThunk.fulfilled(payload, '', { id: '1', statusId: 2 })
     )
 
     expect(state.actionLoading.status).toBe(false)
-    expect(state.rawItems[0]).toEqual(payload)
+    expect(state.rawItems[0]).toEqual(payload.updatedAbstract)
     expect(state.modalStatus).toBe('Approved')
   })
 
@@ -322,7 +322,7 @@ describe('abstracts slice', () => {
   })
 
   it('should handle updateStatusThunk.fulfilled with payload.status as object', () => {
-    const payload = { id: '1', status: { actionType: 'Accepted' } } as unknown as AbstractItem
+    const payload = { updatedAbstract: { id: '1', status: { actionType: 'Accepted' } } as unknown as AbstractItem, whatsappSent: false }
     const state = reducer(initialState, updateStatusThunk.fulfilled(payload, '', { id: '1', statusId: 2 }))
     expect(state.modalStatus).toBe('Accepted')
   })
