@@ -3,7 +3,7 @@ name: UI Build and Push to ECR
 on:
   push:
     branches:
-      - release/dev  # ⚠️ Update this if your primary branch is different (e.g., 'master' or 'dev')
+      - release/dev-test  # ⚠️ Update this if your primary branch is different (e.g., 'master' or 'dev')
   workflow_dispatch: # Allow manual trigger for testing test
 
 jobs:
