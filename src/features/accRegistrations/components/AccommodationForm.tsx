@@ -147,6 +147,7 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
             newErrors.checkout = 'Check-out must be after check-in date'
         }
 
+        if (!formData.accm) newErrors.accm = 'Occupancy type is required'
         if (accPrice <= 0) {
             newErrors.accomm = 'Accommodation price is required'
         }
@@ -322,6 +323,12 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
                                         </label>
                                     ))}
                                 </div>
+                                {errors.accm && (
+                                    <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                                        <AlertCircle className="w-4 h-4" />
+                                        {errors.accm}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700">

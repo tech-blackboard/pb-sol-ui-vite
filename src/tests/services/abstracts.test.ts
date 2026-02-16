@@ -93,6 +93,18 @@ describe('abstracts service', () => {
             await updateAbstractStatus('abc-123', 2)
             expect(api.patch).toHaveBeenCalledWith(expect.stringContaining('/abc-123/status'), { status_id: 2 }, expect.any(Object))
         })
+
+        it('returns whatsappSent true if present in response', async () => {
+            ; (api.patch as jest.Mock).mockResolvedValue({ data: { updatedAbstract: mockItem, whatsappSent: true } })
+            const result = await updateAbstractStatus(1, 2)
+            expect(result.whatsappSent).toBe(true)
+        })
+
+        it('returns whatsappSent false if missing or false in response', async () => {
+            ; (api.patch as jest.Mock).mockResolvedValue({ data: { updatedAbstract: mockItem, whatsappSent: false } })
+            const result = await updateAbstractStatus(1, 2)
+            expect(result.whatsappSent).toBe(false)
+        })
     })
 
     describe('searchAbstracts', () => {
@@ -121,6 +133,32 @@ describe('abstracts service', () => {
             expect(result.total).toBe(100)
             expect(result.page).toBe(2)
             expect(result.totalPages).toBe(10)
+        })
+
+        it('extracts pagination from flat response structure', async () => {
+            ; (api.get as jest.Mock).mockResolvedValue({
+                data: {
+                    items: [mockItem],
+                    total: 50,
+                    page: 1,
+                    limit: 10
+                }
+            })
+            const result = await searchAbstracts()
+            expect(result.total).toBe(50)
+            expect(result.totalPages).toBe(5)
+        })
+
+        it('calculates totalPages if total and limit are present', async () => {
+            ; (api.get as jest.Mock).mockResolvedValue({
+                data: {
+                    items: [mockItem],
+                    total: 25,
+                    limit: 10
+                }
+            })
+            const result = await searchAbstracts()
+            expect(result.totalPages).toBe(3) // ceil(25/10)
         })
     })
 

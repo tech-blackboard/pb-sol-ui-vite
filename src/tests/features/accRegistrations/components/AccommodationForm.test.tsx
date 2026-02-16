@@ -53,7 +53,7 @@ describe('AccommodationForm', () => {
 
     it('loads websites', async () => {
         renderForm()
-await waitFor(() => expect(listWebsites).toHaveBeenCalled())
+        await waitFor(() => expect(listWebsites).toHaveBeenCalled())
     })
 
     it('shows validation errors on empty submit', async () => {
@@ -93,72 +93,119 @@ await waitFor(() => expect(listWebsites).toHaveBeenCalled())
         expect(screen.getByText('$210')).toBeInTheDocument() // Total Accommodation Price
     })
 
-   it('successfully submits the form', async () => {
-  const mockDispatch = jest.fn().mockResolvedValue({
-    type: 'accRegistrations/create/fulfilled',
-    payload: {}
-  })
+    it('successfully submits the form', async () => {
+        const mockDispatch = jest.fn().mockResolvedValue({
+            type: 'accRegistrations/create/fulfilled',
+            payload: {}
+        })
 
-  const hooks = await import('../../../../store/hooks')
-  jest.spyOn(hooks, 'useAppDispatch').mockReturnValue(mockDispatch)
+        const hooks = await import('../../../../store/hooks')
+        jest.spyOn(hooks, 'useAppDispatch').mockReturnValue(mockDispatch)
 
-  renderForm()
+        renderForm()
 
-  fireEvent.change(screen.getByLabelText('Caption*'), { target: { value: 'Mr.' } })
-  fireEvent.click(screen.getByRole('radio', { name: 'Single Occupancy' }))
-  fireEvent.change(screen.getByLabelText('Full Name*'), { target: { value: 'John Doe' } })
-  fireEvent.change(screen.getByLabelText('Email*'), { target: { value: 'john@test.com' } })
-  fireEvent.change(screen.getByLabelText('Phone*'), { target: { value: '1234567890' } })
+        fireEvent.change(screen.getByLabelText('Caption*'), { target: { value: 'Mr.' } })
+        fireEvent.click(screen.getByRole('radio', { name: 'Single Occupancy' }))
+        fireEvent.change(screen.getByLabelText('Full Name*'), { target: { value: 'John Doe' } })
+        fireEvent.change(screen.getByLabelText('Email*'), { target: { value: 'john@test.com' } })
+        fireEvent.change(screen.getByLabelText('Phone*'), { target: { value: '1234567890' } })
 
-  await waitFor(() => expect(listWebsites).toHaveBeenCalled())
+        await waitFor(() => expect(listWebsites).toHaveBeenCalled())
 
-  fireEvent.change(screen.getByLabelText('Website/Conference*'), { target: { value: '1' } })
-  fireEvent.change(screen.getByLabelText('Check-in Date'), { target: { value: '2024-01-01' } })
-  fireEvent.change(screen.getByLabelText('Check-out Date'), { target: { value: '2024-01-02' } })
-  fireEvent.change(screen.getByLabelText('Price per Night ($)*'), { target: { value: '100' } })
+        fireEvent.change(screen.getByLabelText('Website/Conference*'), { target: { value: '1' } })
+        fireEvent.change(screen.getByLabelText('Check-in Date'), { target: { value: '2024-01-01' } })
+        fireEvent.change(screen.getByLabelText('Check-out Date'), { target: { value: '2024-01-02' } })
+        fireEvent.change(screen.getByLabelText('Price per Night ($)*'), { target: { value: '100' } })
 
-  fireEvent.click(screen.getByText('Add Accommodation'))
+        fireEvent.click(screen.getByText('Add Accommodation'))
 
-  await waitFor(() => {
-    expect(toast.success).toHaveBeenCalledWith(
-      'Accommodation Registration created successfully'
-    )
-    expect(mockOnSuccess).toHaveBeenCalled()
-    expect(mockOnClose).toHaveBeenCalled()
-  })
-})
+        await waitFor(() => {
+            // The thunk is called with the payload
+            // Note: Since it's a thunk, we might need to check the actual call to the service or mock the thunk differently.
+            // But for now, ensuring the toast and flow is enough as per current test structure.
+            expect(toast.success).toHaveBeenCalledWith(
+                'Accommodation Registration created successfully'
+            )
+            expect(mockOnSuccess).toHaveBeenCalled()
+            expect(mockOnClose).toHaveBeenCalled()
+        })
+    })
 
-  it('handles submission error', async () => {
-  const errorMessage = 'Failed to create registration'
+    it('handles submission error', async () => {
+        const errorMessage = 'Failed to create registration'
 
-  const mockDispatch = jest.fn().mockResolvedValue({
-    type: 'accRegistrations/create/rejected',
-    payload: errorMessage,
-  })
+        const mockDispatch = jest.fn().mockResolvedValue({
+            type: 'accRegistrations/create/rejected',
+            payload: errorMessage,
+        })
 
-  const hooks = await import('../../../../store/hooks')
-  jest.spyOn(hooks, 'useAppDispatch').mockReturnValue(mockDispatch)
+        const hooks = await import('../../../../store/hooks')
+        jest.spyOn(hooks, 'useAppDispatch').mockReturnValue(mockDispatch)
 
-  renderForm()
+        renderForm()
 
-  // WAIT FOR WEBSITES
-  await waitFor(() => expect(listWebsites).toHaveBeenCalled())
+        // WAIT FOR WEBSITES
+        await waitFor(() => expect(listWebsites).toHaveBeenCalled())
 
-  // VALID DATA
-  fireEvent.change(screen.getByLabelText('Caption*'), { target: { value: 'Mr.' } })
-  fireEvent.click(screen.getByRole('radio', { name: 'Single Occupancy' }))
-  fireEvent.change(screen.getByLabelText('Full Name*'), { target: { value: 'John Doe' } })
-  fireEvent.change(screen.getByLabelText('Email*'), { target: { value: 'john@test.com' } })
-  fireEvent.change(screen.getByLabelText('Phone*'), { target: { value: '1234567890' } })
-  fireEvent.change(screen.getByLabelText('Website/Conference*'), { target: { value: '1' } })
-  fireEvent.change(screen.getByLabelText('Check-in Date'), { target: { value: '2024-01-01' } })
-  fireEvent.change(screen.getByLabelText('Check-out Date'), { target: { value: '2024-01-02' } })
-  fireEvent.change(screen.getByLabelText('Price per Night ($)*'), { target: { value: '100' } })
+        // VALID DATA
+        fireEvent.change(screen.getByLabelText('Caption*'), { target: { value: 'Mr.' } })
+        fireEvent.click(screen.getByRole('radio', { name: 'Single Occupancy' }))
+        fireEvent.change(screen.getByLabelText('Full Name*'), { target: { value: 'John Doe' } })
+        fireEvent.change(screen.getByLabelText('Email*'), { target: { value: 'john@test.com' } })
+        fireEvent.change(screen.getByLabelText('Phone*'), { target: { value: '1234567890' } })
+        fireEvent.change(screen.getByLabelText('Website/Conference*'), { target: { value: '1' } })
+        fireEvent.change(screen.getByLabelText('Check-in Date'), { target: { value: '2024-01-01' } })
+        fireEvent.change(screen.getByLabelText('Check-out Date'), { target: { value: '2024-01-02' } })
+        fireEvent.change(screen.getByLabelText('Price per Night ($)*'), { target: { value: '100' } })
 
-  fireEvent.click(screen.getByText('Add Accommodation'))
+        fireEvent.click(screen.getByText('Add Accommodation'))
 
-  await waitFor(() => {
-    expect(toast.error).toHaveBeenCalledWith(errorMessage)
-  })
-})
+        await waitFor(() => {
+            expect(toast.error).toHaveBeenCalledWith(errorMessage)
+        })
+    })
+
+    it('shows error if occupancy type is missing', async () => {
+        renderForm()
+        await screen.findByText('Add New Accommodation')
+
+        // Fill other fields but leave occupancy
+        fireEvent.change(screen.getByLabelText('Caption*'), { target: { value: 'Mr.' } })
+        fireEvent.change(screen.getByLabelText('Full Name*'), { target: { value: 'John Doe' } })
+        fireEvent.change(screen.getByLabelText('Email*'), { target: { value: 'john@test.com' } })
+        fireEvent.change(screen.getByLabelText('Phone*'), { target: { value: '1234567890' } })
+
+        fireEvent.click(screen.getByText('Add Accommodation'))
+
+        await waitFor(() => {
+            expect(screen.getByText('Occupancy type is required')).toBeInTheDocument()
+        })
+    })
+
+    it('validates that checkout date is after checkin date', async () => {
+        renderForm()
+        await screen.findByText('Add New Accommodation')
+
+        const checkinInput = screen.getByLabelText('Check-in Date')
+        const checkoutInput = screen.getByLabelText('Check-out Date')
+
+        fireEvent.change(checkinInput, { target: { value: '2024-01-10' } })
+        fireEvent.change(checkoutInput, { target: { value: '2024-01-05' } }) // Earlier than checkin
+
+        fireEvent.click(screen.getByText('Add Accommodation'))
+
+        await waitFor(() => {
+            expect(screen.getByText('Check-out must be after check-in date')).toBeInTheDocument()
+        })
+    })
+
+    it('captures WhatsApp number correctly', async () => {
+        renderForm()
+        await screen.findByText('Add New Accommodation')
+
+        const wphoneInput = screen.getByLabelText('WhatsApp Number')
+        fireEvent.change(wphoneInput, { target: { value: '9876543210' } })
+
+        expect(wphoneInput).toHaveValue('9876543210')
+    })
 })

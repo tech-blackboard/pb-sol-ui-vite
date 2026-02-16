@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import AccRegistrationFiltersDrawer from '../../../../features/accRegistrations/components/AccRegistrationFiltersDrawer'
 import '@testing-library/jest-dom'
 import { Provider } from 'react-redux'
@@ -40,11 +40,56 @@ describe('AccRegistrationFiltersDrawer', () => {
         expect(mockOnClose).toHaveBeenCalled()
     })
 
-    it('dispatches apply', () => {
+    it('dispatches updateDraftFilter on keyword change', () => {
         const store = createMockStore()
         const spy = jest.spyOn(store, 'dispatch')
         render(<Provider store={store}><AccRegistrationFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
+
+        const input = screen.getByPlaceholderText('Keyword search...')
+        fireEvent.change(input, { target: { value: 'test' } })
+
+        expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'accRegistrations/updateDraftFilter',
+            payload: { key: 'search', value: 'test' }
+        }))
+    })
+
+    it('dispatches updateDraftFilter on website change', async () => {
+        const store = createMockStore()
+        const spy = jest.spyOn(store, 'dispatch')
+        render(<Provider store={store}><AccRegistrationFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
+
+        await waitFor(() => expect(listWebsites).toHaveBeenCalled())
+
+        const select = screen.getByDisplayValue('Website')
+        fireEvent.change(select, { target: { value: '1' } })
+
+        expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'accRegistrations/updateDraftFilter',
+            payload: { key: 'website_id', value: 1 }
+        }))
+    })
+
+    it('dispatches resetFilters when Reset button clicked', () => {
+        const store = createMockStore()
+        const spy = jest.spyOn(store, 'dispatch')
+        render(<Provider store={store}><AccRegistrationFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
+
+        fireEvent.click(screen.getByText('Reset'))
+        expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'accRegistrations/resetFilters'
+        }))
+    })
+
+    it('dispatches applyFilters and calls onClose when Apply button clicked', () => {
+        const store = createMockStore()
+        const spy = jest.spyOn(store, 'dispatch')
+        render(<Provider store={store}><AccRegistrationFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
+
         fireEvent.click(screen.getByText('Apply'))
-        expect(spy).toHaveBeenCalled()
+        expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'accRegistrations/applyFilters'
+        }))
+        expect(mockOnClose).toHaveBeenCalled()
     })
 })

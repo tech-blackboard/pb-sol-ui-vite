@@ -247,7 +247,7 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
             const payload: RegistrationRecord = {
                 ...formData,
                 website_id: Number(formData.website_id),
-                user_id: 10, // Assuming admin/logged-in user id
+                user_id: 1, // Assuming admin/logged-in user id
                 status_id: 1,
                 status_flag: 1,
                 nights: String(currentNights),

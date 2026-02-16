@@ -53,4 +53,34 @@ describe('ContactForm', () => {
         fireEvent.click(screen.getByText('Cancel'))
         expect(mockOnClose).toHaveBeenCalled()
     })
+
+    it('shows error for invalid email format', async () => {
+        renderForm()
+        await screen.findByText('Add New Contact')
+        await screen.findByText('Test Conf')
+
+        fireEvent.change(screen.getByLabelText(/Name/i), {
+            target: { value: 'John' }
+        })
+
+        fireEvent.change(screen.getByLabelText(/Email/i), {
+            target: { value: 'invalid-email' }
+        })
+
+        fireEvent.change(screen.getByLabelText(/Country/i), {
+            target: { value: 'United States' }
+        })
+
+        fireEvent.change(
+            screen.getByLabelText(/Website/i),
+            { target: { value: '1' } }
+        )
+
+        const form = screen.getByText('Submit Now').closest('form')
+        fireEvent.submit(form!)
+
+        expect(await screen.findByText(/Invalid email format/i))
+            .toBeInTheDocument()
+    })
+
 })

@@ -34,14 +34,14 @@ describe('AccRegistrationDetailsModal', () => {
             regtype: 'Full',
             now: '2024-01-01',
             status_flag: 'Paid',
-            accomm: 'Hotel',
+            accomm: '100',
             checkin: '2024-01-01',
             checkout: '2024-01-05',
             nights: '4',
-            accm: 'Single',
-            acmpng: 'None',
+            accm: '400',
+            acmpng: '0',
             acc_pr: '100',
-            tot_price: '400',
+            tot_price: '420',
             transaction_id: 'TX123',
             alt_text: 'Some info',
             message: 'Hello!',
@@ -55,8 +55,10 @@ describe('AccRegistrationDetailsModal', () => {
         expect(screen.getByText('111')).toBeInTheDocument()
         expect(screen.getByText('Oral')).toBeInTheDocument()
         expect(screen.getByText('Paid')).toBeInTheDocument()
+        expect(screen.getByText('100')).toBeInTheDocument()
+        expect(screen.getByText('400')).toBeInTheDocument()
         expect(screen.getByText('$100')).toBeInTheDocument()
-        expect(screen.getByText('$400')).toBeInTheDocument()
+        expect(screen.getByText('$420')).toBeInTheDocument()
         expect(screen.getByText('TX123')).toBeInTheDocument()
         expect(screen.getByText('Hello!')).toBeInTheDocument()
     })

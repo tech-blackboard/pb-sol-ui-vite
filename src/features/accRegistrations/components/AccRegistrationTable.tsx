@@ -38,8 +38,8 @@ function AccRegistrationRow({ item, onView }: AccRegistrationRowProps) {
             <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.participants ? item.participants : '—'}>{item.participants ? item.participants : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.regtype ? item.regtype : '—'}>{item.regtype ? item.regtype : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.accomm ?? '—'}>{item.accomm ? item.accomm : '—'}</td>
-            <td className="px-3 py-1 text-gray-700" title={item.checkin ? formatDate(item.checkin) : '—'}>{item.checkin ? formatDate(item.checkin) : '—'}</td>
-            <td className="px-3 py-1 text-gray-700" title={item.checkout ? formatDate(item.checkout) : '—'}>{item.checkout ? formatDate(item.checkout) : '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.checkin ?? '—'}>{item.checkin ?? '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.checkout ?? '—'}>{item.checkout ?? '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.nights ?? '—'}>{item.nights ?? '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.accm ?? '—'}>{item.accm ? item.accm : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.acmpng ?? '—'}>{item.acmpng ? item.acmpng : '—'}</td>

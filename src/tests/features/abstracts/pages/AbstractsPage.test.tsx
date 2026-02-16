@@ -288,6 +288,36 @@ describe('AbstractsPage', () => {
         })
     })
 
+    test('shows WhatsApp success toast when whatsappSent is true', async () => {
+        const stateSelectedAndAccepted = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                selected: mockAbstractItem,
+                modalStatus: 'Accepted',
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateSelectedAndAccepted))
+
+        // First call is fetchAbstracts on mount, second is updateStatusThunk
+        dispatchMock.mockResolvedValueOnce({ type: 'fetch/fulfilled', payload: [] })
+        dispatchMock.mockResolvedValueOnce({
+            type: 'fulfilled',
+            payload: { whatsappSent: true }
+        })
+
+        render(<AbstractsPage />)
+
+        fireEvent.click(screen.getByText('Update'))
+
+        await waitFor(() => {
+            expect(toast.success).toHaveBeenCalledWith(
+                expect.stringContaining('WhatsApp message sent successfully'),
+                expect.objectContaining({ icon: '📱' })
+            )
+        })
+    })
+
     test('renders and handles InvoiceForm', async () => {
         const stateWithInvoice = {
             ...mockState,
@@ -300,6 +330,13 @@ describe('AbstractsPage', () => {
 
         render(<AbstractsPage />)
         expect(screen.getByTestId('invoice-form')).toBeInTheDocument()
+
+        // 1. sendInvoiceThunk, 2. updateStatusThunk
+        dispatchMock.mockResolvedValueOnce({ type: 'fulfilled', payload: {} })
+        dispatchMock.mockResolvedValueOnce({
+            type: 'fulfilled',
+            payload: { updatedAbstract: { email: 'test@example.com' } }
+        })
 
         fireEvent.click(screen.getByText('Submit Invoice'))
 
@@ -376,10 +413,10 @@ describe('AbstractsPage', () => {
         }
             ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithInvoice))
             ; (sendInvoiceThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
-dispatchMock.mockResolvedValueOnce({
-  type: 'rejected',
-  payload: undefined,
-})
+        dispatchMock.mockResolvedValueOnce({
+            type: 'rejected',
+            payload: undefined,
+        })
 
         render(<AbstractsPage />)
 
@@ -400,10 +437,10 @@ dispatchMock.mockResolvedValueOnce({
         }
             ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithReceipt))
             ; (sendPaymentReceiptThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
-dispatchMock.mockResolvedValueOnce({
-  type: 'rejected',
-  payload: undefined,
-})
+        dispatchMock.mockResolvedValueOnce({
+            type: 'rejected',
+            payload: undefined,
+        })
         render(<AbstractsPage />)
 
         fireEvent.click(screen.getByText('Submit Receipt'))
