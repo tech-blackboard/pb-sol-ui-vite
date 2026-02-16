@@ -32,7 +32,7 @@ export default function AccRegistrationDetailsModal({ item, onClose }: Props) {
                             <div className="grid grid-cols-1 gap-4">
                                 <Field label="ID" value={item.id} />
                                 <Field label="Website Name" value={item.website?.name ?? '—'} />
-                                <Field label="Full Name" value={item.name} />
+                                <Field label="Full Name" value={item.caption ? `${item.caption} ${item.name}` : item.name} />
                                 <Field
                                     label="Email"
                                     value={

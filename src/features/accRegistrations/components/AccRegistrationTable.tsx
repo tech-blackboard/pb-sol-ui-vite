@@ -27,7 +27,7 @@ function AccRegistrationRow({ item, onView }: AccRegistrationRowProps) {
                 {item.name}
             </td>
             <td className="px-3 py-1" title={item.email}>
-                <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">{item.email}</a>
+                <a href={`mailto:${item.email} `} className="text-blue-600 hover:underline">{item.email}</a>
             </td>
             <td className="px-3 py-1 text-gray-700 truncate max-w-[12rem]" title={item.aemail ?? '—'}>{item.aemail ?? '—'}</td>
             <td className="px-3 py-1 text-gray-700  truncate max-w-[12rem]" title={item.phone}>{item.phone}</td>
@@ -43,8 +43,8 @@ function AccRegistrationRow({ item, onView }: AccRegistrationRowProps) {
             <td className="px-3 py-1 text-gray-700" title={item.nights ?? '—'}>{item.nights ?? '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.accm ?? '—'}>{item.accm ? item.accm : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.acmpng ?? '—'}>{item.acmpng ? item.acmpng : '—'}</td>
-            <td className="px-3 py-1 text-gray-700" title={item.acc_pr ? `$${item.acc_pr}` : '—'}>{item.acc_pr ? `$${item.acc_pr}` : '—'}</td>
-            <td className="px-3 py-1 text-gray-700 font-medium" title={item.tot_price ? `$${item.tot_price}` : '—'}>{item.tot_price ? `$${item.tot_price}` : '—'}</td>
+            <td className="px-3 py-1 text-gray-700" title={item.acc_pr ? `$${item.acc_pr} ` : '—'}>{item.acc_pr ? `$${item.acc_pr} ` : '—'}</td>
+            <td className="px-3 py-1 text-gray-700 font-medium" title={item.tot_price ? `$${item.tot_price} ` : '—'}>{item.tot_price ? `$${item.tot_price} ` : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.transaction_id ? item.transaction_id : '—'}>{item.transaction_id ? item.transaction_id : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.status_flag !== undefined ? String(item.status_flag) : '—'}>{item.status_flag ? item.status_flag : '—'}</td>
             <td className="px-3 py-1 text-gray-700" title={item.alt_text ? item.alt_text : '—'}>{item.alt_text ? item.alt_text : '—'}</td>

@@ -168,12 +168,12 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
 
             // Prevent negative values for participants
             if (field === 'participants') {
-                const num = parseInt(value)
+                const num = parseInt(String(value))
                 if (num < 1) newData.participants = '1'
             }
 
             // Auto-update regtype when presentation changes
-            if (field === 'presentation' && REGISTRATION_FEES[value]) {
+            if (field === 'presentation' && typeof value === 'string' && REGISTRATION_FEES[value]) {
                 const fee = String(REGISTRATION_FEES[value])
                 newData.regtype = fee
                 newData.reg_price = fee
@@ -247,7 +247,7 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
             const payload: RegistrationRecord = {
                 ...formData,
                 website_id: Number(formData.website_id),
-                user_id: 10, // Assuming admin/logged-in user id
+                user_id: 1, // Assuming admin/logged-in user id
                 status_id: 1,
                 status_flag: 1,
                 nights: String(currentNights),
@@ -311,10 +311,11 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <label htmlFor="caption-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Caption*
                                 </label>
                                 <select
+                                    id="caption-select"
                                     value={formData.caption}
                                     onChange={(e) => handleChange('caption', e.target.value)}
                                     className={`w-full px-4 py-2.5 rounded-lg border ${errors.caption
@@ -346,10 +347,11 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
                             <SelectField label="Country*" name="country" value={formData.country} options={COUNTRIES} onChange={handleChange} error={errors.country} />
                             <SelectField label="Interested In (Presentation)*" name="presentation" value={formData.presentation} options={PRESENTATION_OPTIONS} onChange={handleChange} error={errors.presentation} />
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <label htmlFor="website-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Website/Conference*
                                 </label>
                                 <select
+                                    id="website-select"
                                     value={formData.website_id || ''}
                                     onChange={(e) => handleChange('website_id', e.target.value)}
                                     disabled={webLoading}
@@ -392,8 +394,9 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
 
 
                         <div className="space-y-4">
-                            <label className="flex items-center space-x-2 cursor-pointer">
+                            <label htmlFor="accomm-checkbox" className="flex items-center space-x-2 cursor-pointer">
                                 <input
+                                    id="accomm-checkbox"
                                     type="checkbox"
                                     checked={formData.accomm === 'Yes'}
                                     onChange={(e) => handleChange('accomm', e.target.checked ? 'Yes' : 'No')}
@@ -508,6 +511,7 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
     )
 }
 
+
 interface InputFieldProps {
     label?: string
     name: string
@@ -519,12 +523,19 @@ interface InputFieldProps {
     onWheel?: React.WheelEventHandler<HTMLInputElement>
 }
 
-function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false, ...props }: InputFieldProps) {
+function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false, onWheel }: InputFieldProps) {
     return (
         <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-            <input type={type} value={value} onChange={(e) => onChange(name, e.target.value)} readOnly={readOnly} onWheel={props.onWheel}
-                className={`w-full px-4 py-2 rounded-lg border ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500 outline-none`} />
+            <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+            <input
+                id={name}
+                type={type}
+                value={value}
+                onChange={(e) => onChange(name, e.target.value)}
+                readOnly={readOnly}
+                onWheel={onWheel}
+                className={`w-full px-4 py-2 rounded-lg border ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500 outline-none`}
+            />
             {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
         </div>
     )
@@ -543,17 +554,22 @@ interface SelectFieldProps {
 function SelectField({ label, name, value, options, onChange, error, isLoading = false }: SelectFieldProps) {
     return (
         <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-            <select value={value} onChange={(e) => onChange(name, e.target.value)} disabled={isLoading}
+            <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+            <select
+                id={name}
+                value={value}
+                onChange={(e) => onChange(name, e.target.value)}
+                disabled={isLoading}
                 className={`w-full px-4 py-2 rounded-lg border ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-purple-500 outline-none`}>
                 <option value="">Select Option</option>
-                {options.map((opt) => (
-                    <option key={typeof opt === 'string' ? opt : opt.value} value={typeof opt === 'string' ? opt : opt.value}>
-                        {typeof opt === 'string' ? opt : opt.label}
-                    </option>
-                ))}
+                {
+                    options.map((opt) => (
+                        <option key={typeof opt === 'string' ? opt : opt.value} value={typeof opt === 'string' ? opt : opt.value}>
+                            {typeof opt === 'string' ? opt : opt.label}
+                        </option>
+                    ))}
             </select>
             {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
-        </div>
+        </div >
     )
 }
