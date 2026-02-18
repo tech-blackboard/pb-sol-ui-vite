@@ -7,6 +7,7 @@ import sponsorshipsReducer from './slices/sponsorships/sponsorships.slice'
 import brochuresReducer from './slices/brochures/brochures.slice'
 import accRegistrationsReducer from './slices/accRegistrations/accRegistrations.slice'
 import contactsReducer from './slices/contacts/contacts.slice'
+import crmReducer from './slices/crm/crm.slice'
 
 export const store = configureStore({
 	reducer: {
@@ -18,8 +19,10 @@ export const store = configureStore({
 		brochures: brochuresReducer,
 		accRegistrations: accRegistrationsReducer,
 		contacts: contactsReducer,
+		crm: crmReducer,
 	},
 })
+
 
 export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
