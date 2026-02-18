@@ -19,6 +19,7 @@ export interface AbstractRecord {
   email: string
   altEmail?: string
   phone?: string
+  wphone?: string
   whatsapp?: string
   city?: string
   country?: string

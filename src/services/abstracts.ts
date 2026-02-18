@@ -344,7 +344,7 @@ export async function sendConfirmationEmail(
   return data
 }
 
-export type PaymentReminderResponse = { status?: 'success' | 'error'; message?: string }
+export type PaymentReminderResponse = { success?: boolean; message?: string; whatsappSent?: boolean }
 
 export async function sendPaymentReminder(id: string | number, paymentReminderData: PaymentReminderData): Promise<PaymentReminderResponse> {
   const { data } = await api.post(
