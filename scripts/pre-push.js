@@ -14,4 +14,4 @@ console.log("🚨 PRE-PUSH HOOK RUNNING");
 run("npm run lint");
 run("npm run test");
 
-process.exit(1);
+process.exit(0);
