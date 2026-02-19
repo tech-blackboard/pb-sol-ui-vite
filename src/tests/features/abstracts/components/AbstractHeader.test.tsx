@@ -41,8 +41,6 @@ jest.mock('../../../../components/AbstractForm.tsx', () => ({
   ),
 }))
 
-
-
 /* --------------------------------------------------
    TEST SUITE
 -------------------------------------------------- */
@@ -66,76 +64,60 @@ describe('AbstractHeader', () => {
       )
   })
 
-  /* -------------------------------------------------- */
-  /* BASIC RENDERING                                    */
-  /* -------------------------------------------------- */
-
   test('renders header title', () => {
     render(<AbstractHeader />)
-
-    expect(
-      screen.getByText('All Conferences — Abstracts')
-    ).toBeInTheDocument()
+    expect(screen.getByText('All Conferences — Abstracts')).toBeInTheDocument()
   })
 
-  /* -------------------------------------------------- */
-  /* FETCH ON MOUNT                                     */
-  /* -------------------------------------------------- */
-
-  test('dispatches fetchAbstracts on mount', () => {
+  test('does not dispatch fetchAbstracts on mount', () => {
     render(<AbstractHeader />)
-
-    expect(fetchAbstracts).toHaveBeenCalledWith({
-      filters: { status: 'Under Review' },
-      page: 1,
-      limit: 10,
-    })
-
-    expect(dispatchMock).toHaveBeenCalled()
+    expect(fetchAbstracts).not.toHaveBeenCalled()
   })
 
-  /* -------------------------------------------------- */
-  /* ADD ABSTRACT MODAL                                 */
-  /* -------------------------------------------------- */
+  test('renders error message when error prop is provided', () => {
+    const onClearError = jest.fn()
+    render(<AbstractHeader error="Something went wrong" onClearError={onClearError} />)
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument()
+  })
+
+  test('calls onClearError when error is closed', () => {
+    const onClearError = jest.fn()
+    render(<AbstractHeader error="Error" onClearError={onClearError} />)
+    fireEvent.click(screen.getByLabelText('Close alert'))
+    expect(onClearError).toHaveBeenCalled()
+  })
 
   test('opens AbstractForm when clicking Add Abstract', () => {
     render(<AbstractHeader />)
-
     fireEvent.click(screen.getByText('Add Abstract'))
-
     expect(screen.getByTestId('abstract-form')).toBeInTheDocument()
   })
 
-  test('closes AbstractForm and re-fetches on success', () => {
+  test('closes AbstractForm and dispatches fetchAbstracts on success', () => {
     render(<AbstractHeader />)
 
     fireEvent.click(screen.getByText('Add Abstract'))
     fireEvent.click(screen.getByText('Success'))
 
     expect(screen.queryByTestId('abstract-form')).not.toBeInTheDocument()
-    expect(fetchAbstracts).toHaveBeenCalled() // mount + success
+    expect(fetchAbstracts).toHaveBeenCalledWith({
+      filters: { status: 'Under Review' },
+      page: 1,
+      limit: 10,
+    })
+    expect(dispatchMock).toHaveBeenCalled()
   })
-
-  /* -------------------------------------------------- */
-  /* FILTER DRAWER                                      */
-  /* -------------------------------------------------- */
 
   test('opens Filters drawer when clicking Filters button', () => {
     render(<AbstractHeader />)
-
     fireEvent.click(screen.getByTitle('Filters'))
-
     expect(screen.getByTestId('filters-drawer')).toBeInTheDocument()
   })
 
   test('closes Filters drawer when onClose is called', () => {
     render(<AbstractHeader />)
-
     fireEvent.click(screen.getByTitle('Filters'))
     fireEvent.click(screen.getByText('Close Filters'))
-
-    expect(
-      screen.queryByTestId('filters-drawer')
-    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('filters-drawer')).not.toBeInTheDocument()
   })
 })

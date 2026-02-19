@@ -1,6 +1,6 @@
 import { api } from '../lib/api';
 import { getAuthHeaders } from './abstracts';
-
+import { ACC_REGISTRATION_BASE } from '../config/env';
 export type AccRegistrationItem = {
     id: number;
     user_id?: number;
@@ -48,10 +48,10 @@ export type AccRegistrationSearchResult = {
     limit: number;
 };
 
-const VITE_ACC_REGISTRATION_BASE = import.meta.env.VITE_ACC_REGISTRATION_BASE;
+// const VITE_ACC_REGISTRATION_BASE = import.meta.env.VITE_ACC_REGISTRATION_BASE;
 
 export async function searchAccRegistrations(params: AccRegistrationSearchParams = {}): Promise<AccRegistrationSearchResult> {
-    const { data } = await api.get(`${VITE_ACC_REGISTRATION_BASE}/search`, {
+    const { data } = await api.get(`${ACC_REGISTRATION_BASE}/search`, {
         params,
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
@@ -66,14 +66,14 @@ export async function searchAccRegistrations(params: AccRegistrationSearchParams
 }
 
 export async function deleteAccRegistration(id: number | string): Promise<void> {
-    await api.delete(`${VITE_ACC_REGISTRATION_BASE}/${id}`, {
+    await api.delete(`${ACC_REGISTRATION_BASE}/${id}`, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });
 }
 
 export async function createAccRegistration(data: Partial<AccRegistrationItem>): Promise<AccRegistrationItem> {
-    const { data: responseData } = await api.post(`${VITE_ACC_REGISTRATION_BASE}`, data, {
+    const { data: responseData } = await api.post(`${ACC_REGISTRATION_BASE}`, data, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });

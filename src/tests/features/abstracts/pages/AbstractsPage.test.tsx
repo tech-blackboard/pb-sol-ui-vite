@@ -19,7 +19,7 @@ import {
     closePaymentReceiptModal,
     closePaymentReminderModal,
 } from '../../../../store/slices/abstracts/abstracts.slice'
-import { toast } from 'react-hot-toast'
+import toast from 'react-hot-toast'
 import type { AbstractItem } from '../../../../services/abstracts'
 import type { AbstractRecord } from '../../../../features/abstracts/types'
 
@@ -60,7 +60,8 @@ jest.mock('../../../../store/slices/abstracts/abstracts.slice', () => ({
 }))
 
 jest.mock('react-hot-toast', () => ({
-    toast: {
+    __esModule: true,
+    default: {
         success: jest.fn(),
         error: jest.fn(),
     },
@@ -75,7 +76,6 @@ jest.mock('../../../../features/abstracts/components/AbstractHeader', () => ({
 interface AbstractTableProps {
     rawRows: AbstractItem[]
     onView: (item: AbstractItem) => void
-    onRetry: () => void
 }
 
 jest.mock('../../../../features/abstracts/components/AbstractTable', () => ({
@@ -84,7 +84,6 @@ jest.mock('../../../../features/abstracts/components/AbstractTable', () => ({
         <div data-testid="abstract-table">
             Table
             <button onClick={() => props.onView(props.rawRows[0])}>View First</button>
-            <button onClick={props.onRetry}>Retry</button>
         </div>
     )
 }))
@@ -229,11 +228,8 @@ describe('AbstractsPage', () => {
         expect(fetchAbstracts).toHaveBeenCalled()
     })
 
-    test('handles table retry and view actions', () => {
+    test('handles table view actions', () => {
         render(<AbstractsPage />)
-
-        fireEvent.click(screen.getByText('Retry'))
-        expect(fetchAbstracts).toHaveBeenCalledTimes(2) // mount + retry
 
         fireEvent.click(screen.getByText('View First'))
         expect(setSelected).toHaveBeenCalledWith(mockAbstractItem)
@@ -292,6 +288,36 @@ describe('AbstractsPage', () => {
         })
     })
 
+    test('shows WhatsApp success toast when whatsappSent is true', async () => {
+        const stateSelectedAndAccepted = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                selected: mockAbstractItem,
+                modalStatus: 'Accepted',
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateSelectedAndAccepted))
+
+        // First call is fetchAbstracts on mount, second is updateStatusThunk
+        dispatchMock.mockResolvedValueOnce({ type: 'fetch/fulfilled', payload: [] })
+        dispatchMock.mockResolvedValueOnce({
+            type: 'fulfilled',
+            payload: { whatsappSent: true }
+        })
+
+        render(<AbstractsPage />)
+
+        fireEvent.click(screen.getByText('Update'))
+
+        await waitFor(() => {
+            expect(toast.success).toHaveBeenCalledWith(
+                expect.stringContaining('WhatsApp message sent successfully'),
+                expect.objectContaining({ icon: '📱' })
+            )
+        })
+    })
+
     test('renders and handles InvoiceForm', async () => {
         const stateWithInvoice = {
             ...mockState,
@@ -304,6 +330,13 @@ describe('AbstractsPage', () => {
 
         render(<AbstractsPage />)
         expect(screen.getByTestId('invoice-form')).toBeInTheDocument()
+
+        // 1. sendInvoiceThunk, 2. updateStatusThunk
+        dispatchMock.mockResolvedValueOnce({ type: 'fulfilled', payload: {} })
+        dispatchMock.mockResolvedValueOnce({
+            type: 'fulfilled',
+            payload: { updatedAbstract: { email: 'test@example.com' } }
+        })
 
         fireEvent.click(screen.getByText('Submit Invoice'))
 
@@ -380,6 +413,10 @@ describe('AbstractsPage', () => {
         }
             ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithInvoice))
             ; (sendInvoiceThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
+        dispatchMock.mockResolvedValueOnce({
+            type: 'rejected',
+            payload: undefined,
+        })
 
         render(<AbstractsPage />)
 
@@ -400,7 +437,10 @@ describe('AbstractsPage', () => {
         }
             ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithReceipt))
             ; (sendPaymentReceiptThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
-
+        dispatchMock.mockResolvedValueOnce({
+            type: 'rejected',
+            payload: undefined,
+        })
         render(<AbstractsPage />)
 
         fireEvent.click(screen.getByText('Submit Receipt'))
@@ -420,6 +460,10 @@ describe('AbstractsPage', () => {
         }
             ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithReminder))
             ; (sendPaymentReminderThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
+        dispatchMock.mockResolvedValueOnce({
+            type: 'rejected',
+            payload: undefined,
+        })
 
         render(<AbstractsPage />)
 

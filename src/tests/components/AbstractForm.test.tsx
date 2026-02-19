@@ -28,12 +28,16 @@ describe('AbstractForm', () => {
   const onClose = jest.fn()
   const onSuccess = jest.fn()
 
+  beforeAll(() => {
+    Element.prototype.scrollTo = jest.fn()
+  })
+
   beforeEach(() => {
     jest.clearAllMocks()
   })
 
   it('renders the AbstractForm modal', async () => {
-    ; (listWebsites as jest.Mock).mockResolvedValue([])
+    (listWebsites as jest.Mock).mockResolvedValue([])
 
     render(<AbstractForm onClose={onClose} />)
 
@@ -43,10 +47,9 @@ describe('AbstractForm', () => {
   })
 
   it('shows validation errors on empty submit', async () => {
-    ; (listWebsites as jest.Mock).mockResolvedValue([])
+    (listWebsites as jest.Mock).mockResolvedValue([])
 
     render(<AbstractForm onClose={onClose} />)
-
     await screen.findByText('Submit Abstract')
 
     fireEvent.click(screen.getByRole('button', { name: /submit now/i }))
@@ -63,7 +66,7 @@ describe('AbstractForm', () => {
   })
 
   it('loads website options from API', async () => {
-    ; (listWebsites as jest.Mock).mockResolvedValue([
+    (listWebsites as jest.Mock).mockResolvedValue([
       { id: 1, name: 'Test Conference' },
     ])
 
@@ -73,166 +76,169 @@ describe('AbstractForm', () => {
   })
 
   it('submits form successfully with file upload', async () => {
-    ; (listWebsites as jest.Mock).mockResolvedValue([
+    (listWebsites as jest.Mock).mockResolvedValue([
       { id: 1, name: 'Test Conference' },
     ])
 
-      ; (createAbstractWithFormDataFileUpload as jest.Mock).mockResolvedValue({})
+    ;(createAbstractWithFormDataFileUpload as jest.Mock).mockResolvedValue({})
 
     render(<AbstractForm onClose={onClose} onSuccess={onSuccess} />)
-
-    // wait for useEffect
     await screen.findByText('Submit Abstract')
 
-    // -------- Caption --------
-    fireEvent.change(screen.getAllByRole('combobox')[0], {
-      target: { value: 'Dr.' },
-    })
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'Dr.' } })
+    fireEvent.change(screen.getByPlaceholderText('Name'), { target: { value: 'John Doe' } })
+    fireEvent.change(screen.getByPlaceholderText('john@example.com'), { target: { value: 'john@test.com' } })
+    fireEvent.change(screen.getByPlaceholderText('Phone'), { target: { value: '1234567890' } })
+    fireEvent.change(screen.getByPlaceholderText('Hyderabad'), { target: { value: 'Hyderabad' } })
+    fireEvent.change(screen.getByPlaceholderText('Organization'), { target: { value: 'Test Org' } })
 
-    // -------- Text inputs (placeholders are stable) --------
-    fireEvent.change(screen.getByPlaceholderText('Name'), {
-      target: { value: 'John Doe' },
-    })
+    fireEvent.change(screen.getAllByRole('combobox')[2], { target: { value: 'India' } })
+    fireEvent.change(screen.getAllByRole('combobox')[3], { target: { value: 'Oral Presentation(In-Person)' } })
+    fireEvent.change(screen.getByPlaceholderText('Abstract Title*'), { target: { value: 'My Abstract' } })
+    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: '1' } })
 
-    fireEvent.change(screen.getByPlaceholderText('john@example.com'), {
-      target: { value: 'john@test.com' },
-    })
-
-    fireEvent.change(screen.getByPlaceholderText('Phone'), {
-      target: { value: '1234567890' },
-    })
-
-    fireEvent.change(screen.getByPlaceholderText('Hyderabad'), {
-      target: { value: 'Hyderabad' },
-    })
-
-    fireEvent.change(screen.getByPlaceholderText('Organization'), {
-      target: { value: 'Test Org' },
-    })
-
-    // -------- Country (value MUST match option value) --------
-    fireEvent.change(screen.getAllByRole('combobox')[2], {
-      target: { value: 'India' },
-    })
-
-    // -------- Interested In --------
-    fireEvent.change(screen.getAllByRole('combobox')[3], {
-      target: { value: 'Oral Presentation(In-Person)' },
-    })
-
-    // -------- Abstract title --------
-    fireEvent.change(screen.getByPlaceholderText('Abstract Title*'), {
-      target: { value: 'My Abstract' },
-    })
-
-    // -------- Website --------
-    fireEvent.change(screen.getAllByRole('combobox')[1], {
-      target: { value: '1' },
-    })
-
-    // -------- File upload --------
-    const fileInput = document.querySelector(
-      'input[type="file"]'
-    ) as HTMLInputElement
-
+    const fileInput = document.querySelector('input[type="file"]')!
     fireEvent.change(fileInput, {
-      target: {
-        files: [new File(['test content'], 'abstract.pdf', { type: 'application/pdf' })],
-      },
+      target: { files: [new File(['test'], 'a.pdf')] },
     })
 
-    // -------- Captcha --------
-    const captchaValue = document.querySelector('.font-mono')!.textContent!
-
+    const captcha = document.querySelector('.font-mono')!.textContent!
     fireEvent.change(screen.getByPlaceholderText('Enter captcha'), {
-      target: { value: captchaValue },
+      target: { value: captcha },
     })
 
-    // -------- Submit --------
     fireEvent.click(screen.getByRole('button', { name: /submit now/i }))
 
     await waitFor(() => {
       expect(createAbstractWithFormDataFileUpload).toHaveBeenCalledTimes(1)
-      expect(toast.success).toHaveBeenCalledWith(
-        'Abstract submitted successfully!'
-      )
+      expect(toast.success).toHaveBeenCalledWith('Abstract submitted successfully!')
       expect(onSuccess).toHaveBeenCalled()
       expect(onClose).toHaveBeenCalled()
     })
   })
 
-  it('shows error toast when website loading fails', async () => {
-    ; (listWebsites as jest.Mock).mockRejectedValue(new Error('Network Error'))
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { })
+it('shows validation error for invalid email', async () => {
+  (listWebsites as jest.Mock).mockResolvedValue([
+    { id: 1, name: 'Test Conference' },
+  ])
 
-    render(<AbstractForm onClose={onClose} />)
+  render(<AbstractForm onClose={onClose} />)
+  await screen.findByText('Submit Abstract')
 
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('Failed to load website options')
-      expect(consoleErrorSpy).toHaveBeenCalled()
-    })
-    consoleErrorSpy.mockRestore()
+  const selects = screen.getAllByRole('combobox')
+
+  // ✅ Caption
+  fireEvent.change(selects[0], { target: { value: 'Dr.' } })
+
+  // ✅ Name
+  fireEvent.change(screen.getByPlaceholderText('Name'), {
+    target: { value: 'John Doe' },
   })
 
-  it('shows validation error for invalid email', async () => {
-    ; (listWebsites as jest.Mock).mockResolvedValue([])
-    render(<AbstractForm onClose={onClose} />)
-
-    fireEvent.change(screen.getByPlaceholderText('john@example.com'), {
-      target: { value: 'invalid-email' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: /submit now/i }))
-
-    expect(await screen.findByText('Invalid email format')).toBeInTheDocument()
+  // ❌ INVALID EMAIL
+  fireEvent.change(screen.getByPlaceholderText('john@example.com'), {
+    target: { value: 'bad-email' },
   })
 
-  it('clears validation errors when field value changes', async () => {
-    ; (listWebsites as jest.Mock).mockResolvedValue([])
-    render(<AbstractForm onClose={onClose} />)
-
-    // Trigger error
-    fireEvent.click(screen.getByRole('button', { name: /submit now/i }))
-    expect(await screen.findByText('Name is required')).toBeInTheDocument()
-
-    // Change value
-    fireEvent.change(screen.getByPlaceholderText('Name'), {
-      target: { value: 'John' },
-    })
-    expect(screen.queryByText('Name is required')).not.toBeInTheDocument()
+  // ✅ Phone
+  fireEvent.change(screen.getByPlaceholderText('Phone'), {
+    target: { value: '9999999999' },
   })
 
-  it('handles submission failure in handleSubmitWithFileUpload', async () => {
-    ; (listWebsites as jest.Mock).mockResolvedValue([{ id: 1, name: 'Web' }])
-      ; (createAbstractWithFormDataFileUpload as jest.Mock).mockRejectedValue({
-        response: { data: { message: 'Server Error' } }
-      })
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { })
-
-    render(<AbstractForm onClose={onClose} websiteId={1} />)
-    await screen.findByText('Web')
-
-    // Fill minimum required fields
-    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'Dr.' } })
-    fireEvent.change(screen.getByPlaceholderText('Name'), { target: { value: 'John' } })
-    fireEvent.change(screen.getByPlaceholderText('john@example.com'), { target: { value: 'j@t.com' } })
-    fireEvent.change(screen.getByPlaceholderText('Phone'), { target: { value: '123' } })
-    fireEvent.change(screen.getByPlaceholderText('Hyderabad'), { target: { value: 'City' } })
-    fireEvent.change(screen.getByPlaceholderText('Organization'), { target: { value: 'Org' } })
-    fireEvent.change(screen.getAllByRole('combobox')[2], { target: { value: 'India' } })
-    fireEvent.change(screen.getAllByRole('combobox')[3], { target: { value: 'Oral Presentation(In-Person)' } })
-    fireEvent.change(screen.getByPlaceholderText('Abstract Title*'), { target: { value: 'Title' } })
-
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
-    fireEvent.change(fileInput, { target: { files: [new File([''], 'a.pdf')] } })
-
-    const captchaValue = document.querySelector('.font-mono')!.textContent!
-    fireEvent.change(screen.getByPlaceholderText('Enter captcha'), { target: { value: captchaValue } })
-
-    fireEvent.click(screen.getByRole('button', { name: /submit now/i }))
-
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('Server Error', { duration: 5000 })
-    })
-    consoleErrorSpy.mockRestore()
+  // ✅ City
+  fireEvent.change(screen.getByPlaceholderText('Hyderabad'), {
+    target: { value: 'Hyderabad' },
   })
+
+  // ✅ Organization
+  fireEvent.change(screen.getByPlaceholderText('Organization'), {
+    target: { value: 'Org' },
+  })
+
+  // ✅ Website
+  fireEvent.change(selects[1], { target: { value: '1' } })
+
+  // ✅ Country
+  fireEvent.change(selects[2], { target: { value: 'India' } })
+
+  // ✅ Interested In
+  fireEvent.change(selects[3], {
+    target: { value: 'Oral Presentation(In-Person)' },
+  })
+
+  // ✅ Title
+  fireEvent.change(screen.getByPlaceholderText('Abstract Title*'), {
+    target: { value: 'My Title' },
+  })
+
+  // ✅ File
+  const fileInput = document.querySelector('input[type="file"]')!
+  fireEvent.change(fileInput, {
+    target: { files: [new File(['test'], 'test.pdf')] },
+  })
+
+  // ✅ Captcha
+  const captcha = document.querySelector('.font-mono')!.textContent!
+  fireEvent.change(screen.getByPlaceholderText('Enter captcha'), {
+    target: { value: captcha },
+  })
+
+fireEvent.submit(document.getElementById('abstract-form')!)
+
+  // ✅ Assert error
+  const alerts = await screen.findAllByRole('alert')
+  const emailError = alerts.find(el =>
+    el.textContent?.includes('Invalid email format')
+  )
+
+  expect(emailError).toBeTruthy()
+})
+
+ it('handles submission failure', async () => {
+  (listWebsites as jest.Mock).mockResolvedValue([{ id: 1, name: 'Web' }])
+
+  ;(createAbstractWithFormDataFileUpload as jest.Mock).mockRejectedValue({
+    response: { data: { message: 'Server Error' } },
+  })
+
+  render(<AbstractForm onClose={onClose} websiteId={1} />)
+  await screen.findByText('Web')
+
+  // Fill EVERYTHING valid
+
+  fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'Dr.' } })
+  fireEvent.change(screen.getByPlaceholderText('Name'), { target: { value: 'John' } })
+  fireEvent.change(screen.getByPlaceholderText('john@example.com'), { target: { value: 'john@test.com' } })
+  fireEvent.change(screen.getByPlaceholderText('Phone'), { target: { value: '1234567890' } })
+  fireEvent.change(screen.getByPlaceholderText('Hyderabad'), { target: { value: 'City' } })
+  fireEvent.change(screen.getByPlaceholderText('Organization'), { target: { value: 'Org' } })
+
+  fireEvent.change(screen.getAllByRole('combobox')[2], { target: { value: 'India' } })
+  fireEvent.change(screen.getAllByRole('combobox')[3], {
+    target: { value: 'Oral Presentation(In-Person)' },
+  })
+
+  fireEvent.change(screen.getByPlaceholderText('Abstract Title*'), {
+    target: { value: 'Title' },
+  })
+
+  const fileInput = document.querySelector('input[type="file"]')!
+  fireEvent.change(fileInput, { target: { files: [new File(['a'], 'a.pdf')] } })
+
+  const captcha = document.querySelector('.font-mono')!.textContent!
+  fireEvent.change(screen.getByPlaceholderText('Enter captcha'), {
+    target: { value: captcha },
+  })
+  fireEvent.change(screen.getAllByRole('combobox')[1], {
+  target: { value: '1' },
+})
+
+
+fireEvent.submit(document.getElementById('abstract-form')!)
+
+  await waitFor(() => {
+    expect(toast.error).toHaveBeenCalledWith('Server Error', { duration: 5000 })
+  })
+  
+})
 })

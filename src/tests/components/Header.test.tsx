@@ -25,7 +25,7 @@ describe('Header Component', () => {
     renderHeader()
 
     expect(screen.getByAltText('Logo')).toBeInTheDocument()
-    expect(screen.getByText('APT')).toBeInTheDocument()
+    expect(screen.getByText('CRM')).toBeInTheDocument()
   })
 
   // ✅ Test 2: User name and role visible

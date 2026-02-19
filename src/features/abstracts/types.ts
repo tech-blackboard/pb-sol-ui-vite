@@ -19,6 +19,7 @@ export interface AbstractRecord {
   email: string
   altEmail?: string
   phone?: string
+  wphone?: string
   whatsapp?: string
   city?: string
   country?: string
@@ -73,6 +74,7 @@ export interface RegistrationRecord {
   tot_price?: string;
   transaction_id?: string;
   status_flag?: number;
+  message?: string;
   now?: string;
   status_id?: number;
   website_id?: number;

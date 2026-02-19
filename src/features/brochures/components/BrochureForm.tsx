@@ -131,9 +131,8 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
                 toast.error(errorMsg);
                 formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
             }
-        } catch (err) {
+        } catch {
             toast.error('An error occurred')
-            console.log("Error in brochure form submission", err)
         } finally {
             setSubmitting(false)
         }
@@ -165,10 +164,11 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
                     </div>
 
                     <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <label htmlFor="website-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Website/Conference*
                         </label>
                         <select
+                            id="website-select"
                             value={formData.website_id || ''}
                             onChange={(e) => handleChange('website_id', e.target.value)}
                             disabled={webLoading}
@@ -195,8 +195,9 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Message</label>
+                        <label htmlFor="message-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Message</label>
                         <textarea
+                            id="message-input"
                             value={formData.message}
                             onChange={(e) => handleChange('message', e.target.value)}
                             rows={4}
@@ -241,10 +242,16 @@ interface InputFieldProps {
 function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false }: InputFieldProps) {
     return (
         <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-            <input type={type} value={value} onChange={(e) => onChange(name, e.target.value)} readOnly={readOnly}
+            <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+            <input
+                id={name}
+                type={type}
+                value={value}
+                onChange={(e) => onChange(name, e.target.value)}
+                readOnly={readOnly}
                 placeholder={label}
-                className={`w-full px-4 py-2.5 rounded-lg border ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 outline-none`} />
+                className={`w-full px-4 py-2.5 rounded-lg border ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 outline-none`}
+            />
             {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
         </div>
     )
@@ -263,8 +270,12 @@ interface SelectFieldProps {
 function SelectField({ label, name, value, options, onChange, error, isLoading = false }: SelectFieldProps) {
     return (
         <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-            <select value={value} onChange={(e) => onChange(name, e.target.value)} disabled={isLoading}
+            <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+            <select
+                id={name}
+                value={value}
+                onChange={(e) => onChange(name, e.target.value)}
+                disabled={isLoading}
                 className={`w-full px-4 py-2.5 rounded-lg border ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 outline-none`}>
                 <option value="">{label}</option>
                 {options?.map((opt) => (

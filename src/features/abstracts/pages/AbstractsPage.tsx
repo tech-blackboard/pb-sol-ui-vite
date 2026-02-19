@@ -97,7 +97,7 @@ export default function AbstractsPage() {
     )
 
     if (!sendInvoiceThunk.fulfilled.match(invoiceResult)) {
-      const errorMsg = (invoiceResult.payload as string) || 'Failed to send invoice';
+      const errorMsg = typeof invoiceResult.payload === 'string' ? invoiceResult.payload : 'Failed to send invoice';
       toast.error(errorMsg);
       return
     }
@@ -138,7 +138,7 @@ export default function AbstractsPage() {
         toast.success('Status updated to Registered')
       }, 400)
     } else {
-      const errorMsg = (paymentReceiptResult.payload as string) || 'Failed to send payment receipt';
+      const errorMsg = typeof paymentReceiptResult.payload === 'string' ? paymentReceiptResult.payload : 'Failed to send payment receipt';
       toast.error(errorMsg);
     }
 
@@ -158,8 +158,19 @@ export default function AbstractsPage() {
     if (sendPaymentReminderThunk.fulfilled.match(paymentReminderResult)) {
       toast.success(`${paymentReminderResult.payload.message}`)
 
+      // Show WhatsApp success toast if message was sent
+      if (paymentReminderResult.payload.whatsappSent) {
+        const abstract = items.find(i => String(i.id) === String(paymentReminderModal.abstractId));
+        const phoneNumber = abstract?.wphone || abstract?.phone || '';
+        toast.success(`WhatsApp message sent successfully to ${phoneNumber}`, {
+          duration: 5000,
+          icon: '📱',
+        });
+      }
     } else {
-      const errorMsg = (paymentReminderResult.payload as string) || 'Failed to send payment reminder';
+      // const errorMsg = (paymentReminderResult.payload as string) || 'Failed to send payment reminder';
+      const errorMsg =
+        typeof paymentReminderResult.payload === 'string' ? paymentReminderResult.payload : 'Failed to send payment reminder'
       toast.error(errorMsg);
     }
     // 3️⃣ Close modal
