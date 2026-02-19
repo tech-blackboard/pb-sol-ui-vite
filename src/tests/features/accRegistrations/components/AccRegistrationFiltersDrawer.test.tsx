@@ -30,7 +30,7 @@ describe('AccRegistrationFiltersDrawer', () => {
     it('renders drawer', () => {
         const store = createMockStore()
         render(<Provider store={store}><AccRegistrationFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
-        expect(screen.getByText('Accommodation')).toBeInTheDocument()
+        expect(screen.getByText('Accommodation Registration Filters')).toBeInTheDocument()
     })
 
     it('calls onClose', () => {
