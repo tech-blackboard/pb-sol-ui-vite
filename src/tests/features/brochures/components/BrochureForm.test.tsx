@@ -67,7 +67,7 @@ describe('BrochureForm', () => {
         expect(mockOnClose).toHaveBeenCalled()
     })
 
-    it.skip('updates form fields', async () => {
+    it('updates form fields', async () => {
         renderForm()
         await screen.findByText('Request Brochure')
 
