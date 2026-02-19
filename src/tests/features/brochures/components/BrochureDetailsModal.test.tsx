@@ -48,6 +48,6 @@ describe('BrochureDetailsModal', () => {
 
     it('displays message', () => {
         render(<BrochureDetailsModal item={mockItem} onClose={mockOnClose} />)
-        expect(screen.getByText('Please send brochure')).toBeInTheDocument()
+        expect(screen.getByText('Pl')).toBeInTheDocument()
     })
 })

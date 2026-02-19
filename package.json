@@ -5,6 +5,7 @@
   "types": "index.d.ts",
   "type": "module",
   "scripts": {
+    "prepare": "husky",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
@@ -41,6 +42,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^16.4.0",
+    "husky": "^9.1.7",
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
     "postcss": "^8.5.6",
