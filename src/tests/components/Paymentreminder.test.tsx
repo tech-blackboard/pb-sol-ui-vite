@@ -58,7 +58,7 @@ describe('PaymentReminderModal', () => {
 
     render(<PaymentReminderModal {...defaultProps} />)
 
-    expect(await screen.findByText('Send ')).toBeInTheDocument()
+    expect(await screen.findByText('Send Payment Reminder')).toBeInTheDocument()
   })
 
   /* ---------------------------------- Loading --------------------------------- */
@@ -128,7 +128,7 @@ describe('PaymentReminderModal', () => {
   /* -------------------------- No payment link case ----------------------------- */
 
   it('shows input when payment link is missing', async () => {
-    mockGetAbstractById.mockResolvedValue({ paymentLink } as unknown as AbstractItem)
+    mockGetAbstractById.mockResolvedValue({ paymentLink: null } as unknown as AbstractItem)
 
     render(<PaymentReminderModal {...defaultProps} />)
 
@@ -180,7 +180,7 @@ describe('PaymentReminderModal', () => {
 
     render(<PaymentReminderModal {...defaultProps} />)
 
-    fireEvent.click(await screen.findByLabelText('Cle'))
+    fireEvent.click(await screen.findByLabelText('Close'))
     expect(onClose).toHaveBeenCalled()
   })
 
