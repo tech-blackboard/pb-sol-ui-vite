@@ -312,7 +312,7 @@ function Field({
   value,
   span,
 }: {
-  label: string
+  label
   value: React.ReactNode
   span?: boolean
 }) {
