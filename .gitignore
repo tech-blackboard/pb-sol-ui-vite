@@ -41,7 +41,6 @@ dist-ssr
 .env.stage.test.local
 .env.stage.production.local
 .env.*
-.husky/
 #jest config 
 coverage/
 coverage-final.json
