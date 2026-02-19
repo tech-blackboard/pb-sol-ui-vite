@@ -29,7 +29,7 @@ describe('BrochureDetailsModal', () => {
     })
 
     it('renders modal with data', () => {
-        render(<BrochureDetailsModal item onClose={mockOnClose} />)
+        render(<BrochureDetailsModal item={mockItem} onClose={mockOnClose} />)
         expect(screen.getByText('Brochure Request Details')).toBeInTheDocument()
         expect(screen.getByText('John Doe')).toBeInTheDocument()
     })
