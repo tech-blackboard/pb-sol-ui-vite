@@ -10,7 +10,7 @@ import type { BrochureItem } from '../../../../services/brochures'
 
 jest.mock('../../../../features/brochures/components/BrochureTable', () => ({
   __esModule: true,
-  default: ({ rows }: { rows }) => (
+  default: ({ rows }: { rows: BrochureItem[] }) => (
     <div data-testid="brochure-table">
       {rows.map((r) => (
         <div key={r.id}>{r.name}</div>
@@ -21,7 +21,7 @@ jest.mock('../../../../features/brochures/components/BrochureTable', () => ({
 
 jest.mock('../../../../features/brochures/components/BrochureDetailsModal', () => ({
   __esModule: true,
-  default: ({ item }: { item }) => (
+  default: ({ item }: { item: BrochureItem | null }) => (
     <div data-testid="details-modal">{item?.name}</div>
   ),
 }))
@@ -63,7 +63,7 @@ describe('BrochuresPage', () => {
     )
 
     expect(screen.getByTestId('brochure-table')).toBeInTheDocument()
-    expect(screen.getByTestId('')).toBeInTheDocument()
+    expect(screen.getByTestId('pagination')).toBeInTheDocument()
   })
 
   it('displays items', () => {
@@ -77,7 +77,7 @@ describe('BrochuresPage', () => {
       </Provider>
     )
 
-    expect(screen.getByText()).toBeInTheDocument()
+    expect(screen.getByText(/John Doe/i)).toBeInTheDocument()
   })
 
   it('renders modal when selected exists', () => {
