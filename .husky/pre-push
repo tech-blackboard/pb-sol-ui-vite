@@ -1,2 +1,4 @@
-#!/usr/bin/env node
-import("../scripts/pre-push.js");
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/h"
+
+node scripts/pre-push.js

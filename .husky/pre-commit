@@ -1,2 +1,4 @@
-#!/usr/bin/env node
-import("../scripts/pre-commit.js");
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/h"
+
+node scripts/pre-commit.js

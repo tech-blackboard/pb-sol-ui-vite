@@ -47,7 +47,7 @@ const mockItem = {
     user: { id: 'u1', firstname: 'Creator', lastname: 'Doe', roles: [{ id: 1, name: 'Admin' }] },
 } as AbstractItem
 
-const mockRecord: AbstractRecord = {
+const mockRecord = {
     id: '1',
     name: 'John Doe',
     email: 'john@test.com',
@@ -185,7 +185,7 @@ describe('AbstractDetailsModal', () => {
             <AbstractDetailsModal
                 item={mockItem}
                 record={mockRecord}
-                modalStatus="Under Review"
+                modalStatus="Under "
                 onClose={onClose}
                 onUpdate={onUpdate}
                 onStatusChange={onStatusChange}
