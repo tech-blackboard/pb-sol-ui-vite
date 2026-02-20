@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { AbstractFilters } from './abstracts.types'
-import { fetchAbstracts, sendConfirmationEmailThunk, sendInvoiceThunk, sendPaymentReceiptThunk, sendPaymentReminderThunk, updateStatusThunk } from './abstracts.thunks'
+import { fetchAbstracts, sendConfirmationEmailThunk, sendInvoiceThunk, sendPaymentReceiptThunk, sendPaymentReminderThunk, updateAbstractThunk, updateStatusThunk } from './abstracts.thunks'
 import { normalizeAbstract } from '../../../features/abstracts/utils/normalizeAbstract'
 import type { AbstractStatus, AbstractRecord } from '../../../features/abstracts/types'
 import type { AbstractItem } from '../../../services/abstracts'
@@ -27,6 +27,7 @@ interface AbstractsState {
     reminder: boolean
     confirmation: boolean
     receipt: boolean
+    edit: boolean
   }
 
   invoiceModal: {
@@ -77,6 +78,7 @@ const initialState: AbstractsState = {
     reminder: false,
     confirmation: false,
     receipt: false,
+    edit: false,
   },
 
   invoiceModal: {
@@ -215,6 +217,31 @@ const abstractsSlice = createSlice({
       .addCase(fetchAbstracts.rejected, (state, action) => {
         state.loading = false
         state.error = (action.payload as string) || action.error.message || 'Failed to load'
+      })
+
+      /* ---------- update abstract ---------- */
+      .addCase(updateAbstractThunk.pending, (state) => {
+        state.actionLoading.edit = true
+      })
+      .addCase(updateAbstractThunk.fulfilled, (state, { payload }) => {
+        state.actionLoading.edit = false
+
+        const updatedAbstract = payload
+
+        const idx = state.rawItems.findIndex(
+          (x) => String(x.id) === String(updatedAbstract.id)
+        )
+
+        if (idx !== -1) {
+          state.rawItems[idx] = updatedAbstract
+          state.items[idx] = normalizeAbstract(updatedAbstract)
+        }
+
+        // 🔥 keep modal + table in sync
+        state.selected = updatedAbstract
+      })
+      .addCase(updateAbstractThunk.rejected, (state) => {
+        state.actionLoading.edit = false
       })
 
       /* ---------- status update ---------- */
