@@ -21,7 +21,7 @@ jest.mock('../../../../store/slices/abstracts/abstracts.thunks', () => ({
         jest.fn(),
         {
             fulfilled: {
-                match: (action: { type?: string; meta?: { requestStatus?: string } }) => action.type?.endsWith('/fulfilled') || action.meta?.requestStatus === 'fulfilled'
+                match: (action: { type?; meta?: { requestStatus?: string } }) => action.type?.endsWith('/fulfilled') || action.meta?.requestStatus === 'fulfilled'
             },
         }
     ),
@@ -185,7 +185,7 @@ describe('AbstractDetailsModal', () => {
             <AbstractDetailsModal
                 item={mockItem}
                 record={mockRecord}
-                modalStatus="Under Review"
+                modalStatus="Under "
                 onClose={onClose}
                 onUpdate={onUpdate}
                 onStatusChange={onStatusChange}
