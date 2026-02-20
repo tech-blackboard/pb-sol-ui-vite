@@ -195,7 +195,7 @@ it('pre-fills website_id when provided', async () => {
         await screen.findByText('Add New Registration')
 
         const accCheckbox = screen.getByRole('checkbox', {
-            name: /Looking for Accommodation/i,
+            name: /Looking for/i,
         })
         fireEvent.click(accCheckbox)
 

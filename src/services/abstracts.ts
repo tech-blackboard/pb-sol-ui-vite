@@ -9,7 +9,7 @@ export type AbstractUser = {
   useremail?: string
   roles?: AbstractRole[]
   createdAt?: string
-  updatedAt?: string
+  updatedAt
 }
 
 export type AbstractStatus = {
