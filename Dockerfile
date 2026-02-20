@@ -14,11 +14,11 @@ RUN npm install --production=false
 # Build argument for environment (defaults to production)
 ARG BUILD_ENV=production
 
-# Copy environment file based on BUILD_ENV
-COPY .env.${BUILD_ENV} .env
-
 # Copy rest of source
 COPY . .
+
+# Copy environment file AFTER source (must be last to avoid being overwritten)
+COPY .env.${BUILD_ENV} .env
 
 # Build with specified env
 RUN npm run build

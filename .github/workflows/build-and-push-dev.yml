@@ -25,7 +25,14 @@ jobs:
         env:
           ENV_PRODUCTION_CONTENT: ${{ secrets.ENV_PRODUCTION_FILE }}
         run: |
-          echo "$ENV_PRODUCTION_CONTENT" > .env.production
+          printf '%s' "$ENV_PRODUCTION_CONTENT" > .env.production
+
+      - name: Verify .env.production keys (no secret values)
+        run: |
+          echo "=== .env.production keys ==="
+          grep -v '^#' .env.production | grep '=' | cut -d'=' -f1
+          echo "=== VITE_AUTH_BASE value ==="
+          grep VITE_AUTH_BASE .env.production || echo "❌ VITE_AUTH_BASE NOT FOUND"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -47,7 +54,11 @@ jobs:
         run: |
           echo "Building UI image..."
           docker build --build-arg BUILD_ENV=$BUILD_ENV -t $ECR_REPOSITORY:latest .
-          
+
+          echo "=== Verifying VITE_AUTH_BASE in built image ==="
+          docker run --rm $ECR_REPOSITORY:latest sh -c \
+            'grep -r "/auth" /usr/share/nginx/html/assets/*.js 2>/dev/null | head -3 || echo "❌ /auth NOT found in bundle"'
+
           echo "Tagging image..."
           docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
