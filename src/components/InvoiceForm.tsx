@@ -119,7 +119,7 @@ export function InvoiceForm({
     }
   }, [formData.interestedIn])
 
-  function handleChange(field: keyof InvoiceData, value: string | number) {
+  function handleChange(field: keyof InvoiceData, value: any) {
     setFormData((prev) => ({ ...prev, [field]: value }))
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }))
