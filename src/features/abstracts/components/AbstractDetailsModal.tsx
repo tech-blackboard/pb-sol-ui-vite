@@ -119,9 +119,12 @@ export default function AbstractDetailsModal({
     const isAbs = /^https?:\/\//i.test(f)
     const name = f.split('/').pop() || ''
     const base = (item?.website?.link || '').replace(/\/$/, '/')
-    const href = isAbs
+    let href = isAbs
       ? f
       : `${base}${f.startsWith('uploads') ? '' : 'uploads/'}${f}`
+    if (record.fileS3Url) {
+      href = record.fileS3Url
+    }
     return { href, name }
   })()
 
@@ -294,24 +297,6 @@ export default function AbstractDetailsModal({
               }
             />
 
-            <Field
-              label="Created By"
-              value={
-                [item.user?.firstname, item.user?.lastname]
-                  .filter(Boolean)
-                  .join(' ') || '—'
-              }
-            />
-
-            <Field
-              label="User Role"
-              value={
-                (item.user?.roles ?? [])
-                  .map((r) => (typeof r === 'string' ? r : (r as { name: string })?.name))
-                  .filter(Boolean)
-                  .join(', ') || '—'
-              }
-            />
           </dl>
         </div>
 
