@@ -68,12 +68,18 @@ function App() {
   const themeMode = useSelector(selectTheme)
   const links: NavLink[] = [
     { id: 'dashboard', label: 'Dashboard' },
-    { id: 'abstracts', label: 'Abstracts' },
-    { id: 'registrations', label: 'Registrations' },
-    { id: 'accRegistrations', label: 'Accommodation Registrations' },
-    { id: 'brochures', label: 'Brochure' },
-    { id: 'sponsorships', label: 'Sponsorship' },
-    { id: 'contacts', label: 'Contact' },
+    {
+      id: 'websiteFormEntries',
+      label: 'Website Form Entries',
+      items: [
+        { id: 'abstracts', label: 'Abstracts' },
+        { id: 'registrations', label: 'Registrations' },
+        { id: 'accRegistrations', label: 'Accommodation Registrations' },
+        { id: 'sponsorships', label: 'Sponsors/Exhibitors' },
+        { id: 'brochures', label: 'Brochures' },
+        { id: 'contacts', label: 'Contacts' },
+      ]
+    },
     ...(isAdmin ? [{ id: 'deviceManagment', label: 'Device Management' }] : []),
   ];
 
