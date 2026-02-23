@@ -12,6 +12,10 @@ import reducer, {
 } from '../../../../store/slices/sponsorships/sponsorships.slice';
 import { fetchSponsorships, createSponsorshipThunk } from '../../../../store/slices/sponsorships/sponsorships.slice';
 import type { SponsorshipItem } from '../../../../services/sponsorships';
+import * as api from '../../../../services/sponsorships'
+import axios from 'axios'
+
+jest.mock('../../../../services/sponsorships')
 
 describe('sponsorships slice', () => {
     const initialState = reducer(undefined, { type: 'INIT' });
@@ -120,4 +124,52 @@ describe('sponsorships slice', () => {
             expect(state.error).toBe('Create Fail');
         });
     });
+    it('fetchSponsorships try branch', async () => {
+  (api.searchSponsorships as jest.Mock).mockResolvedValue({
+    items: [],
+    total: 0,
+  })
+
+  const thunk = fetchSponsorships({ page: 1, limit: 10, filters: {} })
+  const result = await thunk(jest.fn(), () => ({}), undefined)
+
+  expect(result.type).toContain('fulfilled')
+})
+
+it('fetchSponsorships axios error branch', async () => {
+  ;jest.spyOn(axios, 'isAxiosError').mockImplementation(() => true)
+
+  ;(api.searchSponsorships as jest.Mock).mockRejectedValue({
+    response: { data: { message: 'API error' } },
+  })
+
+  const thunk = fetchSponsorships({ page: 1, limit: 10, filters: {} })
+  const result = await thunk(jest.fn(), () => ({}), undefined)
+
+  expect(result.payload).toBe('API error')
+})
+
+it('createSponsorshipThunk axios error branch', async () => {
+  ;jest.spyOn(axios, 'isAxiosError').mockImplementation(() => true)
+
+  ;(api.createSponsorship as jest.Mock).mockRejectedValue({
+    response: { data: { message: 'Create API error' } },
+  })
+
+  const thunk = createSponsorshipThunk({} as any)
+  const result = await thunk(jest.fn(), () => ({}), undefined)
+
+  expect(result.payload).toBe('Create API error')
+})
+
+it('fetchSponsorships fallback error branch', async () => {
+  ;jest.spyOn(axios, 'isAxiosError').mockImplementation(() => false)
+
+  ;(api.searchSponsorships as jest.Mock).mockRejectedValue(new Error())
+
+  const thunk = fetchSponsorships({ page: 1, limit: 10, filters: {} })
+  const result = await thunk(jest.fn(), () => ({}), undefined)
+
+  expect(result.payload).toBe('Failed to load sponsorships')
+})
 });

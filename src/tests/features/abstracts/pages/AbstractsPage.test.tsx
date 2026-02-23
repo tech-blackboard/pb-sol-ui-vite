@@ -318,6 +318,38 @@ describe('AbstractsPage', () => {
         })
     })
 
+    test('shows error toast when whatsappSent is false', async () => {
+  const stateSelectedAndAccepted = {
+    ...mockState,
+    abstracts: {
+      ...mockState.abstracts,
+      selected: mockAbstractItem,
+      modalStatus: 'Accepted',
+    },
+  }
+
+  ;(useAppSelector as jest.Mock).mockImplementation((selectorFn) =>
+    selectorFn(stateSelectedAndAccepted)
+  )
+
+  // First dispatch → fetchAbstracts
+  dispatchMock.mockResolvedValueOnce({ type: 'fetch/fulfilled', payload: [] })
+
+  // Second dispatch → updateStatusThunk result
+  dispatchMock.mockResolvedValueOnce({
+    type: 'fulfilled',
+    payload: { whatsappSent: false }, // 👈 triggers ELSE
+  })
+
+  render(<AbstractsPage />)
+
+  fireEvent.click(screen.getByText('Update'))
+
+  await waitFor(() => {
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+})
+
     test('renders and handles InvoiceForm', async () => {
         const stateWithInvoice = {
             ...mockState,

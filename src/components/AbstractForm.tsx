@@ -147,7 +147,7 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
   }
 
   // Consolidate into a single submission handler
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e:FormEvent) => {
     e.preventDefault()
 
     // Prevent double-submission

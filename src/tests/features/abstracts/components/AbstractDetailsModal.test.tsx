@@ -37,6 +37,18 @@ jest.mock('react-hot-toast', () => ({
 
 import toast from 'react-hot-toast'
 
+jest.mock('../../../../store/slices/abstracts/abstracts.slice', () => ({
+  openInvoiceModal: jest.fn((payload) => ({ type: 'invoice', payload })),
+  openPaymentReminderModal: jest.fn((payload) => ({
+    type: 'reminder',
+    payload,
+  })),
+  openPaymentReceiptModal: jest.fn((payload) => ({
+    type: 'receipt',
+    payload,
+  })),
+}))
+
 /* -------------------- helpers -------------------- */
 
 const mockItem = {
@@ -274,4 +286,72 @@ describe('AbstractDetailsModal', () => {
         fireEvent.click(screen.getByText('Invoice'))
         expect(dispatch).toHaveBeenCalled()
     })
+
+    it('dispatches openPaymentReminderModal with correct payload', () => {
+  const { useAppDispatch } = jest.requireMock('../../../../store/hooks')
+  const dispatch = jest.fn()
+  useAppDispatch.mockReturnValue(dispatch)
+
+  const { openPaymentReminderModal } = jest.requireMock(
+    '../../../../store/slices/abstracts/abstracts.slice'
+  )
+
+  render(
+    <AbstractDetailsModal
+      item={mockItem}
+      record={mockRecord}
+      modalStatus="Sent Invoice"
+      onClose={onClose}
+      onUpdate={onUpdate}
+      onStatusChange={onStatusChange}
+    />
+  )
+
+  fireEvent.click(screen.getByText('Payment Reminder'))
+
+  expect(openPaymentReminderModal).toHaveBeenCalledWith({
+    id: '1',
+    name: 'John Doe',
+  })
+
+  expect(dispatch).toHaveBeenCalledWith({
+    type: 'reminder',
+    payload: { id: '1', name: 'John Doe' },
+  })
+})
+
+it('dispatches openPaymentReceiptModal with correct payload', () => {
+  const { useAppDispatch } = jest.requireMock('../../../../store/hooks')
+  const dispatch = jest.fn()
+  useAppDispatch.mockReturnValue(dispatch)
+
+  const { openPaymentReceiptModal } = jest.requireMock(
+    '../../../../store/slices/abstracts/abstracts.slice'
+  )
+
+  render(
+    <AbstractDetailsModal
+      item={mockItem}
+      record={mockRecord}
+      modalStatus="Registered"
+      onClose={onClose}
+      onUpdate={onUpdate}
+      onStatusChange={onStatusChange}
+    />
+  )
+
+  fireEvent.click(screen.getByText('Payment Receipt'))
+
+  expect(openPaymentReceiptModal).toHaveBeenCalledWith({
+    id: '1',
+    name: 'John Doe',
+  })
+
+  expect(dispatch).toHaveBeenCalledWith({
+    type: 'receipt',
+    payload: { id: '1', name: 'John Doe' },
+  })
+})
+
+
 })

@@ -281,4 +281,60 @@ describe('AbstractFiltersDrawer – full coverage (fixed)', () => {
     })
     consoleSpy.mockRestore()
   })
+  test('sortOrder fallback to DESC when undefined', async () => {
+  const filters = {
+    ...baseFilters,
+    sortOrder: undefined,
+  }
+
+  await renderDrawerAndWait({ filters })
+
+  const selects = screen.getAllByRole('combobox')
+  const sortOrderSelect = selects[3] // last select in row
+
+  expect(sortOrderSelect).toHaveValue('DESC')
+})
+test('sortOrder change dispatches updateDraftFilter', async () => {
+  await renderDrawerAndWait()
+
+  const selects = screen.getAllByRole('combobox')
+  const sortOrderSelect = selects[3]
+
+  fireEvent.change(sortOrderSelect, {
+    target: { value: 'ASC' },
+  })
+
+  expect(mockDispatch).toHaveBeenCalledWith(
+    updateDraftFilter({ key: 'sortOrder', value: 'ASC' })
+  )
+})
+
+test('sortBy dispatches updateDraftFilter', async () => {
+  await renderDrawerAndWait()
+
+  const selects = screen.getAllByRole('combobox')
+  const sortBySelect = selects[2] // adjust index if needed
+
+  fireEvent.change(sortBySelect, {
+    target: { value: 'name' },
+  })
+
+  expect(mockDispatch).toHaveBeenCalledWith(
+    updateDraftFilter({ key: 'sortBy', value: 'name' })
+  )
+})
+
+test('sortBy defaults to now when undefined', async () => {
+  const filters = {
+    ...baseFilters,
+    sortBy: undefined,
+  }
+
+  await renderDrawerAndWait({ filters })
+
+  const selects = screen.getAllByRole('combobox')
+  const sortBySelect = selects[2] // adjust index if needed
+
+  expect(sortBySelect).toHaveValue('now')
+})
 })

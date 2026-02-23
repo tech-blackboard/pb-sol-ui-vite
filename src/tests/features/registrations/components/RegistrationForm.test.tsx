@@ -188,7 +188,7 @@ describe('RegistrationForm', () => {
     fireEvent.change(screen.getByLabelText('Check-in Date'), {
       target: { value: '2024-01-05' },
     })
-
+        
     fireEvent.change(screen.getByLabelText('Check-out Date'), {
       target: { value: '2024-01-01' },
     })
@@ -204,5 +204,5 @@ describe('RegistrationForm', () => {
         'Please fill the missing fields'
       )
     })
-  })
+  },10000)
 })

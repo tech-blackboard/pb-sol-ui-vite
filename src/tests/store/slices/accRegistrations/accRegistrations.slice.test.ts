@@ -12,6 +12,10 @@ import reducer, {
 } from '../../../../store/slices/accRegistrations/accRegistrations.slice';
 import { fetchAccRegistrations, createAccRegistrationThunk } from '../../../../store/slices/accRegistrations/accRegistrations.slice';
 import type { AccRegistrationItem } from '../../../../services/accRegistrations';
+import * as api from '../../../../services/accRegistrations'
+import axios from 'axios'
+
+jest.mock('../../../../services/accRegistrations')
 
 describe('accRegistrations slice', () => {
     const initialState = reducer(undefined, { type: 'INIT' });
@@ -131,4 +135,74 @@ describe('accRegistrations slice', () => {
             expect(state.error).toBe('Create Error');
         });
     });
+
+    it('fetchAccRegistrations success', async () => {
+  (api.searchAccRegistrations as jest.Mock).mockResolvedValue({
+    items: [],
+    total: 0,
+  })
+
+  const thunk = fetchAccRegistrations({ page: 1, limit: 10, filters: {} })
+  const result = await thunk(jest.fn(), () => ({}), undefined)
+
+  expect(result.type).toContain('fulfilled')
+})
+
+it('fetchAccRegistrations axios error', async () => {
+  jest.spyOn(axios, 'isAxiosError').mockImplementation(() => true)
+
+  ;(api.searchAccRegistrations as jest.Mock).mockRejectedValue({
+    response: { data: { message: 'API error' } },
+  })
+
+  const thunk = fetchAccRegistrations({ page: 1, limit: 10, filters: {} })
+  const result = await thunk(jest.fn(), () => ({}), undefined)
+
+  expect(result.payload).toBe('API error')
+})
+
+it('fetchAccRegistrations fallback error', async () => {
+  jest.spyOn(axios, 'isAxiosError').mockImplementation(() => false)
+
+  ;(api.searchAccRegistrations as jest.Mock).mockRejectedValue(new Error())
+
+  const thunk = fetchAccRegistrations({ page: 1, limit: 10, filters: {} })
+  const result = await thunk(jest.fn(), () => ({}), undefined)
+
+  expect(result.payload).toBe('Failed to load')
+})
+
+it('createAccRegistrationThunk success', async () => {
+  (api.createAccRegistration as jest.Mock).mockResolvedValue({ id: 1 })
+
+  const thunk = createAccRegistrationThunk({})
+  const result = await thunk(jest.fn(), () => ({}), undefined)
+
+  expect(result.type).toContain('fulfilled')
+})
+
+it('createAccRegistrationThunk axios error', async () => {
+  jest.spyOn(axios, 'isAxiosError').mockImplementation(() => true)
+
+  ;(api.createAccRegistration as jest.Mock).mockRejectedValue({
+    response: { data: { message: 'Create API error' } },
+  })
+
+  const thunk = createAccRegistrationThunk({})
+  const result = await thunk(jest.fn(), () => ({}), undefined)
+
+  expect(result.payload).toBe('Create API error')
+})
+
+it('createAccRegistrationThunk fallback error', async () => {
+  jest.spyOn(axios, 'isAxiosError').mockImplementation(() => false)
+
+  ;(api.createAccRegistration as jest.Mock).mockRejectedValue(new Error())
+
+  const thunk = createAccRegistrationThunk({})
+  const result = await thunk(jest.fn(), () => ({}), undefined)
+
+  expect(result.payload).toBe('Failed to create registration')
+})
+
 });
