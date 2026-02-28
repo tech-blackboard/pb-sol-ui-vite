@@ -35,7 +35,8 @@ export async function fetchThreads(eventId: number): Promise<Thread[]> {
  * Fetch all messages in a specific thread
  */
 export async function fetchThreadMessages(threadId: string): Promise<Message[]> {
-    const { data } = await api.get<Message[]>(`${CRM_BASE}/messages/${threadId}`, {
+    const encodedId = encodeURIComponent(threadId);
+    const { data } = await api.get<Message[]>(`${CRM_BASE}/messages/${encodedId}`, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });
@@ -46,7 +47,8 @@ export async function fetchThreadMessages(threadId: string): Promise<Message[]> 
  * Update labels for a specific message
  */
 export async function updateMessageLabels(messageId: string, labels: string[]): Promise<void> {
-    await api.put(`${CRM_BASE}/messages/${messageId}/labels`, { labels }, {
+    const encodedId = encodeURIComponent(messageId);
+    await api.put(`${CRM_BASE}/messages/${encodedId}/labels`, { labels }, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });
