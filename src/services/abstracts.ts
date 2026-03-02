@@ -124,10 +124,11 @@ export async function createAbstractWithFormDataFileUpload(body: Partial<Abstrac
   return data
 }
 
-export async function updateAbstract(id: string | number, body: Partial<AbstractItem>): Promise<AbstractItem> {
+export async function updateAbstract(id: string | number, body: Partial<AbstractItem> | FormData): Promise<AbstractItem> {
+  const isFormData = body instanceof FormData
   const { data } = await api.put<AbstractItem>(`${ABSTRACT_BASE}/${id}`, body, {
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...getAuthHeaders(),
     },
     withCredentials: true,
