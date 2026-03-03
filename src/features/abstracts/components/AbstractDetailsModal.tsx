@@ -338,10 +338,10 @@ export default function AbstractDetailsModal({
                   <option disabled={isAccepted || isSentInvoice || isRegistered || isTerminal}>
                     Accepted
                   </option>
-                  <option disabled={isAccepted || isSentInvoice || isRegistered || isTerminal}>
+                  <option disabled={isTerminal}>
                     Out of Scope
                   </option>
-                  <option disabled={isAccepted || isSentInvoice || isRegistered || isTerminal}>
+                  <option disabled={isTerminal}>
                     Rejected
                   </option>
                   <option
