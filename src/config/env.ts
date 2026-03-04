@@ -10,3 +10,4 @@ export const SPONSORSHIP_BASE = import.meta.env.VITE_SPONSORSHIP_BASE ?? '';
 export const CONTACT_BASE = import.meta.env.VITE_CONTACT_BASE ?? '';
 export const BROCHURE_BASE = import.meta.env.VITE_BROCHURE_BASE ?? '';
 export const PAYMENT_LINK = import.meta.env.VITE_PAYMENT_LINK ?? '';
+export const UPLOAD_BASE = import.meta.env.VITE_UPLOAD_BASE ?? '';
