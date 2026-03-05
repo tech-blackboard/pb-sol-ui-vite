@@ -7,6 +7,8 @@ import { sendConfirmationEmailThunk, updateAbstractThunk } from '../../../store/
 import { openInvoiceModal, openPaymentReceiptModal, openPaymentReminderModal } from '../../../store/slices/abstracts/abstracts.slice'
 import toast from 'react-hot-toast'
 import type { AbstractRecord, AbstractStatus } from '../types'
+import { uploadService } from '../../../services/upload'
+import { getS3KeyFromUrl } from '../../../utils/s3Utils'
 
 type StatusAction = AbstractStatus
 
@@ -111,6 +113,22 @@ export default function AbstractDetailsModal({
             : currentStatus === 'Deleted'
               ? 'bg-gray-100 text-red-700'
               : 'bg-blue-50 text-blue-700'
+
+  const handleViewFile = async (e: React.MouseEvent) => {
+    if (!record.fileS3Url) return
+
+    e.preventDefault()
+    const toastId = toast.loading('Generating secure link...')
+    try {
+      const key = getS3KeyFromUrl(record.fileS3Url)
+      const url = await uploadService.getSignedUrl(key)
+      toast.success('Secure link generated', { id: toastId })
+      window.open(url, '_blank', 'noopener,noreferrer')
+    } catch (error) {
+      toast.error('Failed to get secure access to the file', { id: toastId })
+      console.error('Error fetching signed URL:', error)
+    }
+  }
 
   /* -------------------- file -------------------- */
   const file = (() => {
@@ -287,6 +305,7 @@ export default function AbstractDetailsModal({
                     href={file.href}
                     target="_blank"
                     rel="noopener"
+                    onClick={record.fileS3Url ? handleViewFile : undefined}
                     className="text-blue-600 hover:underline"
                   >
                     {file.name}

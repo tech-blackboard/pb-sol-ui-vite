@@ -1,6 +1,9 @@
 import type { AbstractItem } from '../../../services/abstracts'
 import { formatDate } from '../../../utils/utils'
 import type { AbstractRecord } from '../types'
+import { uploadService } from '../../../services/upload'
+import { getS3KeyFromUrl } from '../../../utils/s3Utils'
+import toast from 'react-hot-toast'
 
 interface Props {
   record: AbstractRecord
@@ -36,6 +39,22 @@ export default function AbstractRow({ record, raw, onView }: Props) {
             : record.status === 'Deleted'
               ? 'bg-gray-100 text-red-700'
               : 'bg-blue-50 text-blue-700'
+
+  const handleViewFile = async (e: React.MouseEvent) => {
+    if (!record.fileS3Url) return
+
+    e.preventDefault()
+    const toastId = toast.loading('Generating secure link...')
+    try {
+      const key = getS3KeyFromUrl(record.fileS3Url)
+      const url = await uploadService.getSignedUrl(key)
+      toast.success('Secure link generated', { id: toastId })
+      window.open(url, '_blank', 'noopener,noreferrer')
+    } catch (error) {
+      toast.error('Failed to get secure access to the file', { id: toastId })
+      console.error('Error fetching signed URL:', error)
+    }
+  }
 
   return (
     <tr className="border-t border-gray-100">
@@ -187,6 +206,7 @@ export default function AbstractRow({ record, raw, onView }: Props) {
             href={href}
             target="_blank"
             rel="noopener"
+            onClick={record.fileS3Url ? handleViewFile : undefined}
             className="text-blue-600 hover:underline"
           >
             {name}
