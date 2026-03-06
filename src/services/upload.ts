@@ -12,7 +12,7 @@ export const uploadService = {
      * @returns Pre-signed URL
      */
     async getSignedUrl(key: string, expiresIn?: number): Promise<string> {
-        const params: any = { key };
+        const params: { key: string; expiresIn?: number } = { key };
         if (expiresIn) {
             params.expiresIn = expiresIn;
         }

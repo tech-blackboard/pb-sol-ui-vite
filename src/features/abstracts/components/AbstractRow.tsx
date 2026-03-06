@@ -44,13 +44,28 @@ export default function AbstractRow({ record, raw, onView }: Props) {
     if (!record.fileS3Url) return
 
     e.preventDefault()
+
+    // Open blank tab BEFORE any await — browsers only treat window.open()
+    // as a trusted user gesture when it's synchronous with the click event.
+    const newTab = window.open('', '_blank')
+    if (!newTab) {
+      toast.error('Popup blocked — please allow popups for this site')
+      return
+    }
+
     const toastId = toast.loading('Generating secure link...')
     try {
       const key = getS3KeyFromUrl(record.fileS3Url)
       const url = await uploadService.getSignedUrl(key)
+      if (!url) {
+        newTab.close()
+        toast.error('Could not generate file link — please try again', { id: toastId })
+        return
+      }
       toast.success('Secure link generated', { id: toastId })
-      window.open(url, '_blank', 'noopener,noreferrer')
+      newTab.location.href = url
     } catch (error) {
+      newTab.close()
       toast.error('Failed to get secure access to the file', { id: toastId })
       console.error('Error fetching signed URL:', error)
     }
