@@ -1,17 +1,16 @@
 import { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { fetchThreadsThunk } from '../../../store/slices/crm/crm.thunks';
-import { setActiveEvent } from '../../../store/slices/crm/crm.slice';
+import { setActiveEvent, setActiveDomain } from '../../../store/slices/crm/crm.slice';
 
 export default function CrmHeader() {
     const dispatch = useAppDispatch();
-    const { events, activeEventId } = useAppSelector((state) => state.crm);
+    const { events, activeEventId, activeDomain } = useAppSelector((state) => state.crm);
     const [search, setSearch] = useState('');
 
-    // Group events by domain or just get unique domains
-    const uniqueDomains = Array.from(new Set(events.map(e => e.replyDomain)));
     const activeEvent = events.find(e => e.id === activeEventId);
-    const currentDomain = activeEvent?.replyDomain || uniqueDomains[0];
+    // Domains for the currently selected conference
+    const currentEventDomains = activeEvent?.domains || [];
 
     const handleSync = () => {
         if (activeEventId) {
@@ -19,32 +18,49 @@ export default function CrmHeader() {
         }
     };
 
+    const handleEventChange = (eventId: number) => {
+        dispatch(setActiveEvent(eventId));
+        // Resetting domain is handled in the slice, but we could also 
+        // set it to the first domain of the new event here if desired.
+    };
+
     const handleDomainChange = (domain: string) => {
-        const firstEventInDomain = events.find(e => e.replyDomain === domain);
-        if (firstEventInDomain) {
-            dispatch(setActiveEvent(firstEventInDomain.id));
-        }
+        dispatch(setActiveDomain(domain === 'all' ? null : domain));
     };
 
     return (
         <div className="flex flex-wrap items-center gap-4 p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+
+            {/* Edition Dropdown */}
+            <div className="min-w-[250px]">
+                <label className="block text-xs font-medium text-gray-500 mb-1">Conference Edition</label>
+                <select
+                    className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={activeEventId || ''}
+                    onChange={(e) => handleEventChange(Number(e.target.value))}
+                >
+                    <option value="" disabled>Select Conference</option>
+                    {events.map(e => (
+                        <option key={e.id} value={e.id}>{e.name}</option>
+                    ))}
+                </select>
+            </div>
             {/* Email Account Selector */}
             <div className="flex-1 min-w-[200px]">
                 <label className="block text-xs font-medium text-gray-500 mb-1">Email Account</label>
                 <select
                     className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    value={currentDomain || ''}
+                    value={activeDomain || 'all'}
                     onChange={(e) => handleDomainChange(e.target.value)}
                 >
-                    {uniqueDomains.map((domain) => (
-                        <option key={domain} value={domain}>
+                    <option value="all">All Accounts</option>
+                    {currentEventDomains.map((domain, idx) => (
+                        <option key={idx} value={domain}>
                             {domain}
                         </option>
                     ))}
                 </select>
             </div>
-
-
             {/* Sync Button */}
             <button
                 onClick={handleSync}
@@ -77,19 +93,6 @@ export default function CrmHeader() {
                 Search Email
             </button>
 
-            {/* Edition Dropdown */}
-            <div className="min-w-[250px]">
-                <label className="block text-xs font-medium text-gray-500 mb-1">Conference Edition</label>
-                <select
-                    className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    value={activeEventId || ''}
-                    onChange={(e) => dispatch(setActiveEvent(Number(e.target.value)))}
-                >
-                    {events.filter(e => e.replyDomain === currentDomain).map(e => (
-                        <option key={e.id} value={e.id}>{e.name}</option>
-                    ))}
-                </select>
-            </div>
 
         </div>
     );

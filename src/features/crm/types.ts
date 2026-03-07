@@ -33,6 +33,7 @@ export interface Thread {
     isRead: boolean;
     contact?: Contact;
     messageCount: number;
+    domain: string;
     createdAt: string;
 }
 

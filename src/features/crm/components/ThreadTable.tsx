@@ -5,7 +5,12 @@ import { fetchMessagesThunk } from '../../../store/slices/crm/crm.thunks';
 
 export default function ThreadTable() {
     const dispatch = useAppDispatch();
-    const { threads, loading, selectedThreadId } = useAppSelector((state) => state.crm);
+    const { threads, loading, selectedThreadId, activeDomain } = useAppSelector((state) => state.crm);
+
+    // Filter threads by activeDomain if set
+    const filteredThreads = activeDomain
+        ? threads.filter(t => t.domain === activeDomain)
+        : threads;
 
     const handleSelectThread = (threadId: string) => {
         dispatch(setSelectedThread(threadId));
@@ -47,7 +52,7 @@ export default function ThreadTable() {
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                    {threads.map((thread) => (
+                    {filteredThreads.map((thread) => (
                         <tr
                             key={thread.id}
                             onClick={() => handleSelectThread(thread.id)}
@@ -82,7 +87,7 @@ export default function ThreadTable() {
                             </td>
                         </tr>
                     ))}
-                    {threads.length === 0 && (
+                    {filteredThreads.length === 0 && (
                         <tr>
                             <td colSpan={6} className="p-10 text-center text-gray-400 text-sm">
                                 No threads found for this mailbox.

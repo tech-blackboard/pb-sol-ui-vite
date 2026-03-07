@@ -7,6 +7,7 @@ interface CrmState {
     threads: Thread[];
     messages: Message[];
     activeEventId: number | null;
+    activeDomain: string | null;
     selectedThreadId: string | null;
 
     loading: {
@@ -23,6 +24,7 @@ const initialState: CrmState = {
     threads: [],
     messages: [],
     activeEventId: null,
+    activeDomain: null,
     selectedThreadId: null,
 
     loading: {
@@ -40,6 +42,10 @@ const crmSlice = createSlice({
     reducers: {
         setActiveEvent(state, action: PayloadAction<number | null>) {
             state.activeEventId = action.payload;
+            state.activeDomain = null; // Reset domain when event changes
+        },
+        setActiveDomain(state, action: PayloadAction<string | null>) {
+            state.activeDomain = action.payload;
         },
         setSelectedThread(state, action: PayloadAction<string | null>) {
             state.selectedThreadId = action.payload;
@@ -121,5 +127,5 @@ const crmSlice = createSlice({
     },
 });
 
-export const { setActiveEvent, setSelectedThread, clearError } = crmSlice.actions;
+export const { setActiveEvent, setActiveDomain, setSelectedThread, clearError } = crmSlice.actions;
 export default crmSlice.reducer;
