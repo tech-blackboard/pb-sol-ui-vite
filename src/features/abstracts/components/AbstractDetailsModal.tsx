@@ -90,6 +90,7 @@ export default function AbstractDetailsModal({
         toast.error((result.payload as string) || 'Failed to update abstract')
       }
     } catch (error) {
+      console.error('Error updating abstract:', error)
       toast.error('An error occurred while updating')
     }
   }

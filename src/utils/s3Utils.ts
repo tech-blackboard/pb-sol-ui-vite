@@ -18,6 +18,7 @@ export const getS3KeyFromUrl = (url: string): string => {
         // Fallback for other potential formats if needed
         return url;
     } catch (error) {
+        console.error('Error parsing URL:', error);
         // If URL parsing fails, return as is (could be a relative path already)
         return url;
     }
