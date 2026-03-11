@@ -133,7 +133,9 @@ describe('PaymentReminderModal', () => {
     render(<PaymentReminderModal {...defaultProps} />)
 
     expect(
-      await screen.findByPlaceholderText('https://payment.example.com/...')
+      await screen.findByPlaceholderText(
+        'https://payment.example.com/... (Optional)'
+      )
     ).toBeInTheDocument()
   })
 
@@ -143,7 +145,7 @@ describe('PaymentReminderModal', () => {
     render(<PaymentReminderModal {...defaultProps} />)
 
     const input = await screen.findByPlaceholderText(
-      'https://payment.example.com/...'
+      'https://payment.example.com/... (Optional)'
     )
 
     fireEvent.change(input, {
@@ -157,20 +159,23 @@ describe('PaymentReminderModal', () => {
     })
   })
 
-  it('shows validation error when payment link is empty', async () => {
+  it('submits with empty payment link (optional)', async () => {
     mockGetAbstractById.mockResolvedValue({ paymentLink: null } as unknown as AbstractItem)
 
     render(<PaymentReminderModal {...defaultProps} />)
 
-    const input = await screen.findByPlaceholderText('https://payment.example.com/...')
+    // Wait until the button is enabled (data loaded)
+    const sendBtn = await waitFor(() => {
+      const btn = screen.getByText('Send Reminder')
+      expect(btn).toBeEnabled()
+      return btn
+    })
 
-    // Trigger error by sending empty
-    fireEvent.click(screen.getByText('Send Reminder'))
-    expect(await screen.findByText('Payment link is required')).toBeInTheDocument()
+    fireEvent.click(sendBtn)
 
-    // Clear error
-    fireEvent.change(input, { target: { value: 'https://test.com' } })
-    expect(screen.queryByText('Payment link is required')).not.toBeInTheDocument()
+    expect(onSubmit).toHaveBeenCalledWith({
+      paymentLink: '',
+    })
   })
 
   /* ---------------------------------- Close ----------------------------------- */
@@ -204,7 +209,7 @@ describe('PaymentReminderModal', () => {
 
     expect(
       await screen.findByText(
-        'Payment link is not available, please send payment reminder'
+        'ℹ️ Payment link is not available. You can optionally provide one below.'
       )
     ).toBeInTheDocument()
     consoleSpy.mockRestore()
