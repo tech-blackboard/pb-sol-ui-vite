@@ -60,11 +60,6 @@ export function PaymentReminderModal({
   }
 
   function handleSend() {
-    if (!existingPaymentLink && !formData.paymentLink) {
-      setErrors({ paymentLink: 'Payment link is required' })
-      return
-    }
-
     const payload: PaymentReminderData = {
       paymentLink: existingPaymentLink ?? formData.paymentLink,
     }
@@ -144,9 +139,11 @@ export function PaymentReminderModal({
             </>
           ) : (
             <>
-              <p className="text-sm font-medium text-red-700 mb-2">
-                Payment link is not available, please send payment reminder
-              </p>
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 mb-4">
+                <p className="text-sm font-medium text-blue-700">
+                  ℹ️ Payment link is not available. You can optionally provide one below.
+                </p>
+              </div>
               <input
                 type="url"
                 value={formData.paymentLink}
@@ -156,7 +153,7 @@ export function PaymentReminderModal({
                   ? 'border-red-500 focus:ring-red-500'
                   : 'border-gray-300 focus:ring-blue-500 dark:border-gray-600'
                   } dark:bg-gray-700 dark:text-white`}
-                placeholder="https://payment.example.com/..."
+                placeholder="https://payment.example.com/... (Optional)"
               />
               {errors.paymentLink && (
                 <p className="text-sm text-red-500 mt-1">{errors.paymentLink}</p>
