@@ -299,41 +299,41 @@ describe('App Component', () => {
         });
     });
 
- test('navigates through all sections', async () => {
-  const preloadedState = {
-    auth: {
-      user: {
-        id: 1,
-        useremail: 'admin@test.com',
-        name: 'Admin',
-        role: 'Administrator',
-        isAdmin: true,
-      },
-      loading: false,
-      error: null,
-    },
-  };
+    test('navigates through all sections', async () => {
+        const preloadedState = {
+            auth: {
+                user: {
+                    id: 1,
+                    useremail: 'admin@test.com',
+                    name: 'Admin',
+                    role: 'Administrator',
+                    isAdmin: true,
+                },
+                loading: false,
+                error: null,
+            },
+        };
 
-  renderWithProviders(<App />, { preloadedState });
+        renderWithProviders(<App />, { preloadedState });
 
-  // Wait for default page
-  await screen.findByTestId('page-abstracts');
+        // Wait for default page
+        await screen.findByTestId('page-abstracts');
 
-  const navTests = [
-    { label: 'Registrations', page: 'page-registrations' },
-    { label: 'Accommodation Registrations', page: 'page-acc' },
-    { label: 'Brochure', page: 'page-brochure' },
-    { label: 'Sponsorship', page: 'page-sponsorship' },
-    { label: 'Contact', page: 'page-contact' },
-    { label: 'Dashboard', page: 'page-dashboard' },
-  ];
+        const navTests = [
+            { label: 'Registrations', page: 'page-registrations' },
+            { label: 'Accommodation Registrations', page: 'page-acc' },
+            { label: 'Brochures', page: 'page-brochure' },
+            { label: 'Sponsors/Exhibitors', page: 'page-sponsorship' },
+            { label: 'Contacts', page: 'page-contact' },
+            { label: 'Dashboard', page: 'page-dashboard' },
+        ];
 
-  for (const nav of navTests) {
-    fireEvent.click(screen.getByRole('button', { name: nav.label }));
+        for (const nav of navTests) {
+            fireEvent.click(screen.getByRole('button', { name: nav.label }));
 
-    expect(await screen.findByTestId(nav.page)).toBeInTheDocument();
-  }
-});
+            expect(await screen.findByTestId(nav.page)).toBeInTheDocument();
+        }
+    });
 
     test('renders Device Management for admins', async () => {
         const preloadedState = {
@@ -357,6 +357,6 @@ describe('App Component', () => {
             expect(screen.queryByText(/Loading devices/i)).not.toBeInTheDocument();
         }, { timeout: 3000 });
 
-expect(screen.getAllByText(/Device Management/i).length).toBeGreaterThan(0)
+        expect(screen.getAllByText(/Device Management/i).length).toBeGreaterThan(0)
     });
 });

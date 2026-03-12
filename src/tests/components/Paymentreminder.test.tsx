@@ -178,6 +178,29 @@ describe('PaymentReminderModal', () => {
     })
   })
 
+  it('submits with empty payment link (optional)', async () => {
+    mockGetAbstractById.mockResolvedValue({ paymentLink: null } as unknown as AbstractItem)
+
+    render(<PaymentReminderModal {...defaultProps} />)
+
+    // Wait until the button is enabled (data loaded)
+    const sendBtn = await waitFor(() => {
+      const btn = screen.getByText('Send Reminder')
+      expect(btn).toBeEnabled()
+      return btn
+    })
+
+    fireEvent.click(sendBtn)
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      paymentLink: '',
+    })
+  })
+
+  /* ---------------------------------- Close ----------------------------------- */
+
+
+
   /* ---------------------------------- Close ----------------------------------- */
 
   it('calls onClose when close button is clicked', async () => {

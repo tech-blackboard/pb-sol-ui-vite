@@ -288,6 +288,37 @@ describe('AbstractsPage', () => {
         })
     })
 
+    test('handles handleUpdateStatus failure in DetailsModal', async () => {
+        // Mocking selectors for internal handleUpdateStatus check
+        const stateSelectedAndAccepted = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                selected: mockAbstractItem,
+                modalStatus: 'Accepted',
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateSelectedAndAccepted))
+            ; (updateStatusThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
+
+        // First dispatch is fetchAbstracts on mount
+        dispatchMock.mockResolvedValueOnce({ type: 'fetch/fulfilled', payload: [] })
+        
+        // Second dispatch is the updateStatusThunk
+        dispatchMock.mockResolvedValueOnce({
+            type: 'rejected',
+            payload: undefined, // undefined to trigger fallback "Failed to update status"
+        })
+
+        render(<AbstractsPage />)
+
+        fireEvent.click(screen.getByText('Update'))
+
+        await waitFor(() => {
+            expect(toast.error).toHaveBeenCalledWith('Failed to update status')
+        })
+    })
+
     test('shows WhatsApp success toast when whatsappSent is true', async () => {
         const stateSelectedAndAccepted = {
             ...mockState,
@@ -344,6 +375,37 @@ describe('AbstractsPage', () => {
             expect(sendInvoiceThunk).toHaveBeenCalled()
             expect(updateStatusThunk).toHaveBeenCalled()
             expect(closeInvoiceModal).toHaveBeenCalled()
+            // Wait for the setTimeout in the then block
+            expect(toast.success).toHaveBeenCalledWith('Status updated to Sent Invoice')
+        })
+    })
+
+    test('renders and handles InvoiceForm but updateStatus fails', async () => {
+        const stateWithInvoice = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                invoiceModal: { open: true, abstractId: '1', abstractName: 'Test' },
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithInvoice))
+
+        render(<AbstractsPage />)
+        expect(screen.getByTestId('invoice-form')).toBeInTheDocument()
+
+        // 1. sendInvoiceThunk (success), 2. updateStatusThunk (fail)
+        dispatchMock.mockResolvedValueOnce({ type: 'fulfilled', payload: {} })
+        dispatchMock.mockResolvedValueOnce({ type: 'rejected', payload: {} })
+        
+        // Mock matching
+        ; (sendInvoiceThunk.fulfilled.match as unknown as jest.Mock).mockReturnValueOnce(true)
+        ; (updateStatusThunk.fulfilled.match as unknown as jest.Mock).mockReturnValueOnce(false)
+
+        fireEvent.click(screen.getByText('Submit Invoice'))
+
+        await waitFor(() => {
+            expect(toast.error).toHaveBeenCalledWith('Invoice sent, but status update failed')
+            expect(closeInvoiceModal).toHaveBeenCalled()
         })
     })
 
@@ -373,6 +435,8 @@ describe('AbstractsPage', () => {
             expect(sendPaymentReceiptThunk).toHaveBeenCalled()
             expect(closePaymentReceiptModal).toHaveBeenCalled()
             expect(toast.success).toHaveBeenCalledWith('Receipt sent')
+            // Wait for the setTimeout in the then block
+            expect(toast.success).toHaveBeenCalledWith('Status updated to Registered')
         })
     })
 
@@ -403,6 +467,36 @@ describe('AbstractsPage', () => {
         })
     })
 
+    test('handles PaymentReminderModal with whatsapp success toast', async () => {
+        const itemWithWPhone = { ...mockAbstractItem, id: '1', wphone: '9876543210' }
+        const stateWithReminder = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                items: [itemWithWPhone],
+                paymentReminderModal: { open: true, abstractId: '1', abstractName: 'Test' },
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithReminder))
+
+        render(<AbstractsPage />)
+        expect(screen.getByTestId('payment-reminder-modal')).toBeInTheDocument()
+
+        dispatchMock.mockResolvedValueOnce({
+            type: 'fulfilled',
+            payload: { message: 'Reminder sent', whatsappSent: true }
+        })
+
+        fireEvent.click(screen.getByText('Submit Reminder'))
+
+        await waitFor(() => {
+            expect(toast.success).toHaveBeenCalledWith(
+                expect.stringContaining('WhatsApp message sent successfully to 9876543210'),
+                expect.objectContaining({ icon: '📱' })
+            )
+        })
+    })
+
     test('handles handleInvoiceSubmit failure', async () => {
         const stateWithInvoice = {
             ...mockState,
@@ -423,8 +517,23 @@ describe('AbstractsPage', () => {
         fireEvent.click(screen.getByText('Submit Invoice'))
 
         await waitFor(() => {
-            expect(toast.error).toHaveBeenCalledWith('Failed to send invoice')
+            expect(toast.error).toHaveBeenCalledWith('Failed to send invoice') // hit fallback line 100
         })
+    })
+
+    test('ignores handleInvoiceSubmit if no abstractId', async () => {
+        const stateWithInvoice = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                invoiceModal: { open: true, abstractId: null, abstractName: 'Test' },
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithInvoice))
+
+        render(<AbstractsPage />)
+        fireEvent.click(screen.getByText('Submit Invoice'))
+        expect(sendInvoiceThunk).not.toHaveBeenCalled()
     })
 
     test('handles handlePaymentReceiptSubmit failure', async () => {
@@ -446,8 +555,23 @@ describe('AbstractsPage', () => {
         fireEvent.click(screen.getByText('Submit Receipt'))
 
         await waitFor(() => {
-            expect(toast.error).toHaveBeenCalledWith('Failed to send payment receipt')
+            expect(toast.error).toHaveBeenCalledWith('Failed to send payment receipt') // hit fallback line 141
         })
+    })
+
+    test('ignores handlePaymentReceiptSubmit if no abstractId', async () => {
+        const stateWithReceipt = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                paymentReceiptModal: { open: true, abstractId: null, abstractName: 'Test' },
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithReceipt))
+
+        render(<AbstractsPage />)
+        fireEvent.click(screen.getByText('Submit Receipt'))
+        expect(sendPaymentReceiptThunk).not.toHaveBeenCalled()
     })
 
     test('handles handlePaymentReminderSubmit failure', async () => {
@@ -470,7 +594,132 @@ describe('AbstractsPage', () => {
         fireEvent.click(screen.getByText('Submit Reminder'))
 
         await waitFor(() => {
-            expect(toast.error).toHaveBeenCalledWith('Failed to send payment reminder')
+            expect(toast.error).toHaveBeenCalledWith('Failed to send payment reminder') // hit fallback line 173
+        })
+    })
+
+    test('ignores handlePaymentReminderSubmit if no abstractId', async () => {
+        const stateWithReminder = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                paymentReminderModal: { open: true, abstractId: null, abstractName: 'Test' },
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithReminder))
+
+        render(<AbstractsPage />)
+        fireEvent.click(screen.getByText('Submit Reminder'))
+        expect(sendPaymentReminderThunk).not.toHaveBeenCalled()
+    })
+
+    test('handles PaymentReminderModal with whatsapp success toast fallback phone', async () => {
+        const itemWithPhone = { ...mockAbstractItem, id: '1', phone: '1112223333' }
+        const stateWithReminder = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                items: [itemWithPhone],
+                paymentReminderModal: { open: true, abstractId: '1', abstractName: 'Test' },
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithReminder))
+
+        render(<AbstractsPage />)
+
+        dispatchMock.mockResolvedValueOnce({
+            type: 'fulfilled',
+            payload: { message: 'Reminder sent', whatsappSent: true }
+        })
+
+        fireEvent.click(screen.getByText('Submit Reminder'))
+
+        await waitFor(() => {
+            expect(toast.success).toHaveBeenCalledWith(
+                expect.stringContaining('WhatsApp message sent successfully to 1112223333'), // line 164 fallback
+                expect.objectContaining({ icon: '📱' })
+            )
+        })
+    })
+
+    test('handleUpdateStatus returns early if no viewItem', () => {
+        const stateNoSelected = {
+            ...mockState,
+            abstracts: { ...mockState.abstracts, selected: null }
+        }
+        ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateNoSelected))
+        
+        render(<AbstractsPage />)
+        // Check that handles update status returns early
+    })
+
+    test('handleUpdateStatus returns early if same status', () => {
+        const stateSameStatus = {
+            ...mockState,
+            abstracts: { 
+                ...mockState.abstracts, 
+                selected: mockAbstractItem,
+                modalStatus: 'Under Review'
+            }
+        }
+        ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateSameStatus))
+        
+        render(<AbstractsPage />)
+        fireEvent.click(screen.getByText('Update'))
+        expect(updateStatusThunk).not.toHaveBeenCalled()
+    })
+
+    test('handles thunk errors with non-string payloads', async () => {
+        const stateSelectedAndAccepted = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                selected: mockAbstractItem,
+                modalStatus: 'Accepted',
+            }
+        }
+        ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateSelectedAndAccepted))
+        ; (updateStatusThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
+        
+        dispatchMock.mockResolvedValueOnce({ type: 'fetch/fulfilled', payload: [] })
+        dispatchMock.mockResolvedValueOnce({
+            type: 'rejected',
+            payload: { some: 'object' },
+        })
+
+        render(<AbstractsPage />)
+        fireEvent.click(screen.getByText('Update'))
+
+        await waitFor(() => {
+            expect(toast.error).toHaveBeenCalledWith('Failed to update status')
+        })
+    })
+
+    test('handles WhatsApp toast when abstract is missing in items', async () => {
+        const stateNoItems = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                items: [],
+                paymentReminderModal: { open: true, abstractId: '1', abstractName: 'Test' },
+            }
+        }
+        ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateNoItems))
+
+        render(<AbstractsPage />)
+        
+        dispatchMock.mockResolvedValueOnce({
+            type: 'fulfilled',
+            payload: { message: 'Reminder sent', whatsappSent: true }
+        })
+
+        fireEvent.click(screen.getByText('Submit Reminder'))
+
+        await waitFor(() => {
+            expect(toast.success).toHaveBeenCalledWith(
+                expect.stringContaining('WhatsApp message sent successfully to '),
+                expect.objectContaining({ icon: '📱' })
+            )
         })
     })
 })

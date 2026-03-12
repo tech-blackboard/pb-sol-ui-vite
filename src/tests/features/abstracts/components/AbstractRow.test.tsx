@@ -9,6 +9,24 @@ jest.mock('../../../../utils/utils', () => ({
   formatDate: jest.fn(() => '01 Jan 2025'),
 }))
 
+jest.mock('../../../../services/upload', () => ({
+  uploadService: {
+    getSignedUrl: jest.fn(),
+  },
+}))
+
+jest.mock('react-hot-toast', () => ({
+  __esModule: true,
+  default: {
+    success: jest.fn(),
+    error: jest.fn(),
+    loading: jest.fn(() => 'test-toast-id'),
+  },
+}))
+
+import toast from 'react-hot-toast'
+import { uploadService } from '../../../../services/upload'
+
 const baseRecord: AbstractRecord = {
   id: '1',
   name: 'John Doe',
@@ -271,4 +289,134 @@ describe('AbstractRow – full branch & function coverage', () => {
 
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
   })
+
+  /* ---------------- handleViewFile action ---------------- */
+  describe('handleViewFile', () => {
+    let windowOpenSpy: jest.SpyInstance
+    let mockNewTab: Window
+
+    beforeEach(() => {
+      mockNewTab = {
+        close: jest.fn(),
+        location: { href: '' },
+      } as unknown as Window
+      windowOpenSpy = jest.spyOn(window, 'open').mockReturnValue(mockNewTab)
+    })
+
+    afterEach(() => {
+      windowOpenSpy.mockRestore()
+    })
+
+    test('downloads file successfully', async () => {
+      ; (uploadService.getSignedUrl as jest.Mock).mockResolvedValue('https://secure-url.com/file.pdf')
+
+      render(
+        <table>
+          <tbody>
+            <AbstractRow record={{ ...baseRecord, fileS3Url: 's3://bucket/file.pdf', file: 'file.pdf' }} raw={baseRaw} onView={onView} />
+          </tbody>
+        </table>
+      )
+
+      fireEvent.click(screen.getByText('file.pdf'))
+
+      // wait for async handleViewFile completion
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      expect(windowOpenSpy).toHaveBeenCalledWith('', '_blank')
+      expect(uploadService.getSignedUrl).toHaveBeenCalled()
+      expect(toast.success).toHaveBeenCalledWith('Secure link generated', { id: 'test-toast-id' })
+      expect(mockNewTab.location.href).toBe('https://secure-url.com/file.pdf')
+    })
+
+    test('shows error if popup is blocked', async () => {
+      windowOpenSpy.mockReturnValue(null) // Mock blocked popup
+
+      render(
+        <table>
+          <tbody>
+            <AbstractRow record={{ ...baseRecord, fileS3Url: 's3://bucket/file.pdf', file: 'file.pdf' }} raw={baseRaw} onView={onView} />
+          </tbody>
+        </table>
+      )
+
+      fireEvent.click(screen.getByText('file.pdf'))
+
+      expect(toast.error).toHaveBeenCalledWith('Popup blocked — please allow popups for this site')
+      expect(uploadService.getSignedUrl).not.toHaveBeenCalled()
+    })
+
+    test('shows error and closes tab if signed url is empty', async () => {
+      ; (uploadService.getSignedUrl as jest.Mock).mockResolvedValue(null)
+
+      render(
+        <table>
+          <tbody>
+            <AbstractRow record={{ ...baseRecord, fileS3Url: 's3://bucket/file.pdf', file: 'file.pdf' }} raw={baseRaw} onView={onView} />
+          </tbody>
+        </table>
+      )
+
+      fireEvent.click(screen.getByText('file.pdf'))
+
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      expect(mockNewTab.close).toHaveBeenCalled()
+      expect(toast.error).toHaveBeenCalledWith('Could not generate file link — please try again', { id: 'test-toast-id' })
+    })
+
+    test('shows error and closes tab if API fails (catch block)', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { })
+        ; (uploadService.getSignedUrl as jest.Mock).mockRejectedValue(new Error('API failure'))
+
+      render(
+        <table>
+          <tbody>
+            <AbstractRow record={{ ...baseRecord, fileS3Url: 's3://bucket/file.pdf', file: 'file.pdf' }} raw={baseRaw} onView={onView} />
+          </tbody>
+        </table>
+      )
+
+      fireEvent.click(screen.getByText('file.pdf'))
+
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      expect(mockNewTab.close).toHaveBeenCalled()
+      expect(toast.error).toHaveBeenCalledWith('Failed to get secure access to the file', { id: 'test-toast-id' })
+
+      consoleErrorSpy.mockRestore()
+    })
+  })
+
+  test('renders Deleted status styling', () => {
+    render(
+      <table>
+        <tbody>
+          <AbstractRow
+            record={{ ...baseRecord, status: 'Deleted' }}
+            raw={baseRaw}
+            onView={onView}
+          />
+        </tbody>
+      </table>
+    )
+    expect(screen.getByText('Deleted')).toHaveClass('bg-gray-100', 'text-red-700')
+  })
+
+  test('handleViewFile returns early if no fileS3Url', () => {
+    render(
+      <table>
+        <tbody>
+          <AbstractRow
+            record={{ ...baseRecord, file: 'test.pdf', fileS3Url: undefined }}
+            raw={baseRaw}
+            onView={onView}
+          />
+        </tbody>
+      </table>
+    )
+    fireEvent.click(screen.getByText('test.pdf'))
+    expect(uploadService.getSignedUrl).not.toHaveBeenCalled()
+  })
 })
+

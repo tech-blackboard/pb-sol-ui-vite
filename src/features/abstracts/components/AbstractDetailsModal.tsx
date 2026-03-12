@@ -506,11 +506,13 @@ function EditField({
   span?: boolean
   isTextArea?: boolean
 }) {
+  const id = label.toLowerCase().replace(/\s+/g, '-')
   return (
     <div className={span ? 'sm:col-span-2' : undefined}>
-      <label className="block text-gray-500 mb-1">{label}</label>
+      <label htmlFor={id} className="block text-gray-500 mb-1">{label}</label>
       {isTextArea ? (
         <textarea
+          id={id}
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           rows={3}
           value={value}
@@ -518,6 +520,7 @@ function EditField({
         />
       ) : (
         <input
+          id={id}
           type="text"
           className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           value={value}
@@ -541,10 +544,12 @@ function SelectField({
   onChange: (val: string) => void
   span?: boolean
 }) {
+  const id = label.toLowerCase().replace(/\s+/g, '-')
   return (
     <div className={span ? 'sm:col-span-2' : undefined}>
-      <label className="block text-gray-500 mb-1">{label}</label>
+      <label htmlFor={id} className="block text-gray-500 mb-1">{label}</label>
       <select
+        id={id}
         className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -567,10 +572,12 @@ function FileField({
   label: string
   onChange: (file: File | null) => void
 }) {
+  const id = label.toLowerCase().replace(/\s+/g, '-')
   return (
     <div className="sm:col-span-2">
-      <label className="block text-gray-500 mb-1">{label}</label>
+      <label htmlFor={id} className="block text-gray-500 mb-1">{label}</label>
       <input
+        id={id}
         type="file"
         accept=".pdf,.doc,.docx"
         onChange={(e) => onChange(e.target.files?.[0] || null)}

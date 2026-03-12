@@ -80,7 +80,7 @@ export default function AbstractsPage() {
         });
       }
     } else {
-      const errorMsg = (result.payload as string) || 'Failed to update status';
+      const errorMsg = typeof result.payload === 'string' ? result.payload : 'Failed to update status';
       toast.error(errorMsg);
     }
   }

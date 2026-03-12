@@ -17,7 +17,7 @@ jest.mock('react-hot-toast', () => ({
     },
 }))
 
-import { listWebsites } from '../../../../services/sourcedb'
+import { listWebsites, type SourceWebsite } from '../../../../services/sourcedb'
 import toast from 'react-hot-toast'
 
 const createMockStore = () => configureStore({
@@ -130,7 +130,6 @@ describe('AccommodationForm', () => {
             expect(mockOnClose).toHaveBeenCalled()
         })
     })
-
     it('handles submission error', async () => {
         const errorMessage = 'Failed to create registration'
 
@@ -165,6 +164,53 @@ describe('AccommodationForm', () => {
         })
     })
 
+    it('handles submission error with default message', async () => {
+        const mockDispatch = jest.fn().mockResolvedValue({
+            type: 'accRegistrations/create/rejected',
+            payload: null, // No payload should trigger default message
+        })
+
+        const hooks = await import('../../../../store/hooks')
+        jest.spyOn(hooks, 'useAppDispatch').mockReturnValue(mockDispatch)
+
+        renderForm()
+        await waitFor(() => expect(listWebsites).toHaveBeenCalled())
+
+        // Valid data
+        fireEvent.change(screen.getByLabelText('Caption*'), { target: { value: 'Mr.' } })
+        fireEvent.click(screen.getByRole('radio', { name: 'Single Occupancy' }))
+        fireEvent.change(screen.getByLabelText('Full Name*'), { target: { value: 'John Doe' } })
+        fireEvent.change(screen.getByLabelText('Email*'), { target: { value: 'john@test.com' } })
+        fireEvent.change(screen.getByLabelText('Phone*'), { target: { value: '1234567890' } })
+        fireEvent.change(screen.getByLabelText('Website/Conference*'), { target: { value: '1' } })
+        fireEvent.change(screen.getByLabelText('Check-in Date'), { target: { value: '2024-01-01' } })
+        fireEvent.change(screen.getByLabelText('Check-out Date'), { target: { value: '2024-01-02' } })
+        fireEvent.change(screen.getByLabelText('Price per Night ($)*'), { target: { value: '100' } })
+
+        fireEvent.click(screen.getByText('Add Accommodation'))
+
+        await waitFor(() => {
+            expect(toast.error).toHaveBeenCalledWith('Failed to create registration')
+        })
+    })
+
+    it('handles unmounting during website load', async () => {
+        let resolveWebsites: (value: SourceWebsite[]) => void
+        const websitePromise = new Promise<SourceWebsite[]>((resolve) => {
+            resolveWebsites = resolve
+        })
+        ;(listWebsites as jest.Mock).mockReturnValue(websitePromise)
+
+        const { unmount } = renderForm()
+        unmount()
+        
+        // Resolve after unmount
+        resolveWebsites!([{ id: 1, name: 'Test' }])
+        
+        // Should not throw and should have returned early (covering line 88)
+        await new Promise(r => setTimeout(r, 0))
+    })
+
     it('shows error if occupancy type is missing', async () => {
         renderForm()
         await screen.findByText('Add New Accommodation')
@@ -197,6 +243,66 @@ describe('AccommodationForm', () => {
         await waitFor(() => {
             expect(screen.getByText('Check-out must be after check-in date')).toBeInTheDocument()
         })
+    })
+
+    it('handles website loading error', async () => {
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { })
+        ;(listWebsites as jest.Mock).mockRejectedValue(new Error('API Error'))
+        
+        renderForm()
+        
+        await waitFor(() => {
+            expect(consoleSpy).toHaveBeenCalledWith('Failed to load websites:', expect.any(Error))
+            expect(toast.error).toHaveBeenCalledWith('Failed to load website options')
+        })
+        consoleSpy.mockRestore()
+    })
+
+    it('clears validation error when field value changes', async () => {
+        renderForm()
+        await screen.findByText('Add New Accommodation')
+        
+        // Trigger validation error
+        fireEvent.click(screen.getByText('Add Accommodation'))
+        expect(await screen.findByText('Name is required')).toBeInTheDocument()
+        
+        // Change value to clear error
+        const nameInput = screen.getByLabelText('Full Name*')
+        fireEvent.change(nameInput, { target: { value: 'John' } })
+        
+        expect(screen.queryByText('Name is required')).not.toBeInTheDocument()
+    })
+
+    it('handles unexpected error during submission', async () => {
+        const hooks = await import('../../../../store/hooks')
+        const mockDispatch = jest.fn().mockImplementation(() => {
+            throw new Error('Unexpected Error')
+        })
+        const spy = jest.spyOn(hooks, 'useAppDispatch').mockReturnValue(mockDispatch)
+
+        renderForm()
+        
+        // Wait for websites to load to avoid state updates after test
+        await waitFor(() => expect(listWebsites).toHaveBeenCalled())
+
+        // Valid data
+        fireEvent.change(screen.getByLabelText('Caption*'), { target: { value: 'Mr.' } })
+        fireEvent.click(screen.getByRole('radio', { name: 'Single Occupancy' }))
+        fireEvent.change(screen.getByLabelText('Full Name*'), { target: { value: 'John Doe' } })
+        fireEvent.change(screen.getByLabelText('Email*'), { target: { value: 'john@test.com' } })
+        fireEvent.change(screen.getByLabelText('Phone*'), { target: { value: '1234567890' } })
+        
+        fireEvent.change(screen.getByLabelText('Website/Conference*'), { target: { value: '1' } })
+        fireEvent.change(screen.getByLabelText('Check-in Date'), { target: { value: '2024-01-01' } })
+        fireEvent.change(screen.getByLabelText('Check-out Date'), { target: { value: '2024-01-02' } })
+        fireEvent.change(screen.getByLabelText('Price per Night ($)*'), { target: { value: '100' } })
+
+        fireEvent.click(screen.getByText('Add Accommodation'))
+
+        await waitFor(() => {
+            expect(toast.error).toHaveBeenCalledWith('An error occurred')
+        })
+        spy.mockRestore()
     })
 
     it('captures WhatsApp number correctly', async () => {

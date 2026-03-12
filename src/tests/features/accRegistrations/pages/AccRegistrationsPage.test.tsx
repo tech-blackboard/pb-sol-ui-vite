@@ -70,10 +70,11 @@ jest.mock('../../../../features/accRegistrations/components/AccRegistrationFilte
 
 jest.mock('../../../../features/accRegistrations/components/AccommodationForm', () => ({
   __esModule: true,
-    default: ({ onClose }: { onClose: () => void }) => (
+    default: ({ onClose, onSuccess }: { onClose: () => void, onSuccess?: () => void }) => (
     <div data-testid="add-form">
       Add Form
       <button onClick={onClose}>Close Form</button>
+      <button onClick={() => onSuccess?.()}>Trigger Success</button>
     </div>
   ),
 }))
@@ -177,17 +178,24 @@ describe('AccRegistrationsPage', () => {
       })
     })
   })
-  it('changes page', async () => {
-    const store = createMockStore({ page: 1, total: 20 })
+  it('refetches registrations when accommodation is added successfully', async () => {
+    const store = createMockStore()
+    const spy = jest.spyOn(store, 'dispatch')
     render(
       <Provider store={store}>
         <AccRegistrationsPage />
       </Provider>
     )
 
-    fireEvent.click(screen.getByText('Next Page'))
+    // Open add modal
+    fireEvent.click(screen.getByText('Add'))
+    
+    // Click button to trigger onSuccess (mocked)
+    fireEvent.click(screen.getByText('Trigger Success'))
+
     await waitFor(() => {
-      expect(store.getState().accRegistrations.page).toBe(2)
+        // Should fetch again (dispatches the thunk function)
+        expect(spy).toHaveBeenCalledWith(expect.any(Function))
     })
   })
 })
