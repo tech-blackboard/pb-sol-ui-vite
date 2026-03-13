@@ -20,6 +20,8 @@ import SponsorshipsPage from './features/sponsorships/pages/SponsorshipsPage'
 import BrochuresPage from './features/brochures/pages/BrochuresPage'
 import AccRegistrationsPage from './features/accRegistrations/pages/AccRegistrationsPage'
 import ContactsPage from './features/contacts/pages/ContactsPage'
+import MailboxPage from './features/crm/pages/MailboxPage'
+
 
 function App() {
   const dispatch = useDispatch<AppDispatch>()
@@ -81,6 +83,7 @@ function App() {
       ]
     },
     ...(isAdmin ? [{ id: 'deviceManagment', label: 'Device Management' }] : []),
+    { id: 'crm', label: 'Mailbox' }
   ];
 
   const user: User | null = (authUser as unknown as User) ?? null
@@ -180,7 +183,10 @@ function App() {
                 <SponsorshipsPage />
               ) : activeId === 'contacts' ? (
                 <ContactsPage />
+              ) : activeId === 'crm' ? (
+                <MailboxPage />
               ) : activeId === 'deviceManagment' ? (
+
                 <DeviceManagement />
               ) : (
                 <DashboardPage />

@@ -1,0 +1,117 @@
+import { useState } from 'react';
+import { useAppDispatch, useAppSelector } from '../../../store/hooks';
+import { sendReplyThunk } from '../../../store/slices/crm/crm.thunks';
+import toast from 'react-hot-toast';
+
+interface ReplyFormProps {
+    threadId: string;
+    defaultSubject: string;
+    recipientEmail: string;
+    onSuccess?: () => void;
+}
+
+export default function ReplyForm({ threadId, defaultSubject, recipientEmail, onSuccess }: ReplyFormProps) {
+    const dispatch = useAppDispatch();
+    const { loading } = useAppSelector((state) => state.crm);
+    const [htmlBody, setHtmlBody] = useState('');
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!htmlBody.trim()) {
+            toast.error('Please enter a message');
+            return;
+        }
+
+        const result = await dispatch(sendReplyThunk({
+            threadId,
+            subject: defaultSubject.startsWith('Re:') ? defaultSubject : `Re: ${defaultSubject}`,
+            htmlBody: htmlBody.replace(/\n/g, '<br>'),
+            textBody: htmlBody,
+        }));
+
+        if (sendReplyThunk.fulfilled.match(result)) {
+            toast.success('Reply sent successfully');
+            setHtmlBody('');
+            setIsExpanded(false);
+            if (onSuccess) onSuccess();
+        } else {
+            toast.error('Failed to send reply');
+        }
+    };
+
+    if (!isExpanded) {
+        return (
+            <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/20">
+                <button
+                    onClick={() => setIsExpanded(true)}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-500 hover:border-blue-400 hover:ring-1 hover:ring-blue-100 transition-all text-left"
+                >
+                    <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                        </svg>
+                    </div>
+                    Click here to <span className="text-blue-600 font-medium">Reply</span> to {recipientEmail}...
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">Reply to:</span>
+                        <span>{recipientEmail}</span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setIsExpanded(false)}
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <textarea
+                    autoFocus
+                    className="w-full min-h-[200px] p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                    placeholder="Write your reply here..."
+                    value={htmlBody}
+                    onChange={(e) => setHtmlBody(e.target.value)}
+                    disabled={loading.sending}
+                />
+
+                <div className="flex items-center justify-between pt-2">
+                    <div className="flex gap-2">
+                        <button
+                            type="submit"
+                            disabled={loading.sending}
+                            className="flex items-center gap-2 px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+                        >
+                            {loading.sending ? (
+                                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                                </svg>
+                            )}
+                            Send Reply
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3 text-green-500">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+                        </svg>
+                        Sending via secure SMTP
+                    </div>
+                </div>
+            </form>
+        </div>
+    );
+}
