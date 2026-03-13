@@ -92,3 +92,25 @@ export async function fetchLabels(eventId?: number): Promise<LabelResponse[]> {
     });
     return data;
 }
+/**
+ * Download an attachment using an authenticated request
+ */
+export async function downloadAttachment(id: number, filename: string): Promise<void> {
+    const { data } = await api.get(`${CRM_BASE}/attachments/${id}/download`, {
+        headers: { ...getAuthHeaders() },
+        responseType: 'blob',
+        withCredentials: true,
+    });
+
+    // Create a blob URL and trigger download
+    const url = window.URL.createObjectURL(new Blob([data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    link.parentNode?.removeChild(link);
+    window.URL.revokeObjectURL(url);
+}

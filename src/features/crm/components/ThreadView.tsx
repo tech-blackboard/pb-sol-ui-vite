@@ -11,6 +11,7 @@ export default function ThreadView() {
     const { messages, threads, selectedThreadId, loading } = useAppSelector((state) => state.crm);
     const [isUnsubscribing, setIsUnsubscribing] = useState(false);
     const [expandedDetailsId, setExpandedDetailsId] = useState<string | null>(null);
+    const [downloadingIds, setDownloadingIds] = useState<Set<number>>(new Set());
 
     const thread = threads.find(t => t.id === selectedThreadId);
     const contact = thread?.contact;
@@ -49,6 +50,22 @@ export default function ThreadView() {
     const handleReplySuccess = () => {
         if (selectedThreadId) {
             dispatch(fetchMessagesThunk(selectedThreadId));
+        }
+    };
+
+    const handleDownload = async (attachmentId: number, filename: string) => {
+        try {
+            setDownloadingIds(prev => new Set(prev).add(attachmentId));
+            await crmService.downloadAttachment(attachmentId, filename);
+        } catch (err) {
+            console.error('Download failed:', err);
+            toast.error('Failed to download attachment');
+        } finally {
+            setDownloadingIds(prev => {
+                const next = new Set(prev);
+                next.delete(attachmentId);
+                return next;
+            });
         }
     };
 
@@ -281,16 +298,20 @@ export default function ThreadView() {
                                                                 {(file.size / 1024).toFixed(1)} KB
                                                             </p>
                                                         </div>
-                                                        <a
-                                                            href={`/api/mail/attachments/${file.id}/download`}
-                                                            className="p-1.5 rounded-full text-gray-400 hover:text-blue-500 hover:bg-white dark:hover:bg-gray-700 shadow-sm transition-all"
+                                                        <button
+                                                            onClick={() => handleDownload(file.id, file.filename)}
+                                                            disabled={downloadingIds.has(file.id)}
+                                                            className="p-1.5 rounded-full text-gray-400 hover:text-blue-500 hover:bg-white dark:hover:bg-gray-700 shadow-sm transition-all disabled:opacity-50"
                                                             title="Download"
-                                                            download={file.filename}
                                                         >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                                                            </svg>
-                                                        </a>
+                                                            {downloadingIds.has(file.id) ? (
+                                                                <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                                                            ) : (
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                                                </svg>
+                                                            )}
+                                                        </button>
                                                     </div>
                                                 </div>
                                             ))}
