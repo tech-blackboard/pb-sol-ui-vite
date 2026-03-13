@@ -43,9 +43,11 @@ const crmSlice = createSlice({
         setActiveEvent(state, action: PayloadAction<number | null>) {
             state.activeEventId = action.payload;
             state.activeDomain = null; // Reset domain when event changes
+            state.selectedThreadId = null; // Reset selection to return to list view
         },
         setActiveDomain(state, action: PayloadAction<string | null>) {
             state.activeDomain = action.payload;
+            state.selectedThreadId = null; // Reset selection to return to list view
         },
         setSelectedThread(state, action: PayloadAction<string | null>) {
             state.selectedThreadId = action.payload;

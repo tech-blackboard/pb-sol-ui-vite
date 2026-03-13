@@ -1,6 +1,6 @@
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { setSelectedThread } from '../../../store/slices/crm/crm.slice';
-import { updateLabelsThunk } from '../../../store/slices/crm/crm.thunks';
+import { updateLabelsThunk, fetchMessagesThunk } from '../../../store/slices/crm/crm.thunks';
 import * as crmService from '../services/crmService';
 import ReplyForm from './ReplyForm';
 import toast from 'react-hot-toast';
@@ -44,6 +44,12 @@ export default function ThreadView() {
 
         const newLabels = Array.from(new Set([...currentLabels, label]));
         dispatch(updateLabelsThunk({ messageId, labels: newLabels }));
+    };
+
+    const handleReplySuccess = () => {
+        if (selectedThreadId) {
+            dispatch(fetchMessagesThunk(selectedThreadId));
+        }
     };
 
     if (loading.messages && messages.length === 0) {
@@ -320,6 +326,7 @@ export default function ThreadView() {
                             threadId={thread.id}
                             defaultSubject={thread.subject}
                             recipientEmail={contact?.email || ''}
+                            onSuccess={handleReplySuccess}
                         />
                     </div>
                 </div>
