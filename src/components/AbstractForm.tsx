@@ -126,7 +126,6 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
   const validate = () => {
     const newErrors: Record<string, string> = {}
 
-    if (!formData.caption) newErrors.caption = 'Caption is required'
     if (!formData.name.trim()) newErrors.name = 'Name is required'
     if (!formData.email.trim()) newErrors.email = 'Email is required' // ADD THIS
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -254,30 +253,21 @@ export default function AbstractForm({ websiteId, onClose, onSuccess }: Abstract
             {/* Caption */}
             <div>
               <label htmlFor="Caption" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Caption*
+                Caption
               </label>
               <select
                 id="Caption"
                 value={formData.caption}
                 onChange={(e) => handleChange('caption', e.target.value)}
-                className={`w-full px-4 py-2.5 rounded-lg border ${errors.caption
-                  ? 'border-red-500 focus:ring-red-500'
-                  : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
-                  } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-purple-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2"
               >
-                <option value="">--Caption*--</option>
+                <option value="">--Caption--</option>
                 {CAPTIONS.map((cap) => (
                   <option key={cap} value={cap}>
                     {cap}
                   </option>
                 ))}
               </select>
-              {errors.caption && (
-                <p role="alert" className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.caption}
-                </p>
-              )}
             </div>
             {/* Name */}
             <div>
