@@ -85,4 +85,16 @@ describe('AbstractPagination', () => {
       screen.getByText('Page 3 / 10')
     ).toBeInTheDocument()
   })
+
+  test('renders "Showing 1–0 of 1" when rowsOnPage is 0', () => {
+    render(
+      <AbstractPagination 
+        {...defaultProps} 
+        page={1} 
+        total={1} 
+        rowsOnPage={0} 
+      />
+    )
+    expect(screen.getByText('Showing 1–0 of 1')).toBeInTheDocument()
+  })
 })

@@ -23,18 +23,18 @@ jest.mock('../../../../store/slices/registrations/registrations.thunks', () => (
     createRegistrationThunk: Object.assign(
         jest.fn(() => ({ type: 'registrations/create/pending' })),
         {
-            pending: { type: 'registrations/create/pending' },
-            fulfilled: { type: 'registrations/create/fulfilled' },
-            rejected: { type: 'registrations/create/rejected' },
+            pending: { type: 'registrations/create/pending', match: (action: { type?: string }) => action?.type === 'registrations/create/pending' },
+            fulfilled: { type: 'registrations/create/fulfilled', match: (action: { type?: string }) => action?.type === 'registrations/create/fulfilled' },
+            rejected: { type: 'registrations/create/rejected', match: (action: { type?: string }) => action?.type === 'registrations/create/rejected' },
             typePrefix: 'registrations/create'
         }
     ),
     deleteRegistrationThunk: Object.assign(
         jest.fn(() => ({ type: 'registrations/delete/pending' })),
         {
-            pending: { type: 'registrations/delete/pending' },
-            fulfilled: { type: 'registrations/delete/fulfilled' },
-            rejected: { type: 'registrations/delete/rejected' },
+            pending: { type: 'registrations/delete/pending', match: (action: { type?: string }) => action?.type === 'registrations/delete/pending' },
+            fulfilled: { type: 'registrations/delete/fulfilled', match: (action: { type?: string }) => action?.type === 'registrations/delete/fulfilled' },
+            rejected: { type: 'registrations/delete/rejected', match: (action: { type?: string }) => action?.type === 'registrations/delete/rejected' },
             typePrefix: 'registrations/delete'
         }
     ),
@@ -164,7 +164,7 @@ it('pre-fills website_id when provided', async () => {
         expect(priceInput).toBeInTheDocument()
     })
 
-    it.skip('calculates nights correctly based on checkin and checkout dates', async () => {
+    it('calculates nights correctly based on checkin and checkout dates', async () => {
         renderForm()
         await screen.findByText('Add New Registration')
 
@@ -219,7 +219,7 @@ it('pre-fills website_id when provided', async () => {
         expect(screen.queryByText('Check-in Date')).not.toBeInTheDocument()
     })
 
-    it.skip('prevents participants from being less than 1', async () => {
+    it('prevents participants from being less than 1', async () => {
         renderForm()
         await screen.findByText('Add New Registration')
 
@@ -255,10 +255,11 @@ it('pre-fills website_id when provided', async () => {
         expect(totalRow.textContent).toContain('733')
     })
 
-    it.skip('handles successful form submission', async () => {
+    it('handles successful form submission', async () => {
         const store = createMockStore()
             ; (createRegistrationThunk as unknown as jest.Mock).mockReturnValue({
                 type: 'registrations/create/fulfilled',
+                payload: { id: 1, name: 'John Doe', email: 'john@test.com' }
             })
 
         render(
@@ -270,7 +271,7 @@ it('pre-fills website_id when provided', async () => {
         await screen.findByText('Add New Registration')
 
         // Fill required fields
-        fireEvent.change(screen.getByDisplayValue(''), { target: { value: 'Dr.' } })
+        fireEvent.change(screen.getByLabelText(/Caption/i), { target: { value: 'Dr.' } })
         fireEvent.change(screen.getByLabelText(/Full Name/i), {
             target: { value: 'John Doe' },
         })
@@ -283,7 +284,7 @@ it('pre-fills website_id when provided', async () => {
         fireEvent.change(screen.getByLabelText(/Institution/i), {
             target: { value: 'Test University' },
         })
-        fireEvent.change(screen.getByDisplayValue(/India|Select Option/i), {
+        fireEvent.change(screen.getByLabelText(/Country\*/), {
             target: { value: 'India' },
         })
 
@@ -293,7 +294,7 @@ it('pre-fills website_id when provided', async () => {
         })
 
         // Select website
-        const websiteSelect = screen.getByDisplayValue(/Select Website/)
+        const websiteSelect = screen.getByLabelText(/Website\/Conference/i)
         fireEvent.change(websiteSelect, { target: { value: '1' } })
 
         // Submit
@@ -306,10 +307,12 @@ it('pre-fills website_id when provided', async () => {
         })
     })
 
-    it.skip('handles form submission failure', async () => {
+    it('handles form submission failure', async () => {
         const store = createMockStore()
             ; (createRegistrationThunk as unknown as jest.Mock).mockReturnValue({
                 type: 'registrations/create/rejected',
+                payload: 'Failed to create registration',
+                error: { message: 'Failed to create registration' }
             })
 
         render(
@@ -321,7 +324,7 @@ it('pre-fills website_id when provided', async () => {
         await screen.findByText('Add New Registration')
 
         // Fill required fields
-        fireEvent.change(screen.getByDisplayValue(''), { target: { value: 'Dr.' } })
+        fireEvent.change(screen.getByLabelText(/Caption/i), { target: { value: 'Dr.' } })
         fireEvent.change(screen.getByLabelText(/Full Name/i), {
             target: { value: 'John Doe' },
         })
@@ -335,11 +338,15 @@ it('pre-fills website_id when provided', async () => {
             target: { value: 'Test University' },
         })
 
+        fireEvent.change(screen.getByLabelText(/Country\*/), {
+            target: { value: 'India' },
+        })
+
         await waitFor(() => {
             expect(screen.getByText('Test Conference')).toBeInTheDocument()
         })
 
-        const websiteSelect = screen.getByDisplayValue(/Select Website/)
+        const websiteSelect = screen.getByLabelText(/Website\/Conference/i)
         fireEvent.change(websiteSelect, { target: { value: '1' } })
 
         // Submit
@@ -363,12 +370,12 @@ it('pre-fills website_id when provided', async () => {
         consoleErrorSpy.mockRestore()
     })
 
-    it.skip('validates checkout date is after checkin date', async () => {
+    it('validates checkout date is after checkin date', async () => {
         renderForm()
         await screen.findByText('Add New Registration')
 
         // Fill required non-accommodation fields first
-        fireEvent.change(screen.getByDisplayValue(''), { target: { value: 'Dr.' } })
+        fireEvent.change(screen.getByLabelText(/Caption/i), { target: { value: 'Dr.' } })
         fireEvent.change(screen.getByLabelText(/Full Name/i), {
             target: { value: 'John Doe' },
         })
@@ -382,11 +389,15 @@ it('pre-fills website_id when provided', async () => {
             target: { value: 'Test University' },
         })
 
+        fireEvent.change(screen.getByLabelText(/Country\*/), {
+            target: { value: 'India' },
+        })
+
         await waitFor(() => {
             expect(screen.getByText('Test Conference')).toBeInTheDocument()
         })
 
-        const websiteSelect = screen.getByDisplayValue(/Select Website/)
+        const websiteSelect = screen.getByLabelText(/Website\/Conference/i)
         fireEvent.change(websiteSelect, { target: { value: '1' } })
 
         // Enable accommodation

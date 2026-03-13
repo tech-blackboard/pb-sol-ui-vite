@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import BrochureDetailsModal from '../../../../features/brochures/components/BrochureDetailsModal'
 import '@testing-library/jest-dom'
+import type { BrochureItem } from '../../../../services/brochures'
 
 jest.mock('../../../../utils/utils', () => ({
     formatDate: jest.fn(() => '2024-01-01 12:00 PM'),
@@ -49,5 +50,23 @@ describe('BrochureDetailsModal', () => {
     it('displays message', () => {
         render(<BrochureDetailsModal item={mockItem} onClose={mockOnClose} />)
         expect(screen.getByText('Please send brochure')).toBeInTheDocument()
+    })
+
+    it('renders placeholder for missing optional fields', () => {
+        const minimalItem = {
+            id: 2,
+            name: 'Jane Smith',
+            email: 'jane@test.com',
+            phone: null,
+            country: undefined,
+            message: '',
+            now: null,
+            website: null,
+        } as unknown as BrochureItem
+        render(<BrochureDetailsModal item={minimalItem} onClose={mockOnClose} />)
+        
+        const placeholders = screen.getAllByText('—')
+        expect(placeholders.length).toBeGreaterThanOrEqual(4)
+        expect(screen.getByText('No additional message provided.')).toBeInTheDocument()
     })
 })

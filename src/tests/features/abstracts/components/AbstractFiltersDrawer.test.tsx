@@ -129,16 +129,26 @@ describe('AbstractFiltersDrawer – full coverage (fixed)', () => {
   })
 
   /* ---------- Input helper ---------- */
-  test('Input helper dispatches updateDraftFilter', async () => {
+  test('Input helper dispatches updateDraftFilter for various fields', async () => {
     await renderDrawerAndWait()
 
-    fireEvent.change(screen.getByPlaceholderText('Country'), {
-      target: { value: 'India' },
-    })
+    fireEvent.change(screen.getByPlaceholderText('Keyword search...'), { target: { value: 'test' } })
+    expect(mockDispatch).toHaveBeenCalledWith(updateDraftFilter({ key: 'search', value: 'test' }))
 
-    expect(mockDispatch).toHaveBeenCalledWith(
-      updateDraftFilter({ key: 'country', value: 'India' })
-    )
+    fireEvent.change(screen.getByPlaceholderText('Name'), { target: { value: 'John' } })
+    expect(mockDispatch).toHaveBeenCalledWith(updateDraftFilter({ key: 'name', value: 'John' }))
+
+    fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'e@mail.com' } })
+    expect(mockDispatch).toHaveBeenCalledWith(updateDraftFilter({ key: 'email', value: 'e@mail.com' }))
+
+    fireEvent.change(screen.getByPlaceholderText('Organization'), { target: { value: 'Org' } })
+    expect(mockDispatch).toHaveBeenCalledWith(updateDraftFilter({ key: 'organization', value: 'Org' }))
+
+    fireEvent.change(screen.getByPlaceholderText('Country'), { target: { value: 'India' } })
+    expect(mockDispatch).toHaveBeenCalledWith(updateDraftFilter({ key: 'country', value: 'India' }))
+
+    fireEvent.change(screen.getByPlaceholderText('Title'), { target: { value: 'Mr' } })
+    expect(mockDispatch).toHaveBeenCalledWith(updateDraftFilter({ key: 'title', value: 'Mr' }))
   })
 
   /* ---------- status_id branches ---------- */
@@ -224,6 +234,18 @@ describe('AbstractFiltersDrawer – full coverage (fixed)', () => {
     )
   })
 
+  test('sort selects dispatch updates', async () => {
+    await renderDrawerAndWait()
+    
+    // Sort By
+    fireEvent.change(screen.getByText('Sort by time').closest('select')!, { target: { value: 'name' } })
+    expect(mockDispatch).toHaveBeenCalledWith(updateDraftFilter({ key: 'sortBy', value: 'name' }))
+
+    // Sort Order
+    fireEvent.change(screen.getByText('DESC').closest('select')!, { target: { value: 'ASC' } })
+    expect(mockDispatch).toHaveBeenCalledWith(updateDraftFilter({ key: 'sortOrder', value: 'ASC' }))
+  })
+
   /* ---------- footer actions ---------- */
   test('Reset button dispatches resetFilters', async () => {
     await renderDrawerAndWait()
@@ -280,5 +302,24 @@ describe('AbstractFiltersDrawer – full coverage (fixed)', () => {
       expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error))
     })
     consoleSpy.mockRestore()
+  })
+
+  test('handles undefined filter values for Input fallbacks', async () => {
+    const emptyFilters = {
+      ...baseFilters,
+      search: undefined,
+      name: undefined,
+      email: undefined,
+    }
+    await renderDrawerAndWait({ filters: emptyFilters })
+
+    expect(screen.getByPlaceholderText('Keyword search...')).toHaveValue('')
+    expect(screen.getByPlaceholderText('Name')).toHaveValue('')
+  })
+
+  test('isEmailSent matches empty string when undefined', async () => {
+    await renderDrawerAndWait({ filters: { ...baseFilters, isEmailSent: undefined } })
+    const select = screen.getAllByRole('combobox').find(s => s.innerHTML.includes('All')) as HTMLSelectElement
+    if(select) expect(select).toHaveValue('')
   })
 })

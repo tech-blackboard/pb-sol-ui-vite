@@ -44,9 +44,7 @@ describe('PaymentReceiptForm – Final Clean Suite v2', () => {
     ).not.toBeInTheDocument()
   })
 
-  /* -------------------------------------------------- */
   /* INTEREST & REGISTRATION FEE                        */
-  /* -------------------------------------------------- */
 
   test('interest selection updates summary but not registration fee input', () => {
     setup()
@@ -72,9 +70,7 @@ describe('PaymentReceiptForm – Final Clean Suite v2', () => {
     expect(screen.getByLabelText(/Registration Fee/i)).toHaveValue(555)
   })
 
-  /* -------------------------------------------------- */
-  /* PARTICIPANTS                                      */
-  /* -------------------------------------------------- */
+  /* PARTICIPANTS*/
 
   test('enforces minimum participants of 1', () => {
     setup()
@@ -96,9 +92,7 @@ describe('PaymentReceiptForm – Final Clean Suite v2', () => {
     expect(screen.getByLabelText(/Number of participants/i)).toHaveValue(100)
   })
 
-  /* -------------------------------------------------- */
-  /* VALIDATION                                        */
-  /* -------------------------------------------------- */
+  /* VALIDATION */
 
   test('shows validation error when preview clicked without required fields', async () => {
     setup()
@@ -112,6 +106,55 @@ describe('PaymentReceiptForm – Final Clean Suite v2', () => {
         screen.getByText(/Please select an option/i)
       ).toBeInTheDocument()
     })
+  })
+
+  test('shows validation errors for invalid quantities (mocked boundaries)', async () => {
+    setup()
+
+    const quantityInput = screen.getByLabelText(/Number of participants/i)
+    const previewBtn = screen.getByRole('button', { name: /Preview Payment Receipt/i })
+
+    // Test quantity <= 0
+    let mathMaxSpy = jest.spyOn(Math, 'max').mockReturnValueOnce(-1)
+    fireEvent.change(quantityInput, { target: { value: '-1' } })
+    mathMaxSpy.mockRestore()
+
+    fireEvent.click(previewBtn)
+    expect(await screen.findByText('Number of participants is required and must be at least 1')).toBeInTheDocument()
+
+    // Test non-integer
+    mathMaxSpy = jest.spyOn(Math, 'max').mockReturnValueOnce(1.5)
+    fireEvent.change(quantityInput, { target: { value: '1.5' } })
+    mathMaxSpy.mockRestore()
+
+    fireEvent.click(previewBtn)
+    expect(await screen.findByText('Number of participants must be a whole number')).toBeInTheDocument()
+
+    // Test > 100
+    mathMaxSpy = jest.spyOn(Math, 'max').mockReturnValueOnce(101)
+    fireEvent.change(quantityInput, { target: { value: '101' } })
+    mathMaxSpy.mockRestore()
+
+    fireEvent.click(previewBtn)
+    expect(await screen.findByText('Number of participants cannot exceed 100')).toBeInTheDocument()
+
+    // Clear error
+    fireEvent.change(quantityInput, { target: { value: '1' } })
+    expect(screen.queryByText('Number of participants cannot exceed 100')).not.toBeInTheDocument()
+  })
+
+  test('shows validation errors for missing accommodation fields and verifies error cleanup', async () => {
+    setup()
+
+    fireEvent.click(screen.getByLabelText(/Looking for Accommodation/i))
+    fireEvent.click(screen.getByRole('button', { name: /Preview Payment Receipt/i }))
+
+    expect(await screen.findByText('Check-out date is required')).toBeInTheDocument()
+    expect(await screen.findByText('Accommodation fee is required and must be greater than 0')).toBeInTheDocument()
+
+    // Type in accommodation fee to cover handleAccommodationFeeChange error clear
+    fireEvent.change(screen.getByLabelText(/Price per Night/i), { target: { value: '100' } })
+    expect(screen.queryByText('Accommodation fee is required and must be greater than 0')).not.toBeInTheDocument()
   })
 
   /* -------------------------------------------------- */
@@ -308,6 +351,37 @@ describe('PaymentReceiptForm – Final Clean Suite v2', () => {
     })
   })
 
+  test('button shows loading state when isLoading is true', async () => {
+    const { rerender } = setup()
+
+    fireEvent.change(screen.getByLabelText(/Interested in/i), {
+      target: { value: 'Oral Presenter (In-Person)' },
+    })
+    fireEvent.change(screen.getByLabelText(/Registration Fee/i), {
+      target: { value: '699' },
+    })
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Preview Payment Receipt/i })
+    )
+
+    await screen.findByRole('button', { name: /Send Payment Receipt/i })
+
+    // Rerender with isLoading=true
+    rerender(
+      <PaymentReceiptForm
+        isOpen={true}
+        onClose={onClose}
+        onSubmit={onSubmit}
+        abstractName="Test Abstract"
+        isLoading={true}
+      />
+    )
+
+    expect(await screen.findByText('Sending...')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Sending/i })).toBeDisabled()
+  })
+
   /* -------------------------------------------------- */
   /* CLOSE                                             */
   /* -------------------------------------------------- */
@@ -316,6 +390,71 @@ describe('PaymentReceiptForm – Final Clean Suite v2', () => {
     setup()
     fireEvent.click(screen.getByText('Cancel'))
     expect(onClose).toHaveBeenCalled()
+  })
+
+  test('clears error when field changes', async () => {
+    // We already have testing for this below, so I'll replace it with the accommodation check
+    setup()
+
+    // Check looking for accommodation to trigger those errors too
+    fireEvent.click(screen.getByLabelText(/Looking for Accommodation/i))
+
+    // Set invalid inputs directly or hit preview to trigger "must be greater than 0"
+    fireEvent.change(screen.getByLabelText(/Price per Night/i), { target: { value: '0' } })
+
+    fireEvent.click(screen.getByRole('button', { name: /Preview Payment Receipt/i }))
+
+    expect(await screen.findByText('Accommodation fee is required and must be greater than 0')).toBeInTheDocument()
+
+    // Now trigger changes
+    fireEvent.change(screen.getByLabelText(/Price per Night/i), { target: { value: '100' } })
+
+    expect(screen.queryByText('Accommodation fee is required and must be greater than 0')).not.toBeInTheDocument()
+  })
+
+  test('can close preview modal', async () => {
+    setup()
+
+    // Fill required
+    fireEvent.change(screen.getByLabelText(/Interested in/i), { target: { value: 'Listener (In-Person)' } })
+    fireEvent.change(screen.getByLabelText(/Registration Fee/i), { target: { value: '799' } })
+
+    fireEvent.click(screen.getByRole('button', { name: /Preview Payment Receipt/i }))
+    expect(await screen.findByText('Preview Details')).toBeInTheDocument()
+
+    // The close button has aria-label="Close" and Back to Form has text
+    // We can just click the Back to Form button or close icon
+    const backBtn = screen.getByText('Back to Form')
+    fireEvent.click(backBtn)
+
+    expect(screen.queryByText('Preview Details')).not.toBeInTheDocument()
+  })
+
+  test('can cancel confirmation modal', async () => {
+    setup()
+
+    // Fill required
+    fireEvent.change(screen.getByLabelText(/Interested in/i), { target: { value: 'Listener (In-Person)' } })
+    fireEvent.change(screen.getByLabelText(/Registration Fee/i), { target: { value: '799' } })
+
+    // Open preview
+    fireEvent.click(screen.getByRole('button', { name: /Preview Payment Receipt/i }))
+
+    // Click Send to open confirmation
+    fireEvent.click(await screen.findByRole('button', { name: /Send Payment Receipt/i }))
+
+    // Now modal is open
+    expect(await screen.findByText('Confirm Payment Receipt Submission')).toBeInTheDocument()
+
+    // Cancel confirmation (Cancel button inside confirm modal)
+    // The modal has a Cancel and Confirm & Send button
+    const confirmCancelBtn = screen.getAllByRole('button', { name: 'Cancel' }).find(b => b.className.includes('bg-white')) || screen.getByText('Cancel')
+    fireEvent.click(confirmCancelBtn)
+
+    // Should go back to preview 
+    expect(screen.queryByText('Confirm Payment Receipt Submission')).not.toBeInTheDocument()
+    // Still in preview
+    expect(screen.getByText('Preview Details')).toBeInTheDocument()
   })
 
   test('clears error when field changes', async () => {

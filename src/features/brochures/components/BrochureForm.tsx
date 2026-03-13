@@ -126,7 +126,7 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
                 onSuccess?.()
                 onClose()
             } else {
-                const errorMsg = (result.payload as string) || 'Failed to submit brochure request';
+                const errorMsg = typeof result.payload === 'string' ? result.payload : 'Failed to submit brochure request';
                 setSubmitError(errorMsg);
                 toast.error(errorMsg);
                 formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })

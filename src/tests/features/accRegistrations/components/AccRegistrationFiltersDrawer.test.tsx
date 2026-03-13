@@ -68,6 +68,57 @@ describe('AccRegistrationFiltersDrawer', () => {
             type: 'accRegistrations/updateDraftFilter',
             payload: { key: 'website_id', value: 1 }
         }))
+
+        // Test empty value (line 127)
+        fireEvent.change(select, { target: { value: '' } })
+        expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'accRegistrations/updateDraftFilter',
+            payload: { key: 'website_id', value: undefined }
+        }))
+    })
+
+    it('dispatches updateDraftFilter for all text inputs', () => {
+        const store = createMockStore()
+        const spy = jest.spyOn(store, 'dispatch')
+        render(<Provider store={store}><AccRegistrationFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
+
+        const inputs = [
+            { placeholder: 'Name', key: 'name' },
+            { placeholder: 'Email', key: 'email' },
+            { placeholder: 'Phone', key: 'phone' },
+            { placeholder: 'Institution', key: 'institution' },
+            { placeholder: 'Country', key: 'country' },
+            { placeholder: 'Status Flag', key: 'status_flag' },
+        ]
+
+        inputs.forEach(({ placeholder, key }) => {
+            const input = screen.getByPlaceholderText(placeholder)
+            fireEvent.change(input, { target: { value: 'test-value' } })
+            expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'accRegistrations/updateDraftFilter',
+                payload: { key, value: 'test-value' }
+            }))
+        })
+    })
+
+    it('dispatches updateDraftFilter on sort changes', () => {
+        const store = createMockStore()
+        const spy = jest.spyOn(store, 'dispatch')
+        render(<Provider store={store}><AccRegistrationFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
+
+        const sortBySelect = screen.getByDisplayValue('Sort by time')
+        fireEvent.change(sortBySelect, { target: { value: 'name' } })
+        expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'accRegistrations/updateDraftFilter',
+            payload: { key: 'sortBy', value: 'name' }
+        }))
+
+        const sortOrderSelect = screen.getByDisplayValue('DESC')
+        fireEvent.change(sortOrderSelect, { target: { value: 'ASC' } })
+        expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'accRegistrations/updateDraftFilter',
+            payload: { key: 'sortOrder', value: 'ASC' }
+        }))
     })
 
     it('dispatches resetFilters when Reset button clicked', () => {

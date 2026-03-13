@@ -89,7 +89,96 @@ describe('BrochureFiltersDrawer', () => {
         await waitFor(() => expect(listWebsites).toHaveBeenCalled())
     })
 
-    it('dispatches apply filters', () => {
+    it('dispatches updateDraftFilter on all inputs', () => {
+        const store = createMockStore()
+        const dispatchSpy = jest.spyOn(store, 'dispatch')
+        render(
+            <Provider store={store}>
+                <BrochureFiltersDrawer open={true} onClose={mockOnClose} />
+            </Provider>
+        )
+        
+        const inputs = [
+            { placeholder: 'Keyword search...', key: 'search' },
+            { placeholder: 'Name', key: 'name' },
+            { placeholder: 'Email', key: 'email' },
+            { placeholder: 'Phone', key: 'phone' },
+            { placeholder: 'Country', key: 'country' },
+        ]
+
+        inputs.forEach(({ placeholder, key }) => {
+            fireEvent.change(screen.getByPlaceholderText(placeholder), { target: { value: 'test' } })
+            expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'brochures/updateDraftFilter',
+                payload: { key, value: 'test' }
+            }))
+        })
+    })
+
+    it('dispatches updateDraftFilter on website change', async () => {
+        const store = createMockStore()
+        const dispatchSpy = jest.spyOn(store, 'dispatch')
+        render(
+            <Provider store={store}>
+                <BrochureFiltersDrawer open={true} onClose={mockOnClose} />
+            </Provider>
+        )
+        await waitFor(() => expect(listWebsites).toHaveBeenCalled())
+
+        const select = screen.getByDisplayValue('Website')
+        
+        // Valid change
+        fireEvent.change(select, { target: { value: '1' } })
+        expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'brochures/updateDraftFilter',
+            payload: { key: 'website_id', value: 1 }
+        }))
+
+        // Empty change
+        fireEvent.change(select, { target: { value: '' } })
+        expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'brochures/updateDraftFilter',
+            payload: { key: 'website_id', value: undefined }
+        }))
+    })
+
+    it('dispatches updateDraftFilter on sort change', () => {
+        const store = createMockStore()
+        const dispatchSpy = jest.spyOn(store, 'dispatch')
+        render(
+            <Provider store={store}>
+                <BrochureFiltersDrawer open={true} onClose={mockOnClose} />
+            </Provider>
+        )
+        
+        fireEvent.change(screen.getByDisplayValue('Sort by time'), { target: { value: 'name' } })
+        expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'brochures/updateDraftFilter',
+            payload: { key: 'sortBy', value: 'name' }
+        }))
+
+        fireEvent.change(screen.getByDisplayValue('DESC'), { target: { value: 'ASC' } })
+        expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'brochures/updateDraftFilter',
+            payload: { key: 'sortOrder', value: 'ASC' }
+        }))
+    })
+
+    it('dispatches resetFilters', () => {
+        const store = createMockStore()
+        const dispatchSpy = jest.spyOn(store, 'dispatch')
+        render(
+            <Provider store={store}>
+                <BrochureFiltersDrawer open={true} onClose={mockOnClose} />
+            </Provider>
+        )
+        fireEvent.click(screen.getByText('Reset'))
+        expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'brochures/resetFilters'
+        }))
+    })
+
+    it('dispatches applyFilters and closes', () => {
         const store = createMockStore()
         const dispatchSpy = jest.spyOn(store, 'dispatch')
         render(
@@ -98,7 +187,9 @@ describe('BrochureFiltersDrawer', () => {
             </Provider>
         )
         fireEvent.click(screen.getByText('Apply'))
-        expect(dispatchSpy).toHaveBeenCalled()
+        expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'brochures/applyFilters'
+        }))
         expect(mockOnClose).toHaveBeenCalled()
     })
 })
