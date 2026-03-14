@@ -42,15 +42,23 @@ jest.mock('../../../../features/registrations/components/RegistrationTable', () 
 // Modal
 jest.mock('../../../../features/registrations/components/RegistrationDetailsModal', () => ({
   __esModule: true,
-    default: ({ item }: { item: RegistrationItem | null}) => (
-    <div data-testid="modal">{item?.name}</div>
+    default: ({ item, onClose }: { item: RegistrationItem | null, onClose: () => void }) => (
+    <div data-testid="modal">
+      {item?.name}
+      <button aria-label="Close modal" onClick={onClose}>Close</button>
+    </div>
   ),
 }))
 
 // Pagination
 jest.mock('../../../../features/abstracts/components/AbstractPagination', () => ({
   __esModule: true,
-  default: () => <div data-testid="pagination" />,
+  default: ({ onPageChange, onPageSizeChange }: { onPageChange: (p: number) => void, onPageSizeChange: (s: number) => void }) => (
+    <div data-testid="pagination">
+      <button onClick={() => onPageChange(2)}>Page 2</button>
+      <button onClick={() => onPageSizeChange(25)}>Size 25</button>
+    </div>
+  ),
 }))
 
 jest.mock('../../../../store/slices/registrations/registrations.thunks', () => {
@@ -184,5 +192,65 @@ describe('RegistrationsPage', () => {
     fireEvent.click(screen.getByText('Clickable'))
 
     expect(screen.getByTestId('modal')).toBeInTheDocument()
+  })
+
+  it('dispatches clearSelected when modal onClose is called', async () => {
+    const store = makeStore({
+      items: [{ id: 1, name: 'Closeable' } as RegistrationItem],
+    })
+
+    render(
+      <Provider store={store}>
+        <RegistrationsPage />
+      </Provider>
+    )
+
+    fireEvent.click(screen.getByText('Closeable'))
+    expect(screen.getByTestId('modal')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('Close modal'))
+
+    await waitFor(() => {
+      expect(store.getState().registrations.selected).toBeNull()
+    })
+  })
+
+  it('does not render modal when no item is selected (line 43)', () => {
+    const store = makeStore({ selected: null })
+    render(
+      <Provider store={store}>
+        <RegistrationsPage />
+      </Provider>
+    )
+
+    expect(screen.queryByTestId('modal')).not.toBeInTheDocument()
+  })
+
+  it('dispatches setPage when pagination page changes', () => {
+    const store = makeStore()
+    const dispatchSpy = jest.spyOn(store, 'dispatch')
+    render(
+      <Provider store={store}>
+        <RegistrationsPage />
+      </Provider>
+    )
+
+    dispatchSpy.mockClear()
+    fireEvent.click(screen.getByText('Page 2'))
+    expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'registrations/setPage' }))
+  })
+
+  it('dispatches setPageSize when pagination size changes', () => {
+    const store = makeStore()
+    const dispatchSpy = jest.spyOn(store, 'dispatch')
+    render(
+      <Provider store={store}>
+        <RegistrationsPage />
+      </Provider>
+    )
+
+    dispatchSpy.mockClear()
+    fireEvent.click(screen.getByText('Size 25'))
+    expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'registrations/setPageSize' }))
   })
 })

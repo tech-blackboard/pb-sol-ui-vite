@@ -30,6 +30,8 @@ export default function ContactFiltersDrawer({ open, onClose }: Props) {
                     setLoadingWebsites(true)
                     const data = await listWebsites()
                     if (mounted) setWebsites(data)
+                } catch (error) {
+                    console.error('Failed to load websites:', error)
                 } finally {
                     if (mounted) setLoadingWebsites(false)
                 }
@@ -99,6 +101,7 @@ export default function ContactFiltersDrawer({ open, onClose }: Props) {
 
                     <div className="flex gap-2">
                         <select
+                            aria-label="Website select"
                             className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             disabled={loadingWebsites}
                             value={filters.website_id ?? ''}

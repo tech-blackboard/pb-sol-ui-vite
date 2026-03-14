@@ -2,9 +2,15 @@ import {
     getAllAbstracts,
     getAbstractById,
     createAbstractWithFormDataFileUpload,
+    createAbstract,
+    updateAbstract,
     updateAbstractStatus,
     searchAbstracts,
+    deleteAbstract,
     sendInvoice,
+    sendPaymentReceipt,
+    sendConfirmationEmail,
+    sendPaymentReminder,
     fetchDashboard,
     type AbstractItem
 } from '../../services/abstracts'
@@ -175,12 +181,57 @@ describe('abstracts service', () => {
             expect(api.post).toHaveBeenCalledWith(expect.stringContaining('/send-invoice'), expect.any(Object), expect.any(Object))
         })
 
+        it('deleteAbstract', async () => {
+            ;(api.delete as jest.Mock).mockResolvedValue({ data: {} })
+            await deleteAbstract(1)
+            expect(api.delete).toHaveBeenCalledWith(expect.stringContaining('/1'), expect.any(Object))
+        })
+
+        it('sendPaymentReceipt', async () => {
+            ;(api.post as jest.Mock).mockResolvedValue({ data: { success: true } })
+            await sendPaymentReceipt(1, { paymentReceiptAmount: 100, orderItems: [] })
+            expect(api.post).toHaveBeenCalledWith(expect.stringContaining('/send-payment-receipt'), expect.any(Object), expect.any(Object))
+        })
+
+        it('sendConfirmationEmail', async () => {
+            ;(api.post as jest.Mock).mockResolvedValue({ data: { success: true } })
+            await sendConfirmationEmail(1)
+            expect(api.post).toHaveBeenCalledWith(expect.stringContaining('/send-confirmation'), {}, expect.any(Object))
+        })
+
+        it('sendPaymentReminder', async () => {
+            ;(api.post as jest.Mock).mockResolvedValue({ data: { success: true } })
+            await sendPaymentReminder(1, { paymentLink: 'http://test.com' })
+            expect(api.post).toHaveBeenCalledWith(expect.stringContaining('/payment-reminder'), { paymentLink: 'http://test.com' }, expect.any(Object))
+        })
+
         it('fetchDashboard', async () => {
             ; (api.get as jest.Mock).mockResolvedValue({ data: { total: 10 } })
             await fetchDashboard({ website_id: 1 })
             expect(api.get).toHaveBeenCalledWith(expect.stringContaining('/dashboard'), expect.objectContaining({
                 params: { website_id: 1 }
             }))
+        })
+
+        it('createAbstract handles JSON body', async () => {
+            ; (api.post as jest.Mock).mockResolvedValue({ data: mockItem })
+            await createAbstract({ name: 'Test' })
+            expect(api.post).toHaveBeenCalledWith(expect.any(String), { name: 'Test' }, expect.any(Object))
+        })
+
+        it('updateAbstract handles JSON body', async () => {
+            ; (api.put as jest.Mock).mockResolvedValue({ data: mockItem })
+            await updateAbstract(1, { name: 'Updated' })
+            expect(api.put).toHaveBeenCalledWith(expect.any(String), { name: 'Updated' }, expect.any(Object))
+        })
+
+        it('updateAbstract handles FormData body', async () => {
+             const formData = new FormData()
+             formData.append('file', 'test')
+            ; (api.put as jest.Mock).mockResolvedValue({ data: mockItem })
+            await updateAbstract(1, formData)
+            const config = (api.put as jest.Mock).mock.calls[0][2]
+            expect(config.headers?.['Content-Type']).toBeUndefined()
         })
     })
 })

@@ -23,9 +23,13 @@ export const fetchRegistrations = createAsyncThunk(
 
 export const deleteRegistrationThunk = createAsyncThunk(
     'registrations/delete',
-    async (id: string | number) => {
-        await deleteRegistration(id);
-        return id;
+    async (id: string | number, { rejectWithValue }) => {
+        try {
+            await deleteRegistration(id);
+            return id;
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to delete registration');
+        }
     }
 );
 

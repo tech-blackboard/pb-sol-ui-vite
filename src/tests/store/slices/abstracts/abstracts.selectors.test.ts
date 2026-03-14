@@ -1,4 +1,15 @@
-import { selectSelectedNormalized } from '../../../../store/slices/abstracts/abstracts.selectors'
+import { 
+  selectAbstractsState, 
+  selectAbstracts, 
+  selectAbstractsLoading, 
+  selectSelectedAbstract, 
+  selectActionLoading, 
+  selectDraftFilters, 
+  selectAppliedFilters, 
+  selectModalStatus, 
+  selectStatusLoading, 
+  selectSelectedNormalized 
+} from '../../../../store/slices/abstracts/abstracts.selectors'
 import type { RootState } from '../../../../store/index'
 import type { AbstractRecord, AbstractStatus } from '../../../../features/abstracts/types'
 
@@ -154,5 +165,17 @@ describe('abstracts selectors', () => {
     const second = selectSelectedNormalized(state)
 
     expect(first).toBe(second) // same reference
+  })
+
+  it('selects basic state parts correctly (lines 3-28)', () => {
+    expect(selectAbstractsState(baseState)).toEqual(baseState.abstracts)
+    expect(selectAbstracts(baseState)).toEqual(baseState.abstracts.items)
+    expect(selectAbstractsLoading(baseState)).toBe(baseState.abstracts.loading)
+    expect(selectSelectedAbstract(baseState)).toBe(baseState.abstracts.selected)
+    expect(selectActionLoading(baseState)).toEqual(baseState.abstracts.actionLoading)
+    expect(selectDraftFilters(baseState)).toEqual(baseState.abstracts.draftFilters)
+    expect(selectAppliedFilters(baseState)).toEqual(baseState.abstracts.appliedFilters)
+    expect(selectModalStatus(baseState)).toBe(baseState.abstracts.modalStatus)
+    expect(selectStatusLoading(baseState)).toBe(baseState.abstracts.actionLoading.status)
   })
 })

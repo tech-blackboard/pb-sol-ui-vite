@@ -32,7 +32,7 @@ export default function ThreadView() {
         try {
             await crmService.unsubscribeContact(contact.id, 'User manually unsubscribed from CRM UI');
             toast.success('Contact unsubscribed successfully');
-        } catch (error) {
+        } catch {
             toast.error('Failed to unsubscribe contact');
         } finally {
             setIsUnsubscribing(false);

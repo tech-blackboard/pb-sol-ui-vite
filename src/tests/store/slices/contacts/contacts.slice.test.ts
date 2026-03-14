@@ -11,7 +11,9 @@ import reducer, {
     type ContactFilters
 } from '../../../../store/slices/contacts/contacts.slice';
 import { fetchContacts, createContactThunk } from '../../../../store/slices/contacts/contacts.slice';
+import * as contactsService from '../../../../services/contacts';
 import type { ContactItem } from '../../../../services/contacts';
+import type { UnknownAction } from '@reduxjs/toolkit';
 
 describe('contacts slice', () => {
     const initialState = reducer(undefined, { type: 'INIT' });
@@ -98,8 +100,26 @@ describe('contacts slice', () => {
             expect(state.total).toBe(1);
         });
 
-        it('handles fetchContacts.rejected', () => {
+        it('handles fetchContacts.rejected with custom payload', () => {
             const state = reducer(initialState, fetchContacts.rejected(null, '', { page: 1, limit: 10, filters: {} }, 'Fail'));
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Fail');
+        });
+
+        it('handles fetchContacts.rejected with generic message (line 53)', () => {
+            const rejectedAction = {
+                type: fetchContacts.rejected.type,
+                payload: null,
+                error: {} // No message, should trigger fallback 'Failed to load'
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Failed to load');
+        });
+
+        it('handles fetchContacts rejected states (lines 47-53)', () => {
+            const startState = { ...initialState, loading: true };
+            const state = reducer(startState, fetchContacts.rejected(null, '', { page: 1, limit: 10, filters: {} }, 'Fail'));
             expect(state.loading).toBe(false);
             expect(state.error).toBe('Fail');
         });
@@ -110,6 +130,54 @@ describe('contacts slice', () => {
             const state = reducer(startState, createContactThunk.fulfilled(newItem, '', {}));
             expect(state.items[0]).toEqual(newItem);
             expect(state.total).toBe(2);
+        });
+        it('handles createContactThunk.pending', () => {
+            const state = reducer(initialState, createContactThunk.pending('', {}));
+            expect(state.loading).toBe(true);
+        });
+
+        it('handles createContactThunk.rejected', () => {
+            const state = reducer({ ...initialState, loading: true }, createContactThunk.rejected(null, '', {}, 'Create Fail'));
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Create Fail');
+        });
+
+        it('fetchContacts thunk should reject with axios error', async () => {
+            const spy = jest.spyOn(contactsService, 'searchContacts').mockRejectedValue({
+                isAxiosError: true,
+                response: { data: { message: 'Axios Error' } }
+            });
+            const dispatch = jest.fn();
+            const result = await fetchContacts({ page: 1, limit: 10, filters: {} })(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios Error');
+            spy.mockRestore();
+        });
+
+        it('fetchContacts thunk should reject with fallback message', async () => {
+            const spy = jest.spyOn(contactsService, 'searchContacts').mockRejectedValue(new Error('Generic Error'));
+            const dispatch = jest.fn();
+            const result = await fetchContacts({ page: 1, limit: 10, filters: {} })(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Failed to load contacts');
+            spy.mockRestore();
+        });
+
+        it('createContactThunk thunk should reject with axios error', async () => {
+            const spy = jest.spyOn(contactsService, 'createContact').mockRejectedValue({
+                isAxiosError: true,
+                response: { data: { message: 'Create Error' } }
+            });
+            const dispatch = jest.fn();
+            const result = await createContactThunk({})(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Create Error');
+            spy.mockRestore();
+        });
+
+        it('createContactThunk thunk should reject with fallback message', async () => {
+            const spy = jest.spyOn(contactsService, 'createContact').mockRejectedValue(new Error('Generic Error'));
+            const dispatch = jest.fn();
+            const result = await createContactThunk({})(dispatch, jest.fn(), undefined);
+            expect(result.type).toBe('contacts/create/rejected');
+            spy.mockRestore();
         });
     });
 });

@@ -198,4 +198,78 @@ describe('AccRegistrationsPage', () => {
         expect(spy).toHaveBeenCalledWith(expect.any(Function))
     })
   })
+
+  it('closes filter drawer', () => {
+    const store = createMockStore()
+    render(
+      <Provider store={store}>
+        <AccRegistrationsPage />
+      </Provider>
+    )
+
+    // Open the drawer first
+    fireEvent.click(screen.getByText('Filter'))
+    expect(screen.getByTestId('filters-drawer')).toBeInTheDocument()
+
+    // Close the drawer
+    fireEvent.click(screen.getByText('Close Filters'))
+    expect(screen.queryByTestId('filters-drawer')).not.toBeInTheDocument()
+  })
+
+  it('closes details modal', async () => {
+    const store = createMockStore({
+      items: [{ id: 2, name: 'Guest 2' }],
+    })
+    render(
+      <Provider store={store}>
+        <AccRegistrationsPage />
+      </Provider>
+    )
+
+    // Open the details modal by clicking a row
+    fireEvent.click(screen.getByText('Guest 2'))
+    await waitFor(() => expect(screen.getByTestId('details-modal')).toBeInTheDocument())
+
+    // Close the details modal
+    fireEvent.click(screen.getByText('Close Detail'))
+    await waitFor(() => {
+      expect(store.getState().accRegistrations.selected).toBeNull()
+    })
+    expect(screen.queryByTestId('details-modal')).not.toBeInTheDocument()
+  })
+
+  it('closes add form', () => {
+    const store = createMockStore()
+    render(
+      <Provider store={store}>
+        <AccRegistrationsPage />
+      </Provider>
+    )
+
+    // Open the add form
+    fireEvent.click(screen.getByText('Add'))
+    expect(screen.getByTestId('add-form')).toBeInTheDocument()
+
+    // Close the add form
+    fireEvent.click(screen.getByText('Close Form'))
+    expect(screen.queryByTestId('add-form')).not.toBeInTheDocument()
+  })
+
+  it('shows and clears an error', async () => {
+    const store = createMockStore({ error: 'Something went wrong' })
+    render(
+      <Provider store={store}>
+        <AccRegistrationsPage />
+      </Provider>
+    )
+
+    // Error text is rendered by the SectionHeader mock
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument()
+
+    // Clicking Clear dispatches clearError, nullifying the error
+    fireEvent.click(screen.getByText('Clear'))
+    await waitFor(() => {
+      expect(store.getState().accRegistrations.error).toBeNull()
+    })
+  })
 })

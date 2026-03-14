@@ -85,7 +85,7 @@ describe('registrations thunks', () => {
     /* -------------------------------------------------- */
 
     it('deleteRegistrationThunk → calls deleteRegistration and returns id', async () => {
-        ; (deleteRegistration as jest.Mock).mockResolvedValue(undefined)
+        (deleteRegistration as jest.Mock).mockResolvedValue(undefined)
 
         const thunk = deleteRegistrationThunk(123)
         const result = await thunk(dispatch, getState, undefined)
@@ -93,6 +93,26 @@ describe('registrations thunks', () => {
         expect(deleteRegistration).toHaveBeenCalledWith(123)
         expect(result.payload).toBe(123)
     })
+
+    it('deleteRegistrationThunk → rejects with value on axios error', async () => {
+        (deleteRegistration as jest.Mock).mockRejectedValue({
+            isAxiosError: true,
+            response: { data: { message: 'Delete Error' } }
+        });
+
+        const thunk = deleteRegistrationThunk(1);
+        const result = await thunk(dispatch, getState, undefined);
+
+        expect(result.type).toBe('registrations/delete/rejected');
+        expect(result.payload).toBe('Delete Error');
+    });
+
+    it('deleteRegistrationThunk → rejects with default message on generic error', async () => {
+        (deleteRegistration as jest.Mock).mockRejectedValue(new Error('Fail'));
+        const thunk = deleteRegistrationThunk(1);
+        const result = await thunk(dispatch, getState, undefined);
+        expect(result.payload).toBe('Failed to delete registration');
+    });
 
     /* -------------------------------------------------- */
     /* createRegistrationThunk                            */
@@ -121,20 +141,9 @@ describe('registrations thunks', () => {
   expect(createRegistration).toHaveBeenCalledWith(mockData)
   expect(result.payload).toEqual(mockResponse)
 })
-it('createRegistrationThunk → rejects with value on error', async () => {
-  const mockData: RegistrationRecord = {
-    name: 'John Doe',
-    email: 'john@example.com',
-    phone: '1234567890',
-    institution: 'Test Org',
-    country: 'India',
-    presentation: 'Oral',
-    participants: '1',
-    reg_price: '100',
-    regtype: 'Standard',
-    accomm: 'No',
-  }
 
+it('createRegistrationThunk → rejects with default message on generic error', async () => {
+  const mockData = { name: 'Test' } as RegistrationRecord
   ;(createRegistration as jest.Mock).mockRejectedValue(new Error('Create Failed'))
 
   const thunk = createRegistrationThunk(mockData)
@@ -143,4 +152,16 @@ it('createRegistrationThunk → rejects with value on error', async () => {
   expect(result.type).toBe('registrations/create/rejected')
   expect(result.payload).toBe('Failed to create registration')
 })
+
+it('createRegistrationThunk → rejects with axios error message', async () => {
+    (createRegistration as jest.Mock).mockRejectedValue({
+        isAxiosError: true,
+        response: { data: { message: 'Axios Create Error' } }
+    });
+
+    const thunk = createRegistrationThunk({} as unknown as RegistrationRecord);
+    const result = await thunk(dispatch, getState, undefined);
+
+    expect(result.payload).toBe('Axios Create Error');
+});
 })

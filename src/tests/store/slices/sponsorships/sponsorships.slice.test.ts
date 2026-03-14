@@ -11,7 +11,11 @@ import reducer, {
     type SponsorshipFilters
 } from '../../../../store/slices/sponsorships/sponsorships.slice';
 import { fetchSponsorships, createSponsorshipThunk } from '../../../../store/slices/sponsorships/sponsorships.slice';
+import * as sponsorshipsService from '../../../../services/sponsorships';
 import type { SponsorshipItem } from '../../../../services/sponsorships';
+import type { UnknownAction } from '@reduxjs/toolkit';
+
+jest.mock('../../../../services/sponsorships');
 
 describe('sponsorships slice', () => {
     const initialState = reducer(undefined, { type: 'INIT' });
@@ -98,10 +102,21 @@ describe('sponsorships slice', () => {
             expect(state.total).toBe(1);
         });
 
-        it('handles fetchSponsorships.rejected', () => {
+        it('handles fetchSponsorships.rejected with custom payload', () => {
             const state = reducer(initialState, fetchSponsorships.rejected(null, '', { page: 1, limit: 10, filters: {} }, 'Fail'));
             expect(state.loading).toBe(false);
             expect(state.error).toBe('Fail');
+        });
+
+        it('handles fetchSponsorships.rejected with generic message (line 54)', () => {
+            const rejectedAction = {
+                type: fetchSponsorships.rejected.type,
+                payload: null,
+                error: { message: 'Network Error' }
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Network Error');
         });
 
         it('handles createSponsorshipThunk.pending', () => {
@@ -114,10 +129,52 @@ describe('sponsorships slice', () => {
             expect(state.loading).toBe(false);
         });
 
-        it('handles createSponsorshipThunk.rejected', () => {
+        it('handles createSponsorshipThunk.rejected (lines 131-134)', () => {
             const state = reducer({ ...initialState, loading: true }, createSponsorshipThunk.rejected(null, '', {}, 'Create Fail'));
             expect(state.loading).toBe(false);
             expect(state.error).toBe('Create Fail');
+        });
+
+        it('handles fetchSponsorships.rejected with generic message (line 123 in slice)', () => {
+            const rejectedAction = {
+                type: fetchSponsorships.rejected.type,
+                payload: null,
+                error: { message: 'Network Error' }
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Network Error');
+        });
+
+        it('fetchSponsorships thunk should reject with axios error message', async () => {
+            (sponsorshipsService.searchSponsorships as jest.Mock).mockRejectedValue({
+                isAxiosError: true,
+                response: { data: { message: 'Sponsorship Fetch Error' } }
+            });
+
+            const dispatch = jest.fn();
+            const result = await fetchSponsorships({ page: 1, limit: 10, filters: {} })(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Sponsorship Fetch Error');
+        });
+
+        it('createSponsorshipThunk thunk should reject with fallback message', async () => {
+            (sponsorshipsService.createSponsorship as jest.Mock).mockRejectedValue(new Error('Generic Error'));
+
+            const dispatch = jest.fn();
+            const result = await createSponsorshipThunk({} as unknown as SponsorshipItem)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Failed to create sponsorship');
+        });
+
+        it('handles fetchSponsorships.rejected fallback (line 123)', () => {
+            const action = { type: fetchSponsorships.rejected.type, payload: null, error: {} };
+            const state = reducer(initialState, action as UnknownAction);
+            expect(state.error).toBe('Failed to load');
+        });
+
+        it('handles createSponsorshipThunk.rejected fallback (line 133)', () => {
+            const action = { type: createSponsorshipThunk.rejected.type, payload: null, error: {} };
+            const state = reducer(initialState, action as UnknownAction);
+            expect(state.error).toBe('Failed to create');
         });
     });
 });
