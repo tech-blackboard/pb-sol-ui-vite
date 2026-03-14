@@ -68,9 +68,15 @@ const crmSlice = createSlice({
             })
             .addCase(fetchEventsThunk.fulfilled, (state, { payload }) => {
                 state.loading.events = false;
-                state.events = payload;
-                if (payload.length > 0 && !state.activeEventId) {
-                    state.activeEventId = payload[0].id;
+                // Defensive check: ensure payload is an array to prevent crashes if API returns unexpected data
+                if (Array.isArray(payload)) {
+                    state.events = payload;
+                    if (payload.length > 0 && !state.activeEventId) {
+                        state.activeEventId = payload[0].id;
+                    }
+                } else {
+                    console.error('CRM: fetchEvents returned non-array payload', payload);
+                    state.events = [];
                 }
             })
             .addCase(fetchEventsThunk.rejected, (state, action) => {
