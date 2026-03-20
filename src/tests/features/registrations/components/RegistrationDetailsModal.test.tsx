@@ -144,16 +144,16 @@ describe('RegistrationDetailsModal', () => {
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
   })
 
- it('renders status flag badge', () => {
-  render(<RegistrationDetailsModal item={mockItem} onClose={mockOnClose} />)
+  it('renders status flag badge', () => {
+    render(<RegistrationDetailsModal item={mockItem} onClose={mockOnClose} />)
 
-  // Find badge by its text content
-  const badge = screen.getByText('123')
+    // Find badge by its text content
+    const badge = screen.getByText('123')
 
-  // Ensure it is actually the badge
-  expect(badge).toBeInTheDocument()
-  expect(badge.className).toContain('rounded-full')
-})
+    // Ensure it is actually the badge
+    expect(badge).toBeInTheDocument()
+    expect(badge.className).toContain('rounded-full')
+  })
 
 
   it('formats date using util', () => {
@@ -161,5 +161,52 @@ describe('RegistrationDetailsModal', () => {
 
     const { formatDate } = jest.requireMock('../../../../utils/utils')
     expect(formatDate).toHaveBeenCalledWith(mockItem.now)
+  })
+
+  // ── uncovered branch coverage (lines 47–84) ────────────────────────────────
+
+  it('shows "—" when acc_price is absent', () => {
+    render(<RegistrationDetailsModal item={{ ...mockItem, acc_price: undefined }} onClose={mockOnClose} />)
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+  })
+
+  it('shows "—" when tot_price is absent', () => {
+    render(<RegistrationDetailsModal item={{ ...mockItem, tot_price: undefined }} onClose={mockOnClose} />)
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+  })
+
+  it('shows "—" when transaction_id is absent', () => {
+    render(<RegistrationDetailsModal item={{ ...mockItem, transaction_id: undefined }} onClose={mockOnClose} />)
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+  })
+
+  it('shows "—" for Submitted On when now is absent', () => {
+    render(<RegistrationDetailsModal item={{ ...mockItem, now: undefined }} onClose={mockOnClose} />)
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+  })
+
+  it('shows "—" when status_flag is absent', () => {
+    render(<RegistrationDetailsModal item={{ ...mockItem, status_flag: undefined }} onClose={mockOnClose} />)
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+  })
+
+  it('renders fallback dashes for other basic optional fields', () => {
+    const minimalItem = {
+      id: 1,
+      name: 'Test',
+      email: 'test@test.com',
+      institution: 'Test Inst',
+      website: { id: 1, name: 'Web' },
+      phone: '',
+      country: '',
+      presentation: '',
+      participants: '0',
+      dietary: '',
+      requirements: '',
+      regtype: 'delegate',
+      accomm: 'none'
+    }
+    render(<RegistrationDetailsModal item={minimalItem} onClose={mockOnClose} />)
+    expect(screen.getAllByText('—').length).toBeGreaterThan(5)
   })
 })

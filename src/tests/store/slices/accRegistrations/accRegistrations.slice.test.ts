@@ -11,7 +11,9 @@ import reducer, {
     type AccRegistrationFilters
 } from '../../../../store/slices/accRegistrations/accRegistrations.slice';
 import { fetchAccRegistrations, createAccRegistrationThunk } from '../../../../store/slices/accRegistrations/accRegistrations.slice';
+import * as accRegistrationsService from '../../../../services/accRegistrations';
 import type { AccRegistrationItem } from '../../../../services/accRegistrations';
+import type { UnknownAction } from '@reduxjs/toolkit';
 
 describe('accRegistrations slice', () => {
     const initialState = reducer(undefined, { type: 'INIT' });
@@ -109,10 +111,21 @@ describe('accRegistrations slice', () => {
             expect(state.total).toBe(10);
         });
 
-        it('handles fetchAccRegistrations.rejected', () => {
+        it('handles fetchAccRegistrations.rejected with custom payload', () => {
             const state = reducer(initialState, fetchAccRegistrations.rejected(null, '', { page: 1, limit: 10, filters: {} }, 'Fetch Error'));
             expect(state.loading).toBe(false);
             expect(state.error).toBe('Fetch Error');
+        });
+
+        it('handles fetchAccRegistrations.rejected with generic message (line 123)', () => {
+            const rejectedAction = {
+                type: fetchAccRegistrations.rejected.type,
+                payload: null,
+                error: { message: 'Network Error' }
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Network Error');
         });
 
         it('handles createAccRegistrationThunk.pending', () => {
@@ -126,9 +139,48 @@ describe('accRegistrations slice', () => {
         });
 
         it('handles createAccRegistrationThunk.rejected', () => {
-            const state = reducer({ ...initialState, loading: true }, createAccRegistrationThunk.rejected(null, '', {}, 'Create Error'));
+            const startState = { ...initialState, loading: true };
+            const state = reducer(startState, createAccRegistrationThunk.rejected(null, '', {}, 'Create Failed'));
             expect(state.loading).toBe(false);
-            expect(state.error).toBe('Create Error');
+            expect(state.error).toBe('Create Failed');
+        });
+
+        it('fetchAccRegistrations thunk should reject with axios error', async () => {
+            const spy = jest.spyOn(accRegistrationsService, 'searchAccRegistrations').mockRejectedValue({
+                isAxiosError: true,
+                response: { data: { message: 'Axios Error' } }
+            });
+            const dispatch = jest.fn();
+            const result = await fetchAccRegistrations({ page: 1, limit: 10, filters: {} })(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios Error');
+            spy.mockRestore();
+        });
+
+        it('fetchAccRegistrations thunk should reject with fallback message', async () => {
+            const spy = jest.spyOn(accRegistrationsService, 'searchAccRegistrations').mockRejectedValue(new Error('Generic Error'));
+            const dispatch = jest.fn();
+            const result = await fetchAccRegistrations({ page: 1, limit: 10, filters: {} })(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Failed to load');
+            spy.mockRestore();
+        });
+
+        it('createAccRegistrationThunk thunk should reject with axios error', async () => {
+            const spy = jest.spyOn(accRegistrationsService, 'createAccRegistration').mockRejectedValue({
+                isAxiosError: true,
+                response: { data: { message: 'Create Error' } }
+            });
+            const dispatch = jest.fn();
+            const result = await createAccRegistrationThunk({})(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Create Error');
+            spy.mockRestore();
+        });
+
+        it('createAccRegistrationThunk thunk should reject with fallback message', async () => {
+            const spy = jest.spyOn(accRegistrationsService, 'createAccRegistration').mockRejectedValue(new Error('Generic Error'));
+            const dispatch = jest.fn();
+            const result = await createAccRegistrationThunk({})(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Failed to create registration');
+            spy.mockRestore();
         });
     });
 });

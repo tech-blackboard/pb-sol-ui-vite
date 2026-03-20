@@ -119,6 +119,16 @@ const brochuresSlice = createSlice({
             .addCase(fetchBrochures.rejected, (state, action) => {
                 state.loading = false;
                 state.error = (action.payload as string) || action.error.message || 'Failed to load';
+            })
+            .addCase(createBrochureThunk.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(createBrochureThunk.fulfilled, (state) => {
+                state.loading = false;
+            })
+            .addCase(createBrochureThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = (action.payload as string) || action.error.message || 'Failed to create brochure request';
             });
     },
 });

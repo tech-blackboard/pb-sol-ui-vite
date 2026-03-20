@@ -523,7 +523,7 @@ interface InputFieldProps {
     onWheel?: React.WheelEventHandler<HTMLInputElement>
 }
 
-function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false, onWheel }: InputFieldProps) {
+export function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false, onWheel }: InputFieldProps) {
     return (
         <div>
             <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
@@ -551,7 +551,7 @@ interface SelectFieldProps {
     isLoading?: boolean
 }
 
-function SelectField({ label, name, value, options, onChange, error, isLoading = false }: SelectFieldProps) {
+export function SelectField({ label, name, value, options, onChange, error, isLoading = false }: SelectFieldProps) {
     return (
         <div>
             <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>

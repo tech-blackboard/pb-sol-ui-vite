@@ -18,9 +18,11 @@ import reducer, {
   openPaymentReceiptModal,
   closePaymentReceiptModal,
   openPaymentReminderModal,
-  closePaymentReminderModal
+  closePaymentReminderModal,
+  clearError
 } from '../../../../store/slices/abstracts/abstracts.slice'
-import { fetchAbstracts, updateStatusThunk, sendInvoiceThunk, sendPaymentReminderThunk, sendPaymentReceiptThunk, sendConfirmationEmailThunk } from '../../../../store/slices/abstracts/abstracts.thunks'
+import { fetchAbstracts, updateAbstractThunk, updateStatusThunk, sendInvoiceThunk, sendPaymentReminderThunk, sendPaymentReceiptThunk, sendConfirmationEmailThunk } from '../../../../store/slices/abstracts/abstracts.thunks'
+import type { UnknownAction } from '@reduxjs/toolkit'
 
 describe('abstracts slice', () => {
   const initialState = reducer(undefined, { type: 'INIT' })
@@ -234,6 +236,31 @@ describe('abstracts slice', () => {
     expect(state.paymentReminderModal.open).toBe(false)
   });
 
+  it('should handle updateAbstractThunk.fulfilled (lines 225-242)', () => {
+    const startState = {
+      ...initialState,
+      rawItems: [{ id: '1', name: 'Old' }] as AbstractItem[],
+      items: [{ id: '1' }] as unknown as AbstractRecord[],
+      actionLoading: { ...initialState.actionLoading, edit: true }
+    }
+    const updated = { id: '1', name: 'New' } as AbstractItem
+    const state = reducer(startState, updateAbstractThunk.fulfilled(updated, '', { id: '1', body: {} }))
+
+    expect(state.actionLoading.edit).toBe(false)
+    expect(state.rawItems[0].name).toBe('New')
+    expect(state.selected).toEqual(updated)
+  })
+
+  it('should handle fetchAbstracts.rejected with fallback message (line 219)', () => {
+    const action = { type: fetchAbstracts.rejected.type, payload: null, error: { message: 'Network Er' } }
+    const state = reducer(initialState, action as UnknownAction)
+    expect(state.error).toBe('Network Er')
+
+    const actionNoMsg = { type: fetchAbstracts.rejected.type, payload: null, error: {} }
+    const stateNoMsg = reducer(initialState, actionNoMsg as UnknownAction)
+    expect(stateNoMsg.error).toBe('Failed to load')
+  })
+
   /* -------------------- OTHER MODALS -------------------- */
   it('should open/close payment receipt modal', () => {
     let state = reducer(initialState, openPaymentReceiptModal({ id: '1', name: 'N' }))
@@ -335,4 +362,84 @@ describe('abstracts slice', () => {
     const state = reducer(startState, sendConfirmationEmailThunk.fulfilled({ id: '1', message: 'Sent' }, '', '1'))
     expect(state.selected?.isEmailSent).toBe(true)
   })
+
+  // New Coverage Cases
+  it('should use default status if status is missing in setSelected (line 113)', () => {
+    const abstract = { id: '1' } as AbstractItem
+    const state = reducer(initialState, setSelected(abstract))
+    expect(state.modalStatus).toBe('Under Review')
+  })
+
+  it('should clear error via clearError (line 200)', () => {
+    const state = reducer({ ...initialState, error: 'err' }, clearError())
+    expect(state.error).toBeNull()
+  })
+
+  // Re-importing clearError from slice for clarity (if not already redundant)
+  it('should handle clearError specifically', () => {
+    const state = reducer({ ...initialState, error: 'err' }, clearError())
+    expect(state.error).toBeNull()
+  })
+
+  it('should handle updateAbstractThunk.pending (line 224)', () => {
+    const state = reducer(initialState, updateAbstractThunk.pending('', { id: '1', body: {} }))
+    expect(state.actionLoading.edit).toBe(true)
+  })
+
+  it('should handle updateAbstractThunk.rejected (line 244)', () => {
+    const startState = { ...initialState, actionLoading: { ...initialState.actionLoading, edit: true } }
+    const state = reducer(startState, updateAbstractThunk.rejected(null, '', { id: '1', body: {} }))
+    expect(state.actionLoading.edit).toBe(false)
+  })
+
+  it('should handle updateStatusThunk.pending (line 249)', () => {
+    const state = reducer(initialState, updateStatusThunk.pending('', { id: '1', statusId: 1 }))
+    expect(state.actionLoading.status).toBe(true)
+  })
+
+  it('should handle sendInvoiceThunk.pending (line 274)', () => {
+    const state = reducer(initialState, sendInvoiceThunk.pending('', { abstractId: '1', invoiceData: {} as InvoiceData }))
+    expect(state.actionLoading.invoice).toBe(true)
+  })
+
+  it('should handle sendPaymentReceiptThunk.pending (line 315)', () => {
+    const state = reducer(initialState, sendPaymentReceiptThunk.pending('', { abstractId: '1', receiptData: {} as PaymentReceiptData }))
+    expect(state.actionLoading.receipt).toBe(true)
+  })
+
+  it('should handle sendConfirmationEmailThunk.pending (line 346)', () => {
+    const state = reducer(initialState, sendConfirmationEmailThunk.pending('', '1'))
+    expect(state.actionLoading.confirmation).toBe(true)
+  })
+
+  it('should handle sendPaymentReminderThunk.fulfilled (lines 301-304)', () => {
+    const startState = {
+      ...initialState,
+      paymentReminderModal: { open: true, abstractId: '1', abstractName: 'Test' },
+      actionLoading: { ...initialState.actionLoading, reminder: true }
+    }
+    const state = reducer(startState, sendPaymentReminderThunk.fulfilled({ success: true }, '', { abstractId: '1', paymentReminderData: {} as PaymentReminderData }))
+    expect(state.actionLoading.reminder).toBe(false)
+    expect(state.paymentReminderModal.open).toBe(false)
+  })
+
+  it('should handle closeInvoiceModal via extraReducer (lines 291-293)', () => {
+    const startState = {
+      ...initialState,
+      invoiceModal: { open: true, abstractId: '1', abstractName: 'Test' }
+    }
+    const state = reducer(startState, closeInvoiceModal())
+    expect(state.invoiceModal.open).toBe(false)
+    expect(state.invoiceModal.abstractId).toBeNull()
+  })
+
+  it('should handle sendPaymentReminderThunk.pending (line 298)', () => {
+    const state = reducer(initialState, sendPaymentReminderThunk.pending('', { abstractId: '1', paymentReminderData: {} as PaymentReminderData }))
+    expect(state.actionLoading.reminder).toBe(true)
+  })
+
+  // Thunk Rejected Coverage (Lines 118-120, 131-133 in thunks.ts)
+  // These are usually tested by mocking the service to throw and checking the rejected action's payload
+  // However, the coverage report likely refers to the slice handler for these rejected actions which we already have. 
+  // If it's about the thunk catch block itself (axios.isAxiosError part), we need to trigger it in thunk tests.
 })

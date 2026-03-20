@@ -252,4 +252,88 @@ describe('RegistrationFiltersDrawer', () => {
 
         expect(dispatchSpy).toHaveBeenCalled()
     })
+
+    // ── uncovered branch coverage ──────────────────────────────────────
+
+    it('dispatches updateDraftFilter for phone input (line 96)', () => {
+        const store = createMockStore()
+        const spy = jest.spyOn(store, 'dispatch')
+        render(<Provider store={store}><RegistrationFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
+        fireEvent.change(screen.getByPlaceholderText('Phone'), { target: { value: '555-1234' } })
+        expect(spy).toHaveBeenCalled()
+        expect(store.getState().registrations.draftFilters.phone).toBe('555-1234')
+    })
+
+    it('dispatches updateDraftFilter for country input (line 104)', () => {
+        const store = createMockStore()
+        const spy = jest.spyOn(store, 'dispatch')
+        render(<Provider store={store}><RegistrationFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
+        fireEvent.change(screen.getByPlaceholderText('Country'), { target: { value: 'Canada' } })
+        expect(spy).toHaveBeenCalled()
+        expect(store.getState().registrations.draftFilters.country).toBe('Canada')
+    })
+
+    it('dispatches updateDraftFilter for institution input (line 112)', () => {
+        const store = createMockStore()
+        const spy = jest.spyOn(store, 'dispatch')
+        render(<Provider store={store}><RegistrationFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
+        fireEvent.change(screen.getByPlaceholderText('Institution'), { target: { value: 'MIT' } })
+        expect(spy).toHaveBeenCalled()
+        expect(store.getState().registrations.draftFilters.institution).toBe('MIT')
+    })
+
+    it('dispatches updateDraftFilter for presentation input (line 120)', () => {
+        const store = createMockStore()
+        const spy = jest.spyOn(store, 'dispatch')
+        render(<Provider store={store}><RegistrationFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
+        fireEvent.change(screen.getByPlaceholderText('Presentation'), { target: { value: 'Oral' } })
+        expect(spy).toHaveBeenCalled()
+        expect(store.getState().registrations.draftFilters.presentation).toBe('Oral')
+    })
+
+    it('dispatches updateDraftFilter for status_flag input (line 128)', () => {
+        const store = createMockStore()
+        render(<Provider store={store}><RegistrationFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
+        fireEvent.change(screen.getByPlaceholderText('Status Flag'), { target: { value: 'abc' } })
+        expect(store.getState().registrations.draftFilters.status_flag).toBe('abc')
+    })
+
+    it('clears website_id when empty string selected (line 134-135)', async () => {
+        const store = createMockStore({ website_id: 1 })
+        render(<Provider store={store}><RegistrationFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
+        await waitFor(() => expect(screen.getByText('Conference A')).toBeInTheDocument())
+        const websiteSelect = screen.getByDisplayValue(/Conference A|Website/)
+        fireEvent.change(websiteSelect, { target: { value: '' } })
+        expect(store.getState().registrations.draftFilters.website_id).toBeUndefined()
+    })
+
+    it('dispatches updateDraftFilter when sortBy is changed (lines 156–160)', () => {
+        const store = createMockStore()
+        render(<Provider store={store}><RegistrationFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
+        const sortBySelect = screen.getByDisplayValue('Sort by time')
+        fireEvent.change(sortBySelect, { target: { value: 'name' } })
+        expect(store.getState().registrations.draftFilters.sortBy).toBe('name')
+    })
+
+    it('dispatches updateDraftFilter when sortOrder is changed (lines 172–176)', () => {
+        const store = createMockStore()
+        render(<Provider store={store}><RegistrationFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
+        const sortOrderSelect = screen.getByDisplayValue('DESC')
+        fireEvent.change(sortOrderSelect, { target: { value: 'ASC' } })
+        expect(store.getState().registrations.draftFilters.sortOrder).toBe('ASC')
+    })
+
+    it('dispatches updateDraftFilter for search input (line 64)', () => {
+        const store = createMockStore()
+        render(<Provider store={store}><RegistrationFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
+        fireEvent.change(screen.getByPlaceholderText('Keyword search...'), { target: { value: 'findme' } })
+        expect(store.getState().registrations.draftFilters.search).toBe('findme')
+    })
+
+    it('dispatches updateDraftFilter for name input (line 72)', () => {
+        const store = createMockStore()
+        render(<Provider store={store}><RegistrationFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
+        fireEvent.change(screen.getByPlaceholderText('Name'), { target: { value: 'Alice' } })
+        expect(store.getState().registrations.draftFilters.name).toBe('Alice')
+    })
 })
