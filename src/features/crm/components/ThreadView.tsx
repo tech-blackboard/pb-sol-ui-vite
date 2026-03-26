@@ -8,13 +8,14 @@ import { useState } from 'react';
 
 export default function ThreadView() {
     const dispatch = useAppDispatch();
-    const { messages, threads, selectedThreadId, loading } = useAppSelector((state) => state.crm);
+    const { messages, threads, events, selectedThreadId, loading } = useAppSelector((state) => state.crm);
     const [isUnsubscribing, setIsUnsubscribing] = useState(false);
     const [expandedDetailsId, setExpandedDetailsId] = useState<string | null>(null);
     const [downloadingIds, setDownloadingIds] = useState<Set<number>>(new Set());
 
     const thread = threads.find(t => t.id === selectedThreadId);
     const contact = thread?.contact;
+    const event = events.find(e => e.id === thread?.eventId);
 
     const handleBack = () => {
         dispatch(setSelectedThread(null));
@@ -341,10 +342,11 @@ export default function ThreadView() {
                         })}
                     </div>
 
-                    {/* Hidden Reply Form (shows on click Reply) */}
                     <div className="mt-8 border-t border-gray-100 dark:border-gray-800 pt-8">
                         <ReplyForm
-                            threadId={thread.id}
+                            contactId={contact?.id || 0}
+                            eventId={thread.eventId}
+                            replyEmails={event?.replyEmails || []}
                             defaultSubject={thread.subject}
                             recipientEmail={contact?.email || ''}
                             onSuccess={handleReplySuccess}

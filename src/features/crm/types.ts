@@ -8,6 +8,7 @@ export interface CrmEvent {
     slug: string;
     replyDomain: string;
     domains: string[];
+    replyEmails: string[];
     isActive: boolean;
     contactCount?: number;
     unreadThreads?: number;
