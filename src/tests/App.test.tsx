@@ -4,15 +4,22 @@ import { configureStore } from '@reduxjs/toolkit';
 import App from '../App';
 import authReducer from '../store/slices/authSlice';
 import themeReducer from '../store/slices/themeSlice';
+import registrationsReducer from '../store/slices/registrations/registrations.slice';
+import sponsorshipsReducer from '../store/slices/sponsorships/sponsorships.slice';
+import brochuresReducer from '../store/slices/brochures/brochures.slice';
+import accRegistrationsReducer from '../store/slices/accRegistrations/accRegistrations.slice';
+import contactsReducer from '../store/slices/contacts/contacts.slice';
+import crmReducer from '../store/slices/crm/crm.slice';
 import abstractsReducer from '../store/slices/abstracts/abstracts.slice';
 
-jest.mock('../features/abstracts/pages/AbstractsPage', () => () => <div data-testid="page-abstracts">Abstracts</div>)
-jest.mock('../features/registrations/pages/RegistrationsPage', () => () => <div data-testid="page-registrations">Registrations</div>)
-jest.mock('../features/brochures/pages/BrochuresPage', () => () => <div data-testid="page-brochure">Brochure</div>)
-jest.mock('../features/sponsorships/pages/SponsorshipsPage', () => () => <div data-testid="page-sponsorship">Sponsorship</div>)
-jest.mock('../features/accRegistrations/pages/AccRegistrationsPage', () => () => <div data-testid="page-acc">Accommodation Registrations</div>)
-jest.mock('../features/contacts/pages/ContactsPage', () => () => <div data-testid="page-contact">Contact</div>)
-jest.mock('../pages/DashboardPage', () => () => <div data-testid="page-dashboard">Dashboard</div>)
+jest.mock('../features/abstracts/pages/AbstractsPage', () => () => <div data-testid="page-abstracts">Abstracts Page Content</div>)
+jest.mock('../features/crm/pages/MailboxPage', () => () => <div data-testid="page-mailbox">Mailbox Page Content</div>)
+jest.mock('../features/registrations/pages/RegistrationsPage', () => () => <div data-testid="page-registrations">Registrations Page Content</div>)
+jest.mock('../features/brochures/pages/BrochuresPage', () => () => <div data-testid="page-brochure">Brochure Page Content</div>)
+jest.mock('../features/sponsorships/pages/SponsorshipsPage', () => () => <div data-testid="page-sponsorship">Sponsorship Page Content</div>)
+jest.mock('../features/accRegistrations/pages/AccRegistrationsPage', () => () => <div data-testid="page-acc">Accommodation Page Content</div>)
+jest.mock('../features/contacts/pages/ContactsPage', () => () => <div data-testid="page-contact">Contact Page Content</div>)
+jest.mock('../pages/DashboardPage', () => () => <div data-testid="page-dashboard">Dashboard Page Content</div>)
 
 // Mock dependencies
 jest.mock('../services/deviceFingerprint', () => ({
@@ -51,6 +58,12 @@ const renderWithProviders = (ui: React.ReactElement, {
             auth: authReducer,
             theme: themeReducer,
             abstracts: abstractsReducer,
+            registrations: registrationsReducer,
+            sponsorships: sponsorshipsReducer,
+            brochures: brochuresReducer,
+            accRegistrations: accRegistrationsReducer,
+            contacts: contactsReducer,
+            crm: crmReducer,
         },
         preloadedState,
     }),
@@ -358,5 +371,36 @@ describe('App Component', () => {
         }, { timeout: 3000 });
 
         expect(screen.getAllByText(/Device Management/i).length).toBeGreaterThan(0)
+    });
+
+    test('initializes dark mode correctly', () => {
+        const preloadedState = {
+            theme: { mode: 'dark' as const },
+        };
+
+        renderWithProviders(<App />, { preloadedState });
+
+        expect(document.documentElement.classList.contains('dark')).toBe(true);
+    });
+
+    test('navigates to CRM/Mailbox section', async () => {
+        const preloadedState = {
+            auth: {
+                user: { id: 1, useremail: 'test@test.com', name: 'Test User', role: 'Tester' },
+                loading: false,
+                error: null,
+            },
+        };
+
+        renderWithProviders(<App />, { preloadedState });
+
+        await waitFor(() => {
+            expect(screen.getByText(/Dashboard/i)).toBeInTheDocument();
+        });
+
+        const mailboxButton = screen.getByRole('button', { name: /Mailbox/i });
+        fireEvent.click(mailboxButton);
+
+        expect(await screen.findByTestId('page-mailbox')).toBeInTheDocument();
     });
 });

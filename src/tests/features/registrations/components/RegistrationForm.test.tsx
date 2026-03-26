@@ -4,6 +4,9 @@ import '@testing-library/jest-dom'
 import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
 import registrationsReducer from '../../../../store/slices/registrations/registrations.slice'
+import { listWebsites, type SourceWebsite } from '../../../../services/sourcedb'
+import { createRegistrationThunk } from '../../../../store/slices/registrations/registrations.thunks'
+import toast from 'react-hot-toast'
 
 // Mock services and thunks
 jest.mock('../../../../services/sourcedb', () => ({
@@ -47,10 +50,6 @@ jest.mock('react-hot-toast', () => ({
         error: jest.fn(),
     },
 }))
-
-import { listWebsites } from '../../../../services/sourcedb'
-import { createRegistrationThunk } from '../../../../store/slices/registrations/registrations.thunks'
-import toast from 'react-hot-toast'
 
 const createMockStore = () => {
     return configureStore({
@@ -426,6 +425,222 @@ it('pre-fills website_id when provided', async () => {
 
         await waitFor(() => {
             expect(toast.error).toHaveBeenCalledWith('Please fill the missing fields')
+        })
+    })
+
+    it('validates number of nights must be greater than 0 (line 223)', async () => {
+        renderForm()
+        await screen.findByText('Add New Registration')
+
+        // Enable accommodation
+        fireEvent.click(screen.getByRole('checkbox', { name: /Looking for Accommodation/i }))
+        fireEvent.click(screen.getByText('Single Occupancy'))
+
+        // Set same date for checkin and checkout -> 0 nights
+        const date = '2024-01-01'
+        fireEvent.change(screen.getByLabelText('Check-in Date'), { target: { value: date } })
+        fireEvent.change(screen.getByLabelText('Check-out Date'), { target: { value: date } })
+
+        fireEvent.click(screen.getByText('Create Registration'))
+        await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Please fill the missing fields'))
+    })
+
+    it('validates accommodation fee is required (line 226)', async () => {
+        renderForm()
+        await screen.findByText('Add New Registration')
+
+        fireEvent.click(screen.getByRole('checkbox', { name: /Looking for Accommodation/i }))
+        fireEvent.click(screen.getByText('Single Occupancy'))
+
+        fireEvent.change(screen.getByLabelText('Check-in Date'), { target: { value: '2024-01-01' } })
+        fireEvent.change(screen.getByLabelText('Check-out Date'), { target: { value: '2024-01-02' } })
+        fireEvent.change(screen.getByLabelText(/Price per Night/i), { target: { value: '0' } })
+
+        fireEvent.click(screen.getByText('Create Registration'))
+        await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Please fill the missing fields'))
+    })
+
+    it('handles unexpected dispatch errors in catch block (line 281)', async () => {
+        const store = createMockStore()
+        jest.spyOn(store, 'dispatch').mockImplementation(() => { throw new Error('Crash') })
+
+        render(
+            <Provider store={store}>
+                <RegistrationForm onClose={mockOnClose} onSuccess={mockOnSuccess} />
+            </Provider>
+        )
+
+        await screen.findByText('Add New Registration')
+        // Fill minimum required fields
+        fireEvent.change(screen.getByLabelText(/Caption/i), { target: { value: 'Mr.' } })
+        fireEvent.change(screen.getByLabelText(/Full Name/i), { target: { value: 'John' } })
+        fireEvent.change(screen.getAllByLabelText(/Email/i)[0], { target: { value: 'j@t.com' } })
+        fireEvent.change(screen.getByLabelText(/Phone\*/i), { target: { value: '1' } })
+        fireEvent.change(screen.getByLabelText(/Institution/i), { target: { value: 'I' } })
+        fireEvent.change(screen.getByLabelText(/Country\*/), { target: { value: 'India' } })
+        await waitFor(() => expect(screen.getByText('Test Conference')).toBeInTheDocument())
+        fireEvent.change(screen.getByLabelText(/Website\/Conference/i), { target: { value: '1' } })
+
+        fireEvent.click(screen.getByText('Create Registration'))
+        await waitFor(() => expect(toast.error).toHaveBeenCalledWith('An error occurred'))
+    })
+
+    it('renders occupancy type error message (line 429)', async () => {
+        renderForm()
+        await screen.findByText('Add New Registration')
+
+        fireEvent.click(screen.getByRole('checkbox', { name: /Looking for Accommodation/i }))
+        fireEvent.click(screen.getByText('Create Registration'))
+
+        await waitFor(() => {
+            expect(screen.getByText('Occupancy type is required')).toBeInTheDocument()
+        })
+    })
+
+    it('clears field-level error when field is edited (lines 194-195)', async () => {
+        renderForm()
+        await screen.findByText('Add New Registration')
+
+        // Trigger validaton error
+        fireEvent.click(screen.getByText('Create Registration'))
+        await waitFor(() => expect(screen.getByText('Name is required')).toBeInTheDocument())
+
+        // Edit the field
+        fireEvent.change(screen.getByLabelText(/Full Name/i), { target: { value: 'A' } })
+        
+        // Error should be cleared
+        await waitFor(() => {
+            expect(screen.queryByText('Name is required')).not.toBeInTheDocument()
+        })
+    })
+
+    it('validates email and participants (lines 204, 211)', async () => {
+        renderForm()
+        await screen.findByText('Add New Registration')
+
+        // Set name but leave email empty
+        fireEvent.change(screen.getByLabelText(/Full Name/i), { target: { value: 'John' } })
+        fireEvent.change(screen.getByLabelText(/Number of Participants/i), { target: { value: '' } })
+        
+        fireEvent.click(screen.getByText('Create Registration'))
+
+        await waitFor(() => {
+            expect(screen.getByText('Email is required')).toBeInTheDocument()
+            expect(screen.getByText('Number of participants is required')).toBeInTheDocument()
+        })
+    })
+
+    it('validates check-in and check-out dates (lines 217-218)', async () => {
+        renderForm()
+        await screen.findByText('Add New Registration')
+
+        fireEvent.click(screen.getByRole('checkbox', { name: /Looking for Accommodation/i }))
+        fireEvent.click(screen.getByText('Single Occupancy'))
+        
+        // Leave dates empty and submit
+        fireEvent.click(screen.getByText('Create Registration'))
+
+        await waitFor(() => {
+            expect(screen.getByText('Check-in date is required')).toBeInTheDocument()
+            expect(screen.getByText('Check-out date is required')).toBeInTheDocument()
+        })
+    })
+
+    it('verifies accommodation payload mapping (lines 259-260)', async () => {
+        const store = createMockStore()
+        ;(createRegistrationThunk as unknown as jest.Mock).mockReturnValue({
+            type: 'registrations/create/fulfilled',
+            payload: {}
+        })
+
+        render(
+            <Provider store={store}>
+                <RegistrationForm onClose={mockOnClose} onSuccess={mockOnSuccess} />
+            </Provider>
+        )
+
+        await screen.findByText('Add New Registration')
+
+        // Fill required fields
+        fireEvent.change(screen.getByLabelText(/Caption/i), { target: { value: 'Mr.' } })
+        fireEvent.change(screen.getByLabelText(/Full Name/i), { target: { value: 'John' } })
+        fireEvent.change(screen.getAllByLabelText(/Email/i)[0], { target: { value: 'j@t.com' } })
+        fireEvent.change(screen.getByLabelText(/Phone\*/i), { target: { value: '1' } })
+        fireEvent.change(screen.getByLabelText(/Institution/i), { target: { value: 'I' } })
+        fireEvent.change(screen.getByLabelText(/Country\*/), { target: { value: 'India' } })
+        await waitFor(() => expect(screen.getByText('Test Conference')).toBeInTheDocument())
+        fireEvent.change(screen.getByLabelText(/Website\/Conference/i), { target: { value: '1' } })
+
+        // Enable accommodation
+        fireEvent.click(screen.getByRole('checkbox', { name: /Looking for Accommodation/i }))
+        fireEvent.click(screen.getByText('Single Occupancy'))
+        fireEvent.change(screen.getByLabelText('Check-in Date'), { target: { value: '2024-01-01' } })
+        fireEvent.change(screen.getByLabelText('Check-out Date'), { target: { value: '2024-01-02' } })
+        fireEvent.change(screen.getByLabelText(/Price per Night/i), { target: { value: '100' } })
+
+        fireEvent.click(screen.getByText('Create Registration'))
+
+        await waitFor(() => {
+            // Depend on how createRegistrationThunk is mocked/called, we check the actual payload sent to dispatch
+            expect(createRegistrationThunk).toHaveBeenCalledWith(expect.objectContaining({
+                accomm: '100',
+                accmvalue: '100'
+            }))
+        })
+    })
+
+    it('handles form submission failure with fallback message (line 275)', async () => {
+        ;(createRegistrationThunk as unknown as jest.Mock).mockReturnValue({
+            type: 'registrations/create/rejected',
+            payload: null, // Test fallback to 'Failed to create registration'
+            error: { message: 'Some Error' }
+        })
+
+        renderForm()
+        await screen.findByText('Add New Registration')
+
+        // Fill minimum required fields
+        fireEvent.change(screen.getByLabelText(/Caption/i), { target: { value: 'Mr.' } })
+        fireEvent.change(screen.getByLabelText(/Full Name/i), { target: { value: 'John' } })
+        fireEvent.change(screen.getAllByLabelText(/Email/i)[0], { target: { value: 'j@t.com' } })
+        fireEvent.change(screen.getByLabelText(/Phone\*/i), { target: { value: '1' } })
+        fireEvent.change(screen.getByLabelText(/Institution/i), { target: { value: 'I' } })
+        fireEvent.change(screen.getByLabelText(/Country\*/), { target: { value: 'India' } })
+        await waitFor(() => expect(screen.getByText('Test Conference')).toBeInTheDocument())
+        fireEvent.change(screen.getByLabelText(/Website\/Conference/i), { target: { value: '1' } })
+
+        fireEvent.click(screen.getByText('Create Registration'))
+
+        await waitFor(() => {
+            expect(toast.error).toHaveBeenCalledWith('Failed to create registration')
+        })
+    })
+
+    it('covers race condition on unmount (line 121)', async () => {
+        let resolveWebsites: (value: SourceWebsite[]) => void = () => { }
+        const webPromise = new Promise((res) => { resolveWebsites = res })
+        ;(listWebsites as jest.Mock).mockReturnValue(webPromise)
+
+        const { unmount } = renderForm()
+        unmount()
+        resolveWebsites([{ id: 1, name: 'W' }])
+        await waitFor(() => expect(screen.queryByText('W')).not.toBeInTheDocument())
+    })
+
+    it('covers numeric fallback and validation price/presentation (lines 154, 208, 210)', async () => {
+        renderForm()
+        await screen.findByText('Add New Registration')
+
+        // Trigger validation with empty/invalid fields
+        // Presentation select usually has a default, so we'd need to force it to null if possible, or just check the logic.
+        // For reg_price, we can clear it.
+        const priceInput = screen.getByLabelText(/Registration Price/i)
+        fireEvent.change(priceInput, { target: { value: '' } })
+
+        fireEvent.click(screen.getByText('Create Registration'))
+
+        await waitFor(() => {
+            expect(screen.getByText('Registration price is required')).toBeInTheDocument()
         })
     })
 })

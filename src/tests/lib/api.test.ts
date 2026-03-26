@@ -281,5 +281,24 @@ describe('api service', () => {
             expect(localStorage.getItem('accessToken')).toBeNull();
             expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'app:auth-failure' }));
         });
+
+        test('handles token refresh with missing headers.set (lines 178-179)', async () => {
+            const [, onRejected] = getResponseInterceptor();
+
+            localStorage.setItem('refreshToken', 'valid-refresh');
+            const originalConfig = {
+                url: '/target-api',
+                headers: { Authorization: 'Bearer old' } // No .set function
+            } as unknown as { url: string; headers: Record<string, string>; _retry?: boolean };
+            const err = { response: { status: 401 }, config: originalConfig };
+
+            mockAxiosInstance.post.mockResolvedValueOnce({
+                data: { access_token: 'fresh-token' }
+            });
+            mockAxiosInstance.mockResolvedValueOnce({ data: 'success' });
+
+            await onRejected(err);
+            expect(originalConfig.headers['Authorization']).toBe('Bearer fresh-token');
+        });
     });
 });

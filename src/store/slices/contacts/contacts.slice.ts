@@ -121,9 +121,17 @@ const contactsSlice = createSlice({
                 state.loading = false;
                 state.error = (action.payload as string) || action.error.message || 'Failed to load';
             })
+            .addCase(createContactThunk.pending, (state) => {
+                state.loading = true;
+            })
             .addCase(createContactThunk.fulfilled, (state, { payload }) => {
+                state.loading = false;
                 state.items = [payload, ...state.items];
                 state.total += 1;
+            })
+            .addCase(createContactThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = (action.payload as string) || action.error.message || 'Failed to create contact';
             });
     },
 });

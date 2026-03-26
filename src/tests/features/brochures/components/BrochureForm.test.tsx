@@ -24,8 +24,8 @@ jest.mock('../../../../store/slices/brochures/brochures.slice', () => {
     return {
         ...actual,
         createBrochureThunk: Object.assign(jest.fn(), {
-            fulfilled: { match: (action: any) => action.type === 'brochures/create/fulfilled' },
-            rejected: { match: (action: any) => action.type === 'brochures/create/rejected' },
+            fulfilled: { match: (action: { type: string }) => action.type === 'brochures/create/fulfilled' },
+            rejected: { match: (action: { type: string }) => action.type === 'brochures/create/rejected' },
         }),
     }
 })

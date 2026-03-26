@@ -153,4 +153,86 @@ describe('DashboardPage', () => {
             expect(screen.getByText('No recent records')).toBeInTheDocument()
         })
     })
+
+    it('covers status styling branches and name fallback (lines 404, 428-434)', async () => {
+        const variousAbstracts = [
+            { id: 1, name: null, user: { firstname: 'John', lastname: 'Doe' }, website_name: 'W1', now: '2023', status: { actionType: 'Under Review' } },
+            { id: 2, name: 'Exist', user: null, website_name: 'W2', now: '2023', status: { actionType: 'Accepted' } },
+            { id: 3, name: 'Exist', user: null, website_name: 'W3', now: '2023', status: { actionType: 'Rejected' } },
+            { id: 4, name: 'Exist', user: null, website_name: 'W4', now: '2023', status: { actionType: 'Out of Scope' } },
+            { id: 5, name: 'Exist', user: null, website_name: 'W5', now: '2023', status: { actionType: 'Deleted' } },
+            { id: 6, name: 'Exist', user: null, website_name: 'W6', now: '2023', status: { actionType: 'Other' } },
+        ]
+        ; (fetchDashboard as jest.Mock).mockResolvedValue({ ...mockDashboardData, recentAbstracts: variousAbstracts })
+        
+        render(<DashboardPage />)
+
+        expect(await screen.findByText('John Doe')).toBeInTheDocument() // line 404 fallback
+        
+        // Use table container to find status spans (to avoid matching stat cards)
+        const table = screen.getByRole('table')
+        
+        // Verify some classes (lines 428-434)
+        const yellowSpan = within(table).getByText('Under Review')
+        expect(yellowSpan.className).toContain('bg-yellow-50')
+        
+        const graySpan = within(table).getByText('Out of Scope')
+        expect(graySpan.className).toContain('bg-gray-100')
+        
+        const redSpan = within(table).getByText('Deleted')
+        expect(redSpan.className).toContain('text-red-700')
+    })
+
+    it('covers loading websites fallback (line 221)', async () => {
+        ;(listWebsites as jest.Mock).mockReturnValue(new Promise(() => {})) // Never resolves
+        render(<DashboardPage />)
+        
+        fireEvent.click(screen.getByRole('button', { name: /Filters/i }))
+        expect(screen.getByText('Loading websites…')).toBeInTheDocument()
+    })
+
+    it('covers name and website fallbacks (lines 400, 404)', async () => {
+        const fallbackAbstracts = [
+            { id: 1, name: null, user: null, website_name: null, now: '2023', status: 'Accepted' },
+            { id: 2, name: '', user: { useremail: 'test@email.com' }, website_name: 'W1', now: '2023', status: 'Accepted' },
+        ]
+        ;(fetchDashboard as jest.Mock).mockResolvedValue({ ...mockDashboardData, recentAbstracts: fallbackAbstracts })
+        
+        render(<DashboardPage />)
+        
+        
+        expect(await screen.findByText('test@email.com')).toBeInTheDocument()
+        expect(screen.getAllByText('—').length).toBeGreaterThan(0) // Website fallback
+    })
+
+    it('covers missing status counts and website ID reset (lines 115-116, 217)', async () => {
+        ;(fetchDashboard as jest.Mock).mockResolvedValue({ 
+            ...mockDashboardData, 
+            statusCounts: [{ status_id: 1, count: 1 }] // Only status 1
+        })
+        render(<DashboardPage />)
+        
+        // Wait for stats
+        await screen.findByText('1') // Total Abstracts from mockDashboardData.total or statusCounts?
+        // MapStatusCounts uses statusCounts. map[2] should be 0.
+        
+        fireEvent.click(screen.getByRole('button', { name: /Filters/i }))
+        const select = screen.getByRole('combobox') as HTMLSelectElement
+        fireEvent.change(select, { target: { value: '' } }) // Reset websiteId in select
+        expect(select.value).toBe('')
+    })
+
+    it('covers recent abstracts fallbacks and date formatting (lines 331, 398-400, 418-419)', async () => {
+        const minimalAbstracts = [
+            { id: 1, name: 'Minimal', website_id: 10, website: { name: 'Ext Website' }, now: null, status: null }
+        ]
+        ;(fetchDashboard as jest.Mock).mockResolvedValue({ ...mockDashboardData, recentAbstracts: minimalAbstracts })
+        
+        render(<DashboardPage />)
+        const reBtn = await screen.findByRole('button', { name: /Reload/i })
+        fireEvent.click(reBtn) // Covers line 331 reset
+
+        expect(await screen.findByText('Ext Website')).toBeInTheDocument() // line 400
+        expect(screen.getAllByText('—').length).toBeGreaterThan(0) // line 419
+    })
 })

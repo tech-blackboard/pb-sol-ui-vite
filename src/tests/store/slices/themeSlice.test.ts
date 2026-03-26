@@ -26,4 +26,47 @@ describe('themeSlice', () => {
         const state = { theme: { mode: 'dark' } } as RootState;
         expect(selectTheme(state)).toBe('dark');
     });
+
+    describe('Initialization logic', () => {
+        const originalLocalStorage = Object.getPrototypeOf(localStorage);
+        const originalMatchMedia = window.matchMedia;
+
+        beforeEach(() => {
+            jest.resetModules();
+        });
+
+        afterAll(() => {
+            Object.setPrototypeOf(localStorage, originalLocalStorage);
+            window.matchMedia = originalMatchMedia;
+        });
+
+        test('should initialize with light theme if stored in localStorage', () => {
+            jest.spyOn(Storage.prototype, 'getItem').mockReturnValue('light');
+            // @ts-expect-error - require() is used for module isolation
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const freshReducer = require('../../../store/slices/themeSlice').default;
+            const state = freshReducer(undefined, { type: 'INIT' });
+            expect(state.mode).toBe('light');
+        });
+
+        test('should initialize with dark theme if prefers-color-scheme is dark', () => {
+            jest.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
+            window.matchMedia = jest.fn().mockImplementation(query => ({
+                matches: query === '(prefers-color-scheme: dark)',
+                media: query,
+                onchange: null,
+                addListener: jest.fn(),
+                removeListener: jest.fn(),
+                addEventListener: jest.fn(),
+                removeEventListener: jest.fn(),
+                dispatchEvent: jest.fn(),
+            }));
+
+            // @ts-expect-error - require() is used for module isolation
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const freshReducer = require('../../../store/slices/themeSlice').default;
+            const state = freshReducer(undefined, { type: 'INIT' });
+            expect(state.mode).toBe('dark');
+        });
+    });
 });

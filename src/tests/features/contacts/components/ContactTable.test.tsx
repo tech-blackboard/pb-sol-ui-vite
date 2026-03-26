@@ -49,14 +49,17 @@ describe('ContactTable', () => {
 
     it('renders fallback values for missing optional fields', () => {
         const incompleteData: ContactItem[] = [{
-            id: 1,
+            id: 2,
             name: 'Jane Doe',
             email: 'jane@test.com',
-            phone: '000',
         } as unknown as ContactItem]
 
         render(<ContactTable rows={incompleteData} loading={false} onView={mockOnView} />)
         const dashes = screen.getAllByText('—')
         expect(dashes.length).toBeGreaterThan(0)
+        
+        // Specifically check the phone column fallback by title
+        const phoneCells = screen.getAllByTitle('—')
+        expect(phoneCells.length).toBeGreaterThan(0)
     })
 })

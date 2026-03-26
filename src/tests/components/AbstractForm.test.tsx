@@ -239,6 +239,74 @@ fireEvent.submit(document.getElementById('abstract-form')!)
   await waitFor(() => {
     expect(toast.error).toHaveBeenCalledWith('Server Error', { duration: 5000 })
   })
-  
+})
+
+it('handles website loading failure', async () => {
+    (listWebsites as jest.Mock).mockRejectedValue(new Error('API Down'))
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+
+    render(<AbstractForm onClose={onClose} />)
+
+    await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Failed to load website options')
+        expect(consoleSpy).toHaveBeenCalledWith('Failed to load websites:', expect.any(Error))
+    })
+    consoleSpy.mockRestore()
+})
+
+it('clears validation errors when field values change', async () => {
+    (listWebsites as jest.Mock).mockResolvedValue([])
+    render(<AbstractForm onClose={onClose} />)
+    
+    // Trigger errors
+    fireEvent.click(screen.getByRole('button', { name: /submit now/i }))
+    expect(await screen.findByText('Name is required')).toBeInTheDocument()
+
+    // Clear error
+    fireEvent.change(screen.getByPlaceholderText('Name'), { target: { value: 'John' } })
+    expect(screen.queryByText('Name is required')).not.toBeInTheDocument()
+
+    // Trigger file error
+    expect(await screen.findByText('Please upload a file')).toBeInTheDocument()
+    const fileInput = document.querySelector('input[type="file"]')!
+    fireEvent.change(fileInput, { target: { files: [new File(['a'], 'a.pdf')] } })
+    expect(screen.queryByText('Please upload a file')).not.toBeInTheDocument()
+})
+
+it('handles network error with specific message', async () => {
+    (listWebsites as jest.Mock).mockResolvedValue([{ id: 1, name: 'Web' }])
+    ;(createAbstractWithFormDataFileUpload as jest.Mock).mockRejectedValue({
+        code: 'ERR_NETWORK',
+        message: 'Network Error'
+    })
+
+    render(<AbstractForm onClose={onClose} websiteId={1} />)
+    await screen.findByText('Web')
+
+    // Fill minimum required fields (skipping full fill for brevity, using existing test pattern)
+    fireEvent.change(screen.getByPlaceholderText('Name'), { target: { value: 'John' } })
+    fireEvent.change(screen.getByPlaceholderText('john@example.com'), { target: { value: 'john@test.com' } })
+    fireEvent.change(screen.getByPlaceholderText('Phone'), { target: { value: '1234567890' } })
+    fireEvent.change(screen.getByPlaceholderText('Hyderabad'), { target: { value: 'City' } })
+    fireEvent.change(screen.getByPlaceholderText('Organization'), { target: { value: 'Org' } })
+    fireEvent.change(screen.getAllByRole('combobox')[2], { target: { value: 'India' } })
+    fireEvent.change(screen.getAllByRole('combobox')[3], { target: { value: 'Oral Presentation(In-Person)' } })
+    fireEvent.change(screen.getByPlaceholderText('Abstract Title*'), { target: { value: 'Title' } })
+    fireEvent.change(screen.getAllByRole('combobox')[1], { target: { value: '1' } })
+    
+    const fileInput = document.querySelector('input[type="file"]')!
+    fireEvent.change(fileInput, { target: { files: [new File(['a'], 'a.pdf')] } })
+    
+    const captcha = document.querySelector('.font-mono')!.textContent!
+    fireEvent.change(screen.getByPlaceholderText('Enter captcha'), { target: { value: captcha } })
+
+    fireEvent.submit(document.getElementById('abstract-form')!)
+
+    await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith(
+            expect.stringContaining('Server connection error'),
+            expect.any(Object)
+        )
+    })
 })
 })

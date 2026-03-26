@@ -1,11 +1,4 @@
-jest.mock('../../../../services/abstracts', () => ({
-  searchAbstracts: jest.fn(),
-  updateAbstractStatus: jest.fn(),
-  sendInvoice: jest.fn(),
-  sendPaymentReminder: jest.fn(),
-  sendPaymentReceipt: jest.fn(),
-  sendConfirmationEmail: jest.fn(),
-}))
+import axios from 'axios'
 import {
   fetchAbstracts,
   updateStatusThunk,
@@ -13,6 +6,7 @@ import {
   sendPaymentReminderThunk,
   sendPaymentReceiptThunk,
   sendConfirmationEmailThunk,
+  updateAbstractThunk,
 } from '../../../../store/slices/abstracts/abstracts.thunks'
 
 import {
@@ -22,7 +16,21 @@ import {
   sendPaymentReminder,
   sendPaymentReceipt,
   sendConfirmationEmail,
+  updateAbstract,
+  type InvoiceData,
+  type PaymentReceiptData,
+  type PaymentReminderData,
 } from '../../../../services/abstracts'
+
+jest.mock('../../../../services/abstracts', () => ({
+  searchAbstracts: jest.fn(),
+  updateAbstractStatus: jest.fn(),
+  sendInvoice: jest.fn(),
+  sendPaymentReminder: jest.fn(),
+  sendPaymentReceipt: jest.fn(),
+  sendConfirmationEmail: jest.fn(),
+  updateAbstract: jest.fn(),
+}))
 
 import { STATUS_TO_ID } from '../../../../features/abstracts/status.constants'
 
@@ -58,23 +66,19 @@ describe('abstracts thunks', () => {
     })
   })
 
-  it('fetchAbstracts → rejects with value on error', async () => {
-  (searchAbstracts as jest.Mock).mockRejectedValue({
-    isAxiosError: true,
-    response: { data: { message: 'API error' } },
+  it('fetchAbstracts → rejects with fallback message on generic error', async () => {
+    (searchAbstracts as jest.Mock).mockRejectedValue(new Error('Generic fail'))
+
+    const thunk = fetchAbstracts({
+      page: 1,
+      limit: 10,
+      filters: { search: '', sortBy: 'now', sortOrder: 'DESC' },
+    })
+
+    const result = await thunk(dispatch, getState, undefined)
+
+    expect(result.payload).toBe('An unknown error occurred')
   })
-
-  const thunk = fetchAbstracts({
-    page: 1,
-    limit: 10,
-    filters: { search: '', sortBy: 'now', sortOrder: 'DESC' },
-  })
-
-  const result = await thunk(dispatch, getState, undefined)
-
-  expect(result.type).toBe('abstracts/fetch/rejected')
-  expect(result.payload).toBe('API error')
-})
 
   /* -------------------------------------------------- */
   /* updateStatusThunk                                  */
@@ -168,5 +172,117 @@ describe('abstracts thunks', () => {
       id: 'abc',
       message: 'Email sent',
     })
+  })
+
+  it('sendPaymentReceiptThunk → rejects with descriptive message on axios error', async () => {
+    (sendPaymentReceipt as jest.Mock).mockRejectedValue({
+      isAxiosError: true,
+      response: { data: { message: 'Receipt failed' } },
+    })
+
+    const thunk = sendPaymentReceiptThunk({ abstractId: '1', receiptData: {} as PaymentReceiptData })
+    const result = await thunk(dispatch, getState, undefined)
+
+    expect(result.type).toBe('abstracts/sendPaymentReceipt/rejected')
+    expect(result.payload).toBe('Receipt failed')
+  })
+
+  it('sendConfirmationEmailThunk → rejects with fallback message on generic error', async () => {
+    (sendConfirmationEmail as jest.Mock).mockRejectedValue(new Error('Generic fail'))
+
+    const thunk = sendConfirmationEmailThunk('1')
+    const result = await thunk(dispatch, getState, undefined)
+
+    expect(result.type).toBe('abstracts/sendConfirmationEmail/rejected')
+    expect(result.payload).toBe('Failed to send confirmation email')
+  })
+
+  it('updateStatusThunk → rejects with descriptive message on generic error', async () => {
+    (updateAbstractStatus as jest.Mock).mockRejectedValue(new Error('Update failed'))
+
+    const thunk = updateStatusThunk({ id: '1', statusId: 1 })
+    const result = await thunk(dispatch, getState, undefined)
+
+    expect(result.type).toBe('abstracts/status/rejected')
+    expect(result.payload).toBe('Failed to update status')
+  })
+
+  it('sendInvoiceThunk → rejects with descriptive message on generic error', async () => {
+    (sendInvoice as jest.Mock).mockRejectedValue(new Error('Invoice failed'))
+
+    const thunk = sendInvoiceThunk({ abstractId: '1', invoiceData: {} as InvoiceData })
+    const result = await thunk(dispatch, getState, undefined)
+
+    expect(result.type).toBe('abstracts/sendInvoice/rejected')
+    expect(result.payload).toBe('Failed to send invoice')
+  })
+
+  it('sendPaymentReminderThunk → rejects with descriptive message on generic error', async () => {
+    (sendPaymentReminder as jest.Mock).mockRejectedValue(new Error('Reminder failed'))
+
+    const thunk = sendPaymentReminderThunk({ abstractId: '1', paymentReminderData: {} as PaymentReminderData })
+    const result = await thunk(dispatch, getState, undefined)
+
+    expect(result.type).toBe('abstracts/paymentReminder/rejected')
+    expect(result.payload).toBe('Failed to send payment reminder')
+  })
+
+  it('updateStatusThunk → rejects with axios error', async () => {
+    const isAxiosErrorSpy = jest.spyOn(axios, 'isAxiosError').mockReturnValue(true)
+      ; (updateAbstractStatus as jest.Mock).mockRejectedValue({
+        response: { data: { message: 'Axios Status Error' } },
+      })
+
+    const thunk = updateStatusThunk({ id: '1', statusId: 1 })
+    const result = await thunk(dispatch, getState, undefined)
+    expect(result.payload).toBe('Axios Status Error')
+    isAxiosErrorSpy.mockRestore()
+  })
+
+  it('sendInvoiceThunk → rejects with axios error', async () => {
+    const isAxiosErrorSpy = jest.spyOn(axios, 'isAxiosError').mockReturnValue(true)
+      ; (sendInvoice as jest.Mock).mockRejectedValue({
+        response: { data: { message: 'Axios Invoice Error' } },
+      })
+
+    const thunk = sendInvoiceThunk({ abstractId: '1', invoiceData: {} as InvoiceData })
+    const result = await thunk(dispatch, getState, undefined)
+    expect(result.payload).toBe('Axios Invoice Error')
+    isAxiosErrorSpy.mockRestore()
+  })
+
+  it('updateAbstractThunk → calls updateAbstract and returns result', async () => {
+    ; (updateAbstract as jest.Mock).mockResolvedValue({ id: '1', name: 'New' })
+
+    const thunk = updateAbstractThunk({ id: '1', body: { name: 'New' } })
+    const result = await thunk(dispatch, getState, undefined)
+
+    expect(updateAbstract).toHaveBeenCalledWith('1', { name: 'New' })
+    expect(result.payload).toEqual({ id: '1', name: 'New' })
+  })
+
+  it('updateAbstractThunk → rejects with descriptive message on axios error', async () => {
+    // The thunk uses axios.isAxiosError(err).
+    const isAxiosErrorSpy = jest.spyOn(axios, 'isAxiosError').mockReturnValue(true)
+      ; (updateAbstract as jest.Mock).mockRejectedValue({
+        response: { data: { message: 'Update failed' } },
+      })
+
+    const thunk = updateAbstractThunk({ id: '1', body: {} })
+    const result = await thunk(dispatch, getState, undefined)
+
+    expect(result.payload).toBe('Update failed')
+    isAxiosErrorSpy.mockRestore()
+  })
+
+  it('updateAbstractThunk → rejects with fallback message on generic error', async () => {
+    const isAxiosErrorSpy = jest.spyOn(axios, 'isAxiosError').mockReturnValue(false)
+      ; (updateAbstract as jest.Mock).mockRejectedValue(new Error('Fail'))
+
+    const thunk = updateAbstractThunk({ id: '1', body: {} })
+    const result = await thunk(dispatch, getState, undefined)
+
+    expect(result.payload).toBe('Failed to update record')
+    isAxiosErrorSpy.mockRestore()
   })
 })

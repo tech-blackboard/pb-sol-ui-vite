@@ -471,13 +471,33 @@ describe('PaymentReceiptForm – Final Clean Suite v2', () => {
   test('handles date validation failure', async () => {
     setup()
     fireEvent.click(screen.getByLabelText(/Looking for Accommodation/i))
-
-    // Submit with missing dates
     fireEvent.click(screen.getByRole('button', { name: /Preview Payment Receipt/i }))
 
     await waitFor(() => {
       expect(screen.getByText(/Check-in date is required/i)).toBeInTheDocument()
       expect(screen.getByText(/Check-out date is required/i)).toBeInTheDocument()
     })
+  })
+
+  test('clears registration fee error on change', async () => {
+    setup()
+    fireEvent.change(screen.getByLabelText(/Registration Fee/i), { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('button', { name: /Preview Payment Receipt/i }))
+    
+    expect(await screen.findByText('Registration fee is required and must be greater than 0')).toBeInTheDocument()
+    
+    fireEvent.change(screen.getByLabelText(/Registration Fee/i), { target: { value: '100' } })
+    expect(screen.queryByText('Registration fee is required and must be greater than 0')).not.toBeInTheDocument()
+  })
+
+  test('shows error when check-out is before check-in', async () => {
+    setup()
+    fireEvent.click(screen.getByLabelText(/Looking for Accommodation/i))
+    fireEvent.change(screen.getByLabelText(/Check In/i), { target: { value: '2026-01-10' } })
+    fireEvent.change(screen.getByLabelText(/Check Out/i), { target: { value: '2026-01-05' } })
+    
+    fireEvent.click(screen.getByRole('button', { name: /Preview Payment Receipt/i }))
+    
+    expect(await screen.findByText('Check-out must be after check-in date')).toBeInTheDocument()
   })
 })
