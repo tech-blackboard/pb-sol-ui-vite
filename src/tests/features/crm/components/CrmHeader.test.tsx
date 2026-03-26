@@ -15,6 +15,7 @@ const mockEvent = (overrides: Partial<CrmEvent> = {}): CrmEvent => ({
   slug: 'tech-conf-2025',
   replyDomain: 'reply.techconf.com',
   domains: ['inbox.techconf.com', 'support.techconf.com'],
+  replyEmails: [],
   isActive: true,
   createdAt: '2025-01-01T00:00:00Z',
   ...overrides,

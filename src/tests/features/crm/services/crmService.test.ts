@@ -196,12 +196,7 @@ describe('sendReply', () => {
     const responseData = { status: 'ok', messageId: 'new-msg-1' };
     mockApi.post.mockResolvedValueOnce({ data: responseData });
 
-    const payload = {
-      threadId: 'th-1',
-      subject: 'Re: Hello',
-      textBody: 'Hello there',
-      htmlBody: '<p>Hello there</p>',
-    };
+    const payload = { contactId: 1, eventId: 1, subject: 'S', textBody: 'B', htmlBody: 'H' };
     const result = await crmService.sendReply(payload);
 
     expect(result).toEqual(responseData);
@@ -216,7 +211,7 @@ describe('sendReply', () => {
     mockToken('tok');
     mockApi.post.mockRejectedValueOnce(new Error('fail'));
     await expect(
-      crmService.sendReply({ threadId: 't', subject: 's', textBody: 'b', htmlBody: '<b>' }),
+      crmService.sendReply({ contactId: 1, eventId: 1, subject: 's', textBody: 'b', htmlBody: '<b>' }),
     ).rejects.toThrow('fail');
   });
 });
