@@ -194,18 +194,28 @@ export default function ThreadView() {
                                                         &lt;{message.fromEmail}&gt;
                                                     </span>
                                                 </div>
-                                                <div className="text-xs text-gray-500 mt-0.5 relative">
-                                                    to {isOutbound ? contact?.email : 'me'}
+                                                <div className="text-xs text-gray-500 mt-0.5 relative flex items-center gap-2">
+                                                    <span>to {isOutbound ? contact?.email : 'me'}</span>
+                                                    {isOutbound && (
+                                                        <>
+                                                            {message.status === 'sent' && (
+                                                                <span className="text-[10px] text-green-600 bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded border border-green-100 dark:border-green-800 font-medium">Sent</span>
+                                                            )}
+                                                            {message.status === 'failed' && (
+                                                                <span className="text-[10px] text-red-600 bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded border border-red-100 dark:border-red-800 font-medium">Failed</span>
+                                                            )}
+                                                        </>
+                                                    )}
                                                     <button
                                                         onClick={() => toggleDetails(message.id)}
-                                                        className="ml-1 hover:text-gray-700 transition-colors"
+                                                        className="ml-1 cursor-pointer hover:text-gray-700 transition-colors"
                                                     >
                                                         ▼
                                                     </button>
 
                                                     {/* Gmail Details Dropdown */}
                                                     {isDetailsExpanded && (
-                                                        <div className="absolute left-0 mt-2 w-[400px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 p-4 text-[12px] leading-6">
+                                                        <div className="absolute left-0 top-8 w-[400px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 p-4 text-[12px] leading-6">
                                                             <div className="grid grid-cols-[80px_1fr] gap-x-2">
                                                                 <span className="text-gray-400 text-right">from:</span>
                                                                 <span className="text-gray-900 dark:text-gray-100">

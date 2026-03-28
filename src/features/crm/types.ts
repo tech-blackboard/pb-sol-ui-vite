@@ -36,6 +36,7 @@ export interface Thread {
     messageCount: number;
     domain: string;
     createdAt: string;
+    status?: MessageStatus;
 }
 
 export interface Attachment {
