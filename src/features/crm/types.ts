@@ -1,5 +1,5 @@
 export type MessageDirection = 'inbound' | 'outbound';
-export type MessageStatus = 'received' | 'sent' | 'failed';
+export type MessageStatus = 'received' | 'sent' | 'failed' | 'draft';
 export type ContactStatus = 'active' | 'unsubscribed' | 'bounced' | 'complained';
 
 export interface CrmEvent {
@@ -65,6 +65,7 @@ export interface Message {
     createdAt: string;
     labels: string[];
     attachments: Attachment[];
+    userId?: number;
 }
 
 export interface LabelResponse {

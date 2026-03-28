@@ -74,12 +74,56 @@ export async function sendReply(payload: {
     textBody: string;
     htmlBody: string;
     fromEmail?: string;
+    draftId?: string;
+    threadId?: string;
 }): Promise<{ status: string; messageId: string }> {
     const { data } = await api.post(`${CRM_BASE}/reply`, payload, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });
     return data;
+}
+
+/**
+ * Save or update an email draft
+ */
+export async function saveDraft(payload: {
+    contactId: number;
+    eventId: number;
+    subject: string;
+    textBody?: string;
+    htmlBody?: string;
+    fromEmail?: string;
+    threadId?: string;
+    draftId?: string;
+}): Promise<Message> {
+    const { data } = await api.post<Message>(`${CRM_BASE}/drafts`, payload, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return data;
+}
+
+/**
+ * Fetch all drafts for the current user
+ */
+export async function fetchDrafts(): Promise<Message[]> {
+    const { data } = await api.get<Message[]>(`${CRM_BASE}/drafts`, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return data;
+}
+
+/**
+ * Delete a draft
+ */
+export async function deleteDraft(draftId: string): Promise<void> {
+    const encodedId = encodeURIComponent(draftId);
+    await api.delete(`${CRM_BASE}/drafts/${encodedId}`, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
 }
 
 /**

@@ -1,20 +1,24 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { CrmEvent, Thread, Message } from '../../../features/crm/types';
-import { fetchEventsThunk, fetchThreadsThunk, fetchMessagesThunk, sendReplyThunk, updateLabelsThunk } from './crm.thunks';
+import { fetchEventsThunk, fetchThreadsThunk, fetchMessagesThunk, sendReplyThunk, updateLabelsThunk, saveDraftThunk, fetchDraftsThunk, deleteDraftThunk } from './crm.thunks';
 
 interface CrmState {
     events: CrmEvent[];
     threads: Thread[];
     messages: Message[];
+    drafts: Message[];
     activeEventId: number | null;
     activeDomain: string | null;
+    activeFolder: 'Inbox' | 'Drafts' | 'Sent' | 'Starred' | 'Junk' | 'Trash';
     selectedThreadId: string | null;
 
     loading: {
         events: boolean;
         threads: boolean;
         messages: boolean;
+        drafts: boolean;
         sending: boolean;
+        savingDraft: boolean;
     };
     error: string | null;
 }
@@ -23,15 +27,19 @@ const initialState: CrmState = {
     events: [],
     threads: [],
     messages: [],
+    drafts: [],
     activeEventId: null,
     activeDomain: null,
+    activeFolder: 'Inbox',
     selectedThreadId: null,
 
     loading: {
         events: false,
         threads: false,
         messages: false,
+        drafts: false,
         sending: false,
+        savingDraft: false,
     },
     error: null,
 };
@@ -48,6 +56,10 @@ const crmSlice = createSlice({
         setActiveDomain(state, action: PayloadAction<string | null>) {
             state.activeDomain = action.payload;
             state.selectedThreadId = null; // Reset selection to return to list view
+        },
+        setActiveFolder(state, action: PayloadAction<'Inbox' | 'Drafts' | 'Sent' | 'Starred' | 'Junk' | 'Trash'>) {
+            state.activeFolder = action.payload;
+            state.selectedThreadId = null;
         },
         setSelectedThread(state, action: PayloadAction<string | null>) {
             state.selectedThreadId = action.payload;
@@ -131,9 +143,45 @@ const crmSlice = createSlice({
                 if (message) {
                     message.labels = payload.labels;
                 }
+            })
+
+            // Save Draft
+            .addCase(saveDraftThunk.pending, (state) => {
+                state.loading.savingDraft = true;
+            })
+            .addCase(saveDraftThunk.fulfilled, (state, { payload }) => {
+                state.loading.savingDraft = false;
+                const index = state.drafts.findIndex(d => d.id === payload.id);
+                if (index !== -1) {
+                    state.drafts[index] = payload;
+                } else {
+                    state.drafts.unshift(payload);
+                }
+            })
+            .addCase(saveDraftThunk.rejected, (state, action) => {
+                state.loading.savingDraft = false;
+                state.error = action.payload as string;
+            })
+
+            // Fetch Drafts
+            .addCase(fetchDraftsThunk.pending, (state) => {
+                state.loading.drafts = true;
+            })
+            .addCase(fetchDraftsThunk.fulfilled, (state, { payload }) => {
+                state.loading.drafts = false;
+                state.drafts = payload;
+            })
+            .addCase(fetchDraftsThunk.rejected, (state, action) => {
+                state.loading.drafts = false;
+                state.error = action.payload as string;
+            })
+
+            // Delete Draft
+            .addCase(deleteDraftThunk.fulfilled, (state, { payload }) => {
+                state.drafts = state.drafts.filter(d => d.id !== payload);
             });
     },
 });
 
-export const { setActiveEvent, setActiveDomain, setSelectedThread, clearError } = crmSlice.actions;
+export const { setActiveEvent, setActiveDomain, setActiveFolder, setSelectedThread, clearError } = crmSlice.actions;
 export default crmSlice.reducer;
