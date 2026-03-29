@@ -3,7 +3,7 @@ import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import ThreadTable from '../../../../features/crm/components/ThreadTable';
-import crmReducer from '../../../../store/slices/crm/crm.slice';
+import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice';
 import type { Thread, Contact } from '../../../../features/crm/types';
 
 // ── helpers ─
@@ -35,14 +35,7 @@ const makeThread = (overrides: Partial<Thread> = {}): Thread => ({
 const makeStore = (overrides: object = {}) => {
   const preloaded = {
     crm: {
-      events: [],
-      threads: [],
-      messages: [],
-      activeEventId: null,
-      activeDomain: null,
-      selectedThreadId: null,
-      loading: { events: false, threads: false, messages: false, sending: false },
-      error: null,
+      ...initialState,
       ...overrides,
     },
   };
@@ -83,7 +76,7 @@ describe('ThreadTable', () => {
 
   it('shows loading spinner when loading.threads is true', () => {
     const { container } = render(
-      <Provider store={makeStore({ loading: { threads: true, events: false, messages: false, sending: false } })}>
+      <Provider store={makeStore({ loading: { threads: true, events: false, messages: false, drafts: false, sending: false, savingDraft: false } })}>
         <ThreadTable />
       </Provider>,
     );

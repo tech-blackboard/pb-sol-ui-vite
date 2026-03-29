@@ -3,7 +3,7 @@ import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import ThreadView from '../../../../features/crm/components/ThreadView';
-import crmReducer from '../../../../store/slices/crm/crm.slice';
+import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice';
 import * as crmService from '../../../../features/crm/services/crmService';
 import * as crmThunks from '../../../../store/slices/crm/crm.thunks';
 import toast from 'react-hot-toast';
@@ -57,10 +57,7 @@ const makeStore = (overrides: object = {}) =>
     reducer: { crm: crmReducer },
     preloadedState: {
       crm: {
-        events: [], threads: [], messages: [],
-        activeEventId: null, activeDomain: null, selectedThreadId: null,
-        loading: { events: false, threads: false, messages: false, sending: false },
-        error: null,
+        ...initialState,
         ...overrides,
       },
     },
@@ -89,7 +86,7 @@ describe('ThreadView', () => {
   it('shows loading spinner when messages are loading and messages array is empty', () => {
     const { container } = render(
       <Provider store={makeStore({
-        loading: { events: false, threads: false, messages: true, sending: false },
+        loading: { ...initialState.loading, messages: true },
         messages: [],
         selectedThreadId: 'thread-1',
         threads: [makeThread()],

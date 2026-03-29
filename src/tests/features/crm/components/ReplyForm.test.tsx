@@ -3,7 +3,7 @@ import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import ReplyForm from '../../../../features/crm/components/ReplyForm';
-import crmReducer from '../../../../store/slices/crm/crm.slice';
+import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice';
 import * as crmService from '../../../../features/crm/services/crmService';
 import toast from 'react-hot-toast';
 
@@ -27,10 +27,8 @@ const makeStore = (loadingOverrides: object = {}) => {
     reducer: { crm: crmReducer },
     preloadedState: {
       crm: {
-        events: [], threads: [], messages: [],
-        activeEventId: null, activeDomain: null, selectedThreadId: null,
-        loading: { events: false, threads: false, messages: false, sending: false, ...loadingOverrides },
-        error: null,
+        ...initialState,
+        loading: { ...initialState.loading, ...loadingOverrides },
       },
     },
   });
