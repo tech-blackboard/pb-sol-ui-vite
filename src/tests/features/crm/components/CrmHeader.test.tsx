@@ -3,7 +3,7 @@ import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import CrmHeader from '../../../../features/crm/components/CrmHeader';
-import crmReducer from '../../../../store/slices/crm/crm.slice';
+import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice';
 import * as crmThunks from '../../../../store/slices/crm/crm.thunks';
 import type { CrmEvent } from '../../../../features/crm/types';
 
@@ -24,14 +24,7 @@ const mockEvent = (overrides: Partial<CrmEvent> = {}): CrmEvent => ({
 const makeStore = (overrides: object = {}) => {
   const preloaded = {
     crm: {
-      events: [],
-      threads: [],
-      messages: [],
-      activeEventId: null,
-      activeDomain: null,
-      selectedThreadId: null,
-      loading: { events: false, threads: false, messages: false, sending: false },
-      error: null,
+      ...initialState,
       ...overrides,
     },
   };

@@ -2,7 +2,7 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { CrmEvent, Thread, Message } from '../../../features/crm/types';
 import { fetchEventsThunk, fetchThreadsThunk, fetchMessagesThunk, sendReplyThunk, updateLabelsThunk, saveDraftThunk, fetchDraftsThunk, deleteDraftThunk } from './crm.thunks';
 
-interface CrmState {
+export interface CrmState {
     events: CrmEvent[];
     threads: Thread[];
     messages: Message[];
@@ -23,7 +23,7 @@ interface CrmState {
     error: string | null;
 }
 
-const initialState: CrmState = {
+export const initialState: CrmState = {
     events: [],
     threads: [],
     messages: [],

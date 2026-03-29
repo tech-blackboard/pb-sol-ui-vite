@@ -3,7 +3,7 @@ import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import MailboxPage from '../../../../features/crm/pages/MailboxPage';
-import crmReducer from '../../../../store/slices/crm/crm.slice';
+import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice';
 
 // ── Shallow mocks for child components ───
 
@@ -34,10 +34,7 @@ const makeStore = (overrides: object = {}) =>
     reducer: { crm: crmReducer },
     preloadedState: {
       crm: {
-        events: [], threads: [], messages: [],
-        activeEventId: null, activeDomain: null, selectedThreadId: null,
-        loading: { events: false, threads: false, messages: false, sending: false },
-        error: null,
+        ...initialState,
         ...overrides,
       },
     },
