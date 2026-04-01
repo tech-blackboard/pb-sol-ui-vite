@@ -123,9 +123,8 @@ describe('MailboxPage', () => {
         <MailboxPage />
       </Provider>,
     );
-    // Only fetchEventsThunk (thunk function) should be dispatched, not fetchThreadsThunk
+    // Both fetchEventsThunk and fetchDraftsThunk are dispatched on mount
     const thunkCalls = spy.mock.calls.filter(c => typeof c[0] === 'function');
-    // fetchThreadsThunk would add a second function call; with null activeEventId only one is dispatched
-    expect(thunkCalls.length).toBe(1);
+    expect(thunkCalls.length).toBe(2);
   });
 });
