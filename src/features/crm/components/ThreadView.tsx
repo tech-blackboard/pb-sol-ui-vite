@@ -12,6 +12,7 @@ export default function ThreadView() {
     const [isUnsubscribing, setIsUnsubscribing] = useState(false);
     const [expandedDetailsId, setExpandedDetailsId] = useState<string | null>(null);
     const [downloadingIds, setDownloadingIds] = useState<Set<number>>(new Set());
+    const drafts = useAppSelector(state => state.crm.drafts);
 
     const thread = threads.find(t => t.id === selectedThreadId);
     const contact = thread?.contact;
@@ -353,14 +354,28 @@ export default function ThreadView() {
                     </div>
 
                     <div className="mt-8 border-t border-gray-100 dark:border-gray-800 pt-8">
-                        <ReplyForm
-                            contactId={contact?.id || 0}
-                            eventId={thread.eventId}
-                            replyEmails={event?.replyEmails || []}
-                            defaultSubject={thread.subject}
-                            recipientEmail={contact?.email || ''}
-                            onSuccess={handleReplySuccess}
-                        />
+                        {(() => {
+                            const draft = drafts.find(d => 
+                                d.contactId === contact?.id && 
+                                d.eventId === thread.eventId && 
+                                (d.threadId === thread.id || !d.threadId)
+                            );
+                            
+                            return (
+                                <ReplyForm
+                                    contactId={contact?.id || 0}
+                                    eventId={thread.eventId}
+                                    replyEmails={event?.replyEmails || []}
+                                    defaultSubject={thread.subject}
+                                    recipientEmail={contact?.email || ''}
+                                    onSuccess={handleReplySuccess}
+                                    initialDraftId={draft?.id}
+                                    initialHtmlBody={draft?.htmlBody}
+                                    initialFromEmail={draft?.fromEmail}
+                                    threadId={thread.id}
+                                />
+                            );
+                        })()}
                     </div>
                 </div>
             </div>

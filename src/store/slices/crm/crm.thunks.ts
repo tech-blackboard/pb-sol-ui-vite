@@ -47,6 +47,8 @@ export const sendReplyThunk = createAsyncThunk(
         textBody: string;
         htmlBody: string;
         fromEmail?: string;
+        draftId?: string;
+        threadId?: string;
     }, { rejectWithValue }) => {
         try {
             return await crmService.sendReply(payload);
@@ -65,6 +67,51 @@ export const updateLabelsThunk = createAsyncThunk(
             return { messageId, labels };
         } catch (err: unknown) {
             const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to update labels';
+            return rejectWithValue(message);
+        }
+    }
+);
+export const saveDraftThunk = createAsyncThunk(
+    'crm/saveDraft',
+    async (payload: {
+        contactId: number;
+        eventId: number;
+        subject: string;
+        textBody?: string;
+        htmlBody?: string;
+        fromEmail?: string;
+        threadId?: string;
+        draftId?: string;
+    }, { rejectWithValue }) => {
+        try {
+            return await crmService.saveDraft(payload);
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to save draft';
+            return rejectWithValue(message);
+        }
+    }
+);
+
+export const fetchDraftsThunk = createAsyncThunk(
+    'crm/fetchDrafts',
+    async (_, { rejectWithValue }) => {
+        try {
+            return await crmService.fetchDrafts();
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to fetch drafts';
+            return rejectWithValue(message);
+        }
+    }
+);
+
+export const deleteDraftThunk = createAsyncThunk(
+    'crm/deleteDraft',
+    async (draftId: string, { rejectWithValue }) => {
+        try {
+            await crmService.deleteDraft(draftId);
+            return draftId;
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to delete draft';
             return rejectWithValue(message);
         }
     }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
-import { fetchEventsThunk, fetchThreadsThunk } from '../../../store/slices/crm/crm.thunks';
+import { fetchEventsThunk, fetchThreadsThunk, fetchDraftsThunk } from '../../../store/slices/crm/crm.thunks';
 import CrmHeader from '../components/CrmHeader';
 import CrmSidebar from '../components/CrmSidebar';
 import ThreadTable from '../components/ThreadTable';
@@ -8,18 +8,23 @@ import ThreadView from '../components/ThreadView';
 
 export default function MailboxPage() {
     const dispatch = useAppDispatch();
-    const { activeEventId, selectedThreadId } = useAppSelector((state) => state.crm);
+    const { activeEventId, selectedThreadId, activeFolder } = useAppSelector((state) => state.crm);
     const [statusFilter, setStatusFilter] = useState('All');
 
     useEffect(() => {
         dispatch(fetchEventsThunk());
+        dispatch(fetchDraftsThunk());
     }, [dispatch]);
 
     useEffect(() => {
         if (activeEventId) {
-            dispatch(fetchThreadsThunk(activeEventId));
+            if (activeFolder === 'Drafts') {
+                dispatch(fetchDraftsThunk());
+            } else {
+                dispatch(fetchThreadsThunk(activeEventId));
+            }
         }
-    }, [activeEventId, dispatch]);
+    }, [activeEventId, activeFolder, dispatch]);
 
     return (
         <div className="flex flex-col h-full overflow-hidden">

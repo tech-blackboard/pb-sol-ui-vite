@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
-import { sendReplyThunk } from '../../../store/slices/crm/crm.thunks';
+import { sendReplyThunk, saveDraftThunk } from '../../../store/slices/crm/crm.thunks';
 import toast from 'react-hot-toast';
 
 interface ReplyFormProps {
@@ -10,14 +10,103 @@ interface ReplyFormProps {
     recipientEmail: string;
     replyEmails: string[];
     onSuccess?: () => void;
+    initialDraftId?: string;
+    initialHtmlBody?: string;
+    initialFromEmail?: string;
+    threadId?: string;
 }
 
-export default function ReplyForm({ contactId, eventId, defaultSubject, recipientEmail, replyEmails, onSuccess }: ReplyFormProps) {
+export default function ReplyForm({ contactId, eventId, defaultSubject, recipientEmail, replyEmails, onSuccess, initialDraftId, initialHtmlBody, initialFromEmail, threadId }: ReplyFormProps) {
     const dispatch = useAppDispatch();
     const { loading } = useAppSelector((state) => state.crm);
-    const [htmlBody, setHtmlBody] = useState('');
-    const [fromEmail, setFromEmail] = useState(replyEmails[0] || '');
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [htmlBody, setHtmlBody] = useState(initialHtmlBody || '');
+    const [fromEmail, setFromEmail] = useState(initialFromEmail || replyEmails[0] || '');
+    const [isExpanded, setIsExpanded] = useState(!!initialDraftId || !!initialHtmlBody);
+    const [draftId, setDraftId] = useState<string | undefined>(initialDraftId);
+    const [lastSavedBody, setLastSavedBody] = useState(initialHtmlBody || '');
+
+    const saveTimeoutRef = useRef<any>(null);
+    const isSavingRef = useRef(false);
+    const htmlBodyRef = useRef(htmlBody);
+    const lastSavedBodyRef = useRef(lastSavedBody);
+    const draftIdRef = useRef(draftId);
+
+    // Keep refs in sync with state
+    useEffect(() => {
+        htmlBodyRef.current = htmlBody;
+    }, [htmlBody]);
+
+    useEffect(() => {
+        lastSavedBodyRef.current = lastSavedBody;
+    }, [lastSavedBody]);
+
+    useEffect(() => {
+        draftIdRef.current = draftId;
+    }, [draftId]);
+
+    const handleSaveDraft = useCallback(async (currentBody: string) => {
+        if (!currentBody.trim() || currentBody === lastSavedBody || isSavingRef.current) return;
+
+        isSavingRef.current = true;
+        const result = await dispatch(saveDraftThunk({
+            contactId,
+            eventId,
+            subject: defaultSubject.startsWith('Re:') ? defaultSubject : `Re: ${defaultSubject}`,
+            htmlBody: currentBody.replace(/\n/g, '<br>'),
+            textBody: currentBody,
+            fromEmail: fromEmail || undefined,
+            draftId: draftId,
+            threadId,
+        }));
+
+        if (saveDraftThunk.fulfilled.match(result)) {
+            setDraftId(result.payload.id);
+            setLastSavedBody(currentBody);
+        }
+        isSavingRef.current = false;
+    }, [contactId, eventId, defaultSubject, fromEmail, draftId, lastSavedBody, dispatch]);
+
+    useEffect(() => {
+        // Only trigger auto-save if:
+        // 1. Body has changed from last saved version
+        // 2. We've changed more than 10 characters OR it's been a while (15s) since last save
+        const charDifference = Math.abs(htmlBody.length - lastSavedBody.length);
+        const shouldSave = isExpanded && htmlBody !== lastSavedBody && (charDifference > 10 || htmlBody.length === 0);
+
+        if (shouldSave) {
+            if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+            saveTimeoutRef.current = setTimeout(() => {
+                handleSaveDraft(htmlBody);
+            }, 30000); // 30 seconds for auto-save while typing
+        }
+        return () => {
+            if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        };
+    }, [htmlBody, isExpanded, lastSavedBody, handleSaveDraft]);
+
+    // Save on unmount or when component is being destroyed
+    useEffect(() => {
+        return () => {
+            // Use refs to get the latest values without re-triggering this effect
+            const bodyToSave = htmlBodyRef.current;
+            const lastSaved = lastSavedBodyRef.current;
+
+            if (bodyToSave.trim() && bodyToSave !== lastSaved && !isSavingRef.current) {
+                // We define a one-off save for unmount to avoid dependency issues
+                dispatch(saveDraftThunk({
+                    contactId,
+                    eventId,
+                    subject: defaultSubject.startsWith('Re:') ? defaultSubject : `Re: ${defaultSubject}`,
+                    htmlBody: bodyToSave.replace(/\n/g, '<br>'),
+                    textBody: bodyToSave,
+                    fromEmail: fromEmail || undefined,
+                    draftId: draftIdRef.current,
+                    threadId,
+                }));
+            }
+        };
+    }, [contactId, eventId, defaultSubject, fromEmail, threadId, dispatch]); 
+    // This effect only depends on stable props, not the changing body
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -33,11 +122,15 @@ export default function ReplyForm({ contactId, eventId, defaultSubject, recipien
             subject: defaultSubject.startsWith('Re:') ? defaultSubject : `Re: ${defaultSubject}`,
             htmlBody: htmlBody.replace(/\n/g, '<br>'),
             textBody: htmlBody,
+            draftId: draftId,
+            threadId,
         }));
 
         if (sendReplyThunk.fulfilled.match(result)) {
             toast.success('Reply sent successfully');
             setHtmlBody('');
+            setLastSavedBody('');
+            setDraftId(undefined);
             setIsExpanded(false);
             if (onSuccess) onSuccess();
         } else {
@@ -108,7 +201,7 @@ export default function ReplyForm({ contactId, eventId, defaultSubject, recipien
                 />
 
                 <div className="flex items-center justify-between pt-2">
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-4">
                         <button
                             type="submit"
                             disabled={loading.sending}
@@ -123,6 +216,21 @@ export default function ReplyForm({ contactId, eventId, defaultSubject, recipien
                             )}
                             Send Reply
                         </button>
+
+                        {loading.savingDraft && (
+                            <span className="text-xs text-gray-400 animate-pulse flex items-center gap-1">
+                                <div className="h-1.5 w-1.5 rounded-full bg-gray-400"></div>
+                                Saving draft...
+                            </span>
+                        )}
+                        {!loading.savingDraft && draftId && (
+                            <span className="text-xs text-gray-400 flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3 text-green-500">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                </svg>
+                                Draft saved
+                            </span>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-1 text-[10px] text-gray-400">
