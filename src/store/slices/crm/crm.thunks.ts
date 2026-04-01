@@ -41,11 +41,12 @@ export const fetchMessagesThunk = createAsyncThunk(
 export const sendReplyThunk = createAsyncThunk(
     'crm/sendReply',
     async (payload: {
-        threadId: string;
+        contactId: number;
+        eventId: number;
         subject: string;
         textBody: string;
         htmlBody: string;
-        replyTo?: string;
+        fromEmail?: string;
     }, { rejectWithValue }) => {
         try {
             return await crmService.sendReply(payload);

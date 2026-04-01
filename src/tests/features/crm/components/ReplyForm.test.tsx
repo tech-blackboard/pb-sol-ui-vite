@@ -40,6 +40,9 @@ const defaultProps = {
   threadId: 'thread-1',
   defaultSubject: 'Hello World',
   recipientEmail: 'alice@example.com',
+  replyEmails: ['support@test.com', 'events@test.com'],
+  contactId: 1,
+  eventId: 1,
 };
 
 const renderForm = (props = {}, storeOverrides: object = {}) => {

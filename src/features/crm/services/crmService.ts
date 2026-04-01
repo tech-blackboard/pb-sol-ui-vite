@@ -65,16 +65,28 @@ export async function unsubscribeContact(contactId: number, reason?: string): Pr
 }
 
 /**
- * Send a reply to an email thread
+ * Send a fresh email reply
  */
 export async function sendReply(payload: {
-    threadId: string;
+    contactId: number;
+    eventId: number;
     subject: string;
     textBody: string;
     htmlBody: string;
-    replyTo?: string;
+    fromEmail?: string;
 }): Promise<{ status: string; messageId: string }> {
     const { data } = await api.post(`${CRM_BASE}/reply`, payload, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return data;
+}
+
+/**
+ * Fetch available reply-from emails for an event
+ */
+export async function fetchReplyEmails(eventId: number): Promise<string[]> {
+    const { data } = await api.get<string[]>(`${CRM_BASE}/reply-emails/${eventId}`, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });

@@ -4,16 +4,19 @@ import { sendReplyThunk } from '../../../store/slices/crm/crm.thunks';
 import toast from 'react-hot-toast';
 
 interface ReplyFormProps {
-    threadId: string;
+    contactId: number;
+    eventId: number;
     defaultSubject: string;
     recipientEmail: string;
+    replyEmails: string[];
     onSuccess?: () => void;
 }
 
-export default function ReplyForm({ threadId, defaultSubject, recipientEmail, onSuccess }: ReplyFormProps) {
+export default function ReplyForm({ contactId, eventId, defaultSubject, recipientEmail, replyEmails, onSuccess }: ReplyFormProps) {
     const dispatch = useAppDispatch();
     const { loading } = useAppSelector((state) => state.crm);
     const [htmlBody, setHtmlBody] = useState('');
+    const [fromEmail, setFromEmail] = useState(replyEmails[0] || '');
     const [isExpanded, setIsExpanded] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -24,7 +27,9 @@ export default function ReplyForm({ threadId, defaultSubject, recipientEmail, on
         }
 
         const result = await dispatch(sendReplyThunk({
-            threadId,
+            contactId,
+            eventId,
+            fromEmail: fromEmail || undefined,
             subject: defaultSubject.startsWith('Re:') ? defaultSubject : `Re: ${defaultSubject}`,
             htmlBody: htmlBody.replace(/\n/g, '<br>'),
             textBody: htmlBody,
@@ -61,20 +66,36 @@ export default function ReplyForm({ threadId, defaultSubject, recipientEmail, on
     return (
         <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <span className="font-semibold text-gray-700 dark:text-gray-300">Reply to:</span>
-                        <span>{recipientEmail}</span>
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <span className="font-semibold text-gray-700 dark:text-gray-300">Reply to:</span>
+                            <span>{recipientEmail}</span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setIsExpanded(false)}
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => setIsExpanded(false)}
-                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+
+                    <div className="flex items-center gap-2 text-sm">
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">From:</span>
+                        <select
+                            value={fromEmail}
+                            onChange={(e) => setFromEmail(e.target.value)}
+                            className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                            <option value="">Default (System Settings)</option>
+                            {replyEmails.map(email => (
+                                <option key={email} value={email}>{email}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
                 <textarea

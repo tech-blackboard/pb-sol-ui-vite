@@ -8,6 +8,7 @@ export interface CrmEvent {
     slug: string;
     replyDomain: string;
     domains: string[];
+    replyEmails: string[];
     isActive: boolean;
     contactCount?: number;
     unreadThreads?: number;
@@ -35,6 +36,7 @@ export interface Thread {
     messageCount: number;
     domain: string;
     createdAt: string;
+    status?: MessageStatus;
 }
 
 export interface Attachment {

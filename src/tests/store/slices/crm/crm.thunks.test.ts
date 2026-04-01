@@ -54,7 +54,7 @@ describe('crm thunks catch blocks', () => {
             response: { data: { message: 'Reply Error' } }
         });
 
-        const result = await sendReplyThunk({ threadId: '1', subject: 'S', textBody: 'B', htmlBody: 'H' })(dispatch, getState, undefined);
+        const result = await sendReplyThunk({ contactId: 1, eventId: 1, subject: 'S', textBody: 'B', htmlBody: 'H' })(dispatch, getState, undefined);
         expect(result.payload).toBe('Reply Error');
     });
 
