@@ -25,7 +25,7 @@ export default function ReplyForm({ contactId, eventId, defaultSubject, recipien
     const [draftId, setDraftId] = useState<string | undefined>(initialDraftId);
     const [lastSavedBody, setLastSavedBody] = useState(initialHtmlBody || '');
 
-    const saveTimeoutRef = useRef<any>(null);
+    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isSavingRef = useRef(false);
     const htmlBodyRef = useRef(htmlBody);
     const lastSavedBodyRef = useRef(lastSavedBody);
@@ -64,7 +64,7 @@ export default function ReplyForm({ contactId, eventId, defaultSubject, recipien
             setLastSavedBody(currentBody);
         }
         isSavingRef.current = false;
-    }, [contactId, eventId, defaultSubject, fromEmail, draftId, lastSavedBody, dispatch]);
+    }, [contactId, eventId, defaultSubject, fromEmail, draftId, lastSavedBody, threadId, dispatch]);
 
     useEffect(() => {
         // Only trigger auto-save if:

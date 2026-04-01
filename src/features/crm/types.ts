@@ -63,6 +63,7 @@ export interface Message {
     eventId: number;
     contactId: number;
     createdAt: string;
+    updatedAt?: string;
     labels: string[];
     attachments: Attachment[];
     userId?: number;

@@ -1,6 +1,7 @@
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { setSelectedThread } from '../../../store/slices/crm/crm.slice';
 import { fetchMessagesThunk, deleteDraftThunk } from '../../../store/slices/crm/crm.thunks';
+import type { Thread, Message } from '../types';
 import toast from 'react-hot-toast';
 
 export default function ThreadTable() {
@@ -12,21 +13,27 @@ export default function ThreadTable() {
     // Filter by activeDomain if set
     const items = isDraftsView ? drafts : threads;
     const filteredItems = activeDomain
-        ? items.filter((t: any) => t.domain === activeDomain || (isDraftsView && t.fromEmail === activeDomain))
+        ? (items as Array<Thread | Message>).filter((t) => 
+            isDraftsView 
+                ? (t as Message).fromEmail === activeDomain 
+                : (t as Thread).domain === activeDomain
+          )
         : items;
 
-    const handleSelectItem = (item: any) => {
+    const handleSelectItem = (item: Thread | Message) => {
         if (isDraftsView) {
-            if (item.threadId) {
-                dispatch(setSelectedThread(item.threadId));
-                dispatch(fetchMessagesThunk(item.threadId));
+            const draft = item as Message;
+            if (draft.threadId) {
+                dispatch(setSelectedThread(draft.threadId));
+                dispatch(fetchMessagesThunk(draft.threadId));
             } else {
                 toast.success('Opening draft...');
                 // In a real app, this might open a compose modal
             }
         } else {
-            dispatch(setSelectedThread(item.id));
-            dispatch(fetchMessagesThunk(item.id));
+            const thread = item as Thread;
+            dispatch(setSelectedThread(thread.id));
+            dispatch(fetchMessagesThunk(thread.id));
         }
     };
 
@@ -73,12 +80,17 @@ export default function ThreadTable() {
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                    {filteredItems.map((item: any) => (
+                    {(filteredItems as Array<Thread | Message>).map((item) => {
+                        const itemId = isDraftsView ? (item as Message).id : (item as Thread).id;
+                        const threadId = isDraftsView ? (item as Message).threadId : (item as Thread).id;
+                        const isRead = isDraftsView ? true : (item as Thread).isRead;
+                        
+                        return (
                         <tr
-                            key={item.id}
+                            key={itemId}
                             onClick={() => handleSelectItem(item)}
-                            className={`hover:bg-gray-50 dark:hover:bg-gray-800/30 cursor-pointer transition-colors ${selectedThreadId === (isDraftsView ? item.threadId : item.id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
-                                } ${!isDraftsView && !item.isRead ? 'font-bold' : ''}`}
+                            className={`hover:bg-gray-50 dark:hover:bg-gray-800/30 cursor-pointer transition-colors ${selectedThreadId === threadId ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
+                                } ${!isDraftsView && !isRead ? 'font-bold' : ''}`}
                         >
                             <td className="p-3" onClick={(e) => e.stopPropagation()}>
                                 <input type="checkbox" className="rounded border-gray-300" />
@@ -103,7 +115,7 @@ export default function ThreadTable() {
                                 )}
                             </td>
                             <td className="p-3 text-sm text-gray-700 dark:text-gray-300 max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap">
-                                {isDraftsView ? item.toEmail || 'No recipient' : item.contact?.email || 'Unknown'}
+                                {isDraftsView ? (item as Message).toEmail || 'No recipient' : (item as Thread).contact?.email || 'Unknown'}
                             </td>
                             <td className="p-3 text-sm text-gray-800 dark:text-gray-200">
                                 {isDraftsView && <span className="text-red-500 font-bold mr-2">Draft</span>}
@@ -117,10 +129,10 @@ export default function ThreadTable() {
                                 </div>
                             </td>
                             <td className="p-3 text-xs text-gray-500 text-right whitespace-nowrap">
-                                {formatDate(isDraftsView ? item.updatedAt || item.createdAt : item.lastMessageAt)}
+                                {formatDate(isDraftsView ? (item as Message).updatedAt || item.createdAt : (item as Thread).lastMessageAt)}
                             </td>
                         </tr>
-                    ))}
+                    )})}
                     {filteredItems.length === 0 && (
                         <tr>
                             <td colSpan={6} className="p-10 text-center text-gray-400 text-sm">
