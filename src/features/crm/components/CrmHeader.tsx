@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { fetchThreadsThunk } from '../../../store/slices/crm/crm.thunks';
-import { setActiveEvent, setActiveDomain } from '../../../store/slices/crm/crm.slice';
+import { setActiveEvent, setActiveDomain, toggleSidebar } from '../../../store/slices/crm/crm.slice';
 
 export default function CrmHeader() {
     const dispatch = useAppDispatch();
@@ -29,7 +29,17 @@ export default function CrmHeader() {
     };
 
     return (
-        <div className="flex flex-wrap items-center gap-4 p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <div className="flex flex-nowrap items-center gap-3 p-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-30">
+            {/* Mobile Toggle */}
+            <button
+                onClick={() => dispatch(toggleSidebar())}
+                className="md:hidden p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="Toggle Sidebar"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-gray-600 dark:text-gray-400">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+            </button>
 
             {/* Edition Dropdown */}
             <div className="min-w-[250px]">

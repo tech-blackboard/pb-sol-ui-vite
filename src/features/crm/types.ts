@@ -73,3 +73,26 @@ export interface LabelResponse {
     label: string;
     count: number;
 }
+
+export interface EmailAccount {
+    id: number;
+    name: string;
+    email: string;
+    imapHost: string;
+    imapPort: number;
+    imapUser: string;
+    imapPassword?: string;
+    imapEncryption: 'ssl' | 'tls' | 'none';
+    smtpHost: string;
+    smtpPort: number;
+    smtpUser: string;
+    smtpPassword?: string;
+    smtpEncryption: 'ssl' | 'tls' | 'none';
+    outboundProvider?: string;
+    apiKey?: string;
+    apiRegion?: string;
+    isActive: boolean;
+    lastSyncAt?: string;
+    createdAt: string;
+    updatedAt: string;
+}

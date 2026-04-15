@@ -1,6 +1,6 @@
 import { CRM_BASE } from "../../../config/env";
 import { api } from "../../../lib/api";
-import type { CrmEvent, LabelResponse, Message, Thread } from "../types";
+import type { CrmEvent, LabelResponse, Message, Thread, EmailAccount } from "../types";
 
 
 function getAuthHeaders(): Record<string, string> {
@@ -64,9 +64,6 @@ export async function unsubscribeContact(contactId: number, reason?: string): Pr
     });
 }
 
-/**
- * Send a fresh email reply
- */
 export async function sendReply(payload: {
     contactId: number;
     eventId: number;
@@ -74,6 +71,7 @@ export async function sendReply(payload: {
     textBody: string;
     htmlBody: string;
     fromEmail?: string;
+    emailAccountId?: number;
     draftId?: string;
     threadId?: string;
 }): Promise<{ status: string; messageId: string }> {
@@ -169,4 +167,39 @@ export async function downloadAttachment(id: number, filename: string): Promise<
     // Cleanup
     link.parentNode?.removeChild(link);
     window.URL.revokeObjectURL(url);
+}
+
+/**
+ * Email Account Management
+ */
+
+export async function fetchEmailAccounts(): Promise<EmailAccount[]> {
+    const { data } = await api.get<EmailAccount[]>(`${CRM_BASE}/email-accounts`, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return data;
+}
+
+export async function createEmailAccount(payload: Partial<EmailAccount>): Promise<EmailAccount> {
+    const { data } = await api.post<EmailAccount>(`${CRM_BASE}/email-accounts`, payload, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return data;
+}
+
+export async function updateEmailAccount(id: number, payload: Partial<EmailAccount>): Promise<EmailAccount> {
+    const { data } = await api.patch<EmailAccount>(`${CRM_BASE}/email-accounts/${id}`, payload, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return data;
+}
+
+export async function deleteEmailAccount(id: number): Promise<void> {
+    await api.delete(`${CRM_BASE}/email-accounts/${id}`, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
 }

@@ -9,9 +9,10 @@ export interface CrmState {
     drafts: Message[];
     activeEventId: number | null;
     activeDomain: string | null;
-    activeFolder: 'Inbox' | 'Drafts' | 'Sent' | 'Starred' | 'Junk' | 'Trash';
+    activeFolder: 'Inbox' | 'Drafts' | 'Sent' | 'Starred' | 'Junk' | 'Trash' | 'Accounts';
     selectedThreadId: string | null;
 
+    isSidebarOpen: boolean;
     loading: {
         events: boolean;
         threads: boolean;
@@ -33,6 +34,7 @@ export const initialState: CrmState = {
     activeFolder: 'Inbox',
     selectedThreadId: null,
 
+    isSidebarOpen: false,
     loading: {
         events: false,
         threads: false,
@@ -57,7 +59,7 @@ const crmSlice = createSlice({
             state.activeDomain = action.payload;
             state.selectedThreadId = null; // Reset selection to return to list view
         },
-        setActiveFolder(state, action: PayloadAction<'Inbox' | 'Drafts' | 'Sent' | 'Starred' | 'Junk' | 'Trash'>) {
+        setActiveFolder(state, action: PayloadAction<'Inbox' | 'Drafts' | 'Sent' | 'Starred' | 'Junk' | 'Trash' | 'Accounts'>) {
             state.activeFolder = action.payload;
             state.selectedThreadId = null;
         },
@@ -66,6 +68,12 @@ const crmSlice = createSlice({
             if (action.payload === null) {
                 state.messages = [];
             }
+        },
+        toggleSidebar(state) {
+            state.isSidebarOpen = !state.isSidebarOpen;
+        },
+        setSidebarOpen(state, action: PayloadAction<boolean>) {
+            state.isSidebarOpen = action.payload;
         },
         clearError(state) {
             state.error = null;
@@ -183,5 +191,5 @@ const crmSlice = createSlice({
     },
 });
 
-export const { setActiveEvent, setActiveDomain, setActiveFolder, setSelectedThread, clearError } = crmSlice.actions;
+export const { setActiveEvent, setActiveDomain, setActiveFolder, setSelectedThread, toggleSidebar, setSidebarOpen, clearError } = crmSlice.actions;
 export default crmSlice.reducer;

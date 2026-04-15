@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { fetchEventsThunk, fetchThreadsThunk, fetchDraftsThunk } from '../../../store/slices/crm/crm.thunks';
+import { setSidebarOpen } from '../../../store/slices/crm/crm.slice';
 import CrmHeader from '../components/CrmHeader';
 import CrmSidebar from '../components/CrmSidebar';
 import ThreadTable from '../components/ThreadTable';
 import ThreadView from '../components/ThreadView';
+import EmailAccountsPage from './EmailAccountsPage';
 
 export default function MailboxPage() {
     const dispatch = useAppDispatch();
-    const { activeEventId, selectedThreadId, activeFolder } = useAppSelector((state) => state.crm);
+    const { activeEventId, selectedThreadId, activeFolder, isSidebarOpen } = useAppSelector((state) => state.crm);
     const [statusFilter, setStatusFilter] = useState('All');
 
     useEffect(() => {
@@ -24,6 +26,8 @@ export default function MailboxPage() {
                 dispatch(fetchThreadsThunk(activeEventId));
             }
         }
+        // Close sidebar on mobile when folder changes
+        dispatch(setSidebarOpen(false));
     }, [activeEventId, activeFolder, dispatch]);
 
     return (
@@ -31,14 +35,23 @@ export default function MailboxPage() {
             {/* Top Bar */}
             <CrmHeader />
 
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 overflow-hidden relative">
+                {/* Mobile Sidebar Backdrop */}
+                {isSidebarOpen && (
+                    <div 
+                        className="fixed inset-0 bg-black/50 z-30 md:hidden animate-fade-in"
+                        onClick={() => dispatch(setSidebarOpen(false))}
+                    />
+                )}
                 {/* Left Sidebar */}
                 <CrmSidebar />
 
                 {/* Main Content Area */}
                 <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 relative">
 
-                    {selectedThreadId ? (
+                    {activeFolder === 'Accounts' ? (
+                        <EmailAccountsPage />
+                    ) : selectedThreadId ? (
                         <ThreadView />
                     ) : (
                         <>

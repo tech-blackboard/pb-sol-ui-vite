@@ -3,6 +3,7 @@ import { setSelectedThread } from '../../../store/slices/crm/crm.slice';
 import { updateLabelsThunk, fetchMessagesThunk } from '../../../store/slices/crm/crm.thunks';
 import * as crmService from '../services/crmService';
 import ReplyForm from './ReplyForm';
+import EmailBody from './EmailBody';
 import toast from 'react-hot-toast';
 import { useState } from 'react';
 
@@ -178,7 +179,7 @@ export default function ThreadView() {
                             const isDetailsExpanded = expandedDetailsId === message.id;
 
                             return (
-                                <div key={message.id} className="relative">
+                                <div key={message.id} className="relative flex flex-col isolate border-b border-gray-100 dark:border-gray-800/50 pb-8 last:border-0 last:pb-0">
                                     {/* Message Header */}
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="flex items-center gap-4">
@@ -278,14 +279,8 @@ export default function ThreadView() {
                                     </div>
 
                                     {/* Message Body */}
-                                    <div className="ml-14 text-sm leading-relaxed text-gray-800 dark:text-gray-300 overflow-x-auto min-h-[50px]">
-                                        {message.htmlBody ? (
-                                            <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-a:text-blue-600" dangerouslySetInnerHTML={{ __html: message.htmlBody }} />
-                                        ) : message.textBody ? (
-                                            <p className="whitespace-pre-wrap">{message.textBody}</p>
-                                        ) : (
-                                            <p className="text-gray-400 italic">No content</p>
-                                        )}
+                                    <div className="ml-14 mt-1">
+                                        <EmailBody html={message.htmlBody} text={message.textBody} />
                                     </div>
 
                                     {/* Attachments Section */}

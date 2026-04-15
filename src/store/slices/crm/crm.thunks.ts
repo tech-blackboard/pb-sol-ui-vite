@@ -47,6 +47,7 @@ export const sendReplyThunk = createAsyncThunk(
         textBody: string;
         htmlBody: string;
         fromEmail?: string;
+        emailAccountId?: number;
         draftId?: string;
         threadId?: string;
     }, { rejectWithValue }) => {
@@ -80,6 +81,7 @@ export const saveDraftThunk = createAsyncThunk(
         textBody?: string;
         htmlBody?: string;
         fromEmail?: string;
+        emailAccountId?: number;
         threadId?: string;
         draftId?: string;
     }, { rejectWithValue }) => {

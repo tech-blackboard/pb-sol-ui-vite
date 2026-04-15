@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { sendReplyThunk, saveDraftThunk } from '../../../store/slices/crm/crm.thunks';
+import { fetchEmailAccounts } from '../services/crmService';
+import type { EmailAccount } from '../types';
 import toast from 'react-hot-toast';
 
 interface ReplyFormProps {
@@ -13,14 +15,24 @@ interface ReplyFormProps {
     initialDraftId?: string;
     initialHtmlBody?: string;
     initialFromEmail?: string;
+    initialEmailAccountId?: number;
     threadId?: string;
 }
 
-export default function ReplyForm({ contactId, eventId, defaultSubject, recipientEmail, replyEmails, onSuccess, initialDraftId, initialHtmlBody, initialFromEmail, threadId }: ReplyFormProps) {
+export default function ReplyForm({ 
+    contactId, eventId, defaultSubject, recipientEmail, replyEmails, 
+    onSuccess, initialDraftId, initialHtmlBody, initialFromEmail, 
+    initialEmailAccountId, threadId 
+}: ReplyFormProps) {
     const dispatch = useAppDispatch();
     const { loading } = useAppSelector((state) => state.crm);
+    
+    // State
     const [htmlBody, setHtmlBody] = useState(initialHtmlBody || '');
     const [fromEmail, setFromEmail] = useState(initialFromEmail || replyEmails[0] || '');
+    const [emailAccountId, setEmailAccountId] = useState<number | undefined>(initialEmailAccountId);
+    const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>([]);
+    
     const [isExpanded, setIsExpanded] = useState(!!initialDraftId || !!initialHtmlBody);
     const [draftId, setDraftId] = useState<string | undefined>(initialDraftId);
     const [lastSavedBody, setLastSavedBody] = useState(initialHtmlBody || '');
@@ -30,6 +42,11 @@ export default function ReplyForm({ contactId, eventId, defaultSubject, recipien
     const htmlBodyRef = useRef(htmlBody);
     const lastSavedBodyRef = useRef(lastSavedBody);
     const draftIdRef = useRef(draftId);
+
+    // Fetch connected accounts
+    useEffect(() => {
+        fetchEmailAccounts().then(setEmailAccounts).catch(() => {});
+    }, []);
 
     // Keep refs in sync with state
     useEffect(() => {
@@ -55,6 +72,7 @@ export default function ReplyForm({ contactId, eventId, defaultSubject, recipien
             htmlBody: currentBody.replace(/\n/g, '<br>'),
             textBody: currentBody,
             fromEmail: fromEmail || undefined,
+            emailAccountId,
             draftId: draftId,
             threadId,
         }));
@@ -64,12 +82,9 @@ export default function ReplyForm({ contactId, eventId, defaultSubject, recipien
             setLastSavedBody(currentBody);
         }
         isSavingRef.current = false;
-    }, [contactId, eventId, defaultSubject, fromEmail, draftId, lastSavedBody, threadId, dispatch]);
+    }, [contactId, eventId, defaultSubject, fromEmail, emailAccountId, draftId, lastSavedBody, threadId, dispatch]);
 
     useEffect(() => {
-        // Only trigger auto-save if:
-        // 1. Body has changed from last saved version
-        // 2. We've changed more than 10 characters OR it's been a while (15s) since last save
         const charDifference = Math.abs(htmlBody.length - lastSavedBody.length);
         const shouldSave = isExpanded && htmlBody !== lastSavedBody && (charDifference > 10 || htmlBody.length === 0);
 
@@ -77,22 +92,20 @@ export default function ReplyForm({ contactId, eventId, defaultSubject, recipien
             if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
             saveTimeoutRef.current = setTimeout(() => {
                 handleSaveDraft(htmlBody);
-            }, 30000); // 30 seconds for auto-save while typing
+            }, 30000); 
         }
         return () => {
             if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         };
     }, [htmlBody, isExpanded, lastSavedBody, handleSaveDraft]);
 
-    // Save on unmount or when component is being destroyed
+    // Save on unmount
     useEffect(() => {
         return () => {
-            // Use refs to get the latest values without re-triggering this effect
             const bodyToSave = htmlBodyRef.current;
             const lastSaved = lastSavedBodyRef.current;
 
             if (bodyToSave.trim() && bodyToSave !== lastSaved && !isSavingRef.current) {
-                // We define a one-off save for unmount to avoid dependency issues
                 dispatch(saveDraftThunk({
                     contactId,
                     eventId,
@@ -100,13 +113,13 @@ export default function ReplyForm({ contactId, eventId, defaultSubject, recipien
                     htmlBody: bodyToSave.replace(/\n/g, '<br>'),
                     textBody: bodyToSave,
                     fromEmail: fromEmail || undefined,
+                    emailAccountId,
                     draftId: draftIdRef.current,
                     threadId,
                 }));
             }
         };
-    }, [contactId, eventId, defaultSubject, fromEmail, threadId, dispatch]); 
-    // This effect only depends on stable props, not the changing body
+    }, [contactId, eventId, defaultSubject, fromEmail, emailAccountId, threadId, dispatch]); 
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -119,6 +132,7 @@ export default function ReplyForm({ contactId, eventId, defaultSubject, recipien
             contactId,
             eventId,
             fromEmail: fromEmail || undefined,
+            emailAccountId,
             subject: defaultSubject.startsWith('Re:') ? defaultSubject : `Re: ${defaultSubject}`,
             htmlBody: htmlBody.replace(/\n/g, '<br>'),
             textBody: htmlBody,
@@ -135,6 +149,18 @@ export default function ReplyForm({ contactId, eventId, defaultSubject, recipien
             if (onSuccess) onSuccess();
         } else {
             toast.error('Failed to send reply');
+        }
+    };
+
+    const handleAccountChange = (val: string) => {
+        if (val.startsWith('acc_')) {
+            const id = parseInt(val.replace('acc_', ''));
+            const acc = emailAccounts.find(a => a.id === id);
+            setEmailAccountId(id);
+            setFromEmail(acc?.email || '');
+        } else {
+            setEmailAccountId(undefined);
+            setFromEmail(val);
         }
     };
 
@@ -179,11 +205,10 @@ export default function ReplyForm({ contactId, eventId, defaultSubject, recipien
                     <div className="flex items-center gap-2 text-sm">
                         <span className="font-semibold text-gray-700 dark:text-gray-300">From:</span>
                         <select
-                            value={fromEmail}
-                            onChange={(e) => setFromEmail(e.target.value)}
+                            value={emailAccountId ? `acc_${emailAccountId}` : fromEmail}
+                            onChange={(e) => handleAccountChange(e.target.value)}
                             className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500"
                         >
-                            <option value="">Default (System Settings)</option>
                             {replyEmails.map(email => (
                                 <option key={email} value={email}>{email}</option>
                             ))}
@@ -217,27 +242,29 @@ export default function ReplyForm({ contactId, eventId, defaultSubject, recipien
                             Send Reply
                         </button>
 
-                        {loading.savingDraft && (
-                            <span className="text-xs text-gray-400 animate-pulse flex items-center gap-1">
-                                <div className="h-1.5 w-1.5 rounded-full bg-gray-400"></div>
-                                Saving draft...
-                            </span>
-                        )}
-                        {!loading.savingDraft && draftId && (
-                            <span className="text-xs text-gray-400 flex items-center gap-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3 text-green-500">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                                </svg>
-                                Draft saved
-                            </span>
-                        )}
+                        <div className="flex items-center gap-4">
+                            {loading.savingDraft && (
+                                <span className="text-xs text-gray-400 animate-pulse flex items-center gap-1">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-gray-400"></div>
+                                    Saving draft...
+                                </span>
+                            )}
+                            {!loading.savingDraft && draftId && (
+                                <span className="text-xs text-gray-400 flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3 text-green-500">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                    </svg>
+                                    Draft saved
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-1 text-[10px] text-gray-400">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3 text-green-500">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
                         </svg>
-                        Sending via secure SMTP
+                        {emailAccountId ? `Sending via SMTP (${fromEmail})` : 'Sending via Secure Route'}
                     </div>
                 </div>
             </form>
