@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { fetchEmailAccounts, createEmailAccount, updateEmailAccount, deleteEmailAccount } from '../services/crmService';
 import type { EmailAccount } from '../types';
@@ -77,8 +78,13 @@ export default function EmailAccountsPage() {
             setIsFormOpen(false);
             setEditingAccount(null);
             loadAccounts();
-        } catch (error: any) {
-            const message = error.response?.data?.message || 'Failed to save account';
+        } catch (error) {
+            let message = 'Failed to save account';
+            if (axios.isAxiosError(error) && error.response?.data?.message) {
+                message = error.response.data.message;
+            } else if (error instanceof Error) {
+                message = error.message;
+            }
             toast.error(message);
         }
     };
