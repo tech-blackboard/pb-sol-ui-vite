@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import { fetchEmailAccounts, createEmailAccount, updateEmailAccount, deleteEmailAccount } from '../services/crmService';
+import { fetchEmailAccounts, createEmailAccount, updateEmailAccount, deleteEmailAccount, getMicrosoftAuthUrl } from '../services/crmService';
 import type { EmailAccount } from '../types';
 import { toast } from 'react-hot-toast';
  
@@ -51,6 +51,20 @@ export default function EmailAccountsPage() {
 
     useEffect(() => {
         loadAccounts();
+        
+        // --- 🧹 URL Cleaning Logic ---
+        const params = new URLSearchParams(window.location.search);
+        const status = params.get('status');
+        const message = params.get('message');
+
+        if (status === 'success') {
+            toast.success('Microsoft account connected successfully!');
+            // Remove parameters from URL without reloading
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (status === 'error') {
+            toast.error(message || 'Failed to connect Microsoft account');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
     }, []);
 
     async function loadAccounts() {
@@ -109,6 +123,17 @@ export default function EmailAccountsPage() {
             loadAccounts();
         } catch {
             toast.error('Failed to delete account');
+        }
+    };
+
+    const handleMicrosoftAuth = async (id: number) => {
+        try {
+            const authUrl = await getMicrosoftAuthUrl(id);
+            if (authUrl) {
+                window.location.href = authUrl;
+            }
+        } catch (error) {
+            toast.error('Failed to initiate Microsoft login');
         }
     };
 
@@ -246,11 +271,31 @@ export default function EmailAccountsPage() {
                         <h3 className="font-bold text-gray-900 dark:text-white truncate">{account.name}</h3>
                         <p className="text-gray-500 text-sm truncate mb-4">{account.email}</p>
                         
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                                <div className={`w-2 h-2 rounded-full ${account.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                {account.isActive ? 'Active Sync' : 'Disabled'}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    <div className={`w-2 h-2 rounded-full ${account.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                    {account.isActive ? 'Active Sync' : 'Disabled'}
+                                </div>
+                                {account.authMethod === 'oauth2' && (
+                                    <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded-full uppercase">
+                                        OAuth2 Ready
+                                    </span>
+                                )}
                             </div>
+
+                            {(account.email.includes('outlook.com') || account.email.includes('precisionsummits.com')) && account.authMethod !== 'oauth2' && (
+                                <button 
+                                    onClick={() => handleMicrosoftAuth(account.id)}
+                                    className="w-full py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 border border-blue-200 dark:border-blue-800"
+                                >
+                                    <svg viewBox="0 0 23 23" className="w-3 h-3 fill-current" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M0 0h11.045v11.045H0z" fill="#f25022"/><path d="M11.955 0H23v11.045H11.955z" fill="#7fbb00"/><path d="M0 11.955h11.045V23H0z" fill="#00a1f1"/><path d="M11.955 11.955H23V23H11.955z" fill="#ffbb00"/>
+                                    </svg>
+                                    Connect Microsoft
+                                </button>
+                            )}
+
                             <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
                                 Last Sync: {account.lastSyncAt ? new Date(account.lastSyncAt).toLocaleString() : 'Never'}
                             </div>

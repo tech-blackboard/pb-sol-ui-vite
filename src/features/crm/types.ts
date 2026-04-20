@@ -93,6 +93,9 @@ export interface EmailAccount {
     apiRegion?: string;
     isActive: boolean;
     lastSyncAt?: string;
+    authMethod?: 'password' | 'oauth2';
+    provider?: 'none' | 'microsoft' | 'google';
+    tokenExpiresAt?: string;
     createdAt: string;
     updatedAt: string;
 }

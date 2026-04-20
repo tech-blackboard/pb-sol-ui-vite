@@ -203,3 +203,11 @@ export async function deleteEmailAccount(id: number): Promise<void> {
         withCredentials: true,
     });
 }
+
+export async function getMicrosoftAuthUrl(id: number): Promise<string> {
+    const { data } = await api.get<{ url: string }>(`${CRM_BASE}/email-accounts/${id}/auth/microsoft`, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return data.url;
+}
