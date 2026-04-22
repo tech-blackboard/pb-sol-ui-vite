@@ -293,8 +293,8 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                         Add New Registration
                     </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                        <X className="w-5 h-5" />
+                    <button type="button" onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <X className="w-5 h-5 pointer-events-none" />
                     </button>
                 </div>
 

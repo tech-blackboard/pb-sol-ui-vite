@@ -23,6 +23,18 @@ jest.mock('../../../../features/crm/components/ReplyForm', () => ({
   ),
 }));
 
+jest.mock('../../../../features/crm/components/EmailBody', () => ({
+  __esModule: true,
+  default: ({ html, text }: { html?: string; text?: string }) => {
+    if (!html && !text) return <p>No content</p>;
+    return (
+      <div data-testid="email-body">
+        {html ? <div dangerouslySetInnerHTML={{ __html: html }} /> : text}
+      </div>
+    );
+  },
+}));
+
 const mockToast = toast as jest.Mocked<typeof toast>;
 
 // ── factories ─────────────────────────────────────────────────────────────────

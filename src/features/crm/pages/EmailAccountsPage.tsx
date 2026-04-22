@@ -132,13 +132,12 @@ export default function EmailAccountsPage() {
         try {
             const authUrl = await getMicrosoftAuthUrl(id);
             if (authUrl) {
-                window.location.href = authUrl;
+                window.open(authUrl, '_self');
             }
         } catch {
             toast.error('Failed to initiate Microsoft login');
         }
     };
-;
 
     const handleBulkUpload = async () => {
         try {
@@ -259,12 +258,12 @@ export default function EmailAccountsPage() {
                                 </svg>
                             </div>
                             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => handleEdit(account)} className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
+                                <button onClick={() => handleEdit(account)} aria-label="Edit account" className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                     </svg>
                                 </button>
-                                <button onClick={() => handleDelete(account.id)} className="p-1.5 text-gray-400 hover:text-red-600">
+                                <button onClick={() => handleDelete(account.id)} aria-label="Delete account" className="p-1.5 text-gray-400 hover:text-red-600">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
@@ -461,6 +460,7 @@ export default function EmailAccountsPage() {
                         
                         <div className="p-6 flex-1 overflow-y-auto">
                             <textarea
+                                aria-label="Bulk JSON input"
                                 className="w-full h-96 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 font-mono text-xs border-none outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                                 placeholder={`[
   {
