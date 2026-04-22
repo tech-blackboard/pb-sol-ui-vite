@@ -8,9 +8,12 @@ export interface CrmState {
     messages: Message[];
     drafts: Message[];
     activeEventId: number | null;
+    accountsActiveEventId: number | null;
     activeDomain: string | null;
     activeFolder: 'Inbox' | 'Drafts' | 'Sent' | 'Starred' | 'Junk' | 'Trash' | 'Accounts';
     selectedThreadId: string | null;
+    searchTerm: string;
+    searchTrigger: number;
 
     isSidebarOpen: boolean;
     loading: {
@@ -30,9 +33,12 @@ export const initialState: CrmState = {
     messages: [],
     drafts: [],
     activeEventId: null,
+    accountsActiveEventId: null,
     activeDomain: null,
     activeFolder: 'Inbox',
     selectedThreadId: null,
+    searchTerm: '',
+    searchTrigger: 0,
 
     isSidebarOpen: false,
     loading: {
@@ -54,6 +60,9 @@ const crmSlice = createSlice({
             state.activeEventId = action.payload;
             state.activeDomain = null; // Reset domain when event changes
             state.selectedThreadId = null; // Reset selection to return to list view
+        },
+        setAccountsActiveEvent(state, action: PayloadAction<number | null>) {
+            state.accountsActiveEventId = action.payload;
         },
         setActiveDomain(state, action: PayloadAction<string | null>) {
             state.activeDomain = action.payload;
@@ -78,6 +87,12 @@ const crmSlice = createSlice({
         clearError(state) {
             state.error = null;
         },
+        setSearchTerm(state, action: PayloadAction<string>) {
+            state.searchTerm = action.payload;
+        },
+        triggerSearch(state) {
+            state.searchTrigger += 1;
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -94,6 +109,7 @@ const crmSlice = createSlice({
                     if (payload.length > 0 && !state.activeEventId) {
                         state.activeEventId = payload[0].id;
                     }
+                    // Removed default accountsActiveEventId initialization to allow 'All Conferences' by default
                 } else {
                     console.error('CRM: fetchEvents returned non-array payload', payload);
                     state.events = [];
@@ -191,5 +207,5 @@ const crmSlice = createSlice({
     },
 });
 
-export const { setActiveEvent, setActiveDomain, setActiveFolder, setSelectedThread, toggleSidebar, setSidebarOpen, clearError } = crmSlice.actions;
+export const { setActiveEvent, setAccountsActiveEvent, setActiveDomain, setActiveFolder, setSelectedThread, toggleSidebar, setSidebarOpen, clearError, setSearchTerm, triggerSearch } = crmSlice.actions;
 export default crmSlice.reducer;

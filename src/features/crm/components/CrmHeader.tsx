@@ -1,14 +1,15 @@
-import { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { fetchThreadsThunk } from '../../../store/slices/crm/crm.thunks';
-import { setActiveEvent, setActiveDomain, toggleSidebar } from '../../../store/slices/crm/crm.slice';
+import { setActiveEvent, setAccountsActiveEvent, setActiveDomain, toggleSidebar, setSearchTerm, triggerSearch } from '../../../store/slices/crm/crm.slice';
 
 export default function CrmHeader() {
     const dispatch = useAppDispatch();
-    const { events, activeEventId, activeDomain } = useAppSelector((state) => state.crm);
-    const [search, setSearch] = useState('');
+    const { events, activeEventId, accountsActiveEventId, activeDomain, searchTerm, activeFolder } = useAppSelector((state) => state.crm);
 
-    const activeEvent = events.find(e => e.id === activeEventId);
+    const isAccountsTab = activeFolder === 'Accounts';
+    const currentActiveEventId = isAccountsTab ? accountsActiveEventId : activeEventId;
+
+    const activeEvent = events.find(e => e.id === activeEventId); // Use mailbox event for domains
     // Domains for the currently selected conference
     const currentEventDomains = activeEvent?.domains || [];
 
@@ -19,9 +20,21 @@ export default function CrmHeader() {
     };
 
     const handleEventChange = (eventId: number) => {
-        dispatch(setActiveEvent(eventId));
-        // Resetting domain is handled in the slice, but we could also 
-        // set it to the first domain of the new event here if desired.
+        if (isAccountsTab) {
+            dispatch(setAccountsActiveEvent(eventId));
+        } else {
+            dispatch(setActiveEvent(eventId));
+        }
+    };
+
+    const handleSearchClick = () => {
+        dispatch(triggerSearch());
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            dispatch(triggerSearch());
+        }
     };
 
     const handleDomainChange = (domain: string) => {
@@ -46,10 +59,10 @@ export default function CrmHeader() {
                 <label className="block text-xs font-medium text-gray-500 mb-1">Conference Edition</label>
                 <select
                     className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    value={activeEventId || ''}
+                    value={currentActiveEventId || ''}
                     onChange={(e) => handleEventChange(Number(e.target.value))}
                 >
-                    <option value="" disabled>Select Conference</option>
+                    <option value="">{isAccountsTab ? 'All Conferences' : 'Select Conference'}</option>
                     {events.map(e => (
                         <option key={e.id} value={e.id}>{e.name}</option>
                     ))}
@@ -89,8 +102,9 @@ export default function CrmHeader() {
                         type="text"
                         placeholder="Subject or Email ID"
                         className="w-full h-10 pl-10 pr-4 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
+                        value={searchTerm}
+                        onChange={(e) => dispatch(setSearchTerm(e.target.value))}
+                        onKeyDown={handleKeyDown}
                     />
                     <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -99,7 +113,10 @@ export default function CrmHeader() {
             </div>
 
             {/* Search Button */}
-            <button className="h-10 px-6 mt-5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors">
+            <button 
+                onClick={handleSearchClick}
+                className="h-10 px-6 mt-5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
+            >
                 Search Email
             </button>
 

@@ -173,8 +173,9 @@ export async function downloadAttachment(id: number, filename: string): Promise<
  * Email Account Management
  */
 
-export async function fetchEmailAccounts(): Promise<EmailAccount[]> {
+export async function fetchEmailAccounts(eventId?: number, search?: string): Promise<EmailAccount[]> {
     const { data } = await api.get<EmailAccount[]>(`${CRM_BASE}/email-accounts`, {
+        params: { eventId, search },
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });

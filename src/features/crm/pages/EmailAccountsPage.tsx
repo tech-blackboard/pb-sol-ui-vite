@@ -1,9 +1,10 @@
 import axios from 'axios';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useAppSelector } from '../../../store/hooks';
 import { fetchEmailAccounts, createEmailAccount, updateEmailAccount, deleteEmailAccount, getMicrosoftAuthUrl } from '../services/crmService';
 import type { EmailAccount } from '../types';
 import { toast } from 'react-hot-toast';
- 
+
 interface BulkAccountItem {
     'Email ID'?: string;
     email?: string;
@@ -22,6 +23,7 @@ interface BulkAccountItem {
 }
 
 export default function EmailAccountsPage() {
+    const { accountsActiveEventId, searchTerm: globalSearchTerm, searchTrigger } = useAppSelector((state) => state.crm);
     const [accounts, setAccounts] = useState<EmailAccount[]>([]);
     const [loading, setLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -49,6 +51,18 @@ export default function EmailAccountsPage() {
         isActive: true
     });
 
+    const loadAccounts = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await fetchEmailAccounts(accountsActiveEventId || undefined, globalSearchTerm);
+            setAccounts(data);
+        } catch {
+            toast.error('Failed to load email accounts');
+        } finally {
+            setLoading(false);
+        }
+    }, [accountsActiveEventId, globalSearchTerm]);
+
     useEffect(() => {
         loadAccounts();
         
@@ -65,19 +79,7 @@ export default function EmailAccountsPage() {
             toast.error(message || 'Failed to connect Microsoft account');
             window.history.replaceState({}, document.title, window.location.pathname);
         }
-    }, []);
-
-    async function loadAccounts() {
-        try {
-            setLoading(true);
-            const data = await fetchEmailAccounts();
-            setAccounts(data);
-        } catch {
-            toast.error('Failed to load email accounts');
-        } finally {
-            setLoading(false);
-        }
-    }
+    }, [accountsActiveEventId, searchTrigger, loadAccounts]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -92,7 +94,7 @@ export default function EmailAccountsPage() {
             setIsFormOpen(false);
             setEditingAccount(null);
             loadAccounts();
-        } catch (error) {
+        } catch (error: unknown) {
             let message = 'Failed to save account';
             if (axios.isAxiosError(error) && error.response?.data?.message) {
                 message = error.response.data.message;
@@ -132,10 +134,11 @@ export default function EmailAccountsPage() {
             if (authUrl) {
                 window.location.href = authUrl;
             }
-        } catch (error) {
+        } catch {
             toast.error('Failed to initiate Microsoft login');
         }
     };
+;
 
     const handleBulkUpload = async () => {
         try {
@@ -214,7 +217,7 @@ export default function EmailAccountsPage() {
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Email Accounts</h1>
                     <p className="text-gray-500 text-sm">Manage IMAP and SMTP configurations for shared inbox.</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-3 items-center">
                     <button
                         onClick={() => setIsBulkModalOpen(true)}
                         className="px-4 py-2 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
@@ -303,6 +306,20 @@ export default function EmailAccountsPage() {
                     </div>
                 ))}
             </div>
+
+            {accounts.length === 0 && !loading && (
+                <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-gray-50/10 dark:bg-gray-800/10 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 mt-6">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-full mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">No email accounts found</h3>
+                    <p className="text-gray-500 text-sm max-w-xs mx-auto">
+                        We couldn't find any email accounts matching your criteria. Try adjusting your filters or add a new account.
+                    </p>
+                </div>
+            )}
 
             {/* Modal / Slide-over for adding/editing account */}
             {isFormOpen && (
