@@ -34,7 +34,7 @@ describe('crm thunks catch blocks', () => {
             response: { data: { message: 'Threads Error' } }
         });
 
-        const result = await fetchThreadsThunk(1)(dispatch, getState, undefined);
+        const result = await fetchThreadsThunk({ eventId: 1 })(dispatch, getState, undefined);
         expect(result.payload).toBe('Threads Error');
     });
 
@@ -76,7 +76,7 @@ describe('crm thunks catch blocks', () => {
 
     it('all thunks should handle generic error', async () => {
         (crmService.fetchThreads as jest.Mock).mockRejectedValue(new Error('Fail'));
-        const result = await fetchThreadsThunk(1)(dispatch, getState, undefined);
+        const result = await fetchThreadsThunk({ eventId: 1 })(dispatch, getState, undefined);
         expect(result.payload).toBe('Failed to fetch threads');
     });
 });

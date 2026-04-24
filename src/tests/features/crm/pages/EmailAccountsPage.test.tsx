@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import EmailAccountsPage from '../../../../features/crm/pages/EmailAccountsPage';
 import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice';
+import authReducer from '../../../../store/slices/authSlice';
 import { fetchEmailAccounts, createEmailAccount, updateEmailAccount, deleteEmailAccount, getMicrosoftAuthUrl } from '../../../../features/crm/services/crmService';
 import { toast } from 'react-hot-toast';
 
@@ -23,12 +24,21 @@ const mockToast = toast as jest.Mocked<typeof toast>;
 
 const makeStore = (overrides: object = {}) =>
   configureStore({
-    reducer: { crm: crmReducer },
+    reducer: { 
+      crm: crmReducer,
+      auth: authReducer
+    },
     preloadedState: {
       crm: {
         ...initialState,
         ...overrides,
       },
+      auth: {
+        user: { name: 'Admin', role: 'ADMIN', isAdmin: true },
+        token: 'fake-token',
+        loading: false,
+        error: null
+      }
     },
   });
 
@@ -222,5 +232,105 @@ describe('EmailAccountsPage', () => {
     window.history.replaceState(null, '', '/?status=error&message=Something went wrong');
     renderPage();
     await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('Something went wrong'));
+  });
+
+  describe('Admin Access Control', () => {
+    it('renders Access Denied for non-admin users', () => {
+      const store = configureStore({
+        reducer: { crm: crmReducer, auth: authReducer },
+        preloadedState: {
+          crm: initialState,
+          auth: { user: { name: 'User', role: 'USER', isAdmin: false }, token: 't', loading: false, error: null }
+        }
+      });
+      render(<Provider store={store}><EmailAccountsPage /></Provider>);
+      expect(screen.getByText('Access Denied')).toBeInTheDocument();
+      expect(screen.getByText(/You do not have permission/)).toBeInTheDocument();
+    });
+  });
+
+  describe('Error Handling and Edge Cases', () => {
+    it('shows error message when loadAccounts fails', async () => {
+      mockFetchEmailAccounts.mockRejectedValue(new Error('API Failure'));
+      renderPage();
+      await waitFor(() => expect(screen.getByText('API Failure')).toBeInTheDocument());
+    });
+
+    it('cancels deletion when confirm is rejected', async () => {
+      window.confirm = jest.fn(() => false);
+      renderPage();
+      await waitFor(() => expect(screen.getByText('Primary Support')).toBeInTheDocument());
+      
+      const deleteBtn = screen.getAllByLabelText('Delete account')[0];
+      fireEvent.click(deleteBtn);
+      
+      expect(mockDeleteEmailAccount).not.toHaveBeenCalled();
+    });
+
+    it('shows error toast when deletion fails', async () => {
+      mockDeleteEmailAccount.mockRejectedValue(new Error('Fail'));
+      renderPage();
+      await waitFor(() => expect(screen.getByText('Primary Support')).toBeInTheDocument());
+      
+      fireEvent.click(screen.getAllByLabelText('Delete account')[0]);
+      await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('Failed to delete account'));
+    });
+  });
+
+  describe('Form Validation and Providers', () => {
+    it('switches fields when outbound provider changes', async () => {
+      renderPage();
+      const addBtn = await screen.findByText('Add Account');
+      fireEvent.click(addBtn);
+      
+      const select = screen.getByRole('combobox', { name: '' }); // The only select in form
+      
+      // Select SendGrid
+      fireEvent.change(select, { target: { value: 'sendgrid' } });
+      expect(screen.getByLabelText(/SendGrid API Key/i)).toBeInTheDocument();
+      
+      // Select AWS SES
+      fireEvent.change(select, { target: { value: 'aws-ses' } });
+      expect(screen.getByLabelText(/AWS Access Key & Secret/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('us-east-1')).toBeInTheDocument();
+    });
+  });
+
+  describe('Advanced Bulk Upload', () => {
+    it('handles invalid JSON in bulk upload', async () => {
+      renderPage();
+      const bulkBtn = await screen.findByText('Bulk Upload');
+      fireEvent.click(bulkBtn);
+      fireEvent.change(screen.getByLabelText('Bulk JSON input'), { target: { value: 'invalid-json' } });
+      fireEvent.click(screen.getByText('Create Bulk Accounts'));
+      expect(mockToast.error).toHaveBeenCalledWith('Invalid JSON format');
+    });
+
+    it('handles JSON that is not an array', async () => {
+      renderPage();
+      const bulkBtn = await screen.findByText('Bulk Upload');
+      fireEvent.click(bulkBtn);
+      fireEvent.change(screen.getByLabelText('Bulk JSON input'), { target: { value: '{"key": "value"}' } });
+      fireEvent.click(screen.getByText('Create Bulk Accounts'));
+      expect(mockToast.error).toHaveBeenCalledWith('Input must be a JSON array');
+    });
+
+    it('skips duplicates and items without email', async () => {
+      renderPage();
+      const bulkBtn = await screen.findByText('Bulk Upload');
+      fireEvent.click(bulkBtn);
+      
+      const json = JSON.stringify([
+        { email: 'support@example.com' }, // Duplicate
+        { Purpose: 'No Email' },          // Missing email
+        { email: 'new-bulk@test.com' }    // New
+      ]);
+      
+      fireEvent.change(screen.getByLabelText('Bulk JSON input'), { target: { value: json } });
+      fireEvent.click(screen.getByText('Create Bulk Accounts'));
+      
+      await waitFor(() => expect(mockCreateEmailAccount).toHaveBeenCalledTimes(1));
+      expect(mockToast.success).toHaveBeenCalledWith(expect.stringContaining('Created: 1, Skipped: 2'));
+    });
   });
 });

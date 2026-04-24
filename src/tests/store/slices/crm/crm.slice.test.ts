@@ -113,7 +113,7 @@ describe('crm slice', () => {
 
         it('handles fetchThreadsThunk.fulfilled', () => {
             const threads = [{ id: 't1' }] as unknown as Thread[];
-            const state = reducer(initialState, fetchThreadsThunk.fulfilled(threads, '', 1));
+            const state = reducer(initialState, fetchThreadsThunk.fulfilled(threads, '', { eventId: 1 }));
             expect(state.loading.threads).toBe(false);
             expect(state.threads).toEqual(threads);
         });

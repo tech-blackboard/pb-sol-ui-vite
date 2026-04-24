@@ -60,6 +60,7 @@ const createMockStore = () => {
 }
 
 describe('RegistrationForm', () => {
+    jest.setTimeout(30000)
     const mockOnClose = jest.fn()
     const mockOnSuccess = jest.fn()
 

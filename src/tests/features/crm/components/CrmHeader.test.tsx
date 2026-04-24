@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import CrmHeader from '../../../../features/crm/components/CrmHeader';
 import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice';
+import authReducer from '../../../../store/slices/authSlice';
 import * as crmThunks from '../../../../store/slices/crm/crm.thunks';
 import type { CrmEvent } from '../../../../features/crm/types';
 
@@ -27,8 +28,20 @@ const makeStore = (overrides: object = {}) => {
       ...initialState,
       ...overrides,
     },
+    auth: {
+      user: { name: 'Admin', role: 'ADMIN', isAdmin: true },
+      token: 'fake-token',
+      loading: false,
+      error: null
+    }
   };
-  return configureStore({ reducer: { crm: crmReducer }, preloadedState: preloaded });
+  return configureStore({ 
+    reducer: { 
+      crm: crmReducer,
+      auth: authReducer
+    }, 
+    preloadedState: preloaded 
+  });
 };
 
 const renderHeader = (storeOverrides: object = {}) => {
@@ -59,9 +72,9 @@ describe('CrmHeader', () => {
     renderHeader();
     expect(screen.getByText('Conference Edition')).toBeInTheDocument();
     expect(screen.getByText('Email Account')).toBeInTheDocument();
-    expect(screen.getByText('Synchronize Emails')).toBeInTheDocument();
+    expect(screen.getByTitle('Synchronize Emails')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Subject or Email ID')).toBeInTheDocument();
-    expect(screen.getByText('Search Email')).toBeInTheDocument();
+    expect(screen.getByTitle('Search Email')).toBeInTheDocument();
   });
 
   it('populates the event dropdown from the store', () => {
@@ -118,14 +131,14 @@ describe('CrmHeader', () => {
   it('does NOT dispatch fetchThreadsThunk when Sync is clicked with no active event', () => {
     const fetchSpy = jest.spyOn(crmThunks, 'fetchThreadsThunk');
     renderHeader({ activeEventId: null });
-    fireEvent.click(screen.getByText('Synchronize Emails'));
+    fireEvent.click(screen.getByTitle('Synchronize Emails'));
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('dispatches fetchThreadsThunk when Sync is clicked with an active event', () => {
     const { spy } = renderHeaderWithSpy({ activeEventId: 1, events: [mockEvent({ id: 1 })] });
 
-    fireEvent.click(screen.getByText('Synchronize Emails'));
+    fireEvent.click(screen.getByTitle('Synchronize Emails'));
 
     expect(spy).toHaveBeenCalledWith(expect.any(Function));
   });

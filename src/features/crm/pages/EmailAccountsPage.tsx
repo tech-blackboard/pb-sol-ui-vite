@@ -4,6 +4,7 @@ import { useAppSelector } from '../../../store/hooks';
 import { fetchEmailAccounts, createEmailAccount, updateEmailAccount, deleteEmailAccount, getMicrosoftAuthUrl } from '../services/crmService';
 import type { EmailAccount } from '../types';
 import { toast } from 'react-hot-toast';
+import { selectAuth } from '../../../store/slices/authSlice';
 
 interface BulkAccountItem {
     'Email ID'?: string;
@@ -23,9 +24,17 @@ interface BulkAccountItem {
 }
 
 export default function EmailAccountsPage() {
-    const { accountsActiveEventId, searchTerm: globalSearchTerm, searchTrigger } = useAppSelector((state) => state.crm);
+    const { user } = useAppSelector(selectAuth);
+    const isAdmin = Boolean(user?.isAdmin);
+    const {
+        accountsActiveEventId,
+        accountsActiveDomain: activeDomain,
+        appliedAccountsSearchTerm,
+        accountsSearchTrigger: searchTrigger
+    } = useAppSelector((state) => state.crm);
     const [accounts, setAccounts] = useState<EmailAccount[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingAccount, setEditingAccount] = useState<EmailAccount | null>(null);
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
@@ -54,18 +63,21 @@ export default function EmailAccountsPage() {
     const loadAccounts = useCallback(async () => {
         try {
             setLoading(true);
-            const data = await fetchEmailAccounts(accountsActiveEventId || undefined, globalSearchTerm);
+            const data = await fetchEmailAccounts(accountsActiveEventId || undefined, appliedAccountsSearchTerm);
             setAccounts(data);
-        } catch {
-            toast.error('Failed to load email accounts');
+            setError(null);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Failed to load accounts';
+            setError(message);
         } finally {
             setLoading(false);
         }
-    }, [accountsActiveEventId, globalSearchTerm]);
+    }, [accountsActiveEventId, appliedAccountsSearchTerm]);
 
     useEffect(() => {
+        if (!isAdmin) return;
         loadAccounts();
-        
+
         // --- 🧹 URL Cleaning Logic ---
         const params = new URLSearchParams(window.location.search);
         const status = params.get('status');
@@ -73,13 +85,13 @@ export default function EmailAccountsPage() {
 
         if (status === 'success') {
             toast.success('Microsoft account connected successfully!');
-            // Remove parameters from URL without reloading
-            window.history.replaceState({}, document.title, window.location.pathname);
+            // Remove parameters and custom path from URL without reloading
+            window.history.replaceState({}, document.title, '/');
         } else if (status === 'error') {
             toast.error(message || 'Failed to connect Microsoft account');
-            window.history.replaceState({}, document.title, window.location.pathname);
+            window.history.replaceState({}, document.title, '/');
         }
-    }, [accountsActiveEventId, searchTrigger, loadAccounts]);
+    }, [accountsActiveEventId, searchTrigger, isAdmin, loadAccounts]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -207,10 +219,36 @@ export default function EmailAccountsPage() {
         }
     };
 
+    if (!isAdmin) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+                <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-full mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-red-500 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Access Denied</h3>
+                <p className="text-gray-500 text-sm max-w-xs mx-auto">
+                    You do not have permission to view or manage email accounts. Please contact an administrator if you believe this is an error.
+                </p>
+            </div>
+        );
+    }
+
+    const filteredAccounts = accounts.filter(a => !activeDomain || a.email === activeDomain);
+
     if (loading) return <div className="p-8 text-center">Loading accounts...</div>;
 
     return (
         <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-gray-900 p-6 overflow-auto">
+            {error && (
+                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-3 text-red-700 dark:text-red-400 animate-fade-in">
+                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-sm font-medium">{error}</p>
+                </div>
+            )}
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Email Accounts</h1>
@@ -249,7 +287,7 @@ export default function EmailAccountsPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {accounts.map(account => (
+                {filteredAccounts.map(account => (
                     <div key={account.id} className="border border-gray-200 dark:border-gray-800 rounded-xl p-5 bg-gray-50/50 dark:bg-gray-800/40 hover:shadow-md transition-shadow relative group">
                         <div className="flex items-start justify-between mb-4">
                             <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg">
@@ -272,7 +310,7 @@ export default function EmailAccountsPage() {
                         </div>
                         <h3 className="font-bold text-gray-900 dark:text-white truncate">{account.name}</h3>
                         <p className="text-gray-500 text-sm truncate mb-4">{account.email}</p>
-                        
+
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -287,12 +325,12 @@ export default function EmailAccountsPage() {
                             </div>
 
                             {(account.email.includes('outlook.com') || account.email.includes('precisionsummits.com')) && account.authMethod !== 'oauth2' && (
-                                <button 
+                                <button
                                     onClick={() => handleMicrosoftAuth(account.id)}
                                     className="w-full py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 border border-blue-200 dark:border-blue-800"
                                 >
                                     <svg viewBox="0 0 23 23" className="w-3 h-3 fill-current" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M0 0h11.045v11.045H0z" fill="#f25022"/><path d="M11.955 0H23v11.045H11.955z" fill="#7fbb00"/><path d="M0 11.955h11.045V23H0z" fill="#00a1f1"/><path d="M11.955 11.955H23V23H11.955z" fill="#ffbb00"/>
+                                        <path d="M0 0h11.045v11.045H0z" fill="#f25022" /><path d="M11.955 0H23v11.045H11.955z" fill="#7fbb00" /><path d="M0 11.955h11.045V23H0z" fill="#00a1f1" /><path d="M11.955 11.955H23V23H11.955z" fill="#ffbb00" />
                                     </svg>
                                     Connect Microsoft
                                 </button>
@@ -306,7 +344,7 @@ export default function EmailAccountsPage() {
                 ))}
             </div>
 
-            {accounts.length === 0 && !loading && (
+            {filteredAccounts.length === 0 && !loading && (
                 <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-gray-50/10 dark:bg-gray-800/10 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 mt-6">
                     <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-full mb-4">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -340,11 +378,11 @@ export default function EmailAccountsPage() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="col-span-2">
                                         <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Account Name</label>
-                                        <input type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required placeholder="Company Support" />
+                                        <input type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required placeholder="Company Support" />
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Email Address</label>
-                                        <input type="email" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} required placeholder="support@precisionglobalconferences.com" />
+                                        <input type="email" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required placeholder="support@precisionglobalconferences.com" />
                                     </div>
                                 </div>
                             </div>
@@ -354,77 +392,77 @@ export default function EmailAccountsPage() {
                                 <div className="grid grid-cols-3 gap-4">
                                     <div className="col-span-2">
                                         <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Host</label>
-                                        <input type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.imapHost} onChange={e => setFormData({...formData, imapHost: e.target.value})} required placeholder="imap.gmail.com" />
+                                        <input type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.imapHost} onChange={e => setFormData({ ...formData, imapHost: e.target.value })} required placeholder="imap.gmail.com" />
                                     </div>
                                     <div className="col-span-1">
                                         <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Port</label>
-                                        <input type="number" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.imapPort} onChange={e => setFormData({...formData, imapPort: +e.target.value})} required />
+                                        <input type="number" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.imapPort} onChange={e => setFormData({ ...formData, imapPort: +e.target.value })} required />
                                     </div>
                                     <div className="col-span-3">
                                         <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Username</label>
-                                        <input type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.imapUser} onChange={e => setFormData({...formData, imapUser: e.target.value})} required />
+                                        <input type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.imapUser} onChange={e => setFormData({ ...formData, imapUser: e.target.value })} required />
                                     </div>
                                     <div className="col-span-3">
                                         <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Password</label>
-                                        <input type="password" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.imapPassword} onChange={e => setFormData({...formData, imapPassword: e.target.value})} placeholder="••••••••" />
+                                        <input type="password" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.imapPassword} onChange={e => setFormData({ ...formData, imapPassword: e.target.value })} placeholder="••••••••" />
                                     </div>
                                 </div>
                             </div>
 
                             <div className="space-y-4">
                                 <h3 className="text-sm font-bold text-blue-600 uppercase tracking-widest">Outbound Setup</h3>
-                                
+
                                 <div className="grid grid-cols-3 gap-4">
                                     <div className="col-span-3">
                                         <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Outbound Provider</label>
-                                        <select 
-                                            className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" 
-                                            value={formData.outboundProvider} 
-                                            onChange={e => setFormData({...formData, outboundProvider: e.target.value})}
+                                        <select
+                                            className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500"
+                                            value={formData.outboundProvider}
+                                            onChange={e => setFormData({ ...formData, outboundProvider: e.target.value })}
                                         >
                                             <option value="smtp">Standard SMTP</option>
                                             <option value="sendgrid">SendGrid API</option>
                                             <option value="aws-ses">AWS SES API</option>
                                         </select>
                                     </div>
-                                    
+
                                     {formData.outboundProvider === 'smtp' && (
                                         <>
                                             <div className="col-span-2">
                                                 <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Host</label>
-                                                <input type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.smtpHost} onChange={e => setFormData({...formData, smtpHost: e.target.value})} required placeholder="smtp.gmail.com" />
+                                                <input type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.smtpHost} onChange={e => setFormData({ ...formData, smtpHost: e.target.value })} required placeholder="smtp.gmail.com" />
                                             </div>
                                             <div className="col-span-1">
                                                 <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Port</label>
-                                                <input type="number" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.smtpPort} onChange={e => setFormData({...formData, smtpPort: +e.target.value})} required />
+                                                <input type="number" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.smtpPort} onChange={e => setFormData({ ...formData, smtpPort: +e.target.value })} required />
                                             </div>
                                             <div className="col-span-3">
                                                 <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">SMTP User (Optional if same)</label>
-                                                <input type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.smtpUser} onChange={e => setFormData({...formData, smtpUser: e.target.value})} />
+                                                <input type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.smtpUser} onChange={e => setFormData({ ...formData, smtpUser: e.target.value })} />
                                             </div>
                                             <div className="col-span-3">
                                                 <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">SMTP Password</label>
-                                                <input type="password" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.smtpPassword} onChange={e => setFormData({...formData, smtpPassword: e.target.value})} placeholder="••••••••" />
+                                                <input type="password" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.smtpPassword} onChange={e => setFormData({ ...formData, smtpPassword: e.target.value })} placeholder="••••••••" />
                                             </div>
                                         </>
                                     )}
 
                                     {formData.outboundProvider === 'sendgrid' && (
                                         <div className="col-span-3">
-                                            <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">SendGrid API Key</label>
-                                            <input type="password" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.apiKey} onChange={e => setFormData({...formData, apiKey: e.target.value})} placeholder="SG.xxxxxxxxxxxxxx" required={!editingAccount} />
+                                            <label htmlFor="sg-api-key" className="block text-xs font-semibold text-gray-400 uppercase mb-1">SendGrid API Key</label>
+                                            <input id="sg-api-key" type="password" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.apiKey} onChange={e => setFormData({ ...formData, apiKey: e.target.value })} placeholder="SG.xxxxxxxxxxxxxx" required={!editingAccount} />
                                         </div>
                                     )}
 
                                     {formData.outboundProvider === 'aws-ses' && (
                                         <>
                                             <div className="col-span-3">
-                                                <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">AWS Access Key & Secret (Format: KeyID:Secret)</label>
-                                                <input type="password" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.apiKey} onChange={e => setFormData({...formData, apiKey: e.target.value})} placeholder="AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" required={!editingAccount} />
+                                                <label htmlFor="aws-api-key" className="block text-xs font-semibold text-gray-400 uppercase mb-1">AWS Access Key & Secret (Format: KeyID:Secret)</label>
+                                                <input id="aws-api-key" type="password" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.apiKey} onChange={e => setFormData({ ...formData, apiKey: e.target.value })} placeholder="AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" required={!editingAccount} />
                                             </div>
                                             <div className="col-span-3">
-                                                <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">AWS Region</label>
-                                                <input type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.apiRegion} onChange={e => setFormData({...formData, apiRegion: e.target.value})} placeholder="us-east-1" required />
+                                                <label htmlFor="aws-region" className="block text-xs font-semibold text-gray-400 uppercase mb-1">AWS Region</label>
+                                                <input id="aws-region" type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.apiRegion} onChange={e => setFormData({ ...formData, apiRegion: e.target.value })} placeholder="us-east-1" required />
                                             </div>
                                         </>
                                     )}
@@ -457,7 +495,7 @@ export default function EmailAccountsPage() {
                                 </svg>
                             </button>
                         </div>
-                        
+
                         <div className="p-6 flex-1 overflow-y-auto">
                             <textarea
                                 aria-label="Bulk JSON input"
@@ -479,7 +517,7 @@ export default function EmailAccountsPage() {
 
                         <div className="p-6 border-t dark:border-gray-800 flex gap-4 bg-gray-50/50 dark:bg-gray-800/20">
                             <button onClick={() => setIsBulkModalOpen(false)} className="flex-1 h-12 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-bold rounded-xl transition-all">Cancel</button>
-                            <button 
+                            <button
                                 onClick={handleBulkUpload}
                                 disabled={!bulkJson.trim()}
                                 className="flex-[2] h-12 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/30"

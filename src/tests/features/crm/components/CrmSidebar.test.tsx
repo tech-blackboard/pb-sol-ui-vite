@@ -3,16 +3,26 @@ import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice';
+import authReducer from '../../../../store/slices/authSlice';
 import CrmSidebar from '../../../../features/crm/components/CrmSidebar';
 
 const makeStore = (overrides: object = {}) =>
   configureStore({
-    reducer: { crm: crmReducer },
+    reducer: { 
+      crm: crmReducer,
+      auth: authReducer
+    },
     preloadedState: {
       crm: {
         ...initialState,
         ...overrides,
       },
+      auth: {
+        user: { name: 'Admin', role: 'ADMIN', isAdmin: true },
+        token: 'fake-token',
+        loading: false,
+        error: null
+      }
     },
   });
 

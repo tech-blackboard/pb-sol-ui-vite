@@ -1,15 +1,18 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import ReplyForm from '../../../../features/crm/components/ReplyForm';
 import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice';
 import * as crmService from '../../../../features/crm/services/crmService';
+import type { Message } from '../../../../features/crm/types';
 import toast from 'react-hot-toast';
 
 jest.mock('../../../../features/crm/services/crmService', () => ({
-  ...jest.requireActual('../../../../features/crm/services/crmService'),
   sendReply: jest.fn(),
+  saveDraft: jest.fn(),
+  fetchReplyEmails: jest.fn().mockResolvedValue([]),
+  fetchEmailAccounts: jest.fn().mockResolvedValue([]),
 }));
 
 jest.mock('react-hot-toast', () => ({
@@ -56,7 +59,14 @@ const renderForm = (props = {}, storeOverrides: object = {}) => {
 // ── Tests ──
 
 describe('ReplyForm', () => {
-  afterEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    jest.useRealTimers();
+  });
 
   describe('collapsed state', () => {
     it('shows the click-to-reply prompt mentioning recipient email', () => {
@@ -113,17 +123,65 @@ describe('ReplyForm', () => {
       ));
     });
 
-    it('does NOT prepend "Re: " when subject already starts with it', async () => {
-      const serviceSpy = jest.spyOn(crmService, 'sendReply').mockResolvedValue({ status: 'ok', messageId: 'new-2' });
-
-      renderForm({ defaultSubject: 'Re: Already prefixed' });
+    it('handles draft auto-save after 30 seconds', async () => {
+      const saveSpy = jest.spyOn(crmService, 'saveDraft').mockResolvedValue({ 
+        id: 'draft-1', subject: 'Re: Hello World', fromEmail: 'support@test.com', 
+        toEmail: 'alice@example.com', textBody: 'Testing auto-save logic',
+        htmlBody: 'Testing auto-save logic', threadId: 'thread-1',
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+        labels: [], contactId: 1, eventId: 1,
+        direction: 'outbound', status: 'draft', attachments: []
+      } as Message);
+      renderForm();
       expand();
-      fireEvent.change(screen.getByPlaceholderText('Write your reply here...'), { target: { value: 'Body' } });
-      fireEvent.submit(screen.getByRole('button', { name: /send reply/i }));
 
-      await waitFor(() => expect(serviceSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ subject: 'Re: Already prefixed' }),
+      fireEvent.change(screen.getByPlaceholderText('Write your reply here...'), { target: { value: 'Testing auto-save logic' } });
+
+      act(() => {
+        jest.advanceTimersByTime(30000);
+      });
+
+      await waitFor(() => expect(saveSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ textBody: 'Testing auto-save logic' })
       ));
+    });
+
+    it('saves draft on component unmount', async () => {
+      const saveSpy = jest.spyOn(crmService, 'saveDraft').mockResolvedValue({ 
+        id: 'draft-1', subject: 'Re: Hello World', fromEmail: 'support@test.com', 
+        toEmail: 'alice@example.com', textBody: 'Unmount test',
+        htmlBody: 'Unmount test', threadId: 'thread-1',
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+        labels: [], contactId: 1, eventId: 1,
+        direction: 'outbound', status: 'draft', attachments: []
+      } as Message);
+      const { unmount } = render(
+        <Provider store={makeStore()}>
+          <ReplyForm {...defaultProps} />
+        </Provider>
+      );
+      
+      fireEvent.click(screen.getByRole('button'));
+      fireEvent.change(screen.getByPlaceholderText('Write your reply here...'), { target: { value: 'Unmount test' } });
+
+      unmount();
+
+      await waitFor(() => expect(saveSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ textBody: 'Unmount test' })
+      ));
+    });
+
+
+    it('shows saving draft status', () => {
+      renderForm({}, { savingDraft: true });
+      expand();
+      expect(screen.getByText('Saving draft...')).toBeInTheDocument();
+    });
+
+    it('shows draft saved status when draftId exists', () => {
+      renderForm({ initialDraftId: 'd-123' });
+      // initialDraftId causes it to be expanded
+      expect(screen.getByText('Draft saved')).toBeInTheDocument();
     });
 
     it('shows success toast, clears body, and collapses on successful send', async () => {

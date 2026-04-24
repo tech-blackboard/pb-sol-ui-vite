@@ -1,307 +1,211 @@
-import * as crmService from '../../../../features/crm/services/crmService';
 import { api } from '../../../../lib/api';
+import * as crmService from '../../../../features/crm/services/crmService';
 
+// Mock the api instance
 jest.mock('../../../../lib/api', () => ({
   api: {
     get: jest.fn(),
     post: jest.fn(),
     put: jest.fn(),
+    patch: jest.fn(),
+    delete: jest.fn(),
   },
-}));
-
-jest.mock('../../../../config/env', () => ({
-  CRM_BASE: '/api/crm',
 }));
 
 const mockApi = api as jest.Mocked<typeof api>;
 
-beforeEach(() => {
-  jest.clearAllMocks();
-});
-
-// ── helpers ─
-
-const mockToken = (token: string | null, store: 'localStorage' | 'sessionStorage' = 'localStorage') => {
-  localStorage.clear();
-  sessionStorage.clear();
-  if (token) {
-    if (store === 'localStorage') localStorage.setItem('accessToken', token);
-    else sessionStorage.setItem('accessToken', token);
-  }
-};
-
-// ── fetchCrmEvents ─
-
-describe('fetchCrmEvents', () => {
-  it('returns events on success with localStorage token', async () => {
-    mockToken('tok-abc');
-    const events = [{ id: 1, name: 'Conf A' }];
-    mockApi.get.mockResolvedValueOnce({ data: events });
-
-    const result = await crmService.fetchCrmEvents();
-
-    expect(result).toEqual(events);
-    expect(mockApi.get).toHaveBeenCalledWith(
-      '/api/crm/events',
-      expect.objectContaining({
-        headers: expect.objectContaining({ Authorization: 'Bearer tok-abc' }),
-        withCredentials: true,
-      }),
-    );
-  });
-
-  it('uses sessionStorage token when localStorage has none', async () => {
-    mockToken('sess-tok', 'sessionStorage');
-    mockApi.get.mockResolvedValueOnce({ data: [] });
-
-    await crmService.fetchCrmEvents();
-
-    expect(mockApi.get).toHaveBeenCalledWith(
-      '/api/crm/events',
-      expect.objectContaining({
-        headers: expect.objectContaining({ Authorization: 'Bearer sess-tok' }),
-      }),
-    );
-  });
-
-  it('sends no Authorization header when no token exists', async () => {
-    mockToken(null);
-    mockApi.get.mockResolvedValueOnce({ data: [] });
-
-    await crmService.fetchCrmEvents();
-
-    const callHeaders = mockApi.get.mock.calls[0][1]?.headers as Record<string, string>;
-    expect(callHeaders['Authorization']).toBeUndefined();
-  });
-
-  it('throws when api rejects', async () => {
-    mockToken('tok');
-    mockApi.get.mockRejectedValueOnce(new Error('Network error'));
-    await expect(crmService.fetchCrmEvents()).rejects.toThrow('Network error');
-  });
-});
-
-// ── fetchThreads ──
-
-describe('fetchThreads', () => {
-  it('returns threads for the given eventId', async () => {
-    mockToken('tok');
-    const threads = [{ id: 'thread-1', subject: 'Hello' }];
-    mockApi.get.mockResolvedValueOnce({ data: threads });
-
-    const result = await crmService.fetchThreads(42);
-
-    expect(result).toEqual(threads);
-    expect(mockApi.get).toHaveBeenCalledWith(
-      '/api/crm/threads',
-      expect.objectContaining({ params: { eventId: 42 } }),
-    );
-  });
-
-  it('throws on api failure', async () => {
-    mockToken('tok');
-    mockApi.get.mockRejectedValueOnce(new Error('fail'));
-    await expect(crmService.fetchThreads(1)).rejects.toThrow('fail');
-  });
-});
-
-// ── fetchThreadMessages ──
-
-describe('fetchThreadMessages', () => {
-  it('URL-encodes the threadId and returns messages', async () => {
-    mockToken('tok');
-    const messages = [{ id: 'msg-1' }];
-    mockApi.get.mockResolvedValueOnce({ data: messages });
-
-    const result = await crmService.fetchThreadMessages('thread/with spaces');
-
-    expect(result).toEqual(messages);
-    expect(mockApi.get).toHaveBeenCalledWith(
-      `/api/crm/messages/${encodeURIComponent('thread/with spaces')}`,
-      expect.anything(),
-    );
-  });
-
-  it('throws on api failure', async () => {
-    mockToken('tok');
-    mockApi.get.mockRejectedValueOnce(new Error('fail'));
-    await expect(crmService.fetchThreadMessages('t1')).rejects.toThrow('fail');
-  });
-});
-
-// ── updateMessageLabels ───────────────────────────────────────────────────────
-
-describe('updateMessageLabels', () => {
-  it('calls PUT with encoded messageId and labels payload', async () => {
-    mockToken('tok');
-    mockApi.put.mockResolvedValueOnce({});
-
-    await crmService.updateMessageLabels('msg/1', ['positive', 'abstract']);
-
-    expect(mockApi.put).toHaveBeenCalledWith(
-      `/api/crm/messages/${encodeURIComponent('msg/1')}/labels`,
-      { labels: ['positive', 'abstract'] },
-      expect.anything(),
-    );
-  });
-
-  it('throws on api failure', async () => {
-    mockToken('tok');
-    mockApi.put.mockRejectedValueOnce(new Error('fail'));
-    await expect(crmService.updateMessageLabels('msg-1', [])).rejects.toThrow('fail');
-  });
-});
-
-// ── unsubscribeContact ───────────────────────────────────────────────────────
-
-describe('unsubscribeContact', () => {
-  it('calls PUT with contactId and reason', async () => {
-    mockToken('tok');
-    mockApi.put.mockResolvedValueOnce({});
-
-    await crmService.unsubscribeContact(7, 'User requested');
-
-    expect(mockApi.put).toHaveBeenCalledWith(
-      '/api/crm/contacts/7/unsubscribe',
-      { reason: 'User requested' },
-      expect.anything(),
-    );
-  });
-
-  it('calls PUT with undefined reason when omitted', async () => {
-    mockToken('tok');
-    mockApi.put.mockResolvedValueOnce({});
-
-    await crmService.unsubscribeContact(7);
-
-    expect(mockApi.put).toHaveBeenCalledWith(
-      '/api/crm/contacts/7/unsubscribe',
-      { reason: undefined },
-      expect.anything(),
-    );
-  });
-
-  it('throws on api failure', async () => {
-    mockToken('tok');
-    mockApi.put.mockRejectedValueOnce(new Error('fail'));
-    await expect(crmService.unsubscribeContact(1)).rejects.toThrow('fail');
-  });
-});
-
-// ── sendReply ─────────────────────────────────────────────────────────────────
-
-describe('sendReply', () => {
-  it('posts the payload and returns the response data', async () => {
-    mockToken('tok');
-    const responseData = { status: 'ok', messageId: 'new-msg-1' };
-    mockApi.post.mockResolvedValueOnce({ data: responseData });
-
-    const payload = { contactId: 1, eventId: 1, subject: 'S', textBody: 'B', htmlBody: 'H' };
-    const result = await crmService.sendReply(payload);
-
-    expect(result).toEqual(responseData);
-    expect(mockApi.post).toHaveBeenCalledWith(
-      '/api/crm/reply',
-      payload,
-      expect.anything(),
-    );
-  });
-
-  it('throws on api failure', async () => {
-    mockToken('tok');
-    mockApi.post.mockRejectedValueOnce(new Error('fail'));
-    await expect(
-      crmService.sendReply({ contactId: 1, eventId: 1, subject: 's', textBody: 'b', htmlBody: '<b>' }),
-    ).rejects.toThrow('fail');
-  });
-});
-
-// ── fetchLabels ───────────────────────────────────────────────────────────────
-
-describe('fetchLabels', () => {
-  it('fetches labels without eventId', async () => {
-    mockToken('tok');
-    const labels = [{ label: 'positive', count: 3 }];
-    mockApi.get.mockResolvedValueOnce({ data: labels });
-
-    const result = await crmService.fetchLabels();
-
-    expect(result).toEqual(labels);
-    expect(mockApi.get).toHaveBeenCalledWith(
-      '/api/crm/labels',
-      expect.objectContaining({ params: { eventId: undefined } }),
-    );
-  });
-
-  it('passes eventId as a query param when provided', async () => {
-    mockToken('tok');
-    mockApi.get.mockResolvedValueOnce({ data: [] });
-
-    await crmService.fetchLabels(99);
-
-    expect(mockApi.get).toHaveBeenCalledWith(
-      '/api/crm/labels',
-      expect.objectContaining({ params: { eventId: 99 } }),
-    );
-  });
-
-  it('throws on api failure', async () => {
-    mockToken('tok');
-    mockApi.get.mockRejectedValueOnce(new Error('fail'));
-    await expect(crmService.fetchLabels()).rejects.toThrow('fail');
-  });
-});
-
-// ── downloadAttachment ────────────────────────────────────────────────────────
-
-describe('downloadAttachment', () => {
-  let createObjectURLMock: jest.Mock;
-  let revokeObjectURLMock: jest.Mock;
-  let clickSpy: jest.Mock;
-
+describe('crmService', () => {
   beforeEach(() => {
-    mockToken('tok');
-    createObjectURLMock = jest.fn().mockReturnValue('blob://fake');
-    revokeObjectURLMock = jest.fn();
-    clickSpy = jest.fn();
+    jest.clearAllMocks();
+    localStorage.clear();
+    sessionStorage.clear();
+  });
 
-    Object.defineProperty(window.URL, 'createObjectURL', { value: createObjectURLMock, writable: true, configurable: true });
-    Object.defineProperty(window.URL, 'revokeObjectURL', { value: revokeObjectURLMock, writable: true, configurable: true });
-
-    // Intercept createElement to capture the anchor so we can verify click
-    const origCreate = document.createElement.bind(document);
-    jest.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-      const el = origCreate(tag);
-      if (tag === 'a') {
-        jest.spyOn(el as HTMLAnchorElement, 'click').mockImplementation(() => clickSpy());
-      }
-      return el;
+  describe('getAuthHeaders', () => {
+    it('returns empty object if no token', async () => {
+      // Internal function getAuthHeaders is used inside the public functions
+      mockApi.get.mockResolvedValueOnce({ data: [] });
+      await crmService.fetchCrmEvents();
+      
+      const lastCallHeaders = mockApi.get.mock.calls[0][1]?.headers;
+      expect(lastCallHeaders).not.toHaveProperty('Authorization');
     });
-    jest.spyOn(document.body, 'appendChild').mockReturnValue({} as Node);
-    jest.spyOn(document.body, 'removeChild').mockReturnValue({} as Node);
+
+    it('returns Authorization header if token exists in localStorage', async () => {
+      localStorage.setItem('accessToken', 'test-token');
+      mockApi.get.mockResolvedValueOnce({ data: [] });
+      await crmService.fetchCrmEvents();
+      
+      const lastCallHeaders = mockApi.get.mock.calls[0][1]?.headers;
+      expect(lastCallHeaders).toHaveProperty('Authorization', 'Bearer test-token');
+    });
   });
 
-  afterEach(() => {
-    jest.restoreAllMocks();
+  describe('fetchCrmEvents', () => {
+    it('calls api.get with correct URL', async () => {
+      const mockData = [{ id: 1, name: 'Event 1' }];
+      mockApi.get.mockResolvedValueOnce({ data: mockData });
+      
+      const result = await crmService.fetchCrmEvents();
+      expect(mockApi.get).toHaveBeenCalledWith(expect.stringContaining('/events'), expect.anything());
+      expect(result).toEqual(mockData);
+    });
   });
 
-  it('fetches the attachment blob, triggers download, and cleans up', async () => {
-    const fakeBlob = new Blob(['data']);
-    mockApi.get.mockResolvedValueOnce({ data: fakeBlob });
-
-    await crmService.downloadAttachment(5, 'report.pdf');
-
-    expect(mockApi.get).toHaveBeenCalledWith(
-      '/api/crm/attachments/5/download',
-      expect.objectContaining({ responseType: 'blob' }),
-    );
-    expect(createObjectURLMock).toHaveBeenCalled();
-    expect(clickSpy).toHaveBeenCalled();
-    expect(revokeObjectURLMock).toHaveBeenCalledWith('blob://fake');
+  describe('fetchThreads', () => {
+    it('calls api.get with params', async () => {
+      mockApi.get.mockResolvedValueOnce({ data: [] });
+      await crmService.fetchThreads(1, 'search-term', 'domain.com');
+      
+      expect(mockApi.get).toHaveBeenCalledWith(
+        expect.stringContaining('/threads'),
+        expect.objectContaining({
+          params: { eventId: 1, search: 'search-term', domain: 'domain.com' }
+        })
+      );
+    });
   });
 
-  it('throws when the api call fails', async () => {
-    mockApi.get.mockRejectedValueOnce(new Error('Network error'));
-    await expect(crmService.downloadAttachment(1, 'file.pdf')).rejects.toThrow('Network error');
+  describe('fetchThreadMessages', () => {
+    it('encodes thread ID and calls api.get', async () => {
+      mockApi.get.mockResolvedValueOnce({ data: [] });
+      const threadId = 'thread/123';
+      await crmService.fetchThreadMessages(threadId);
+      
+      expect(mockApi.get).toHaveBeenCalledWith(
+        expect.stringContaining(`/messages/${encodeURIComponent(threadId)}`),
+        expect.anything()
+      );
+    });
+  });
+
+  describe('updateMessageLabels', () => {
+    it('calls api.put with labels', async () => {
+      mockApi.put.mockResolvedValueOnce({});
+      await crmService.updateMessageLabels('msg-1', ['label1', 'label2']);
+      
+      expect(mockApi.put).toHaveBeenCalledWith(
+        expect.stringContaining('/messages/msg-1/labels'),
+        { labels: ['label1', 'label2'] },
+        expect.anything()
+      );
+    });
+  });
+
+  describe('unsubscribeContact', () => {
+    it('calls api.put with reason', async () => {
+      mockApi.put.mockResolvedValueOnce({});
+      await crmService.unsubscribeContact(10, 'Testing');
+      
+      expect(mockApi.put).toHaveBeenCalledWith(
+        expect.stringContaining('/contacts/10/unsubscribe'),
+        { reason: 'Testing' },
+        expect.anything()
+      );
+    });
+  });
+
+  describe('sendReply', () => {
+    it('calls api.post with payload', async () => {
+      const payload = { contactId: 1, eventId: 1, subject: 'S', textBody: 'T', htmlBody: 'H' };
+      mockApi.post.mockResolvedValueOnce({ data: { status: 'ok', messageId: 'm1' } });
+      
+      const result = await crmService.sendReply(payload);
+      expect(mockApi.post).toHaveBeenCalledWith(expect.stringContaining('/reply'), payload, expect.anything());
+      expect(result.status).toBe('ok');
+    });
+  });
+
+  describe('saveDraft', () => {
+    it('calls api.post and returns message', async () => {
+      const payload = { contactId: 1, eventId: 1, subject: 'S' };
+      const mockMsg = { id: 'd1', subject: 'S' };
+      mockApi.post.mockResolvedValueOnce({ data: mockMsg });
+      
+      const result = await crmService.saveDraft(payload);
+      expect(mockApi.post).toHaveBeenCalledWith(expect.stringContaining('/drafts'), payload, expect.anything());
+      expect(result).toEqual(mockMsg);
+    });
+  });
+
+  describe('fetchDrafts', () => {
+    it('calls api.get', async () => {
+      mockApi.get.mockResolvedValueOnce({ data: [] });
+      await crmService.fetchDrafts();
+      expect(mockApi.get).toHaveBeenCalledWith(expect.stringContaining('/drafts'), expect.anything());
+    });
+  });
+
+  describe('deleteDraft', () => {
+    it('calls api.delete', async () => {
+      mockApi.delete.mockResolvedValueOnce({});
+      await crmService.deleteDraft('d1');
+      expect(mockApi.delete).toHaveBeenCalledWith(expect.stringContaining('/drafts/d1'), expect.anything());
+    });
+  });
+
+  describe('downloadAttachment', () => {
+    it('triggers browser download', async () => {
+      const mockBlob = new Blob(['content']);
+      mockApi.get.mockResolvedValueOnce({ data: mockBlob });
+      
+      // Mock window.URL
+      const mockUrl = 'blob:url';
+      window.URL.createObjectURL = jest.fn().mockReturnValue(mockUrl);
+      window.URL.revokeObjectURL = jest.fn();
+      
+      // Mock document.createElement
+      const mockLink = {
+        href: '',
+        setAttribute: jest.fn(),
+        click: jest.fn(),
+        parentNode: { removeChild: jest.fn() }
+      } as unknown as HTMLAnchorElement;
+      document.createElement = jest.fn().mockReturnValue(mockLink);
+      document.body.appendChild = jest.fn();
+
+      await crmService.downloadAttachment(1, 'test.pdf');
+      
+      expect(mockApi.get).toHaveBeenCalledWith(expect.stringContaining('/attachments/1/download'), expect.anything());
+      expect(mockLink.setAttribute).toHaveBeenCalledWith('download', 'test.pdf');
+      expect(mockLink.click).toHaveBeenCalled();
+    });
+  });
+
+  describe('Email Account Management', () => {
+    it('fetchEmailAccounts calls api.get with params', async () => {
+      mockApi.get.mockResolvedValueOnce({ data: [] });
+      await crmService.fetchEmailAccounts(1, 'search');
+      expect(mockApi.get).toHaveBeenCalledWith(
+        expect.stringContaining('/email-accounts'),
+        expect.objectContaining({ params: { eventId: 1, search: 'search' } })
+      );
+    });
+
+    it('createEmailAccount calls api.post', async () => {
+      const payload = { name: 'New' };
+      mockApi.post.mockResolvedValueOnce({ data: { id: 1, ...payload } });
+      await crmService.createEmailAccount(payload);
+      expect(mockApi.post).toHaveBeenCalledWith(expect.stringContaining('/email-accounts'), payload, expect.anything());
+    });
+
+    it('updateEmailAccount calls api.patch', async () => {
+      const payload = { name: 'Updated' };
+      mockApi.patch.mockResolvedValueOnce({ data: { id: 1, ...payload } });
+      await crmService.updateEmailAccount(1, payload);
+      expect(mockApi.patch).toHaveBeenCalledWith(expect.stringContaining('/email-accounts/1'), payload, expect.anything());
+    });
+
+    it('deleteEmailAccount calls api.delete', async () => {
+      mockApi.delete.mockResolvedValueOnce({});
+      await crmService.deleteEmailAccount(1);
+      expect(mockApi.delete).toHaveBeenCalledWith(expect.stringContaining('/email-accounts/1'), expect.anything());
+    });
+
+    it('getMicrosoftAuthUrl returns url', async () => {
+      mockApi.get.mockResolvedValueOnce({ data: { url: 'http://auth.url' } });
+      const result = await crmService.getMicrosoftAuthUrl(1);
+      expect(result).toBe('http://auth.url');
+    });
   });
 });

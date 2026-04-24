@@ -10,12 +10,24 @@ export interface CrmState {
     activeEventId: number | null;
     accountsActiveEventId: number | null;
     activeDomain: string | null;
+    accountsActiveDomain: string | null;
     activeFolder: 'Inbox' | 'Drafts' | 'Sent' | 'Starred' | 'Junk' | 'Trash' | 'Accounts';
     selectedThreadId: string | null;
     searchTerm: string;
+    accountsSearchTerm: string;
     searchTrigger: number;
-
+    accountsSearchTrigger: number;
     isSidebarOpen: boolean;
+    
+    // Applied filters (only updated on search trigger)
+    appliedSearchTerm: string;
+    appliedDomain: string | null;
+    appliedEventId: number | null;
+    
+    appliedAccountsSearchTerm: string;
+    appliedAccountsDomain: string | null;
+    appliedAccountsEventId: number | null;
+
     loading: {
         events: boolean;
         threads: boolean;
@@ -35,10 +47,21 @@ export const initialState: CrmState = {
     activeEventId: null,
     accountsActiveEventId: null,
     activeDomain: null,
+    accountsActiveDomain: null,
     activeFolder: 'Inbox',
     selectedThreadId: null,
     searchTerm: '',
+    accountsSearchTerm: '',
     searchTrigger: 0,
+    accountsSearchTrigger: 0,
+    
+    appliedSearchTerm: '',
+    appliedDomain: null,
+    appliedEventId: null,
+    
+    appliedAccountsSearchTerm: '',
+    appliedAccountsDomain: null,
+    appliedAccountsEventId: null,
 
     isSidebarOpen: false,
     loading: {
@@ -63,10 +86,14 @@ const crmSlice = createSlice({
         },
         setAccountsActiveEvent(state, action: PayloadAction<number | null>) {
             state.accountsActiveEventId = action.payload;
+            state.accountsActiveDomain = null; // Reset domain when event changes
         },
         setActiveDomain(state, action: PayloadAction<string | null>) {
             state.activeDomain = action.payload;
             state.selectedThreadId = null; // Reset selection to return to list view
+        },
+        setAccountsActiveDomain(state, action: PayloadAction<string | null>) {
+            state.accountsActiveDomain = action.payload;
         },
         setActiveFolder(state, action: PayloadAction<'Inbox' | 'Drafts' | 'Sent' | 'Starred' | 'Junk' | 'Trash' | 'Accounts'>) {
             state.activeFolder = action.payload;
@@ -90,8 +117,20 @@ const crmSlice = createSlice({
         setSearchTerm(state, action: PayloadAction<string>) {
             state.searchTerm = action.payload;
         },
-        triggerSearch(state) {
+        setAccountsSearchTerm(state, action: PayloadAction<string>) {
+            state.accountsSearchTerm = action.payload;
+        },
+        triggerSearch: (state) => {
             state.searchTrigger += 1;
+            state.appliedSearchTerm = state.searchTerm;
+            state.appliedDomain = state.activeDomain;
+            state.appliedEventId = state.activeEventId;
+        },
+        triggerAccountsSearch: (state) => {
+            state.accountsSearchTrigger += 1;
+            state.appliedAccountsSearchTerm = state.accountsSearchTerm;
+            state.appliedAccountsDomain = state.accountsActiveDomain;
+            state.appliedAccountsEventId = state.accountsActiveEventId;
         },
     },
     extraReducers: (builder) => {
@@ -103,13 +142,11 @@ const crmSlice = createSlice({
             })
             .addCase(fetchEventsThunk.fulfilled, (state, { payload }) => {
                 state.loading.events = false;
-                // Defensive check: ensure payload is an array to prevent crashes if API returns unexpected data
                 if (Array.isArray(payload)) {
                     state.events = payload;
                     if (payload.length > 0 && !state.activeEventId) {
                         state.activeEventId = payload[0].id;
                     }
-                    // Removed default accountsActiveEventId initialization to allow 'All Conferences' by default
                 } else {
                     console.error('CRM: fetchEvents returned non-array payload', payload);
                     state.events = [];
@@ -154,7 +191,6 @@ const crmSlice = createSlice({
             })
             .addCase(sendReplyThunk.fulfilled, (state) => {
                 state.loading.sending = false;
-                // Optionally fetch messages again or update local state
             })
             .addCase(sendReplyThunk.rejected, (state, action) => {
                 state.loading.sending = false;
@@ -207,5 +243,19 @@ const crmSlice = createSlice({
     },
 });
 
-export const { setActiveEvent, setAccountsActiveEvent, setActiveDomain, setActiveFolder, setSelectedThread, toggleSidebar, setSidebarOpen, clearError, setSearchTerm, triggerSearch } = crmSlice.actions;
+export const { 
+    setActiveEvent, 
+    setAccountsActiveEvent, 
+    setActiveDomain, 
+    setAccountsActiveDomain, 
+    setActiveFolder, 
+    setSelectedThread, 
+    toggleSidebar, 
+    setSidebarOpen, 
+    clearError, 
+    setSearchTerm, 
+    setAccountsSearchTerm, 
+    triggerSearch, 
+    triggerAccountsSearch 
+} = crmSlice.actions;
 export default crmSlice.reducer;

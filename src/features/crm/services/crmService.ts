@@ -22,9 +22,9 @@ export async function fetchCrmEvents(): Promise<CrmEvent[]> {
 /**
  * Fetch threads for a specific event
  */
-export async function fetchThreads(eventId: number): Promise<Thread[]> {
+export async function fetchThreads(eventId: number, search?: string, domain?: string): Promise<Thread[]> {
     const { data } = await api.get<Thread[]>(`${CRM_BASE}/threads`, {
-        params: { eventId },
+        params: { eventId, search, domain },
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });

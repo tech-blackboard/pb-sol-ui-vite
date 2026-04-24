@@ -10,7 +10,7 @@ import EmailAccountsPage from './EmailAccountsPage';
 
 export default function MailboxPage() {
     const dispatch = useAppDispatch();
-    const { activeEventId, selectedThreadId, activeFolder, isSidebarOpen } = useAppSelector((state) => state.crm);
+    const { activeEventId, selectedThreadId, activeFolder, isSidebarOpen, searchTrigger, appliedSearchTerm, appliedDomain } = useAppSelector((state) => state.crm);
     const [statusFilter, setStatusFilter] = useState('All');
 
     useEffect(() => {
@@ -23,12 +23,16 @@ export default function MailboxPage() {
             if (activeFolder === 'Drafts') {
                 dispatch(fetchDraftsThunk());
             } else {
-                dispatch(fetchThreadsThunk(activeEventId));
+                dispatch(fetchThreadsThunk({
+                    eventId: activeEventId,
+                    search: appliedSearchTerm || undefined,
+                    domain: appliedDomain || undefined
+                }));
             }
         }
         // Close sidebar on mobile when folder changes
         dispatch(setSidebarOpen(false));
-    }, [activeEventId, activeFolder, dispatch]);
+    }, [activeEventId, activeFolder, searchTrigger, appliedSearchTerm, appliedDomain, dispatch]);
 
     return (
         <div className="flex flex-col h-full overflow-hidden">
@@ -38,7 +42,7 @@ export default function MailboxPage() {
             <div className="flex flex-1 overflow-hidden relative">
                 {/* Mobile Sidebar Backdrop */}
                 {isSidebarOpen && (
-                    <div 
+                    <div
                         className="fixed inset-0 bg-black/50 z-30 md:hidden animate-fade-in"
                         onClick={() => dispatch(setSidebarOpen(false))}
                     />
