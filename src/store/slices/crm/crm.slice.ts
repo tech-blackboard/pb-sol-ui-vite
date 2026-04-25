@@ -28,6 +28,10 @@ export interface CrmState {
     appliedAccountsDomain: string | null;
     appliedAccountsEventId: number | null;
 
+    currentPage: number;
+    totalThreads: number;
+    totalDrafts: number;
+
     loading: {
         events: boolean;
         threads: boolean;
@@ -62,6 +66,10 @@ export const initialState: CrmState = {
     appliedAccountsSearchTerm: '',
     appliedAccountsDomain: null,
     appliedAccountsEventId: null,
+
+    currentPage: 1,
+    totalThreads: 0,
+    totalDrafts: 0,
 
     isSidebarOpen: false,
     loading: {
@@ -132,6 +140,9 @@ const crmSlice = createSlice({
             state.appliedAccountsDomain = state.accountsActiveDomain;
             state.appliedAccountsEventId = state.accountsActiveEventId;
         },
+        setPage: (state, action: PayloadAction<number>) => {
+            state.currentPage = action.payload;
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -164,7 +175,8 @@ const crmSlice = createSlice({
             })
             .addCase(fetchThreadsThunk.fulfilled, (state, { payload }) => {
                 state.loading.threads = false;
-                state.threads = payload;
+                state.threads = payload.threads;
+                state.totalThreads = payload.total;
             })
             .addCase(fetchThreadsThunk.rejected, (state, action) => {
                 state.loading.threads = false;
@@ -229,7 +241,8 @@ const crmSlice = createSlice({
             })
             .addCase(fetchDraftsThunk.fulfilled, (state, { payload }) => {
                 state.loading.drafts = false;
-                state.drafts = payload;
+                state.drafts = payload.drafts;
+                state.totalDrafts = payload.total;
             })
             .addCase(fetchDraftsThunk.rejected, (state, action) => {
                 state.loading.drafts = false;
@@ -256,6 +269,7 @@ export const {
     setSearchTerm, 
     setAccountsSearchTerm, 
     triggerSearch, 
-    triggerAccountsSearch 
+    triggerAccountsSearch,
+    setPage
 } = crmSlice.actions;
 export default crmSlice.reducer;

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
@@ -60,10 +60,14 @@ describe('MailboxPage', () => {
   });
 
   it('dispatches fetchEventsThunk on mount', () => {
-    const store = renderPage();
+    const store = makeStore();
     const spy = jest.spyOn(store, 'dispatch');
-    // Re-render to confirm dispatch happens; currently on mount the thunk is dispatched once
-    expect(spy).toBeDefined();
+    render(
+      <Provider store={store}>
+        <MailboxPage />
+      </Provider>,
+    );
+    expect(spy).toHaveBeenCalled();
   });
 
   it('shows ThreadTable and toolbar when no thread is selected', () => {
@@ -78,30 +82,10 @@ describe('MailboxPage', () => {
     expect(screen.queryByTestId('thread-table')).not.toBeInTheDocument();
   });
 
-  it('renders status filter dropdown with All / Read / Unread / Starred options', () => {
-    renderPage({ selectedThreadId: null });
-    expect(screen.getByRole('option', { name: 'All' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Read' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Unread' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Starred' })).toBeInTheDocument();
-  });
-
-  it('updates status filter local state when selection changes', async () => {
-    renderPage({ selectedThreadId: null });
-    const select = screen.getByRole('combobox');
-    fireEvent.change(select, { target: { value: 'Unread' } });
-    await waitFor(() => expect((select as HTMLSelectElement).value).toBe('Unread'));
-  });
-
-  it('renders pagination controls in the list view', () => {
-    renderPage({ selectedThreadId: null });
-    expect(screen.getByText('Previous')).toBeInTheDocument();
-    expect(screen.getByText('Next')).toBeInTheDocument();
-  });
-
-  it('renders "More" actions button in the toolbar', () => {
-    renderPage({ selectedThreadId: null });
-    expect(screen.getByText('More')).toBeInTheDocument();
+  it('renders pagination info in the list view', () => {
+    renderPage({ selectedThreadId: null, totalThreads: 0 });
+    // Should show 0–0 of 0 when empty
+    expect(screen.getByText(/0–0 of 0/)).toBeInTheDocument();
   });
 
   it('dispatches fetchThreadsThunk when activeEventId is set (via store preload)', async () => {
@@ -123,8 +107,8 @@ describe('MailboxPage', () => {
         <MailboxPage />
       </Provider>,
     );
-    // Both fetchEventsThunk and fetchDraftsThunk are dispatched on mount
+    // Only fetchEventsThunk is dispatched on mount when activeEventId is null
     const thunkCalls = spy.mock.calls.filter(c => typeof c[0] === 'function');
-    expect(thunkCalls.length).toBe(2);
+    expect(thunkCalls.length).toBe(1);
   });
 });

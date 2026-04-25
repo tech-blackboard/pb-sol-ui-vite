@@ -22,9 +22,9 @@ export async function fetchCrmEvents(): Promise<CrmEvent[]> {
 /**
  * Fetch threads for a specific event
  */
-export async function fetchThreads(eventId: number, search?: string, domain?: string): Promise<Thread[]> {
-    const { data } = await api.get<Thread[]>(`${CRM_BASE}/threads`, {
-        params: { eventId, search, domain },
+export async function fetchThreads(eventId: number, search?: string, domain?: string, page: number = 1, limit: number = 50): Promise<{ threads: Thread[]; total: number }> {
+    const { data } = await api.get<{ threads: Thread[]; total: number }>(`${CRM_BASE}/threads`, {
+        params: { eventId, search, domain, page, limit },
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });
@@ -105,8 +105,9 @@ export async function saveDraft(payload: {
 /**
  * Fetch all drafts for the current user
  */
-export async function fetchDrafts(): Promise<Message[]> {
-    const { data } = await api.get<Message[]>(`${CRM_BASE}/drafts`, {
+export async function fetchDrafts(page: number = 1, limit: number = 50): Promise<{ drafts: Message[]; total: number }> {
+    const { data } = await api.get<{ drafts: Message[]; total: number }>(`${CRM_BASE}/drafts`, {
+        params: { page, limit },
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });

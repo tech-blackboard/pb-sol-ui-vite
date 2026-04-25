@@ -88,8 +88,14 @@ export default function CrmHeader() {
     const handleSearchChange = (value: string) => {
         if (isAccountsTab) {
             dispatch(setAccountsSearchTerm(value));
+            if (value === '') {
+                dispatch(triggerAccountsSearch());
+            }
         } else {
             dispatch(setSearchTerm(value));
+            if (value === '') {
+                dispatch(triggerSearch());
+            }
         }
     };
 

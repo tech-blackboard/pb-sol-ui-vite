@@ -60,7 +60,7 @@ describe('crmService', () => {
       expect(mockApi.get).toHaveBeenCalledWith(
         expect.stringContaining('/threads'),
         expect.objectContaining({
-          params: { eventId: 1, search: 'search-term', domain: 'domain.com' }
+          params: { eventId: 1, search: 'search-term', domain: 'domain.com', page: 1, limit: 50 }
         })
       );
     });
@@ -129,10 +129,15 @@ describe('crmService', () => {
   });
 
   describe('fetchDrafts', () => {
-    it('calls api.get', async () => {
-      mockApi.get.mockResolvedValueOnce({ data: [] });
-      await crmService.fetchDrafts();
-      expect(mockApi.get).toHaveBeenCalledWith(expect.stringContaining('/drafts'), expect.anything());
+    it('calls api.get with params', async () => {
+      mockApi.get.mockResolvedValueOnce({ data: { drafts: [], total: 0 } });
+      await crmService.fetchDrafts(2, 20);
+      expect(mockApi.get).toHaveBeenCalledWith(
+        expect.stringContaining('/drafts'),
+        expect.objectContaining({
+          params: { page: 2, limit: 20 }
+        })
+      );
     });
   });
 

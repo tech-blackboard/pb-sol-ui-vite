@@ -16,9 +16,9 @@ export const fetchEventsThunk = createAsyncThunk(
 
 export const fetchThreadsThunk = createAsyncThunk(
     'crm/fetchThreads',
-    async ({ eventId, search, domain }: { eventId: number; search?: string; domain?: string }, { rejectWithValue }) => {
+    async ({ eventId, search, domain, page, limit }: { eventId: number; search?: string; domain?: string; page?: number; limit?: number }, { rejectWithValue }) => {
         try {
-            return await crmService.fetchThreads(eventId, search, domain);
+            return await crmService.fetchThreads(eventId, search, domain, page, limit);
         } catch (err: unknown) {
             const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to fetch threads';
             return rejectWithValue(message);
@@ -96,9 +96,9 @@ export const saveDraftThunk = createAsyncThunk(
 
 export const fetchDraftsThunk = createAsyncThunk(
     'crm/fetchDrafts',
-    async (_, { rejectWithValue }) => {
+    async ({ page, limit }: { page?: number; limit?: number } = {}, { rejectWithValue }) => {
         try {
-            return await crmService.fetchDrafts();
+            return await crmService.fetchDrafts(page, limit);
         } catch (err: unknown) {
             const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to fetch drafts';
             return rejectWithValue(message);

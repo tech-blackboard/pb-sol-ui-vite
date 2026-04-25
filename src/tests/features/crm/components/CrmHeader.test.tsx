@@ -149,4 +149,14 @@ describe('CrmHeader', () => {
     fireEvent.change(searchInput, { target: { value: 'hello' } });
     expect(searchInput.value).toBe('hello');
   });
+
+  it('dispatches triggerSearch automatically when search input is cleared', () => {
+    const { spy } = renderHeaderWithSpy({ searchTerm: 'old' });
+    const searchInput = screen.getByPlaceholderText('Subject or Email ID');
+    
+    fireEvent.change(searchInput, { target: { value: '' } });
+    
+    // Should dispatch triggerSearch (plus the setSearchTerm update)
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/triggerSearch' }));
+  });
 });
