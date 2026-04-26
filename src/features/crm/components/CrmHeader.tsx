@@ -42,7 +42,8 @@ export default function CrmHeader() {
             dispatch(fetchThreadsThunk({ 
                 eventId: activeEventId, 
                 search: searchTerm || undefined, 
-                domain: activeDomain || undefined 
+                domain: activeDomain || undefined,
+                folder: activeFolder
             }));
         }
     };

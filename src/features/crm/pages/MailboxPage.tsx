@@ -31,6 +31,7 @@ export default function MailboxPage() {
                     eventId: activeEventId,
                     search: appliedSearchTerm || undefined,
                     domain: appliedDomain || undefined,
+                    folder: activeFolder,
                     page: currentPage,
                     limit
                 }));
