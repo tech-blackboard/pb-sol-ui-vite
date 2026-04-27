@@ -38,6 +38,32 @@ export const fetchMessagesThunk = createAsyncThunk(
     }
 );
 
+export const toggleThreadStarThunk = createAsyncThunk(
+    'crm/toggleThreadStar',
+    async ({ threadId, isStarred }: { threadId: string; isStarred: boolean }, { rejectWithValue }) => {
+        try {
+            await crmService.toggleThreadStar(threadId, isStarred);
+            return { threadId, isStarred };
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to update star status';
+            return rejectWithValue(message);
+        }
+    }
+);
+
+export const toggleThreadReadThunk = createAsyncThunk(
+    'crm/toggleThreadRead',
+    async ({ threadId, isRead }: { threadId: string; isRead: boolean }, { rejectWithValue }) => {
+        try {
+            await crmService.updateThreadReadStatus(threadId, isRead);
+            return { threadId, isRead };
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to update read status';
+            return rejectWithValue(message);
+        }
+    }
+);
+
 export const sendReplyThunk = createAsyncThunk(
     'crm/sendReply',
     async (payload: {
@@ -96,9 +122,9 @@ export const saveDraftThunk = createAsyncThunk(
 
 export const fetchDraftsThunk = createAsyncThunk(
     'crm/fetchDrafts',
-    async ({ page, limit }: { page?: number; limit?: number } = {}, { rejectWithValue }) => {
+    async ({ page, limit, eventId }: { page?: number; limit?: number; eventId?: number } = {}, { rejectWithValue }) => {
         try {
-            return await crmService.fetchDrafts(page, limit);
+            return await crmService.fetchDrafts(page, limit, eventId);
         } catch (err: unknown) {
             const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to fetch drafts';
             return rejectWithValue(message);

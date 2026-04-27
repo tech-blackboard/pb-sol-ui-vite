@@ -1,6 +1,6 @@
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { setSelectedThread } from '../../../store/slices/crm/crm.slice';
-import { updateLabelsThunk, fetchMessagesThunk } from '../../../store/slices/crm/crm.thunks';
+import { updateLabelsThunk, fetchMessagesThunk, toggleThreadReadThunk } from '../../../store/slices/crm/crm.thunks';
 import * as crmService from '../services/crmService';
 import ReplyForm from './ReplyForm';
 import EmailBody from './EmailBody';
@@ -53,6 +53,15 @@ export default function ThreadView() {
     const handleReplySuccess = () => {
         if (selectedThreadId) {
             dispatch(fetchMessagesThunk(selectedThreadId));
+        }
+    };
+
+    const handleToggleRead = () => {
+        if (selectedThreadId) {
+            // In ThreadView, we usually want to mark it as UNREAD and go back
+            dispatch(toggleThreadReadThunk({ threadId: selectedThreadId, isRead: false }));
+            dispatch(setSelectedThread(null));
+            toast.success('Conversation marked as unread');
         }
     };
 
@@ -113,10 +122,17 @@ export default function ThreadView() {
                         </svg>
                     </button>
                     <div className="h-6 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1"></div>
-                    <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500" title="Mark as unread">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                        </svg>
+                    <button 
+                        onClick={handleToggleRead}
+                        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500" 
+                        title="Mark as unread"
+                    >
+                        <div className="relative">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                            </svg>
+                            <div className="absolute top-0 right-0 w-2 h-2 bg-gray-600 dark:bg-gray-400 rounded-full border border-white dark:border-gray-900 translate-x-1/4 -translate-y-1/4"></div>
+                        </div>
                     </button>
                     <button
                         onClick={handleUnsubscribe}

@@ -60,6 +60,8 @@ describe('AccRegistrationFiltersDrawer', () => {
         render(<Provider store={store}><AccRegistrationFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
 
         await waitFor(() => expect(listWebsites).toHaveBeenCalled())
+        // Wait for the loading state to finish in the UI
+        await waitFor(() => expect(screen.queryByText('Loading websites…')).not.toBeInTheDocument())
 
         const select = screen.getByDisplayValue('Website')
         fireEvent.change(select, { target: { value: '1' } })

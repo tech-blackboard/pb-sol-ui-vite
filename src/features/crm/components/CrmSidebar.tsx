@@ -4,7 +4,7 @@ import { selectAuth } from '../../../store/slices/authSlice';
 
 export default function CrmSidebar() {
     const dispatch = useAppDispatch();
-    const { activeFolder, drafts, isSidebarOpen } = useAppSelector((state) => state.crm);
+    const { activeFolder, unreadCount, starredCount, sentCount, draftsCount, isSidebarOpen } = useAppSelector((state) => state.crm);
     const { user } = useAppSelector(selectAuth);
     const isAdmin = Boolean(user?.isAdmin);
 
@@ -48,12 +48,36 @@ export default function CrmSidebar() {
                                 <path strokeLinecap="round" strokeLinejoin="round" d={folder.icon} />
                             </svg>
                             <span className="flex-grow text-left">{folder.name}</span>
-                            {folder.name === 'Drafts' && drafts.length > 0 && (
+                            {folder.name === 'Inbox' && unreadCount > 0 && (
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeFolder === 'Inbox'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400'
+                                    }`}>
+                                    {unreadCount}
+                                </span>
+                            )}
+                            {folder.name === 'Drafts' && draftsCount > 0 && (
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeFolder === 'Drafts'
                                     ? 'bg-blue-100 text-blue-700'
                                     : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
                                     }`}>
-                                    {drafts.length}
+                                    {draftsCount}
+                                </span>
+                            )}
+                            {folder.name === 'Sent' && sentCount > 0 && (
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeFolder === 'Sent'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                                    }`}>
+                                    {sentCount}
+                                </span>
+                            )}
+                            {folder.name === 'Starred' && starredCount > 0 && (
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeFolder === 'Starred'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400'
+                                    }`}>
+                                    {starredCount}
                                 </span>
                             )}
                         </button>

@@ -25,7 +25,7 @@ export default function MailboxPage() {
     useEffect(() => {
         if (activeEventId) {
             if (activeFolder === 'Drafts') {
-                dispatch(fetchDraftsThunk({ page: currentPage, limit }));
+                dispatch(fetchDraftsThunk({ page: currentPage, limit, eventId: activeEventId }));
             } else {
                 dispatch(fetchThreadsThunk({
                     eventId: activeEventId,

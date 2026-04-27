@@ -1,10 +1,11 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { CrmEvent, Thread, Message } from '../../../features/crm/types';
-import { fetchEventsThunk, fetchThreadsThunk, fetchMessagesThunk, sendReplyThunk, updateLabelsThunk, saveDraftThunk, fetchDraftsThunk, deleteDraftThunk } from './crm.thunks';
+import { fetchEventsThunk, fetchThreadsThunk, fetchMessagesThunk, sendReplyThunk, updateLabelsThunk, saveDraftThunk, fetchDraftsThunk, deleteDraftThunk, toggleThreadStarThunk, toggleThreadReadThunk } from './crm.thunks';
 
 export interface CrmState {
     events: CrmEvent[];
     threads: Thread[];
+    unreadCount: number;
     messages: Message[];
     drafts: Message[];
     activeEventId: number | null;
@@ -30,6 +31,9 @@ export interface CrmState {
 
     currentPage: number;
     totalThreads: number;
+    starredCount: number;
+    sentCount: number;
+    draftsCount: number;
     totalDrafts: number;
 
     loading: {
@@ -46,6 +50,7 @@ export interface CrmState {
 export const initialState: CrmState = {
     events: [],
     threads: [],
+    unreadCount: 0,
     messages: [],
     drafts: [],
     activeEventId: null,
@@ -69,6 +74,9 @@ export const initialState: CrmState = {
 
     currentPage: 1,
     totalThreads: 0,
+    starredCount: 0,
+    sentCount: 0,
+    draftsCount: 0,
     totalDrafts: 0,
 
     isSidebarOpen: false,
@@ -173,10 +181,14 @@ const crmSlice = createSlice({
                 state.loading.threads = true;
                 state.error = null;
             })
-            .addCase(fetchThreadsThunk.fulfilled, (state, { payload }) => {
+            .addCase(fetchThreadsThunk.fulfilled, (state, action) => {
                 state.loading.threads = false;
-                state.threads = payload.threads;
-                state.totalThreads = payload.total;
+                state.threads = action.payload.threads;
+                state.totalThreads = action.payload.total;
+                state.unreadCount = action.payload.unreadCount || 0;
+                state.starredCount = action.payload.starredCount || 0;
+                state.sentCount = action.payload.sentCount || 0;
+                state.draftsCount = action.payload.draftsCount || 0;
             })
             .addCase(fetchThreadsThunk.rejected, (state, action) => {
                 state.loading.threads = false;
@@ -188,12 +200,52 @@ const crmSlice = createSlice({
                 state.loading.messages = true;
                 state.error = null;
             })
-            .addCase(fetchMessagesThunk.fulfilled, (state, { payload }) => {
+            .addCase(fetchMessagesThunk.fulfilled, (state, action) => {
                 state.loading.messages = false;
-                state.messages = payload;
+                state.messages = action.payload;
+                // Auto-mark local thread as read
+                if (state.selectedThreadId) {
+                    const thread = state.threads.find(t => t.id === state.selectedThreadId);
+                    if (thread && !thread.isRead) {
+                        thread.isRead = true;
+                        state.unreadCount = Math.max(0, state.unreadCount - 1);
+                    }
+                }
             })
             .addCase(fetchMessagesThunk.rejected, (state, action) => {
                 state.loading.messages = false;
+                state.error = action.payload as string;
+            })
+            
+            // Toggle Thread Read
+            .addCase(toggleThreadReadThunk.fulfilled, (state, { payload }) => {
+                const thread = state.threads.find(t => t.id === payload.threadId);
+                if (thread) {
+                    if (thread.isRead && !payload.isRead) {
+                        state.unreadCount += 1;
+                    } else if (!thread.isRead && payload.isRead) {
+                        state.unreadCount = Math.max(0, state.unreadCount - 1);
+                    }
+                    thread.isRead = payload.isRead;
+                }
+            })
+            .addCase(toggleThreadReadThunk.rejected, (state, action) => {
+                state.error = action.payload as string;
+            })
+            
+            // Toggle Thread Star
+            .addCase(toggleThreadStarThunk.fulfilled, (state, { payload }) => {
+                const thread = state.threads.find(t => t.id === payload.threadId);
+                if (thread) {
+                    thread.isStarred = payload.isStarred;
+                }
+                // If we are in the Starred folder and unstar a thread, remove it
+                if (state.activeFolder === 'Starred' && !payload.isStarred) {
+                    state.threads = state.threads.filter(t => t.id !== payload.threadId);
+                    state.totalThreads -= 1;
+                }
+            })
+            .addCase(toggleThreadStarThunk.rejected, (state, action) => {
                 state.error = action.payload as string;
             })
 

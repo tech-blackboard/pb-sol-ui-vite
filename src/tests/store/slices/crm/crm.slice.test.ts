@@ -114,7 +114,11 @@ describe('crm slice', () => {
         it('handles fetchThreadsThunk.fulfilled', () => {
             const payload = {
                 threads: [{ id: 't1' } as unknown as Thread],
-                total: 1
+                total: 1,
+                unreadCount: 1,
+                starredCount: 0,
+                sentCount: 0,
+                draftsCount: 0
             };
             const state = reducer(initialState, fetchThreadsThunk.fulfilled(payload, '', { eventId: 1 }));
             expect(state.loading.threads).toBe(false);

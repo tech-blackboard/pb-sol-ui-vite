@@ -48,7 +48,9 @@ const makeThread = (overrides: Partial<Thread> = {}): Thread => ({
   id: 'thread-1', subject: 'Hello World', lastMessageAt: '2025-06-15T10:00:00Z',
   eventId: 1, contactId: 10, isRead: true, messageCount: 1,
   domain: 'inbox.example.com', createdAt: '2025-06-15T09:00:00Z',
-  contact: makeContact(), ...overrides,
+  contact: makeContact(),
+  isStarred: false,
+  ...overrides,
 });
 
 const makeAttachment = (overrides: Partial<Attachment> = {}): Attachment => ({

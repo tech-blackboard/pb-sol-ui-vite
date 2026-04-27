@@ -32,6 +32,7 @@ export interface Thread {
     eventId: number;
     contactId: number;
     isRead: boolean;
+    isStarred: boolean;
     contact?: Contact;
     messageCount: number;
     domain: string;

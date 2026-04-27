@@ -22,8 +22,8 @@ export async function fetchCrmEvents(): Promise<CrmEvent[]> {
 /**
  * Fetch threads for a specific event
  */
-export async function fetchThreads(eventId: number, search?: string, domain?: string, folder?: string, page: number = 1, limit: number = 50): Promise<{ threads: Thread[]; total: number }> {
-    const { data } = await api.get<{ threads: Thread[]; total: number }>(`${CRM_BASE}/threads`, {
+export async function fetchThreads(eventId: number, search?: string, domain?: string, folder?: string, page: number = 1, limit: number = 50): Promise<{ threads: Thread[]; total: number; unreadCount: number; starredCount: number; sentCount: number; draftsCount: number }> {
+    const { data } = await api.get<{ threads: Thread[]; total: number; unreadCount: number; starredCount: number; sentCount: number; draftsCount: number }>(`${CRM_BASE}/threads`, {
         params: { eventId, search, domain, folder, page, limit },
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
@@ -41,6 +41,28 @@ export async function fetchThreadMessages(threadId: string): Promise<Message[]> 
         withCredentials: true,
     });
     return data;
+}
+
+/**
+ * Toggle star status for a specific thread
+ */
+export async function toggleThreadStar(threadId: string, isStarred: boolean): Promise<void> {
+    const encodedId = encodeURIComponent(threadId);
+    await api.put(`${CRM_BASE}/threads/${encodedId}/star`, { isStarred }, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+}
+
+/**
+ * Update read status for a specific thread
+ */
+export async function updateThreadReadStatus(threadId: string, isRead: boolean): Promise<void> {
+    const encodedId = encodeURIComponent(threadId);
+    await api.put(`${CRM_BASE}/threads/${encodedId}/read`, { isRead }, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
 }
 
 /**
@@ -105,9 +127,9 @@ export async function saveDraft(payload: {
 /**
  * Fetch all drafts for the current user
  */
-export async function fetchDrafts(page: number = 1, limit: number = 50): Promise<{ drafts: Message[]; total: number }> {
+export async function fetchDrafts(page: number = 1, limit: number = 50, eventId?: number): Promise<{ drafts: Message[]; total: number }> {
     const { data } = await api.get<{ drafts: Message[]; total: number }>(`${CRM_BASE}/drafts`, {
-        params: { page, limit },
+        params: { page, limit, eventId },
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });

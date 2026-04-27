@@ -29,6 +29,7 @@ const makeThread = (overrides: Partial<Thread> = {}): Thread => ({
   domain: 'inbox.techconf.com',
   createdAt: '2025-06-15T09:00:00Z',
   contact: makeContact(),
+  isStarred: false,
   ...overrides,
 });
 
