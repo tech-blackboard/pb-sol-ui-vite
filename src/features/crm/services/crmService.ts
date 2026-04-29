@@ -1,6 +1,6 @@
 import { CRM_BASE } from "../../../config/env";
 import { api } from "../../../lib/api";
-import type { CrmEvent, LabelResponse, Message, Thread, EmailAccount } from "../types";
+import type { CrmEvent, LabelResponse, Message, Thread, EmailAccount, CrmLabel } from "../types";
 
 
 function getAuthHeaders(): Record<string, string> {
@@ -22,9 +22,9 @@ export async function fetchCrmEvents(): Promise<CrmEvent[]> {
 /**
  * Fetch threads for a specific event
  */
-export async function fetchThreads(eventId: number, search?: string, domain?: string, folder?: string, page: number = 1, limit: number = 50): Promise<{ threads: Thread[]; total: number; unreadCount: number; starredCount: number; sentCount: number; draftsCount: number }> {
+export async function fetchThreads(eventId: number, search?: string, domain?: string, folder?: string, page: number = 1, limit: number = 50, label?: string): Promise<{ threads: Thread[]; total: number; unreadCount: number; starredCount: number; sentCount: number; draftsCount: number }> {
     const { data } = await api.get<{ threads: Thread[]; total: number; unreadCount: number; starredCount: number; sentCount: number; draftsCount: number }>(`${CRM_BASE}/threads`, {
-        params: { eventId, search, domain, folder, page, limit },
+        params: { eventId, search, domain, folder, page, limit, label },
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });
@@ -164,6 +164,17 @@ export async function fetchReplyEmails(eventId: number): Promise<string[]> {
 export async function fetchLabels(eventId?: number): Promise<LabelResponse[]> {
     const { data } = await api.get<LabelResponse[]>(`${CRM_BASE}/labels`, {
         params: { eventId },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return data;
+}
+
+/**
+ * Get all available label definitions (master list)
+ */
+export async function fetchLabelDefinitions(): Promise<CrmLabel[]> {
+    const { data } = await api.get<CrmLabel[]>(`${CRM_BASE}/labels/definitions`, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });

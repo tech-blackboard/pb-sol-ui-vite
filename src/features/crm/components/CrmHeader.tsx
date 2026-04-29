@@ -1,12 +1,13 @@
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { fetchThreadsThunk } from '../../../store/slices/crm/crm.thunks';
-import { 
-    setActiveEvent, 
-    setAccountsActiveEvent, 
-    setActiveDomain, 
+import {
+    setActiveEvent,
+    setAccountsActiveEvent,
+    setActiveDomain,
     setAccountsActiveDomain,
-    toggleSidebar, 
-    setSearchTerm, 
+    clearSelection,
+    toggleSidebar,
+    setSearchTerm,
     setAccountsSearchTerm,
     triggerSearch,
     triggerAccountsSearch
@@ -15,15 +16,15 @@ import { selectAuth } from '../../../store/slices/authSlice';
 
 export default function CrmHeader() {
     const dispatch = useAppDispatch();
-    const { 
-        events, 
-        activeEventId, 
-        accountsActiveEventId, 
-        activeDomain, 
+    const {
+        events,
+        activeEventId,
+        accountsActiveEventId,
+        activeDomain,
         accountsActiveDomain,
-        searchTerm, 
+        searchTerm,
         accountsSearchTerm,
-        activeFolder 
+        activeFolder
     } = useAppSelector((state) => state.crm);
     const { user } = useAppSelector(selectAuth);
     const isAdmin = Boolean(user?.isAdmin);
@@ -39,9 +40,9 @@ export default function CrmHeader() {
 
     const handleSync = () => {
         if (activeEventId) {
-            dispatch(fetchThreadsThunk({ 
-                eventId: activeEventId, 
-                search: searchTerm || undefined, 
+            dispatch(fetchThreadsThunk({
+                eventId: activeEventId,
+                search: searchTerm || undefined,
                 domain: activeDomain || undefined,
                 folder: activeFolder
             }));
@@ -49,6 +50,7 @@ export default function CrmHeader() {
     };
 
     const handleEventChange = (eventId: number) => {
+        dispatch(clearSelection());
         // Reset email filter to "All Accounts" when conference changes
         if (isAccountsTab) {
             dispatch(setAccountsActiveDomain(null));
@@ -78,6 +80,7 @@ export default function CrmHeader() {
     };
 
     const handleDomainChange = (domain: string) => {
+        dispatch(clearSelection());
         const val = domain === 'all' ? null : domain;
         if (isAccountsTab) {
             dispatch(setAccountsActiveDomain(val));
@@ -181,7 +184,7 @@ export default function CrmHeader() {
 
             {/* Search Button */}
             <div className="flex-shrink-0">
-                <button 
+                <button
                     onClick={handleSearchClick}
                     title="Search Email"
                     className="flex items-center justify-center w-10 h-10 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors"

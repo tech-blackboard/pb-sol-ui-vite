@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
-import { fetchEventsThunk, fetchThreadsThunk, fetchDraftsThunk } from '../../../store/slices/crm/crm.thunks';
+import { fetchEventsThunk, fetchThreadsThunk, fetchDraftsThunk, fetchLabelDefinitionsThunk } from '../../../store/slices/crm/crm.thunks';
 import { setSidebarOpen, setPage } from '../../../store/slices/crm/crm.slice';
 import CrmHeader from '../components/CrmHeader';
 import CrmSidebar from '../components/CrmSidebar';
 import ThreadTable from '../components/ThreadTable';
 import ThreadView from '../components/ThreadView';
 import EmailAccountsPage from './EmailAccountsPage';
+
+import ContactBucketView from '../components/ContactBucketView';
 
 export default function MailboxPage() {
     const dispatch = useAppDispatch();
@@ -19,6 +21,7 @@ export default function MailboxPage() {
 
     useEffect(() => {
         dispatch(fetchEventsThunk());
+        dispatch(fetchLabelDefinitionsThunk());
         // Do not fetch drafts here, as they are fetched in the effect below based on activeFolder
     }, [dispatch]);
 
@@ -26,6 +29,9 @@ export default function MailboxPage() {
         if (activeEventId) {
             if (activeFolder === 'Drafts') {
                 dispatch(fetchDraftsThunk({ page: currentPage, limit, eventId: activeEventId }));
+            } else if (activeFolder === 'Contact Bucket') {
+                // Fetching is handled internally by ContactBucketView to allow independent filter state
+                // but we might want to close sidebar etc.
             } else {
                 dispatch(fetchThreadsThunk({
                     eventId: activeEventId,
@@ -60,8 +66,8 @@ export default function MailboxPage() {
 
     return (
         <div className="flex flex-col h-full overflow-hidden">
-            {/* Top Bar */}
-            <CrmHeader />
+            {/* Top Bar - Only show for standard CRM folders */}
+            {activeFolder !== 'Contact Bucket' && <CrmHeader />}
 
             <div className="flex flex-1 overflow-hidden relative">
                 {/* Mobile Sidebar Backdrop */}
@@ -71,14 +77,16 @@ export default function MailboxPage() {
                         onClick={() => dispatch(setSidebarOpen(false))}
                     />
                 )}
-                {/* Left Sidebar */}
-                <CrmSidebar />
+                {/* Left Sidebar - Hidden for Contact Bucket */}
+                {activeFolder !== 'Contact Bucket' && <CrmSidebar />}
 
                 {/* Main Content Area */}
                 <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 relative">
 
                     {activeFolder === 'Accounts' ? (
                         <EmailAccountsPage />
+                    ) : activeFolder === 'Contact Bucket' ? (
+                        <ContactBucketView />
                     ) : selectedThreadId ? (
                         <ThreadView />
                     ) : (
@@ -93,7 +101,7 @@ export default function MailboxPage() {
                                     <div className="flex items-center gap-3 text-[12px] text-gray-500 dark:text-gray-400 font-medium">
                                         <span>{startRecord}–{endRecord} of {totalRecords.toLocaleString()}</span>
                                         <div className="flex items-center gap-1">
-                                            <button 
+                                            <button
                                                 onClick={handlePrevPage}
                                                 disabled={currentPage === 1}
                                                 className="p-1.5 hover:bg-white dark:hover:bg-gray-800 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
@@ -102,7 +110,7 @@ export default function MailboxPage() {
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
                                                 </svg>
                                             </button>
-                                            <button 
+                                            <button
                                                 onClick={handleNextPage}
                                                 disabled={currentPage * limit >= totalRecords}
                                                 className="p-1.5 hover:bg-white dark:hover:bg-gray-800 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
@@ -129,4 +137,6 @@ export default function MailboxPage() {
         </div>
     );
 }
+
+
 

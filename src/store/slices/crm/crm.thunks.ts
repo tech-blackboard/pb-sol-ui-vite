@@ -16,9 +16,9 @@ export const fetchEventsThunk = createAsyncThunk(
 
 export const fetchThreadsThunk = createAsyncThunk(
     'crm/fetchThreads',
-    async ({ eventId, search, domain, folder, page, limit }: { eventId: number; search?: string; domain?: string; folder?: string; page?: number; limit?: number }, { rejectWithValue }) => {
+    async ({ eventId, search, domain, folder, page, limit, label }: { eventId: number; search?: string; domain?: string; folder?: string; page?: number; limit?: number; label?: string }, { rejectWithValue }) => {
         try {
-            return await crmService.fetchThreads(eventId, search, domain, folder, page, limit);
+            return await crmService.fetchThreads(eventId, search, domain, folder, page, limit, label);
         } catch (err: unknown) {
             const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to fetch threads';
             return rejectWithValue(message);
@@ -140,6 +140,18 @@ export const deleteDraftThunk = createAsyncThunk(
             return draftId;
         } catch (err: unknown) {
             const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to delete draft';
+            return rejectWithValue(message);
+        }
+    }
+);
+
+export const fetchLabelDefinitionsThunk = createAsyncThunk(
+    'crm/fetchLabelDefinitions',
+    async (_, { rejectWithValue }) => {
+        try {
+            return await crmService.fetchLabelDefinitions();
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to fetch label definitions';
             return rejectWithValue(message);
         }
     }

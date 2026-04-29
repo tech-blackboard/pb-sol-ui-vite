@@ -9,6 +9,7 @@ import Footer from './components/Footer'
 import SignInPage, { type SignInCredentials } from './pages/SignInPage'
 import { type AppDispatch } from './store'
 import { selectAuth, loginThunk, logoutThunk } from './store/slices/authSlice'
+import { setActiveFolder } from './store/slices/crm/crm.slice'
 import { selectTheme, toggleTheme } from './store/slices/themeSlice'
 import NetworkErrorAlert from './alerts/NetworkErrorAlert'
 import ServerIssueAlert from './alerts/ServerIssueAlert'
@@ -55,12 +56,22 @@ function App() {
     window.addEventListener('app:auth-failure', onAuthFail as EventListener)
     window.addEventListener('app:device-not-approved', onDeviceRevoked as EventListener)
 
+    // Global navigation listener to email in contact bucket navigate to mailbox 
+    const onNavigate = (e: Event) => {
+      const customEvent = e as CustomEvent
+      if (customEvent.detail) {
+        setActiveId(customEvent.detail)
+      }
+    }
+    window.addEventListener('app:navigate', onNavigate as EventListener)
+
     return () => {
       window.removeEventListener('app:network-error', onNet as EventListener)
       window.removeEventListener('app:server-error', onSrv as EventListener)
       window.removeEventListener('app:server-unavailable', onUnavail as EventListener)
       window.removeEventListener('app:auth-failure', onAuthFail as EventListener)
       window.removeEventListener('app:device-not-approved', onDeviceRevoked as EventListener)
+      window.removeEventListener('app:navigate', onNavigate as EventListener)
     }
   }, [dispatch])
 
@@ -83,7 +94,8 @@ function App() {
       ]
     },
     ...(isAdmin ? [{ id: 'deviceManagment', label: 'Device Management' }] : []),
-    { id: 'crm', label: 'Mailbox' }
+    { id: 'crm', label: 'Mailbox' },
+    { id: 'contactBucket', label: 'Contact Bucket' }
   ];
 
   const user: User | null = (authUser as unknown as User) ?? null
@@ -111,6 +123,14 @@ function App() {
     }
     localStorage.setItem('theme', themeMode)
   }, [themeMode])
+
+  useEffect(() => {
+    if (activeId === 'crm') {
+      dispatch(setActiveFolder('Inbox'));
+    } else if (activeId === 'contactBucket') {
+      dispatch(setActiveFolder('Contact Bucket'));
+    }
+  }, [activeId, dispatch]);
 
   if (!user) {
     return <SignInPage onSignIn={handleSignIn} isLoading={authLoading} error={authError} />
@@ -183,7 +203,7 @@ function App() {
                 <SponsorshipsPage />
               ) : activeId === 'contacts' ? (
                 <ContactsPage />
-              ) : activeId === 'crm' ? (
+              ) : activeId === 'crm' || activeId === 'contactBucket' ? (
                 <MailboxPage />
               ) : activeId === 'deviceManagment' ? (
 

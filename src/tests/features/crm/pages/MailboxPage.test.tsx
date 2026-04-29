@@ -107,8 +107,8 @@ describe('MailboxPage', () => {
         <MailboxPage />
       </Provider>,
     );
-    // Only fetchEventsThunk is dispatched on mount when activeEventId is null
+    // fetchEventsThunk and fetchLabelDefinitionsThunk are dispatched on mount
     const thunkCalls = spy.mock.calls.filter(c => typeof c[0] === 'function');
-    expect(thunkCalls.length).toBe(1);
+    expect(thunkCalls.length).toBe(2);
   });
 });

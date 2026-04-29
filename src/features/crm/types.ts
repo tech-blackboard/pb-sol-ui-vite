@@ -38,6 +38,7 @@ export interface Thread {
     domain: string;
     createdAt: string;
     status?: MessageStatus;
+    labels?: string[];
 }
 
 export interface Attachment {
@@ -73,6 +74,14 @@ export interface Message {
 export interface LabelResponse {
     label: string;
     count: number;
+}
+
+export interface CrmLabel {
+    id: number;
+    name: string;
+    description?: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface EmailAccount {

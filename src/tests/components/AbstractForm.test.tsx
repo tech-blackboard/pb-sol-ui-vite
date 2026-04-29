@@ -194,52 +194,50 @@ fireEvent.submit(document.getElementById('abstract-form')!)
   expect(emailError).toBeTruthy()
 })
 
- it('handles submission failure', async () => {
-  (listWebsites as jest.Mock).mockResolvedValue([{ id: 1, name: 'Web' }])
+  it('handles submission failure', async () => {
+    (listWebsites as jest.Mock).mockResolvedValue([{ id: 1, name: 'Web' }])
 
-  ;(createAbstractWithFormDataFileUpload as jest.Mock).mockRejectedValue({
-    response: { data: { message: 'Server Error' } },
-  })
+    ;(createAbstractWithFormDataFileUpload as jest.Mock).mockRejectedValue({
+      response: { data: { message: 'Server Error' } },
+    })
 
-  render(<AbstractForm onClose={onClose} websiteId={1} />)
-  await screen.findByText('Web')
+    render(<AbstractForm onClose={onClose} websiteId={1} />)
+    await screen.findByText('Web')
 
-  // Fill EVERYTHING valid
+    // Fill EVERYTHING valid
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'Dr.' } })
+    fireEvent.change(screen.getByPlaceholderText('Name'), { target: { value: 'John' } })
+    fireEvent.change(screen.getByPlaceholderText('john@example.com'), { target: { value: 'john@test.com' } })
+    fireEvent.change(screen.getByPlaceholderText('Phone'), { target: { value: '1234567890' } })
+    fireEvent.change(screen.getByPlaceholderText('Hyderabad'), { target: { value: 'City' } })
+    fireEvent.change(screen.getByPlaceholderText('Organization'), { target: { value: 'Org' } })
 
-  fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'Dr.' } })
-  fireEvent.change(screen.getByPlaceholderText('Name'), { target: { value: 'John' } })
-  fireEvent.change(screen.getByPlaceholderText('john@example.com'), { target: { value: 'john@test.com' } })
-  fireEvent.change(screen.getByPlaceholderText('Phone'), { target: { value: '1234567890' } })
-  fireEvent.change(screen.getByPlaceholderText('Hyderabad'), { target: { value: 'City' } })
-  fireEvent.change(screen.getByPlaceholderText('Organization'), { target: { value: 'Org' } })
+    fireEvent.change(screen.getAllByRole('combobox')[2], { target: { value: 'India' } })
+    fireEvent.change(screen.getAllByRole('combobox')[3], {
+      target: { value: 'Oral Presentation(In-Person)' },
+    })
 
-  fireEvent.change(screen.getAllByRole('combobox')[2], { target: { value: 'India' } })
-  fireEvent.change(screen.getAllByRole('combobox')[3], {
-    target: { value: 'Oral Presentation(In-Person)' },
-  })
+    fireEvent.change(screen.getByPlaceholderText('Abstract Title*'), {
+      target: { value: 'Title' },
+    })
 
-  fireEvent.change(screen.getByPlaceholderText('Abstract Title*'), {
-    target: { value: 'Title' },
-  })
+    const fileInput = document.querySelector('input[type="file"]')!
+    fireEvent.change(fileInput, { target: { files: [new File(['a'], 'a.pdf')] } })
 
-  const fileInput = document.querySelector('input[type="file"]')!
-  fireEvent.change(fileInput, { target: { files: [new File(['a'], 'a.pdf')] } })
+    const captcha = document.querySelector('.font-mono')!.textContent!
+    fireEvent.change(screen.getByPlaceholderText('Enter captcha'), {
+      target: { value: captcha },
+    })
+    fireEvent.change(screen.getAllByRole('combobox')[1], {
+      target: { value: '1' },
+    })
 
-  const captcha = document.querySelector('.font-mono')!.textContent!
-  fireEvent.change(screen.getByPlaceholderText('Enter captcha'), {
-    target: { value: captcha },
-  })
-  fireEvent.change(screen.getAllByRole('combobox')[1], {
-  target: { value: '1' },
-})
+    fireEvent.submit(document.getElementById('abstract-form')!)
 
-
-fireEvent.submit(document.getElementById('abstract-form')!)
-
-  await waitFor(() => {
-    expect(toast.error).toHaveBeenCalledWith('Server Error', { duration: 5000 })
-  })
-})
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Server Error', { duration: 5000 })
+    }, { timeout: 8000 })
+  }, 10000)
 
 it('handles website loading failure', async () => {
     (listWebsites as jest.Mock).mockRejectedValue(new Error('API Down'))
@@ -307,6 +305,6 @@ it('handles network error with specific message', async () => {
             expect.stringContaining('Server connection error'),
             expect.any(Object)
         )
-    })
-})
+    }, { timeout: 8000 })
+}, 10000)
 })

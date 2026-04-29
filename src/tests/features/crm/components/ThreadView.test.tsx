@@ -35,6 +35,15 @@ jest.mock('../../../../features/crm/components/EmailBody', () => ({
   },
 }));
 
+jest.mock('../../../../features/crm/components/MessageLabelDropdown', () => ({
+  __esModule: true,
+  default: ({ onToggleLabel }: { onToggleLabel: (label: string) => void }) => (
+    <div data-testid="label-dropdown">
+      <button onClick={() => onToggleLabel('new-label')} title="Add or manage labels">Add Label</button>
+    </div>
+  ),
+}));
+
 const mockToast = toast as jest.Mocked<typeof toast>;
 
 // ── factories ─────────────────────────────────────────────────────────────────
@@ -275,8 +284,7 @@ describe('ThreadView', () => {
       expect(screen.getByText('abstract')).toBeInTheDocument();
     });
 
-    it('dispatches updateLabelsThunk when a new label is confirmed via prompt', async () => {
-      jest.spyOn(window, 'prompt').mockReturnValue('new-label');
+    it('dispatches updateLabelsThunk when a label is toggled (add)', async () => {
       const thunkSpy = jest.spyOn(crmThunks, 'updateLabelsThunk');
 
       renderView({
@@ -285,38 +293,21 @@ describe('ThreadView', () => {
         selectedThreadId: 'thread-1',
       });
 
-      fireEvent.click(screen.getByTitle('Add label'));
+      fireEvent.click(screen.getByTitle('Add or manage labels'));
       await waitFor(() => expect(thunkSpy).toHaveBeenCalledWith({ messageId: 'msg-1', labels: ['existing', 'new-label'] }));
     });
 
-    it('does nothing when prompt is cancelled', async () => {
-      jest.spyOn(window, 'prompt').mockReturnValue(null);
+    it('dispatches updateLabelsThunk when a label is toggled (remove)', async () => {
       const thunkSpy = jest.spyOn(crmThunks, 'updateLabelsThunk');
 
       renderView({
         threads: [makeThread()],
-        messages: [makeMessage({ labels: [] })],
+        messages: [makeMessage({ id: 'msg-1', labels: ['existing', 'new-label'] })],
         selectedThreadId: 'thread-1',
       });
 
-      fireEvent.click(screen.getByTitle('Add label'));
-      expect(thunkSpy).not.toHaveBeenCalled();
-    });
-
-    it('deduplicates labels when adding one already present', async () => {
-      jest.spyOn(window, 'prompt').mockReturnValue('existing');
-      const thunkSpy = jest.spyOn(crmThunks, 'updateLabelsThunk');
-
-      renderView({
-        threads: [makeThread()],
-        messages: [makeMessage({ id: 'msg-1', labels: ['existing'] })],
-        selectedThreadId: 'thread-1',
-      });
-
-      fireEvent.click(screen.getByTitle('Add label'));
-      await waitFor(() =>
-        expect(thunkSpy).toHaveBeenCalledWith({ messageId: 'msg-1', labels: ['existing'] }),
-      );
+      fireEvent.click(screen.getByTitle('Add or manage labels'));
+      await waitFor(() => expect(thunkSpy).toHaveBeenCalledWith({ messageId: 'msg-1', labels: ['existing'] }));
     });
   });
 

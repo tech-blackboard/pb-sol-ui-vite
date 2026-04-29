@@ -3,8 +3,9 @@ import { setSelectedThread } from '../../../store/slices/crm/crm.slice';
 import { fetchMessagesThunk, deleteDraftThunk, toggleThreadStarThunk, toggleThreadReadThunk } from '../../../store/slices/crm/crm.thunks';
 import type { Thread, Message } from '../types';
 import toast from 'react-hot-toast';
+import { getLabelColorClasses } from '../utils/labelUtils';
 
-export default function ThreadTable() {
+export default function ThreadTable({ onSelectItem }: { onSelectItem?: (item: Thread | Message) => void }) {
     const dispatch = useAppDispatch();
     const { threads, drafts, loading, selectedThreadId, activeDomain, activeFolder } = useAppSelector((state) => state.crm);
     const isDraftsView = activeFolder === 'Drafts';
@@ -21,6 +22,11 @@ export default function ThreadTable() {
         : items;
 
     const handleSelectItem = (item: Thread | Message) => {
+        if (onSelectItem) {
+            onSelectItem(item);
+            return;
+        }
+
         if (isDraftsView) {
             const draft = item as Message;
             if (draft.threadId) {
@@ -87,7 +93,6 @@ export default function ThreadTable() {
                         <th className="px-2 py-1 w-6"></th>
                         <th className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase">{isDraftsView || isSentView ? 'To' : 'From'}</th>
                         <th className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase">Subject</th>
-                        <th className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase w-[60px]">Tags</th>
                         <th className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase w-[140px]">{isDraftsView ? 'Last Saved' : 'Received Date'}</th>
 
                     </tr>
@@ -143,7 +148,7 @@ export default function ThreadTable() {
                                     )}
                                 </td>
                                 <td
-                                    className="px-2 py-2 text-sm text-gray-700 dark:text-gray-300 max-w-0"
+                                    className={`px-2 py-2 text-sm max-w-0 ${!isRead ? 'text-gray-900 dark:text-white font-bold' : 'text-gray-700 dark:text-gray-300'}`}
                                     title={isDraftsView ? (item as Message).toEmail || '' : (item as Thread).contact?.email || ''}
                                 >
                                     <div className="truncate">
@@ -151,19 +156,26 @@ export default function ThreadTable() {
                                     </div>
                                 </td>
                                 <td className="px-2 py-2 text-sm text-gray-800 dark:text-gray-200 max-w-0" title={item.subject}>
-                                    <div className="flex items-center gap-2">
-                                        {isDraftsView && <span className="text-red-500 font-bold flex-shrink-0 text-[10px] uppercase">Draft</span>}
-                                        <span className="truncate">{item.subject}</span>
-                                    </div>
-                                </td>
-                                <td className="px-2 py-2">
-                                    <div className="flex gap-1 flex-wrap">
-                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isDraftsView ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : isSentView ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'}`}>
-                                            {isDraftsView ? 'Draft' : isSentView ? 'Sent' : 'Inbox'}
+                                    <div className="flex flex-col gap-1 overflow-hidden">
+                                        <span className={`truncate block ${!isRead ? 'font-bold text-gray-900 dark:text-white' : 'font-medium text-gray-700 dark:text-gray-300'}`}>
+                                            {item.subject}
                                         </span>
+                                        <div className="flex flex-wrap gap-1">
+                                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-tight ${isDraftsView ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' : isSentView ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' : 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'}`}>
+                                                {isDraftsView ? 'Draft' : isSentView ? 'Sent' : 'Inbox'}
+                                            </span>
+                                            {item.labels?.map(label => {
+                                                const colors = getLabelColorClasses(label);
+                                                return (
+                                                    <span key={label} className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-tight border ${colors.bg} ${colors.text} ${colors.border}`}>
+                                                        {label}
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 </td>
-                                <td className="px-2 py-2 text-[11px] text-gray-500 text-right whitespace-nowrap">
+                                <td className={`px-2 py-2 text-[11px] text-right whitespace-nowrap ${!isRead ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-500'}`}>
                                     {formatDate(isDraftsView ? (item as Message).updatedAt || item.createdAt : (item as Thread).lastMessageAt)}
                                 </td>
                             </tr>

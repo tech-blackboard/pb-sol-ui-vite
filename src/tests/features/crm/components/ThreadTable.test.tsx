@@ -71,7 +71,6 @@ describe('ThreadTable', () => {
     renderTable();
     expect(screen.getByText('From')).toBeInTheDocument();
     expect(screen.getByText('Subject')).toBeInTheDocument();
-    expect(screen.getByText('Tags')).toBeInTheDocument();
     expect(screen.getByText('Received Date')).toBeInTheDocument();
   });
 

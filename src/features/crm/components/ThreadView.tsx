@@ -4,6 +4,8 @@ import { updateLabelsThunk, fetchMessagesThunk, toggleThreadReadThunk } from '..
 import * as crmService from '../services/crmService';
 import ReplyForm from './ReplyForm';
 import EmailBody from './EmailBody';
+import MessageLabelDropdown from './MessageLabelDropdown';
+import { getLabelColorClasses } from '../utils/labelUtils';
 import toast from 'react-hot-toast';
 import { useState } from 'react';
 
@@ -42,13 +44,6 @@ export default function ThreadView() {
         }
     };
 
-    const handleUpdateLabels = async (messageId: string, currentLabels: string[]) => {
-        const label = prompt('Enter a new label (e.g., positive, unsubscribe, abstract):');
-        if (!label) return;
-
-        const newLabels = Array.from(new Set([...currentLabels, label]));
-        dispatch(updateLabelsThunk({ messageId, labels: newLabels }));
-    };
 
     const handleReplySuccess = () => {
         if (selectedThreadId) {
@@ -122,9 +117,9 @@ export default function ThreadView() {
                         </svg>
                     </button>
                     <div className="h-6 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1"></div>
-                    <button 
+                    <button
                         onClick={handleToggleRead}
-                        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500" 
+                        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
                         title="Mark as unread"
                     >
                         <div className="relative">
@@ -144,6 +139,26 @@ export default function ThreadView() {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M22 10.5h-6m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
                         </svg>
                     </button>
+                    <div className="h-6 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+                    {/* Thread-level Labeling */}
+                    <div className="flex items-center">
+                        <MessageLabelDropdown
+                            currentLabels={messages[0]?.labels || []}
+                            onToggleLabel={(toggledLabel) => {
+                                const firstMsg = messages[0];
+                                if (!firstMsg) return;
+                                let newLabels;
+                                const exists = firstMsg.labels.some(l => l.toLowerCase() === toggledLabel.toLowerCase());
+                                if (exists) {
+                                    newLabels = firstMsg.labels.filter(l => l.toLowerCase() !== toggledLabel.toLowerCase());
+                                } else {
+                                    newLabels = [...firstMsg.labels, toggledLabel];
+                                }
+                                dispatch(updateLabelsThunk({ messageId: firstMsg.id, labels: newLabels }));
+                            }}
+                        />
+                    </div>
                 </div>
                 <div className="flex items-center gap-4 text-xs text-gray-500">
                     <span>1 of 1</span>
@@ -166,24 +181,43 @@ export default function ThreadView() {
             <div className="flex-1 overflow-y-auto">
                 <div className="max-w-[1000px] mx-auto px-6 py-6 pb-20">
                     {/* Subject Line */}
-                    <div className="mb-8 flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-xl font-medium text-gray-900 dark:text-gray-100">
-                                {thread.subject}
-                            </h1>
-                            <div className="flex gap-1">
+                    <div className="mb-8">
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                                <h1 className="text-xl font-medium text-gray-900 dark:text-gray-100">
+                                    {thread.subject}
+                                </h1>
                                 {contact?.status === 'unsubscribed' && (
                                     <span className="px-2 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-[10px] font-bold uppercase tracking-wider">Unsubscribed</span>
                                 )}
-                                <span className="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-[10px] font-medium">Inbox x</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-gray-400">
+                                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                                    </svg>
+                                </button>
+                                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18c-2.305 0-4.408.867-6 2.292m0-14.25V21" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 text-gray-400">
-                            <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                                </svg>
-                            </button>
+
+                        {/* Thread Labels Display */}
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                            <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[10px] font-medium flex items-center gap-1">
+                                Inbox <span className="opacity-50">x</span>
+                            </span>
+                            {messages[0]?.labels.map(label => {
+                                const colors = getLabelColorClasses(label);
+                                return (
+                                    <span key={label} className={`px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide uppercase shadow-sm border ${colors.bg} ${colors.text} ${colors.border}`}>
+                                        {label}
+                                    </span>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -341,24 +375,7 @@ export default function ThreadView() {
                                         </div>
                                     )}
 
-                                    {/* Labels Row */}
-                                    <div className="ml-14 flex flex-wrap gap-2 mt-4">
-                                        {message.labels.map(label => (
-                                            <span key={label} className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] font-bold">
-                                                {label}
-                                            </span>
-                                        ))}
-                                        <button
-                                            onClick={() => handleUpdateLabels(message.id, message.labels)}
-                                            className="text-gray-300 hover:text-blue-400 text-xs"
-                                            title="Add label"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.659A2.25 2.25 0 009.568 3z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
-                                            </svg>
-                                        </button>
-                                    </div>
+
                                 </div>
                             );
                         })}
@@ -366,12 +383,12 @@ export default function ThreadView() {
 
                     <div className="mt-8 border-t border-gray-100 dark:border-gray-800 pt-8">
                         {(() => {
-                            const draft = drafts.find(d => 
-                                d.contactId === contact?.id && 
-                                d.eventId === thread.eventId && 
+                            const draft = drafts.find(d =>
+                                d.contactId === contact?.id &&
+                                d.eventId === thread.eventId &&
                                 (d.threadId === thread.id || !d.threadId)
                             );
-                            
+
                             return (
                                 <ReplyForm
                                     contactId={contact?.id || 0}

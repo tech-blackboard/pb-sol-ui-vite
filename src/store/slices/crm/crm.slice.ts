@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { CrmEvent, Thread, Message } from '../../../features/crm/types';
-import { fetchEventsThunk, fetchThreadsThunk, fetchMessagesThunk, sendReplyThunk, updateLabelsThunk, saveDraftThunk, fetchDraftsThunk, deleteDraftThunk, toggleThreadStarThunk, toggleThreadReadThunk } from './crm.thunks';
+import type { CrmEvent, Thread, Message, CrmLabel } from '../../../features/crm/types';
+import { fetchEventsThunk, fetchThreadsThunk, fetchMessagesThunk, sendReplyThunk, updateLabelsThunk, saveDraftThunk, fetchDraftsThunk, deleteDraftThunk, toggleThreadStarThunk, toggleThreadReadThunk, fetchLabelDefinitionsThunk } from './crm.thunks';
 
 export interface CrmState {
     events: CrmEvent[];
@@ -8,23 +8,24 @@ export interface CrmState {
     unreadCount: number;
     messages: Message[];
     drafts: Message[];
+    labelDefinitions: CrmLabel[];
     activeEventId: number | null;
     accountsActiveEventId: number | null;
     activeDomain: string | null;
     accountsActiveDomain: string | null;
-    activeFolder: 'Inbox' | 'Drafts' | 'Sent' | 'Starred' | 'Junk' | 'Trash' | 'Accounts';
+    activeFolder: 'Inbox' | 'Drafts' | 'Sent' | 'Starred' | 'Junk' | 'Trash' | 'Accounts' | 'Contact Bucket';
     selectedThreadId: string | null;
     searchTerm: string;
     accountsSearchTerm: string;
     searchTrigger: number;
     accountsSearchTrigger: number;
     isSidebarOpen: boolean;
-    
+
     // Applied filters (only updated on search trigger)
     appliedSearchTerm: string;
     appliedDomain: string | null;
     appliedEventId: number | null;
-    
+
     appliedAccountsSearchTerm: string;
     appliedAccountsDomain: string | null;
     appliedAccountsEventId: number | null;
@@ -53,6 +54,7 @@ export const initialState: CrmState = {
     unreadCount: 0,
     messages: [],
     drafts: [],
+    labelDefinitions: [],
     activeEventId: null,
     accountsActiveEventId: null,
     activeDomain: null,
@@ -63,11 +65,11 @@ export const initialState: CrmState = {
     accountsSearchTerm: '',
     searchTrigger: 0,
     accountsSearchTrigger: 0,
-    
+
     appliedSearchTerm: '',
     appliedDomain: null,
     appliedEventId: null,
-    
+
     appliedAccountsSearchTerm: '',
     appliedAccountsDomain: null,
     appliedAccountsEventId: null,
@@ -98,7 +100,6 @@ const crmSlice = createSlice({
         setActiveEvent(state, action: PayloadAction<number | null>) {
             state.activeEventId = action.payload;
             state.activeDomain = null; // Reset domain when event changes
-            state.selectedThreadId = null; // Reset selection to return to list view
         },
         setAccountsActiveEvent(state, action: PayloadAction<number | null>) {
             state.accountsActiveEventId = action.payload;
@@ -106,14 +107,16 @@ const crmSlice = createSlice({
         },
         setActiveDomain(state, action: PayloadAction<string | null>) {
             state.activeDomain = action.payload;
-            state.selectedThreadId = null; // Reset selection to return to list view
         },
         setAccountsActiveDomain(state, action: PayloadAction<string | null>) {
             state.accountsActiveDomain = action.payload;
         },
-        setActiveFolder(state, action: PayloadAction<'Inbox' | 'Drafts' | 'Sent' | 'Starred' | 'Junk' | 'Trash' | 'Accounts'>) {
+        setActiveFolder(state, action: PayloadAction<'Inbox' | 'Drafts' | 'Sent' | 'Starred' | 'Junk' | 'Trash' | 'Accounts' | 'Contact Bucket'>) {
             state.activeFolder = action.payload;
+        },
+        clearSelection(state) {
             state.selectedThreadId = null;
+            state.messages = [];
         },
         setSelectedThread(state, action: PayloadAction<string | null>) {
             state.selectedThreadId = action.payload;
@@ -216,7 +219,7 @@ const crmSlice = createSlice({
                 state.loading.messages = false;
                 state.error = action.payload as string;
             })
-            
+
             // Toggle Thread Read
             .addCase(toggleThreadReadThunk.fulfilled, (state, { payload }) => {
                 const thread = state.threads.find(t => t.id === payload.threadId);
@@ -232,7 +235,7 @@ const crmSlice = createSlice({
             .addCase(toggleThreadReadThunk.rejected, (state, action) => {
                 state.error = action.payload as string;
             })
-            
+
             // Toggle Thread Star
             .addCase(toggleThreadStarThunk.fulfilled, (state, { payload }) => {
                 const thread = state.threads.find(t => t.id === payload.threadId);
@@ -304,23 +307,28 @@ const crmSlice = createSlice({
             // Delete Draft
             .addCase(deleteDraftThunk.fulfilled, (state, { payload }) => {
                 state.drafts = state.drafts.filter(d => d.id !== payload);
+            })
+            // Fetch Label Definitions
+            .addCase(fetchLabelDefinitionsThunk.fulfilled, (state, { payload }) => {
+                state.labelDefinitions = payload;
             });
     },
 });
 
-export const { 
-    setActiveEvent, 
-    setAccountsActiveEvent, 
-    setActiveDomain, 
-    setAccountsActiveDomain, 
-    setActiveFolder, 
-    setSelectedThread, 
-    toggleSidebar, 
-    setSidebarOpen, 
-    clearError, 
-    setSearchTerm, 
-    setAccountsSearchTerm, 
-    triggerSearch, 
+export const {
+    setActiveEvent,
+    setAccountsActiveEvent,
+    setActiveDomain,
+    setAccountsActiveDomain,
+    setActiveFolder,
+    clearSelection,
+    setSelectedThread,
+    toggleSidebar,
+    setSidebarOpen,
+    clearError,
+    setSearchTerm,
+    setAccountsSearchTerm,
+    triggerSearch,
     triggerAccountsSearch,
     setPage
 } = crmSlice.actions;

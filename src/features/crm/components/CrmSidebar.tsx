@@ -1,5 +1,5 @@
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
-import { setActiveFolder } from '../../../store/slices/crm/crm.slice';
+import { setActiveFolder, clearSelection } from '../../../store/slices/crm/crm.slice';
 import { selectAuth } from '../../../store/slices/authSlice';
 
 export default function CrmSidebar() {
@@ -38,7 +38,10 @@ export default function CrmSidebar() {
                     {folders.map((folder) => (
                         <button
                             key={folder.name}
-                            onClick={() => dispatch(setActiveFolder(folder.name))}
+                            onClick={() => {
+                                dispatch(clearSelection());
+                                dispatch(setActiveFolder(folder.name));
+                            }}
                             className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${activeFolder === folder.name
                                 ? 'bg-blue-50 text-blue-700 font-semibold dark:bg-blue-900/20 dark:text-blue-400'
                                 : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
