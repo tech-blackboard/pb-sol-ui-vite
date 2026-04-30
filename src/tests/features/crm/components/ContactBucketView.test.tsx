@@ -1,9 +1,9 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import ContactBucketView from '../../../../features/crm/components/ContactBucketView';
-import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice';
+import crmReducer, { initialState, setPage, type CrmState } from '../../../../store/slices/crm/crm.slice';
 import * as crmThunks from '../../../../store/slices/crm/crm.thunks';
 
 import * as crmService from '../../../../features/crm/services/crmService';
@@ -88,7 +88,7 @@ describe('ContactBucketView', () => {
 
     // Select conference first
     fireEvent.change(screen.getByRole('combobox', { name: /conference edition/i }), { target: { value: '1' } });
-    
+
     // Select label
     const labelSelect = screen.getByRole('combobox', { name: /contact label/i });
     fireEvent.change(labelSelect, { target: { value: 'Registered' } });
@@ -104,9 +104,9 @@ describe('ContactBucketView', () => {
 
   it('shows empty state message when no threads are found', async () => {
     render(
-      <Provider store={makeStore({ 
-        events: mockEvents, 
-        threads: [], 
+      <Provider store={makeStore({
+        events: mockEvents,
+        threads: [],
         totalThreads: 0,
         loading: { ...initialState.loading, threads: false }
       })}>
@@ -123,14 +123,14 @@ describe('ContactBucketView', () => {
   });
 
   it('renders ThreadTable when threads are present', async () => {
-    (crmService.fetchThreads as jest.Mock).mockResolvedValue({ 
-      threads: [{ id: 't1', subject: 'S1', contact: { email: 'c1' }, eventId: 1 } as Thread], 
-      total: 1 
+    (crmService.fetchThreads as jest.Mock).mockResolvedValue({
+      threads: [{ id: 't1', subject: 'S1', contact: { email: 'c1' }, eventId: 1 } as Thread],
+      total: 1
     });
 
     render(
-      <Provider store={makeStore({ 
-        events: mockEvents, 
+      <Provider store={makeStore({
+        events: mockEvents,
         loading: { ...initialState.loading, threads: false }
       })}>
         <ContactBucketView />
@@ -149,18 +149,18 @@ describe('ContactBucketView', () => {
     // but here we can just mock the ThreadTable and check if the handler is called correctly
     // Since we've already tested that handleRowClick dispatches everything, 
     // let's verify the custom event at least.
-    
+
     const navigateSpy = jest.fn();
     window.addEventListener('app:navigate', navigateSpy as EventListener);
 
-    (crmService.fetchThreads as jest.Mock).mockResolvedValue({ 
-      threads: [{ id: 't1', subject: 'S1', contact: { email: 'c1' }, eventId: 1 } as Thread], 
-      total: 1 
+    (crmService.fetchThreads as jest.Mock).mockResolvedValue({
+      threads: [{ id: 't1', subject: 'S1', contact: { email: 'c1' }, eventId: 1 } as Thread],
+      total: 1
     });
 
     render(
-      <Provider store={makeStore({ 
-        events: mockEvents, 
+      <Provider store={makeStore({
+        events: mockEvents,
         loading: { ...initialState.loading, threads: false }
       })}>
         <ContactBucketView />
@@ -170,7 +170,7 @@ describe('ContactBucketView', () => {
     fireEvent.change(screen.getByRole('combobox', { name: /conference edition/i }), { target: { value: '1' } });
 
     await screen.findByTestId('thread-table');
-    
+
     // Simulate clicking the thread table row (which calls onSelectItem)
     fireEvent.click(screen.getByText('Click Thread'));
 
@@ -179,5 +179,91 @@ describe('ContactBucketView', () => {
     expect(lastCallDetail).toBe('crm');
 
     window.removeEventListener('app:navigate', navigateSpy as EventListener);
+  });
+
+  it('dispatches setPage when pagination buttons are clicked', async () => {
+    // Start at page 2 so buttons are enabled
+    const store = makeStore({
+      events: mockEvents,
+      currentPage: 2,
+      totalThreads: 150,
+      loading: { ...initialState.loading, threads: false }
+    });
+
+    render(
+      <Provider store={store}>
+        <ContactBucketView />
+      </Provider>
+    );
+
+    // Mock fetchThreads to return total 500 for this test
+    (crmService.fetchThreads as jest.Mock).mockResolvedValue({
+      threads: [],
+      total: 500
+    });
+
+    // Select conference to set selectedEventId
+    fireEvent.change(screen.getByRole('combobox', { name: /conference edition/i }), { target: { value: '1' } });
+
+    // Wait for initial load to settle in store
+    await waitFor(() => {
+      expect((store.getState() as { crm: CrmState }).crm.loading.threads).toBe(false);
+    });
+
+    // Force page back to 2
+    act(() => {
+      store.dispatch(setPage(2));
+    });
+
+    // Wait for loading to finish again after setPage(2)
+    await waitFor(() => {
+      expect((store.getState() as { crm: CrmState }).crm.loading.threads).toBe(false);
+    });
+
+    const buttons = screen.getAllByRole('button');
+    const prevButton = buttons.find(b => b.innerHTML.includes('M15.75 19.5L8.25 12l7.5-7.5')) as HTMLButtonElement;
+    const nextButton = buttons.find(b => b.innerHTML.includes('M8.25 4.5l7.5 7.5-7.5 7.5')) as HTMLButtonElement;
+
+    expect(prevButton).not.toBeDisabled();
+    expect(nextButton).not.toBeDisabled();
+
+    fireEvent.click(prevButton);
+    await waitFor(() => {
+      expect((store.getState() as { crm: CrmState }).crm.currentPage).toBe(1);
+    });
+
+    // Wait for loading to settle after prev click
+    await waitFor(() => {
+      expect((store.getState() as { crm: CrmState }).crm.loading.threads).toBe(false);
+    });
+
+    // Re-find next button
+    const nextButtonAgain = screen.getAllByRole('button').find(b => b.innerHTML.includes('M8.25 4.5l7.5 7.5-7.5 7.5')) as HTMLButtonElement;
+    fireEvent.click(nextButtonAgain);
+    await waitFor(() => {
+      expect((store.getState() as { crm: CrmState }).crm.currentPage).toBe(2);
+    });
+  });
+
+  it('disables pagination buttons at boundaries', () => {
+    render(
+      <Provider store={makeStore({
+        events: mockEvents,
+        currentPage: 1,
+        totalThreads: 50,
+        loading: { ...initialState.loading, threads: false }
+      })}>
+        <ContactBucketView />
+      </Provider>
+    );
+
+    fireEvent.change(screen.getByRole('combobox', { name: /conference edition/i }), { target: { value: '1' } });
+
+    const buttons = screen.getAllByRole('button');
+    const prevButton = buttons.find(b => b.innerHTML.includes('M15.75 19.5L8.25 12l7.5-7.5')) as HTMLButtonElement;
+    const nextButton = buttons.find(b => b.innerHTML.includes('M8.25 4.5l7.5 7.5-7.5 7.5')) as HTMLButtonElement;
+
+    expect(prevButton).toBeDisabled();
+    expect(nextButton).toBeDisabled();
   });
 });

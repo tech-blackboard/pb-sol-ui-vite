@@ -185,7 +185,7 @@ function App() {
           {/* Overlay for mobile when sidebar open */}
           {sidebarOpen && (
             <div
-              className="fixed inset-0 z-20 bg-black/30 backdrop-blur-sm md:hidden"
+              className="fixed inset-0 z-48 bg-black/30 backdrop-blur-sm md:hidden"
               onClick={() => setSidebarOpen(false)}
             />
           )}

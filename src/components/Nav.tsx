@@ -160,7 +160,7 @@ export default function Nav({ links, activeId, onNavigate, headerSlot, isOpen, o
       <aside
         className={
           [
-            'fixed top-16 bottom-12 left-0 z-30 transform border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 transition-all duration-200 ease-in-out',
+            'fixed top-0 bottom-0 left-0 z-50 transform border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 transition-all duration-200 ease-in-out',
             'md:static md:top-auto md:bottom-auto md:h-auto md:translate-x-0 md:z-10',
             isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
             isCollapsed ? 'md:w-16' : 'w-64',

@@ -1,17 +1,33 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
-import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice';
+import { configureStore, combineReducers, type Reducer, type UnknownAction } from '@reduxjs/toolkit';
+import crmReducer, { initialState, type CrmState } from '../../../../store/slices/crm/crm.slice';
 import authReducer from '../../../../store/slices/authSlice';
 import CrmSidebar from '../../../../features/crm/components/CrmSidebar';
 
-const makeStore = (overrides: object = {}) =>
+import themeReducer from '../../../../store/slices/themeSlice';
+import abstractsReducer from '../../../../store/slices/abstracts/abstracts.slice';
+import registrationsReducer from '../../../../store/slices/registrations/registrations.slice';
+import sponsorshipsReducer from '../../../../store/slices/sponsorships/sponsorships.slice';
+import brochuresReducer from '../../../../store/slices/brochures/brochures.slice';
+import accRegistrationsReducer from '../../../../store/slices/accRegistrations/accRegistrations.slice';
+import contactsReducer from '../../../../store/slices/contacts/contacts.slice';
+import type { RootState } from '../../../../store';
+
+const makeStore = (overrides: Partial<CrmState> = {}) =>
   configureStore({
-    reducer: { 
+    reducer: combineReducers({
       crm: crmReducer,
-      auth: authReducer
-    },
+      auth: authReducer,
+      theme: themeReducer,
+      abstracts: abstractsReducer,
+      registrations: registrationsReducer,
+      sponsorships: sponsorshipsReducer,
+      brochures: brochuresReducer,
+      accRegistrations: accRegistrationsReducer,
+      contacts: contactsReducer,
+    }) as Reducer<RootState, UnknownAction, Partial<RootState>>,
     preloadedState: {
       crm: {
         ...initialState,
@@ -23,12 +39,14 @@ const makeStore = (overrides: object = {}) =>
         loading: false,
         error: null
       }
-    },
+    } as Partial<RootState>,
   });
 
-const renderWithProviders = (ui: React.ReactElement, storeOverrides: object = {}) => {
-    const store = makeStore(storeOverrides);
-    return render(<Provider store={store}>{ui}</Provider>);
+const renderWithProviders = (ui: React.ReactElement, storeOverrides: Partial<CrmState> = {}) => {
+  const store = makeStore(storeOverrides);
+  const spy = jest.spyOn(store, 'dispatch');
+  const result = render(<Provider store={store}>{ui}</Provider>);
+  return { store, spy, ...result };
 };
 
 describe('CrmSidebar', () => {
@@ -39,10 +57,44 @@ describe('CrmSidebar', () => {
 
   it('renders all folder buttons', () => {
     renderWithProviders(<CrmSidebar />);
-    const folders = ['Inbox', 'Drafts', 'Sent', 'Starred', 'Junk', 'Trash'];
+    const folders = ['Inbox', 'Drafts', 'Sent', 'Starred', 'Junk', 'Trash', 'Accounts'];
     for (const name of folders) {
       expect(screen.getByText(name)).toBeInTheDocument();
     }
+  });
+
+  it('dispatches clearSelection and setActiveFolder when a folder is clicked', () => {
+    const { spy } = renderWithProviders(<CrmSidebar />);
+    fireEvent.click(screen.getByText('Drafts'));
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/clearSelection' }));
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/setActiveFolder', payload: 'Drafts' }));
+  });
+
+  it('renders unread count badge for Inbox', () => {
+    renderWithProviders(<CrmSidebar />, { unreadCount: 5 });
+    expect(screen.getByText('5')).toBeInTheDocument();
+  });
+
+  it('renders drafts count badge', () => {
+    renderWithProviders(<CrmSidebar />, { draftsCount: 3 });
+    expect(screen.getByText('3')).toBeInTheDocument();
+  });
+
+  it('renders sent count badge', () => {
+    renderWithProviders(<CrmSidebar />, { sentCount: 10 });
+    expect(screen.getByText('10')).toBeInTheDocument();
+  });
+
+  it('renders starred count badge', () => {
+    renderWithProviders(<CrmSidebar />, { starredCount: 2 });
+    expect(screen.getByText('2')).toBeInTheDocument();
+  });
+
+  it('applies correct styles to active folder count badge', () => {
+    renderWithProviders(<CrmSidebar />, { unreadCount: 5, activeFolder: 'Inbox' });
+    const badge = screen.getByText('5');
+    expect(badge.className).toContain('bg-blue-100');
+    expect(badge.className).toContain('text-blue-700');
   });
 
   it('renders System section items', () => {
@@ -53,14 +105,51 @@ describe('CrmSidebar', () => {
 
   it('marks Inbox as the active folder', () => {
     renderWithProviders(<CrmSidebar />);
-    // Inbox button should have the active class
     const inboxButton = screen.getByText('Inbox').closest('button');
     expect(inboxButton?.className).toMatch(/bg-blue-50|text-blue-700/);
   });
 
-  it('renders Folders and System section headings', () => {
-    renderWithProviders(<CrmSidebar />);
-    expect(screen.getByText('Folders')).toBeInTheDocument();
-    expect(screen.getByText('System')).toBeInTheDocument();
+  it('does not render Accounts folder for non-admin users', () => {
+    const customStore = configureStore({
+      reducer: combineReducers({
+        crm: crmReducer, auth: authReducer, theme: themeReducer,
+        abstracts: abstractsReducer, registrations: registrationsReducer,
+        sponsorships: sponsorshipsReducer, brochures: brochuresReducer,
+        accRegistrations: accRegistrationsReducer, contacts: contactsReducer
+      }) as Reducer<RootState, UnknownAction, Partial<RootState>>,
+      preloadedState: {
+        crm: { ...initialState },
+        auth: { user: { name: 'User', role: 'User', isAdmin: false }, token: 'fake', loading: false, error: null }
+      } as Partial<RootState>
+    });
+    render(<Provider store={customStore}><CrmSidebar /></Provider>);
+    expect(screen.queryByText('Accounts')).not.toBeInTheDocument();
+  });
+
+  it('applies correct translation class when sidebar is closed', () => {
+    const { container } = renderWithProviders(<CrmSidebar />, { isSidebarOpen: false });
+    const sidebarDiv = container.firstChild as HTMLElement;
+    expect(sidebarDiv.className).toContain('-translate-x-full');
+  });
+
+  it('renders inactive folder badges with correct colors', () => {
+    renderWithProviders(<CrmSidebar />, {
+      unreadCount: 5,
+      draftsCount: 3,
+      sentCount: 10,
+      starredCount: 2,
+      activeFolder: 'Trash' // Something else
+    });
+
+    expect(screen.getByText('5').className).toContain('text-blue-600');
+    expect(screen.getByText('3').className).toContain('bg-gray-100');
+    expect(screen.getByText('10').className).toContain('bg-gray-100');
+    expect(screen.getByText('2').className).toContain('bg-yellow-100');
+  });
+
+  it('translates sidebar correctly when open', () => {
+    const { container } = renderWithProviders(<CrmSidebar />, { isSidebarOpen: true });
+    const sidebarDiv = container.firstChild as HTMLElement;
+    expect(sidebarDiv.className).toContain('translate-x-0');
   });
 });

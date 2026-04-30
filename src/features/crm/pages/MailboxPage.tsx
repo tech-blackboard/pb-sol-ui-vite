@@ -44,7 +44,9 @@ export default function MailboxPage() {
             }
         }
         // Close sidebar on mobile when folder changes
-        dispatch(setSidebarOpen(false));
+        if (window.innerWidth < 768) {
+            dispatch(setSidebarOpen(false));
+        }
     }, [activeEventId, activeFolder, searchTrigger, appliedSearchTerm, appliedDomain, currentPage, dispatch]);
 
     const handlePrevPage = () => {
@@ -73,7 +75,8 @@ export default function MailboxPage() {
                 {/* Mobile Sidebar Backdrop */}
                 {isSidebarOpen && (
                     <div
-                        className="fixed inset-0 bg-black/50 z-30 md:hidden animate-fade-in"
+                        data-testid="mobile-backdrop"
+                        className="fixed inset-0 bg-black/50 z-48 md:hidden animate-fade-in"
                         onClick={() => dispatch(setSidebarOpen(false))}
                     />
                 )}
@@ -104,7 +107,8 @@ export default function MailboxPage() {
                                             <button
                                                 onClick={handlePrevPage}
                                                 disabled={currentPage === 1}
-                                                className="p-1.5 hover:bg-white dark:hover:bg-gray-800 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
+                                                title="Previous Page"
+                                                className="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -113,6 +117,7 @@ export default function MailboxPage() {
                                             <button
                                                 onClick={handleNextPage}
                                                 disabled={currentPage * limit >= totalRecords}
+                                                title="Next Page"
                                                 className="p-1.5 hover:bg-white dark:hover:bg-gray-800 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">

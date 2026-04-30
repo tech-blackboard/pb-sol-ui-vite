@@ -8,6 +8,7 @@ import MessageLabelDropdown from './MessageLabelDropdown';
 import { getLabelColorClasses } from '../utils/labelUtils';
 import toast from 'react-hot-toast';
 import { useState } from 'react';
+import type { Thread, Contact } from '../types';
 
 export default function ThreadView() {
     const dispatch = useAppDispatch();
@@ -17,8 +18,37 @@ export default function ThreadView() {
     const [downloadingIds, setDownloadingIds] = useState<Set<number>>(new Set());
     const drafts = useAppSelector(state => state.crm.drafts);
 
-    const thread = threads.find(t => t.id === selectedThreadId);
-    const contact = thread?.contact;
+    let thread = threads.find(t => t.id === selectedThreadId);
+    let contact = thread?.contact;
+
+    if (!thread) {
+        // Fallback for drafts view when thread isn't loaded in 'threads' state, or it's a new draft with no thread
+        const draft = drafts.find(d => d.id === selectedThreadId || d.threadId === selectedThreadId);
+        if (draft) {
+            thread = {
+                id: selectedThreadId!,
+                subject: draft.subject || '(No subject)',
+                eventId: draft.eventId,
+                contactId: draft.contactId,
+                lastMessageAt: draft.updatedAt || draft.createdAt,
+                isRead: true,
+                isStarred: false,
+                messageCount: 1,
+                domain: draft.fromEmail || '',
+                createdAt: draft.createdAt,
+            } as Thread;
+
+            contact = {
+                id: draft.contactId,
+                email: draft.toEmail || '',
+                status: 'active',
+                labels: [],
+                eventId: draft.eventId,
+                createdAt: draft.createdAt
+            } as Contact;
+        }
+    }
+
     const event = events.find(e => e.id === thread?.eventId);
 
     const handleBack = () => {
@@ -384,9 +414,10 @@ export default function ThreadView() {
                     <div className="mt-8 border-t border-gray-100 dark:border-gray-800 pt-8">
                         {(() => {
                             const draft = drafts.find(d =>
-                                d.contactId === contact?.id &&
-                                d.eventId === thread.eventId &&
-                                (d.threadId === thread.id || !d.threadId)
+                                d.id === selectedThreadId ||
+                                (d.contactId === contact?.id &&
+                                    d.eventId === thread.eventId &&
+                                    (d.threadId === thread.id || !d.threadId))
                             );
 
                             return (

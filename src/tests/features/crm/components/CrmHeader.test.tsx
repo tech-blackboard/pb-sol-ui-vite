@@ -159,4 +159,58 @@ describe('CrmHeader', () => {
     // Should dispatch triggerSearch (plus the setSearchTerm update)
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/triggerSearch' }));
   });
+
+  it('dispatches triggerSearch when search button is clicked in regular tab', () => {
+    const { spy } = renderHeaderWithSpy();
+    fireEvent.click(screen.getByTitle('Search Email'));
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/triggerSearch' }));
+  });
+
+  it('dispatches triggerSearch when Enter is pressed in search input in regular tab', () => {
+    const { spy } = renderHeaderWithSpy();
+    const searchInput = screen.getByPlaceholderText('Subject or Email ID');
+    fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/triggerSearch' }));
+  });
+
+  describe('Accounts Tab Functionality', () => {
+    it('dispatches setAccountsActiveEvent when conference is changed in Accounts tab', () => {
+      const events = [mockEvent({ id: 1, name: 'Conf A' })];
+      const { spy } = renderHeaderWithSpy({ events, activeFolder: 'Accounts' });
+
+      const conferenceSelect = screen.getAllByRole('combobox')[0];
+      fireEvent.change(conferenceSelect, { target: { value: '1' } });
+
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/setAccountsActiveEvent', payload: 1 }));
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/setAccountsActiveDomain', payload: null }));
+    });
+
+    it('dispatches triggerAccountsSearch when search button is clicked in Accounts tab', () => {
+      const { spy } = renderHeaderWithSpy({ activeFolder: 'Accounts' });
+      fireEvent.click(screen.getByTitle('Search Email'));
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/triggerAccountsSearch' }));
+    });
+
+    it('dispatches triggerAccountsSearch when Enter is pressed in search input in Accounts tab', () => {
+      const { spy } = renderHeaderWithSpy({ activeFolder: 'Accounts' });
+      const searchInput = screen.getByPlaceholderText('Subject or Email ID');
+      fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/triggerAccountsSearch' }));
+    });
+
+    it('dispatches setAccountsActiveDomain when domain is changed in Accounts tab', () => {
+      const events = [mockEvent({ id: 1 })];
+      const { spy } = renderHeaderWithSpy({ events, accountsActiveEventId: 1, activeFolder: 'Accounts' });
+      const domainSelect = screen.getAllByRole('combobox')[1];
+      fireEvent.change(domainSelect, { target: { value: 'inbox.techconf.com' } });
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/setAccountsActiveDomain', payload: 'inbox.techconf.com' }));
+    });
+
+    it('dispatches triggerAccountsSearch when search input is cleared in Accounts tab', () => {
+      const { spy } = renderHeaderWithSpy({ accountsSearchTerm: 'old', activeFolder: 'Accounts' });
+      const searchInput = screen.getByPlaceholderText('Subject or Email ID');
+      fireEvent.change(searchInput, { target: { value: '' } });
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/triggerAccountsSearch' }));
+    });
+  });
 });

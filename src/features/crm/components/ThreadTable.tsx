@@ -33,8 +33,8 @@ export default function ThreadTable({ onSelectItem }: { onSelectItem?: (item: Th
                 dispatch(setSelectedThread(draft.threadId));
                 dispatch(fetchMessagesThunk(draft.threadId));
             } else {
-                toast.success('Opening draft...');
-                // In a real app, this might open a compose modal
+                dispatch(setSelectedThread(draft.id));
+                // Do not fetch messages since there is no thread yet
             }
         } else {
             const thread = item as Thread;

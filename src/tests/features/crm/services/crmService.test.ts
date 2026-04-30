@@ -213,4 +213,39 @@ describe('crmService', () => {
       expect(result).toBe('http://auth.url');
     });
   });
+
+  describe('toggleThreadStar and updateThreadReadStatus', () => {
+    it('toggleThreadStar calls api.put', async () => {
+      mockApi.put.mockResolvedValueOnce({});
+      await crmService.toggleThreadStar('t1', true);
+      expect(mockApi.put).toHaveBeenCalledWith(expect.stringContaining('/threads/t1/star'), { isStarred: true }, expect.anything());
+    });
+
+    it('updateThreadReadStatus calls api.put', async () => {
+      mockApi.put.mockResolvedValueOnce({});
+      await crmService.updateThreadReadStatus('t1', true);
+      expect(mockApi.put).toHaveBeenCalledWith(expect.stringContaining('/threads/t1/read'), { isRead: true }, expect.anything());
+    });
+  });
+
+  describe('fetchReplyEmails, fetchLabels, fetchLabelDefinitions', () => {
+    it('fetchReplyEmails calls api.get', async () => {
+      mockApi.get.mockResolvedValueOnce({ data: ['e1@test.com'] });
+      const res = await crmService.fetchReplyEmails(1);
+      expect(mockApi.get).toHaveBeenCalledWith(expect.stringContaining('/reply-emails/1'), expect.anything());
+      expect(res).toEqual(['e1@test.com']);
+    });
+
+    it('fetchLabels calls api.get', async () => {
+      mockApi.get.mockResolvedValueOnce({ data: [] });
+      await crmService.fetchLabels(1);
+      expect(mockApi.get).toHaveBeenCalledWith(expect.stringContaining('/labels'), expect.objectContaining({ params: { eventId: 1 } }));
+    });
+
+    it('fetchLabelDefinitions calls api.get', async () => {
+      mockApi.get.mockResolvedValueOnce({ data: [] });
+      await crmService.fetchLabelDefinitions();
+      expect(mockApi.get).toHaveBeenCalledWith(expect.stringContaining('/labels/definitions'), expect.anything());
+    });
+  });
 });

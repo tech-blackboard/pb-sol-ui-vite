@@ -372,17 +372,17 @@ export default function EmailAccountsPage() {
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-8">
+                        <form aria-label="Account Form" onSubmit={handleSubmit} className="space-y-8">
                             <div className="space-y-4">
                                 <h3 className="text-sm font-bold text-blue-600 uppercase tracking-widest">Base Info</h3>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="col-span-2">
-                                        <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Account Name</label>
-                                        <input type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required placeholder="Company Support" />
+                                        <label htmlFor="account-name" className="block text-xs font-semibold text-gray-400 uppercase mb-1">Account Name</label>
+                                        <input id="account-name" type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required placeholder="Company Support" />
                                     </div>
                                     <div className="col-span-2">
-                                        <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Email Address</label>
-                                        <input type="email" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required placeholder="support@precisionglobalconferences.com" />
+                                        <label htmlFor="email-address" className="block text-xs font-semibold text-gray-400 uppercase mb-1">Email Address</label>
+                                        <input id="email-address" type="email" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required placeholder="support@precisionglobalconferences.com" />
                                     </div>
                                 </div>
                             </div>
@@ -391,16 +391,16 @@ export default function EmailAccountsPage() {
                                 <h3 className="text-sm font-bold text-blue-600 uppercase tracking-widest">Inbound (IMAP)</h3>
                                 <div className="grid grid-cols-3 gap-4">
                                     <div className="col-span-2">
-                                        <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Host</label>
-                                        <input type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.imapHost} onChange={e => setFormData({ ...formData, imapHost: e.target.value })} required placeholder="imap.gmail.com" />
+                                        <label htmlFor="imap-host" className="block text-xs font-semibold text-gray-400 uppercase mb-1">Host</label>
+                                        <input id="imap-host" type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.imapHost} onChange={e => setFormData({ ...formData, imapHost: e.target.value })} required placeholder="imap.gmail.com" />
                                     </div>
                                     <div className="col-span-1">
-                                        <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Port</label>
-                                        <input type="number" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.imapPort} onChange={e => setFormData({ ...formData, imapPort: +e.target.value })} required />
+                                        <label htmlFor="imap-port" className="block text-xs font-semibold text-gray-400 uppercase mb-1">Port</label>
+                                        <input id="imap-port" type="number" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.imapPort} onChange={e => setFormData({ ...formData, imapPort: +e.target.value })} required />
                                     </div>
                                     <div className="col-span-3">
-                                        <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Username</label>
-                                        <input type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.imapUser} onChange={e => setFormData({ ...formData, imapUser: e.target.value })} required />
+                                        <label htmlFor="imap-user" className="block text-xs font-semibold text-gray-400 uppercase mb-1">Username</label>
+                                        <input id="imap-user" type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.imapUser} onChange={e => setFormData({ ...formData, imapUser: e.target.value })} required />
                                     </div>
                                     <div className="col-span-3">
                                         <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Password</label>
@@ -429,12 +429,12 @@ export default function EmailAccountsPage() {
                                     {formData.outboundProvider === 'smtp' && (
                                         <>
                                             <div className="col-span-2">
-                                                <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Host</label>
-                                                <input type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.smtpHost} onChange={e => setFormData({ ...formData, smtpHost: e.target.value })} required placeholder="smtp.gmail.com" />
+                                                <label htmlFor="smtp-host" className="block text-xs font-semibold text-gray-400 uppercase mb-1">Host</label>
+                                                <input id="smtp-host" type="text" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.smtpHost} onChange={e => setFormData({ ...formData, smtpHost: e.target.value })} required placeholder="smtp.gmail.com" />
                                             </div>
                                             <div className="col-span-1">
-                                                <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Port</label>
-                                                <input type="number" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.smtpPort} onChange={e => setFormData({ ...formData, smtpPort: +e.target.value })} required />
+                                                <label htmlFor="smtp-port" className="block text-xs font-semibold text-gray-400 uppercase mb-1">Port</label>
+                                                <input id="smtp-port" type="number" className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500" value={formData.smtpPort} onChange={e => setFormData({ ...formData, smtpPort: +e.target.value })} required />
                                             </div>
                                             <div className="col-span-3">
                                                 <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">SMTP User (Optional if same)</label>

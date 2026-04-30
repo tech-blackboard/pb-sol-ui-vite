@@ -119,10 +119,10 @@ const crmSlice = createSlice({
             state.messages = [];
         },
         setSelectedThread(state, action: PayloadAction<string | null>) {
-            state.selectedThreadId = action.payload;
-            if (action.payload === null) {
+            if (state.selectedThreadId !== action.payload) {
                 state.messages = [];
             }
+            state.selectedThreadId = action.payload;
         },
         toggleSidebar(state) {
             state.isSidebarOpen = !state.isSidebarOpen;
@@ -298,6 +298,7 @@ const crmSlice = createSlice({
                 state.loading.drafts = false;
                 state.drafts = payload.drafts;
                 state.totalDrafts = payload.total;
+                state.draftsCount = payload.total;
             })
             .addCase(fetchDraftsThunk.rejected, (state, action) => {
                 state.loading.drafts = false;

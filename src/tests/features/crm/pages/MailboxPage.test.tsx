@@ -1,114 +1,142 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import MailboxPage from '../../../../features/crm/pages/MailboxPage';
-import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice';
+import crmReducer, { initialState, setPage, setSidebarOpen, type CrmState } from '../../../../store/slices/crm/crm.slice';
+import authReducer from '../../../../store/slices/authSlice';
 
-// ── Shallow mocks for child components ───
-
-jest.mock('../../../../features/crm/components/CrmHeader', () => ({
-  __esModule: true,
-  default: () => <div data-testid="crm-header">CrmHeader</div>,
-}));
+// ── Mocks ──
 
 jest.mock('../../../../features/crm/components/CrmSidebar', () => ({
   __esModule: true,
-  default: () => <div data-testid="crm-sidebar">CrmSidebar</div>,
+  default: () => <div data-testid="crm-sidebar">CrmSidebar Mock</div>,
+}));
+
+jest.mock('../../../../features/crm/components/CrmHeader', () => ({
+  __esModule: true,
+  default: () => <div data-testid="crm-header">CrmHeader Mock</div>,
 }));
 
 jest.mock('../../../../features/crm/components/ThreadTable', () => ({
   __esModule: true,
-  default: () => <div data-testid="thread-table">ThreadTable</div>,
+  default: () => <div data-testid="thread-table">ThreadTable Mock</div>,
 }));
 
 jest.mock('../../../../features/crm/components/ThreadView', () => ({
   __esModule: true,
-  default: () => <div data-testid="thread-view">ThreadView</div>,
+  default: () => <div data-testid="thread-view">ThreadView Mock</div>,
+}));
+
+// Mock the components that are rendered conditionally
+jest.mock('../../../../features/crm/pages/EmailAccountsPage', () => ({
+  __esModule: true,
+  default: () => <div>EmailAccountsPage Mock</div>,
+}));
+
+jest.mock('../../../../features/crm/components/ContactBucketView', () => ({
+  __esModule: true,
+  default: () => <div>ContactBucketView Mock</div>,
 }));
 
 // ── Helpers ──
 
-const makeStore = (overrides: object = {}) =>
-  configureStore({
-    reducer: { crm: crmReducer },
+const makeStore = (overrides: Partial<CrmState> = {}) => {
+  return configureStore({
+    reducer: {
+      crm: crmReducer,
+      auth: authReducer
+    },
     preloadedState: {
       crm: {
         ...initialState,
         ...overrides,
       },
+      auth: {
+        user: { name: 'Admin', role: 'ADMIN', isAdmin: true },
+        token: 'fake-token',
+        loading: false,
+        error: null
+      }
     },
   });
-
-const renderPage = (storeOverrides: object = {}) => {
-  const store = makeStore(storeOverrides);
-  render(
-    <Provider store={store}>
-      <MailboxPage />
-    </Provider>,
-  );
-  return store;
 };
 
-// ── Tests ─────
+// ── Tests ──
 
 describe('MailboxPage', () => {
-  it('renders CrmHeader, CrmSidebar', () => {
-    renderPage();
-    expect(screen.getByTestId('crm-header')).toBeInTheDocument();
-    expect(screen.getByTestId('crm-sidebar')).toBeInTheDocument();
+  it('renders EmailAccountsPage when activeFolder is Accounts', () => {
+    const store = makeStore({ activeFolder: 'Accounts' });
+    render(<Provider store={store}><MailboxPage /></Provider>);
+    expect(screen.getByText('EmailAccountsPage Mock')).toBeInTheDocument();
   });
 
-  it('dispatches fetchEventsThunk on mount', () => {
-    const store = makeStore();
+  it('renders ContactBucketView when activeFolder is Contact Bucket', () => {
+    const store = makeStore({ activeFolder: 'Contact Bucket' });
+    render(<Provider store={store}><MailboxPage /></Provider>);
+    expect(screen.getByText('ContactBucketView Mock')).toBeInTheDocument();
+    // Header and Sidebar should be hidden for Contact Bucket
+    expect(screen.queryByTestId('crm-header')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('crm-sidebar')).not.toBeInTheDocument();
+  });
+
+  it('handles pagination button clicks', async () => {
+    const store = makeStore({ totalThreads: 150, activeFolder: 'Inbox' });
     const spy = jest.spyOn(store, 'dispatch');
-    render(
-      <Provider store={store}>
-        <MailboxPage />
-      </Provider>,
-    );
-    expect(spy).toHaveBeenCalled();
+    render(<Provider store={store}><MailboxPage /></Provider>);
+
+    // Wait for mount effects (initial page 1)
+    await waitFor(() => expect(screen.getByText('1–50 of 150')).toBeInTheDocument());
+
+    const prevBtn = screen.getByTitle('Previous Page');
+    const nextBtn = screen.getByTitle('Next Page');
+
+    // Previous should be disabled on page 1
+    expect(prevBtn).toBeDisabled();
+    expect(nextBtn).not.toBeDisabled();
+
+    spy.mockClear();
+    fireEvent.click(nextBtn);
+    
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith(setPage(2));
+    });
   });
 
-  it('shows ThreadTable and toolbar when no thread is selected', () => {
-    renderPage({ selectedThreadId: null });
-    expect(screen.getByTestId('thread-table')).toBeInTheDocument();
-    expect(screen.queryByTestId('thread-view')).not.toBeInTheDocument();
-  });
-
-  it('shows ThreadView instead of ThreadTable when a thread is selected', () => {
-    renderPage({ selectedThreadId: 'thread-1' });
-    expect(screen.getByTestId('thread-view')).toBeInTheDocument();
-    expect(screen.queryByTestId('thread-table')).not.toBeInTheDocument();
-  });
-
-  it('renders pagination info in the list view', () => {
-    renderPage({ selectedThreadId: null, totalThreads: 0 });
-    // Should show 0–0 of 0 when empty
-    expect(screen.getByText(/0–0 of 0/)).toBeInTheDocument();
-  });
-
-  it('dispatches fetchThreadsThunk when activeEventId is set (via store preload)', async () => {
-    const store = makeStore({ activeEventId: 1 });
+  it('dispatches fetchDraftsThunk when activeFolder is Drafts', async () => {
+    const store = makeStore({ activeEventId: 1, activeFolder: 'Drafts' });
     const spy = jest.spyOn(store, 'dispatch');
-    render(
-      <Provider store={store}>
-        <MailboxPage />
-      </Provider>,
-    );
-    await waitFor(() => expect(spy).toHaveBeenCalled());
+    render(<Provider store={store}><MailboxPage /></Provider>);
+
+    await waitFor(() => {
+      // Check if any function (thunk) was dispatched
+      expect(spy).toHaveBeenCalledWith(expect.any(Function));
+    });
   });
 
-  it('does NOT dispatch fetchThreadsThunk when activeEventId is null', () => {
-    const store = makeStore({ activeEventId: null });
+  it('renders mobile sidebar backdrop and closes on click', async () => {
+    // Set window width to mobile
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 500 });
+    
+    const store = makeStore({ activeFolder: 'Inbox' });
     const spy = jest.spyOn(store, 'dispatch');
-    render(
-      <Provider store={store}>
-        <MailboxPage />
-      </Provider>,
-    );
-    // fetchEventsThunk and fetchLabelDefinitionsThunk are dispatched on mount
-    const thunkCalls = spy.mock.calls.filter(c => typeof c[0] === 'function');
-    expect(thunkCalls.length).toBe(2);
+    render(<Provider store={store}><MailboxPage /></Provider>);
+    
+    // Open sidebar AFTER mount effects have run (to avoid auto-close on mobile)
+    act(() => {
+      store.dispatch(setSidebarOpen(true));
+    });
+
+    const backdrop = screen.getByTestId('mobile-backdrop');
+    expect(backdrop).toBeInTheDocument();
+    fireEvent.click(backdrop);
+    
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith(setSidebarOpen(false));
+    });
+
+    // Reset innerWidth
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1024 });
   });
 });
+

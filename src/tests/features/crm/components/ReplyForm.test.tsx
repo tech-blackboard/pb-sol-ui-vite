@@ -124,8 +124,8 @@ describe('ReplyForm', () => {
     });
 
     it('handles draft auto-save after 30 seconds', async () => {
-      const saveSpy = jest.spyOn(crmService, 'saveDraft').mockResolvedValue({ 
-        id: 'draft-1', subject: 'Re: Hello World', fromEmail: 'support@test.com', 
+      const saveSpy = jest.spyOn(crmService, 'saveDraft').mockResolvedValue({
+        id: 'draft-1', subject: 'Re: Hello World', fromEmail: 'support@test.com',
         toEmail: 'alice@example.com', textBody: 'Testing auto-save logic',
         htmlBody: 'Testing auto-save logic', threadId: 'thread-1',
         createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
@@ -147,8 +147,8 @@ describe('ReplyForm', () => {
     });
 
     it('saves draft on component unmount', async () => {
-      const saveSpy = jest.spyOn(crmService, 'saveDraft').mockResolvedValue({ 
-        id: 'draft-1', subject: 'Re: Hello World', fromEmail: 'support@test.com', 
+      const saveSpy = jest.spyOn(crmService, 'saveDraft').mockResolvedValue({
+        id: 'draft-1', subject: 'Re: Hello World', fromEmail: 'support@test.com',
         toEmail: 'alice@example.com', textBody: 'Unmount test',
         htmlBody: 'Unmount test', threadId: 'thread-1',
         createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
@@ -160,7 +160,7 @@ describe('ReplyForm', () => {
           <ReplyForm {...defaultProps} />
         </Provider>
       );
-      
+
       fireEvent.click(screen.getByRole('button'));
       fireEvent.change(screen.getByPlaceholderText('Write your reply here...'), { target: { value: 'Unmount test' } });
 
@@ -224,5 +224,7 @@ describe('ReplyForm', () => {
       // The spinner div is inside the button
       expect(btn.querySelector('.animate-spin')).toBeInTheDocument();
     });
+
   });
 });
+
