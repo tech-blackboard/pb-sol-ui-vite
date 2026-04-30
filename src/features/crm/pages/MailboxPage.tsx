@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
+import type { RootState } from '../../../store';
 import { fetchEventsThunk, fetchThreadsThunk, fetchDraftsThunk, fetchLabelDefinitionsThunk } from '../../../store/slices/crm/crm.thunks';
 import { setSidebarOpen, setPage } from '../../../store/slices/crm/crm.slice';
 import CrmHeader from '../components/CrmHeader';
@@ -12,7 +13,7 @@ import ContactBucketView from '../components/ContactBucketView';
 
 export default function MailboxPage() {
     const dispatch = useAppDispatch();
-    const { activeEventId, selectedThreadId, activeFolder, isSidebarOpen, searchTrigger, appliedSearchTerm, appliedDomain, currentPage, totalThreads, totalDrafts } = useAppSelector((state) => state.crm);
+    const { activeEventId, selectedThreadId, activeFolder, isSidebarOpen, searchTrigger, appliedSearchTerm, appliedDomain, currentPage, totalThreads, totalDrafts } = useAppSelector((state: RootState) => state.crm);
 
     const limit = 50;
     const totalRecords = activeFolder === 'Drafts' ? totalDrafts : totalThreads;

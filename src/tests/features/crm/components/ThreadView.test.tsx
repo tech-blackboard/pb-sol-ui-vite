@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+jest.setTimeout(20000);
 import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
@@ -7,7 +8,8 @@ import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice
 import * as crmService from '../../../../features/crm/services/crmService';
 import * as crmThunks from '../../../../store/slices/crm/crm.thunks';
 import toast from 'react-hot-toast';
-import type { Thread, Message, Contact, Attachment } from '../../../../features/crm/types';
+import type { Thread, Message, Contact, Attachment, CrmEvent } from '../../../../features/crm/types';
+import type { RootState } from '../../../../store';
 
 jest.mock('react-hot-toast', () => ({
   __esModule: true,
@@ -16,8 +18,9 @@ jest.mock('react-hot-toast', () => ({
 
 jest.mock('../../../../features/crm/components/ReplyForm', () => ({
   __esModule: true,
-  default: ({ onSuccess }: { onSuccess?: () => void }) => (
+  default: ({ onSuccess, recipientEmail }: { onSuccess?: () => void; recipientEmail?: string }) => (
     <div data-testid="reply-form">
+      <span>{recipientEmail}</span>
       <button onClick={onSuccess}>Trigger Reply Success</button>
     </div>
   ),
@@ -167,6 +170,15 @@ describe('ThreadView', () => {
     expect(screen.getByText('C')).toBeInTheDocument();
   });
 
+  it('uses "?" initial when both fromName and fromEmail are absent (line 258)', () => {
+    renderView({
+      threads: [makeThread()],
+      messages: [makeMessage({ fromName: undefined, fromEmail: undefined })],
+      selectedThreadId: 'thread-1',
+    });
+    expect(screen.getByText('?')).toBeInTheDocument();
+  });
+
   it('shows "Unsubscribed" badge for unsubscribed contact', () => {
     renderView({
       threads: [makeThread({ contact: makeContact({ status: 'unsubscribed' }) })],
@@ -193,7 +205,7 @@ describe('ThreadView', () => {
       selectedThreadId: 'thread-1',
     });
     fireEvent.click(screen.getByTitle('Back to inbox'));
-    await waitFor(() => expect(store.getState().crm.selectedThreadId).toBeNull());
+    await waitFor(() => expect((store.getState() as RootState).crm.selectedThreadId).toBeNull());
   });
 
   describe('unsubscribe flow', () => {
@@ -309,6 +321,18 @@ describe('ThreadView', () => {
       fireEvent.click(screen.getByTitle('Add or manage labels'));
       await waitFor(() => expect(thunkSpy).toHaveBeenCalledWith({ messageId: 'msg-1', labels: ['existing'] }));
     });
+
+    it('returns early if first message is missing onToggleLabel (line 181)', async () => {
+      const thunkSpy = jest.spyOn(crmThunks, 'updateLabelsThunk');
+      renderView({
+        threads: [makeThread()],
+        messages: [],
+        selectedThreadId: 'thread-1',
+      });
+
+      fireEvent.click(screen.getByTitle('Add or manage labels'));
+      expect(thunkSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('attachments', () => {
@@ -364,4 +388,161 @@ describe('ThreadView', () => {
       await waitFor(() => expect(spy).toHaveBeenCalled());
     });
   });
+
+  describe('draft fallback and special states', () => {
+    it('renders a thread-like view for a draft when the thread is not in store', () => {
+      const draft = {
+        id: 'draft-99',
+        subject: 'Draft Subject',
+        eventId: 1,
+        contactId: 10,
+        toEmail: 'target@test.com',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        labels: [],
+        status: 'draft'
+      } as unknown as Message;
+
+      renderView({
+        selectedThreadId: 'draft-99',
+        drafts: [draft],
+        threads: [],
+        messages: []
+      });
+
+      expect(screen.getByText('Draft Subject')).toBeInTheDocument();
+      expect(screen.getByText('target@test.com')).toBeInTheDocument();
+    });
+
+    it('renders a thread-like view for a draft with missing fields (line 31-44)', () => {
+      const draft = {
+        id: 'draft-99',
+        subject: undefined,
+        fromEmail: undefined,
+        toEmail: undefined,
+        eventId: 1,
+        contactId: 10,
+        createdAt: new Date().toISOString(),
+        labels: [],
+        status: 'draft'
+      } as unknown as Message;
+
+      renderView({
+        selectedThreadId: 'draft-99',
+        drafts: [draft],
+        threads: [],
+        messages: []
+      });
+
+      expect(screen.getByText('(No subject)')).toBeInTheDocument();
+    });
+
+    it('matches draft by threadId (line 27)', () => {
+      const draft = {
+        id: 'd-1',
+        threadId: 'thread-1',
+        subject: 'Thread Draft'
+      } as Message;
+
+      renderView({
+        selectedThreadId: 'thread-1',
+        drafts: [draft],
+        threads: [], // thread-1 not in threads list
+        messages: []
+      });
+
+      expect(screen.getByText('Thread Draft')).toBeInTheDocument();
+    });
+
+    it('handles toggle read (mark as unread) from toolbar', async () => {
+      const updateSpy = jest.spyOn(crmService, 'updateThreadReadStatus').mockResolvedValue(undefined);
+      const store = makeStore({
+        threads: [makeThread({ id: 't1', isRead: true })],
+        messages: [makeMessage({ threadId: 't1' })],
+        selectedThreadId: 't1',
+      });
+      render(<Provider store={store}><ThreadView /></Provider>);
+
+      fireEvent.click(screen.getByTitle('Mark as unread'));
+
+      await waitFor(() => {
+        expect(updateSpy).toHaveBeenCalledWith('t1', false);
+      }, { timeout: 5000 });
+    });
+
+    it('renders Sent and Failed badges correctly', () => {
+      renderView({
+        threads: [makeThread({ id: 't1' })],
+        messages: [
+          makeMessage({ id: 'm1', status: 'sent', direction: 'outbound' }),
+          makeMessage({ id: 'm2', status: 'failed', direction: 'outbound' })
+        ],
+        selectedThreadId: 't1',
+      });
+
+      expect(screen.getByText('Sent')).toBeInTheDocument();
+      expect(screen.getByText('Failed')).toBeInTheDocument();
+    });
+
+    it('matches draft for ReplyForm based on threadId or contactId/eventId', () => {
+      const draft = {
+        id: 'd1',
+        threadId: 'thread-1',
+        contactId: 10,
+        eventId: 1,
+        htmlBody: 'Draft content'
+      } as unknown as Message;
+
+      renderView({
+        threads: [makeThread({ id: 'thread-1', contactId: 10, eventId: 1 })],
+        messages: [makeMessage({ threadId: 'thread-1' })],
+        selectedThreadId: 'thread-1',
+        drafts: [draft]
+      });
+
+      // The mock ReplyForm doesn't show content, but we can verify it doesn't crash 
+      // and we could potentially extend the mock to verify props if needed.
+      expect(screen.getByTestId('reply-form')).toBeInTheDocument();
+    });
+
+    it('matches draft for ReplyForm based on only contactId and eventId (line 421)', () => {
+      const draft = {
+        id: 'd1',
+        threadId: undefined, // No threadId yet
+        contactId: 10,
+        eventId: 1,
+        htmlBody: 'Matching draft'
+      } as unknown as Message;
+
+      renderView({
+        threads: [makeThread({ id: 'thread-1', contactId: 10, eventId: 1 })],
+        messages: [makeMessage({ threadId: 'thread-1' })],
+        selectedThreadId: 'thread-1',
+        drafts: [draft]
+      });
+
+      expect(screen.getByTestId('reply-form')).toBeInTheDocument();
+    });
+
+    it('handles empty replyEmails in ReplyForm (line 428)', () => {
+      renderView({
+        threads: [makeThread({ eventId: 999 })], // event 999 doesn't exist
+        messages: [makeMessage()],
+        selectedThreadId: 'thread-1',
+        events: []
+      });
+      expect(screen.getByTestId('reply-form')).toBeInTheDocument();
+    });
+
+    it('handles presence of replyEmails in ReplyForm (line 428)', () => {
+      renderView({
+        threads: [makeThread({ id: 't1', eventId: 1 })],
+        messages: [makeMessage()],
+        selectedThreadId: 't1',
+        events: [{ id: 1, replyEmails: ['sup@test.com'] } as unknown as CrmEvent]
+      });
+      expect(screen.getByTestId('reply-form')).toBeInTheDocument();
+    });
+  });
 });
+

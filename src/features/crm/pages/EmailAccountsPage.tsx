@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
 import { useAppSelector } from '../../../store/hooks';
+import type { RootState } from '../../../store';
 import { fetchEmailAccounts, createEmailAccount, updateEmailAccount, deleteEmailAccount, getMicrosoftAuthUrl } from '../services/crmService';
 import type { EmailAccount } from '../types';
 import { toast } from 'react-hot-toast';
@@ -31,7 +32,7 @@ export default function EmailAccountsPage() {
         accountsActiveDomain: activeDomain,
         appliedAccountsSearchTerm,
         accountsSearchTrigger: searchTrigger
-    } = useAppSelector((state) => state.crm);
+    } = useAppSelector((state: RootState) => state.crm);
     const [accounts, setAccounts] = useState<EmailAccount[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -414,8 +415,9 @@ export default function EmailAccountsPage() {
 
                                 <div className="grid grid-cols-3 gap-4">
                                     <div className="col-span-3">
-                                        <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">Outbound Provider</label>
+                                        <label htmlFor="outbound-provider" className="block text-xs font-semibold text-gray-400 uppercase mb-1">Outbound Provider</label>
                                         <select
+                                            id="outbound-provider"
                                             className="w-full h-11 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border-none outline-none focus:ring-2 focus:ring-blue-500"
                                             value={formData.outboundProvider}
                                             onChange={e => setFormData({ ...formData, outboundProvider: e.target.value })}

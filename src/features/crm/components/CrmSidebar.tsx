@@ -1,10 +1,11 @@
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
+import type { RootState } from '../../../store';
 import { setActiveFolder, clearSelection } from '../../../store/slices/crm/crm.slice';
 import { selectAuth } from '../../../store/slices/authSlice';
 
 export default function CrmSidebar() {
     const dispatch = useAppDispatch();
-    const { activeFolder, unreadCount, starredCount, sentCount, draftsCount, isSidebarOpen } = useAppSelector((state) => state.crm);
+    const { activeFolder, unreadCount, starredCount, sentCount, draftsCount, isSidebarOpen } = useAppSelector((state: RootState) => state.crm);
     const { user } = useAppSelector(selectAuth);
     const isAdmin = Boolean(user?.isAdmin);
 

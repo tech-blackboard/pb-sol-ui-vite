@@ -225,6 +225,23 @@ describe('ReplyForm', () => {
       expect(btn.querySelector('.animate-spin')).toBeInTheDocument();
     });
 
+    it('handles email selection changes from replyEmails', async () => {
+      renderForm({ replyEmails: ['default@test.com', 'other@test.com'] });
+      expand();
+
+      // Change to a specific email
+      fireEvent.change(screen.getByRole('combobox'), { target: { value: 'other@test.com' } });
+      
+      // Submit and check if correct email was used
+      const serviceSpy = jest.spyOn(crmService, 'sendReply').mockResolvedValue({ status: 'ok', messageId: 'm1' });
+      fireEvent.change(screen.getByPlaceholderText('Write your reply here...'), { target: { value: 'Body' } });
+      fireEvent.submit(screen.getByRole('button', { name: /send reply/i }));
+
+      await waitFor(() => expect(serviceSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ 
+          fromEmail: 'other@test.com'
+        })
+      ));
+    });
   });
 });
-

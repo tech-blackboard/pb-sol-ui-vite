@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
+import type { RootState } from '../../../store';
 import { sendReplyThunk, saveDraftThunk } from '../../../store/slices/crm/crm.thunks';
 import { fetchEmailAccounts } from '../services/crmService';
 import type { EmailAccount } from '../types';
@@ -25,7 +26,7 @@ export default function ReplyForm({
     initialEmailAccountId, threadId 
 }: ReplyFormProps) {
     const dispatch = useAppDispatch();
-    const { loading } = useAppSelector((state) => state.crm);
+    const { loading } = useAppSelector((state: RootState) => state.crm);
     
     // State
     const [htmlBody, setHtmlBody] = useState(initialHtmlBody || '');

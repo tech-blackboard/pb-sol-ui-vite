@@ -1,4 +1,5 @@
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
+import type { RootState } from '../../../store';
 import { setSelectedThread } from '../../../store/slices/crm/crm.slice';
 import { fetchMessagesThunk, deleteDraftThunk, toggleThreadStarThunk, toggleThreadReadThunk } from '../../../store/slices/crm/crm.thunks';
 import type { Thread, Message } from '../types';
@@ -7,7 +8,7 @@ import { getLabelColorClasses } from '../utils/labelUtils';
 
 export default function ThreadTable({ onSelectItem }: { onSelectItem?: (item: Thread | Message) => void }) {
     const dispatch = useAppDispatch();
-    const { threads, drafts, loading, selectedThreadId, activeDomain, activeFolder } = useAppSelector((state) => state.crm);
+    const { threads, drafts, loading, selectedThreadId, activeDomain, activeFolder } = useAppSelector((state: RootState) => state.crm);
     const isDraftsView = activeFolder === 'Drafts';
     const isSentView = activeFolder === 'Sent';
 

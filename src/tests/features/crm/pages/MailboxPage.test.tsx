@@ -138,5 +138,48 @@ describe('MailboxPage', () => {
     // Reset innerWidth
     Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1024 });
   });
+
+  it('renders ThreadView when selectedThreadId is present', () => {
+    const store = makeStore({ selectedThreadId: 't1', activeFolder: 'Inbox' });
+    render(<Provider store={store}><MailboxPage /></Provider>);
+    expect(screen.getByTestId('thread-view')).toBeInTheDocument();
+  });
+
+  it('handles previous page click', async () => {
+    const store = makeStore({ totalThreads: 150, activeFolder: 'Inbox' });
+    const spy = jest.spyOn(store, 'dispatch');
+    render(<Provider store={store}><MailboxPage /></Provider>);
+
+    // Go to page 2 first
+    const nextBtn = screen.getByTitle('Next Page');
+    fireEvent.click(nextBtn);
+    
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith(setPage(2));
+    });
+
+    // Mock state update (since we are using a real store but manually spying)
+    // Actually, the reducer will handle it. 
+    
+    const prevBtn = screen.getByTitle('Previous Page');
+    await waitFor(() => expect(prevBtn).not.toBeDisabled());
+    
+    fireEvent.click(prevBtn);
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith(setPage(1));
+    });
+  });
+
+  it('dispatches fetchThreadsThunk for standard folder', async () => {
+    const store = makeStore({ activeEventId: 1, activeFolder: 'Inbox' });
+    const spy = jest.spyOn(store, 'dispatch');
+    render(<Provider store={store}><MailboxPage /></Provider>);
+
+    await waitFor(() => {
+      // Check for thunk dispatch
+      expect(spy).toHaveBeenCalledWith(expect.any(Function));
+    });
+  });
 });
+
 

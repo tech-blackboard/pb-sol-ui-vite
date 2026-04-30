@@ -5,6 +5,14 @@ import { configureStore } from '@reduxjs/toolkit';
 import ThreadTable from '../../../../features/crm/components/ThreadTable';
 import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice';
 import type { Thread, Contact, Message } from '../../../../features/crm/types';
+import type { RootState } from '../../../../store';
+import toast from 'react-hot-toast';
+import * as crmThunks from '../../../../store/slices/crm/crm.thunks';
+
+jest.mock('react-hot-toast', () => ({
+  __esModule: true,
+  default: { success: jest.fn(), error: jest.fn() },
+}));
 
 // ── helpers ─
 
@@ -117,6 +125,16 @@ describe('ThreadTable', () => {
     expect(screen.queryByText('Support Thread')).not.toBeInTheDocument();
   });
 
+  it('filters drafts by activeDomain (line 20)', () => {
+    const drafts = [
+      { id: 'd-1', subject: 'Inbox Draft', direction: 'outbound', status: 'draft', fromEmail: 'inbox.example.com' } as Message,
+      { id: 'd-2', subject: 'Support Draft', direction: 'outbound', status: 'draft', fromEmail: 'support.example.com' } as Message,
+    ];
+    renderTable({ drafts, activeDomain: 'inbox.example.com', activeFolder: 'Drafts' });
+    expect(screen.getByText('Inbox Draft')).toBeInTheDocument();
+    expect(screen.queryByText('Support Draft')).not.toBeInTheDocument();
+  });
+
   it('shows all threads when activeDomain is null', () => {
     const threads = [
       makeThread({ id: 't-1', subject: 'Thread A', domain: 'a.com' }),
@@ -134,7 +152,7 @@ describe('ThreadTable', () => {
     fireEvent.click(screen.getByText('Click Me'));
 
     await waitFor(() => {
-      expect(store.getState().crm.selectedThreadId).toBe('thread-x');
+      expect((store.getState() as RootState).crm.selectedThreadId).toBe('thread-x');
     });
     // Two dispatches: setSelectedThread + fetchMessagesThunk
     expect(spy).toHaveBeenCalled();
@@ -149,7 +167,7 @@ describe('ThreadTable', () => {
     fireEvent.click(screen.getByText('My Draft'));
 
     await waitFor(() => {
-      expect(store.getState().crm.selectedThreadId).toBe('draft-1');
+      expect((store.getState() as RootState).crm.selectedThreadId).toBe('draft-1');
     });
     expect(spy).toHaveBeenCalled();
   });
@@ -177,6 +195,24 @@ describe('ThreadTable', () => {
     const readBtn = screen.getByTitle('Mark as unread');
     fireEvent.click(readBtn);
     expect(spy).toHaveBeenCalled();
+    expect(toast.success).toHaveBeenCalledWith('Conversation marked as unread');
+  });
+
+  it('calls toggleThreadReadThunk on mark as read (line 63)', () => {
+    const spy = jest.spyOn(crmThunks, 'toggleThreadReadThunk');
+    const threads = [makeThread({ id: 't1', isRead: false })];
+    renderTable({ threads });
+
+    const readBtn = screen.getByTitle('Mark as read');
+    fireEvent.click(readBtn);
+    expect(spy).toHaveBeenCalled();
+    expect(toast.success).toHaveBeenCalledWith('Conversation marked as read');
+  });
+
+  it('shows correct star button title (line 132-135)', () => {
+    const threads = [makeThread({ id: 't1', isStarred: true })];
+    renderTable({ threads });
+    expect(screen.getByTitle('Unstar')).toBeInTheDocument();
   });
 
   it('applies bold class to unread threads', () => {
@@ -208,4 +244,63 @@ describe('ThreadTable', () => {
     expect(screen.getByText('Inquiry')).toBeInTheDocument();
   });
 
+  it('renders correct folder badges (line 165-166)', () => {
+    const threads = [makeThread({ id: 't1' })];
+    renderTable({ threads, activeFolder: 'Sent' });
+    expect(screen.getByText('Sent')).toBeInTheDocument();
+  });
+
+  it('shows correct empty state messages (line 188)', () => {
+    const { rerender } = render(
+      <Provider store={makeStore({ threads: [], activeFolder: 'Sent' })}>
+        <ThreadTable />
+      </Provider>,
+    );
+    expect(screen.getByText('No sent messages found.')).toBeInTheDocument();
+
+    rerender(
+      <Provider store={makeStore({ threads: [], activeFolder: 'Starred' })}>
+        <ThreadTable />
+      </Provider>,
+    );
+    expect(screen.getByText('No starred threads found.')).toBeInTheDocument();
+
+    rerender(
+      <Provider store={makeStore({ drafts: [], activeFolder: 'Drafts' })}>
+        <ThreadTable />
+      </Provider>,
+    );
+    expect(screen.getByText('No drafts found.')).toBeInTheDocument();
+  });
+
+  it('calls onSelectItem prop when provided', () => {
+    const onSelectItem = jest.fn();
+    const threads = [makeThread({ id: 't1', subject: 'Custom Select' })];
+    const store = makeStore({ threads });
+    render(
+      <Provider store={store}>
+        <ThreadTable onSelectItem={onSelectItem} />
+      </Provider>,
+    );
+
+    fireEvent.click(screen.getByText('Custom Select'));
+    expect(onSelectItem).toHaveBeenCalledWith(expect.objectContaining({ id: 't1' }));
+  });
+
+  it('dispatches setSelectedThread and fetchMessagesThunk for a draft WITH threadId', async () => {
+    const drafts = [
+      { id: 'draft-1', threadId: 'thread-real', subject: 'Draft with Thread', direction: 'outbound', status: 'draft', contactId: 10, eventId: 1, toEmail: 'test@example.com' } as Message
+    ];
+    const { store, spy } = renderTableWithSpy({ drafts, activeFolder: 'Drafts' });
+
+    fireEvent.click(screen.getByText('Draft with Thread'));
+
+    await waitFor(() => {
+      expect((store.getState() as RootState).crm.selectedThreadId).toBe('thread-real');
+    });
+    // Should call fetchMessagesThunk
+    expect(spy).toHaveBeenCalled();
+  });
+
 });
+

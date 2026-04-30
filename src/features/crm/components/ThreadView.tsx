@@ -1,4 +1,5 @@
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
+import type { RootState } from '../../../store';
 import { setSelectedThread } from '../../../store/slices/crm/crm.slice';
 import { updateLabelsThunk, fetchMessagesThunk, toggleThreadReadThunk } from '../../../store/slices/crm/crm.thunks';
 import * as crmService from '../services/crmService';
@@ -8,22 +9,22 @@ import MessageLabelDropdown from './MessageLabelDropdown';
 import { getLabelColorClasses } from '../utils/labelUtils';
 import toast from 'react-hot-toast';
 import { useState } from 'react';
-import type { Thread, Contact } from '../types';
+import type { Thread, Contact, Message, Attachment, CrmEvent } from '../types';
 
 export default function ThreadView() {
     const dispatch = useAppDispatch();
-    const { messages, threads, events, selectedThreadId, loading } = useAppSelector((state) => state.crm);
+    const { messages, threads, events, selectedThreadId, loading } = useAppSelector((state: RootState) => state.crm);
     const [isUnsubscribing, setIsUnsubscribing] = useState(false);
     const [expandedDetailsId, setExpandedDetailsId] = useState<string | null>(null);
     const [downloadingIds, setDownloadingIds] = useState<Set<number>>(new Set());
-    const drafts = useAppSelector(state => state.crm.drafts);
+    const drafts = useAppSelector((state: RootState) => state.crm.drafts);
 
-    let thread = threads.find(t => t.id === selectedThreadId);
+    let thread = threads.find((t: Thread) => t.id === selectedThreadId);
     let contact = thread?.contact;
 
     if (!thread) {
         // Fallback for drafts view when thread isn't loaded in 'threads' state, or it's a new draft with no thread
-        const draft = drafts.find(d => d.id === selectedThreadId || d.threadId === selectedThreadId);
+        const draft = drafts.find((d: Message) => d.id === selectedThreadId || d.threadId === selectedThreadId);
         if (draft) {
             thread = {
                 id: selectedThreadId!,
@@ -49,7 +50,7 @@ export default function ThreadView() {
         }
     }
 
-    const event = events.find(e => e.id === thread?.eventId);
+    const event = events.find((e: CrmEvent) => e.id === thread?.eventId);
 
     const handleBack = () => {
         dispatch(setSelectedThread(null));
@@ -179,9 +180,9 @@ export default function ThreadView() {
                                 const firstMsg = messages[0];
                                 if (!firstMsg) return;
                                 let newLabels;
-                                const exists = firstMsg.labels.some(l => l.toLowerCase() === toggledLabel.toLowerCase());
+                                const exists = firstMsg.labels.some((l: string) => l.toLowerCase() === toggledLabel.toLowerCase());
                                 if (exists) {
-                                    newLabels = firstMsg.labels.filter(l => l.toLowerCase() !== toggledLabel.toLowerCase());
+                                    newLabels = firstMsg.labels.filter((l: string) => l.toLowerCase() !== toggledLabel.toLowerCase());
                                 } else {
                                     newLabels = [...firstMsg.labels, toggledLabel];
                                 }
@@ -240,7 +241,7 @@ export default function ThreadView() {
                             <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[10px] font-medium flex items-center gap-1">
                                 Inbox <span className="opacity-50">x</span>
                             </span>
-                            {messages[0]?.labels.map(label => {
+                            {messages[0]?.labels.map((label: string) => {
                                 const colors = getLabelColorClasses(label);
                                 return (
                                     <span key={label} className={`px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide uppercase shadow-sm border ${colors.bg} ${colors.text} ${colors.border}`}>
@@ -253,7 +254,7 @@ export default function ThreadView() {
 
                     {/* Message List */}
                     <div className="space-y-12">
-                        {messages.map((message) => {
+                        {messages.map((message: Message) => {
                             const senderInitial = (message.fromName || message.fromEmail || '?')[0].toUpperCase();
                             const isOutbound = message.direction === 'outbound';
                             const isDetailsExpanded = expandedDetailsId === message.id;
@@ -366,7 +367,7 @@ export default function ThreadView() {
                                     {/* Attachments Section */}
                                     {message.attachments && message.attachments.length > 0 && (
                                         <div className="ml-14 mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                                            {message.attachments.map((file) => (
+                                            {message.attachments.map((file: Attachment) => (
                                                 <div
                                                     key={file.id}
                                                     className="flex flex-col rounded border border-gray-200 dark:border-gray-800 hover:shadow-md transition-shadow bg-gray-50/30 dark:bg-gray-800/20 overflow-hidden"
@@ -413,7 +414,7 @@ export default function ThreadView() {
 
                     <div className="mt-8 border-t border-gray-100 dark:border-gray-800 pt-8">
                         {(() => {
-                            const draft = drafts.find(d =>
+                            const draft = drafts.find((d: Message) =>
                                 d.id === selectedThreadId ||
                                 (d.contactId === contact?.id &&
                                     d.eventId === thread.eventId &&
