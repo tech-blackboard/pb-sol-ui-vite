@@ -23,7 +23,7 @@ export default function ThreadView() {
     let contact = thread?.contact;
 
     if (!thread) {
-        // Fallback for drafts view when thread isn't loaded in 'threads' state, or it's a new draft with no thread
+        // Fallback 1: Check drafts view
         const draft = drafts.find((d: Message) => d.id === selectedThreadId || d.threadId === selectedThreadId);
         if (draft) {
             thread = {
@@ -47,6 +47,24 @@ export default function ThreadView() {
                 eventId: draft.eventId,
                 createdAt: draft.createdAt
             } as Contact;
+        } 
+        // Fallback 2: Reconstruct from messages (important for redirections from Contact Bucket)
+        else if (messages.length > 0) {
+            const firstMsg = messages[0];
+            thread = {
+                id: selectedThreadId!,
+                subject: firstMsg.subject,
+                eventId: firstMsg.eventId,
+                contactId: firstMsg.contactId,
+                lastMessageAt: firstMsg.createdAt,
+                isRead: true,
+                isStarred: false,
+                messageCount: messages.length,
+                domain: firstMsg.fromEmail || '',
+                createdAt: firstMsg.createdAt,
+                labels: firstMsg.labels,
+            } as Thread;
+            contact = firstMsg.contact;
         }
     }
 

@@ -69,6 +69,8 @@ export interface Message {
     labels: string[];
     attachments: Attachment[];
     userId?: number;
+    contact?: Contact;
+    event?: CrmEvent;
 }
 
 export interface LabelResponse {
