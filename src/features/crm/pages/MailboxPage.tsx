@@ -13,7 +13,7 @@ import ContactBucketView from '../components/ContactBucketView';
 
 export default function MailboxPage() {
     const dispatch = useAppDispatch();
-    const { activeEventId, selectedThreadId, activeFolder, isSidebarOpen, searchTrigger, appliedSearchTerm, appliedDomain, currentPage, totalThreads, totalDrafts } = useAppSelector((state: RootState) => state.crm);
+    const { activeEventId, selectedThreadId, activeFolder, isSidebarOpen, searchTrigger, appliedSearchTerm, appliedDomain, appliedEmailAccountId, currentPage, totalThreads, totalDrafts } = useAppSelector((state: RootState) => state.crm);
 
     const limit = 50;
     const totalRecords = activeFolder === 'Drafts' ? totalDrafts : totalThreads;
@@ -38,6 +38,7 @@ export default function MailboxPage() {
                     eventId: activeEventId,
                     search: appliedSearchTerm || undefined,
                     domain: appliedDomain || undefined,
+                    emailAccountId: appliedEmailAccountId || undefined,
                     folder: activeFolder,
                     page: currentPage,
                     limit
@@ -48,7 +49,7 @@ export default function MailboxPage() {
         if (window.innerWidth < 768) {
             dispatch(setSidebarOpen(false));
         }
-    }, [activeEventId, activeFolder, searchTrigger, appliedSearchTerm, appliedDomain, currentPage, dispatch]);
+    }, [activeEventId, activeFolder, searchTrigger, appliedSearchTerm, appliedDomain, appliedEmailAccountId, currentPage, dispatch]);
 
     const handlePrevPage = () => {
         if (currentPage > 1) {
@@ -65,7 +66,7 @@ export default function MailboxPage() {
     // Reset page when filters change
     useEffect(() => {
         dispatch(setPage(1));
-    }, [activeFolder, activeEventId, searchTrigger, appliedSearchTerm, appliedDomain, dispatch]);
+    }, [activeFolder, activeEventId, searchTrigger, appliedSearchTerm, appliedDomain, appliedEmailAccountId, dispatch]);
 
     return (
         <div className="flex flex-col h-full overflow-hidden">

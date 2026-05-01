@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { CrmEvent, Thread, Message, CrmLabel } from '../../../features/crm/types';
-import { fetchEventsThunk, fetchThreadsThunk, fetchMessagesThunk, sendReplyThunk, updateLabelsThunk, saveDraftThunk, fetchDraftsThunk, deleteDraftThunk, toggleThreadStarThunk, toggleThreadReadThunk, fetchLabelDefinitionsThunk } from './crm.thunks';
+import type { CrmEvent, Thread, Message, CrmLabel, EmailAccount } from '../../../features/crm/types';
+import { fetchEventsThunk, fetchThreadsThunk, fetchMessagesThunk, sendReplyThunk, updateLabelsThunk, saveDraftThunk, fetchDraftsThunk, deleteDraftThunk, toggleThreadStarThunk, toggleThreadReadThunk, fetchLabelDefinitionsThunk, fetchEmailAccountsThunk } from './crm.thunks';
 
 export interface CrmState {
     events: CrmEvent[];
@@ -9,6 +9,7 @@ export interface CrmState {
     messages: Message[];
     drafts: Message[];
     labelDefinitions: CrmLabel[];
+    emailAccounts: EmailAccount[];
     activeEventId: number | null;
     accountsActiveEventId: number | null;
     activeDomain: string | null;
@@ -19,6 +20,8 @@ export interface CrmState {
     accountsSearchTerm: string;
     searchTrigger: number;
     accountsSearchTrigger: number;
+    activeEmailAccountId: number | null;
+    appliedEmailAccountId: number | null;
     isSidebarOpen: boolean;
 
     // Applied filters (only updated on search trigger)
@@ -55,6 +58,7 @@ export const initialState: CrmState = {
     messages: [],
     drafts: [],
     labelDefinitions: [],
+    emailAccounts: [],
     activeEventId: null,
     accountsActiveEventId: null,
     activeDomain: null,
@@ -65,6 +69,8 @@ export const initialState: CrmState = {
     accountsSearchTerm: '',
     searchTrigger: 0,
     accountsSearchTrigger: 0,
+    activeEmailAccountId: null,
+    appliedEmailAccountId: null,
 
     appliedSearchTerm: '',
     appliedDomain: null,
@@ -100,6 +106,8 @@ const crmSlice = createSlice({
         setActiveEvent(state, action: PayloadAction<number | null>) {
             state.activeEventId = action.payload;
             state.activeDomain = null; // Reset domain when event changes
+            state.activeEmailAccountId = null; // Reset email account ID when event changes
+            state.currentPage = 1;
         },
         setAccountsActiveEvent(state, action: PayloadAction<number | null>) {
             state.accountsActiveEventId = action.payload;
@@ -110,6 +118,10 @@ const crmSlice = createSlice({
         },
         setAccountsActiveDomain(state, action: PayloadAction<string | null>) {
             state.accountsActiveDomain = action.payload;
+        },
+        setActiveEmailAccountId(state, action: PayloadAction<number | null>) {
+            state.activeEmailAccountId = action.payload;
+            state.currentPage = 1;
         },
         setActiveFolder(state, action: PayloadAction<'Inbox' | 'Drafts' | 'Sent' | 'Starred' | 'Junk' | 'Trash' | 'Accounts' | 'Contact Bucket'>) {
             state.activeFolder = action.payload;
@@ -144,6 +156,7 @@ const crmSlice = createSlice({
             state.appliedSearchTerm = state.searchTerm;
             state.appliedDomain = state.activeDomain;
             state.appliedEventId = state.activeEventId;
+            state.appliedEmailAccountId = state.activeEmailAccountId;
         },
         triggerAccountsSearch: (state) => {
             state.accountsSearchTrigger += 1;
@@ -312,6 +325,10 @@ const crmSlice = createSlice({
             // Fetch Label Definitions
             .addCase(fetchLabelDefinitionsThunk.fulfilled, (state, { payload }) => {
                 state.labelDefinitions = payload;
+            })
+            // Fetch Email Accounts
+            .addCase(fetchEmailAccountsThunk.fulfilled, (state, { payload }) => {
+                state.emailAccounts = payload;
             });
     },
 });
@@ -331,6 +348,7 @@ export const {
     setAccountsSearchTerm,
     triggerSearch,
     triggerAccountsSearch,
-    setPage
+    setPage,
+    setActiveEmailAccountId
 } = crmSlice.actions;
 export default crmSlice.reducer;

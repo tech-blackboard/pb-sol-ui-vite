@@ -10,9 +10,12 @@ import {
     setSearchTerm,
     setAccountsSearchTerm,
     triggerSearch,
-    triggerAccountsSearch
+    triggerAccountsSearch,
+    setActiveEmailAccountId
 } from '../../../store/slices/crm/crm.slice';
+import { fetchEmailAccountsThunk } from '../../../store/slices/crm/crm.thunks';
 import { selectAuth } from '../../../store/slices/authSlice';
+import { useEffect } from 'react';
 
 export default function CrmHeader() {
     const dispatch = useAppDispatch();
@@ -24,19 +27,28 @@ export default function CrmHeader() {
         accountsActiveDomain,
         searchTerm,
         accountsSearchTerm,
-        activeFolder
+        activeFolder,
+        emailAccounts,
+        activeEmailAccountId
     } = useAppSelector((state) => state.crm);
     const { user } = useAppSelector(selectAuth);
     const isAdmin = Boolean(user?.isAdmin);
 
     const isAccountsTab = activeFolder === 'Accounts';
     const currentActiveEventId = isAccountsTab ? accountsActiveEventId : activeEventId;
-    const currentActiveDomain = isAccountsTab ? accountsActiveDomain : activeDomain;
+    // const currentActiveDomain = isAccountsTab ? accountsActiveDomain : activeDomain;
     const currentSearchTerm = isAccountsTab ? accountsSearchTerm : searchTerm;
 
-    const activeEvent = events.find(e => e.id === currentActiveEventId);
+    // const activeEvent = events.find(e => e.id === currentActiveEventId);
     // Domains for the currently selected conference
-    const currentEventDomains = activeEvent?.domains || [];
+    // const currentEventDomains = activeEvent?.domains || [];
+
+    useEffect(() => {
+        const relevantEventId = isAccountsTab ? accountsActiveEventId : activeEventId;
+        if (relevantEventId) {
+            dispatch(fetchEmailAccountsThunk(relevantEventId));
+        }
+    }, [activeEventId, accountsActiveEventId, isAccountsTab, dispatch]);
 
     const handleSync = () => {
         if (activeEventId) {
@@ -44,6 +56,7 @@ export default function CrmHeader() {
                 eventId: activeEventId,
                 search: searchTerm || undefined,
                 domain: activeDomain || undefined,
+                emailAccountId: activeEmailAccountId || undefined,
                 folder: activeFolder
             }));
         }
@@ -55,9 +68,12 @@ export default function CrmHeader() {
         if (isAccountsTab) {
             dispatch(setAccountsActiveDomain(null));
             dispatch(setAccountsActiveEvent(eventId));
+            dispatch(triggerAccountsSearch());
         } else {
             dispatch(setActiveDomain(null));
+            dispatch(setActiveEmailAccountId(null));
             dispatch(setActiveEvent(eventId));
+            dispatch(triggerSearch());
         }
     };
 
@@ -79,13 +95,26 @@ export default function CrmHeader() {
         }
     };
 
-    const handleDomainChange = (domain: string) => {
+    const handleAccountChange = (value: string) => {
         dispatch(clearSelection());
-        const val = domain === 'all' ? null : domain;
+        const val = value === 'all' ? null : value;
+
         if (isAccountsTab) {
-            dispatch(setAccountsActiveDomain(val));
+            const domain = val ? emailAccounts.find(a => a.id === Number(val))?.email || null : null;
+            dispatch(setAccountsActiveDomain(domain));
+            dispatch(triggerAccountsSearch());
         } else {
-            dispatch(setActiveDomain(val));
+            if (value === 'all') {
+                dispatch(setActiveDomain(null));
+                dispatch(setActiveEmailAccountId(null));
+            } else {
+                const account = emailAccounts.find(a => a.id === Number(value));
+                if (account) {
+                    dispatch(setActiveDomain(account.email));
+                    dispatch(setActiveEmailAccountId(account.id));
+                }
+            }
+            dispatch(triggerSearch());
         }
     };
 
@@ -102,6 +131,10 @@ export default function CrmHeader() {
             }
         }
     };
+
+    const currentActiveAccountValue = isAccountsTab
+        ? (emailAccounts.find(a => a.email === accountsActiveDomain)?.id || 'all')
+        : (activeEmailAccountId || 'all');
 
     return (
         <div className="flex flex-nowrap items-end gap-2 p-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-30 overflow-x-auto no-scrollbar">
@@ -139,13 +172,13 @@ export default function CrmHeader() {
                     <label className="block text-xs font-medium text-gray-500 mb-1 truncate">Email Account</label>
                     <select
                         className="w-full h-10 px-2 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                        value={currentActiveDomain || 'all'}
-                        onChange={(e) => handleDomainChange(e.target.value)}
+                        value={currentActiveAccountValue}
+                        onChange={(e) => handleAccountChange(e.target.value)}
                     >
                         <option value="all">All Accounts</option>
-                        {currentEventDomains.map((domain, idx) => (
-                            <option key={idx} value={domain}>
-                                {domain}
+                        {emailAccounts.map((account) => (
+                            <option key={account.id} value={account.id}>
+                                {account.email}
                             </option>
                         ))}
                     </select>

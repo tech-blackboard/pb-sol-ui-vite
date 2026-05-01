@@ -115,24 +115,25 @@ describe('ThreadTable', () => {
     expect(screen.getByText('No threads found for this mailbox.')).toBeInTheDocument();
   });
 
-  it('filters threads by activeDomain', () => {
+  it('does NOT filter threads in-memory (filtering is handled by backend)', () => {
     const threads = [
       makeThread({ id: 't-1', subject: 'Inbox Thread', domain: 'inbox.example.com' }),
       makeThread({ id: 't-2', subject: 'Support Thread', domain: 'support.example.com', contact: makeContact({ email: 'b@x.com' }) }),
     ];
+    // We pass activeDomain, but the table should show both because it doesn't filter anymore
     renderTable({ threads, activeDomain: 'inbox.example.com' });
     expect(screen.getByText('Inbox Thread')).toBeInTheDocument();
-    expect(screen.queryByText('Support Thread')).not.toBeInTheDocument();
+    expect(screen.getByText('Support Thread')).toBeInTheDocument();
   });
 
-  it('filters drafts by activeDomain (line 20)', () => {
+  it('does NOT filter drafts in-memory (filtering is handled by backend)', () => {
     const drafts = [
       { id: 'd-1', subject: 'Inbox Draft', direction: 'outbound', status: 'draft', fromEmail: 'inbox.example.com' } as Message,
       { id: 'd-2', subject: 'Support Draft', direction: 'outbound', status: 'draft', fromEmail: 'support.example.com' } as Message,
     ];
     renderTable({ drafts, activeDomain: 'inbox.example.com', activeFolder: 'Drafts' });
     expect(screen.getByText('Inbox Draft')).toBeInTheDocument();
-    expect(screen.queryByText('Support Draft')).not.toBeInTheDocument();
+    expect(screen.getByText('Support Draft')).toBeInTheDocument();
   });
 
   it('shows all threads when activeDomain is null', () => {

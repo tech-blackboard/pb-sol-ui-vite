@@ -6,7 +6,7 @@ import CrmHeader from '../../../../features/crm/components/CrmHeader';
 import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice';
 import authReducer from '../../../../store/slices/authSlice';
 import * as crmThunks from '../../../../store/slices/crm/crm.thunks';
-import type { CrmEvent } from '../../../../features/crm/types';
+import type { CrmEvent, EmailAccount } from '../../../../features/crm/types';
 
 // ── Helpers ──
 
@@ -19,6 +19,24 @@ const mockEvent = (overrides: Partial<CrmEvent> = {}): CrmEvent => ({
   replyEmails: [],
   isActive: true,
   createdAt: '2025-01-01T00:00:00Z',
+  ...overrides,
+});
+
+const mockEmailAccount = (overrides: Partial<EmailAccount> = {}): EmailAccount => ({
+  id: 101,
+  name: 'Inbox Account',
+  email: 'inbox.techconf.com',
+  isActive: true,
+  createdAt: '2025-01-01T00:00:00Z',
+  updatedAt: '2025-01-01T00:00:00Z',
+  imapHost: 'imap.test.com',
+  imapPort: 993,
+  imapUser: 'test',
+  imapEncryption: 'ssl',
+  smtpHost: 'smtp.test.com',
+  smtpPort: 465,
+  smtpUser: 'test',
+  smtpEncryption: 'ssl',
   ...overrides,
 });
 
@@ -89,9 +107,12 @@ describe('CrmHeader', () => {
     expect(screen.getByRole('option', { name: 'All Accounts' })).toBeInTheDocument();
   });
 
-  it('populates domain dropdown from active event domains', () => {
-    const events = [mockEvent({ id: 1 })];
-    renderHeader({ events, activeEventId: 1 });
+  it('populates email account dropdown from emailAccounts in state', () => {
+    const emailAccounts = [
+      mockEmailAccount({ id: 101, email: 'inbox.techconf.com' }),
+      mockEmailAccount({ id: 102, email: 'support.techconf.com' })
+    ];
+    renderHeader({ emailAccounts, activeEventId: 1 });
     expect(screen.getByRole('option', { name: 'inbox.techconf.com' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'support.techconf.com' })).toBeInTheDocument();
   });
@@ -107,25 +128,27 @@ describe('CrmHeader', () => {
     expect(store.getState().crm.activeEventId).toBe(2);
   });
 
-  it('dispatches setActiveDomain when a specific domain is chosen', () => {
-    const events = [mockEvent({ id: 1 })];
-    const { store, spy } = renderHeaderWithSpy({ events, activeEventId: 1 });
+  it('dispatches setActiveDomain and setActiveEmailAccountId when a specific account is chosen', () => {
+    const emailAccounts = [mockEmailAccount({ id: 101, email: 'inbox.techconf.com' })];
+    const { store, spy } = renderHeaderWithSpy({ emailAccounts, activeEventId: 1 });
 
-    const domainSelect = screen.getAllByRole('combobox')[1];
-    fireEvent.change(domainSelect, { target: { value: 'inbox.techconf.com' } });
+    const accountSelect = screen.getAllByRole('combobox')[1];
+    fireEvent.change(accountSelect, { target: { value: '101' } });
 
     expect(spy).toHaveBeenCalled();
     expect(store.getState().crm.activeDomain).toBe('inbox.techconf.com');
+    expect(store.getState().crm.activeEmailAccountId).toBe(101);
   });
 
-  it('dispatches setActiveDomain(null) when "All Accounts" is selected', () => {
-    const events = [mockEvent({ id: 1 })];
-    const store = renderHeader({ events, activeEventId: 1, activeDomain: 'inbox.techconf.com' });
+  it('dispatches setActiveDomain(null) and setActiveEmailAccountId(null) when "All Accounts" is selected', () => {
+    const emailAccounts = [mockEmailAccount({ id: 101, email: 'inbox.techconf.com' })];
+    const store = renderHeader({ emailAccounts, activeEventId: 1, activeEmailAccountId: 101, activeDomain: 'inbox.techconf.com' });
 
-    const domainSelect = screen.getAllByRole('combobox')[1];
-    fireEvent.change(domainSelect, { target: { value: 'all' } });
+    const accountSelect = screen.getAllByRole('combobox')[1];
+    fireEvent.change(accountSelect, { target: { value: 'all' } });
 
     expect(store.getState().crm.activeDomain).toBeNull();
+    expect(store.getState().crm.activeEmailAccountId).toBeNull();
   });
 
   it('does NOT dispatch fetchThreadsThunk when Sync is clicked with no active event', () => {
@@ -198,11 +221,11 @@ describe('CrmHeader', () => {
       expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/triggerAccountsSearch' }));
     });
 
-    it('dispatches setAccountsActiveDomain when domain is changed in Accounts tab', () => {
-      const events = [mockEvent({ id: 1 })];
-      const { spy } = renderHeaderWithSpy({ events, accountsActiveEventId: 1, activeFolder: 'Accounts' });
-      const domainSelect = screen.getAllByRole('combobox')[1];
-      fireEvent.change(domainSelect, { target: { value: 'inbox.techconf.com' } });
+    it('dispatches setAccountsActiveDomain when account is changed in Accounts tab', () => {
+      const emailAccounts = [mockEmailAccount({ id: 101, email: 'inbox.techconf.com' })];
+      const { spy } = renderHeaderWithSpy({ emailAccounts, accountsActiveEventId: 1, activeFolder: 'Accounts' });
+      const accountSelect = screen.getAllByRole('combobox')[1];
+      fireEvent.change(accountSelect, { target: { value: '101' } });
       expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/setAccountsActiveDomain', payload: 'inbox.techconf.com' }));
     });
 

@@ -8,19 +8,11 @@ import { getLabelColorClasses } from '../utils/labelUtils';
 
 export default function ThreadTable({ onSelectItem }: { onSelectItem?: (item: Thread | Message) => void }) {
     const dispatch = useAppDispatch();
-    const { threads, drafts, loading, selectedThreadId, activeDomain, activeFolder } = useAppSelector((state: RootState) => state.crm);
+    const { threads, drafts, loading, selectedThreadId, activeFolder } = useAppSelector((state: RootState) => state.crm);
     const isDraftsView = activeFolder === 'Drafts';
     const isSentView = activeFolder === 'Sent';
 
-    // Filter by activeDomain if set
-    const items = isDraftsView ? drafts : threads;
-    const filteredItems = activeDomain
-        ? (items as Array<Thread | Message>).filter((t) =>
-            isDraftsView
-                ? (t as Message).fromEmail === activeDomain
-                : (t as Thread).domain === activeDomain
-        )
-        : items;
+    const filteredItems = isDraftsView ? drafts : threads;
 
     const handleSelectItem = (item: Thread | Message) => {
         if (onSelectItem) {
