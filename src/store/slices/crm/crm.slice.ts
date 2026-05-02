@@ -23,6 +23,7 @@ export interface CrmState {
     activeEmailAccountId: number | null;
     appliedEmailAccountId: number | null;
     isSidebarOpen: boolean;
+    isSidebarCollapsed: boolean;
 
     // Applied filters (only updated on search trigger)
     appliedSearchTerm: string;
@@ -88,6 +89,7 @@ export const initialState: CrmState = {
     totalDrafts: 0,
 
     isSidebarOpen: false,
+    isSidebarCollapsed: false,
     loading: {
         events: false,
         threads: false,
@@ -141,6 +143,9 @@ const crmSlice = createSlice({
         },
         setSidebarOpen(state, action: PayloadAction<boolean>) {
             state.isSidebarOpen = action.payload;
+        },
+        toggleSidebarCollapse(state) {
+            state.isSidebarCollapsed = !state.isSidebarCollapsed;
         },
         clearError(state) {
             state.error = null;
@@ -349,6 +354,7 @@ export const {
     triggerSearch,
     triggerAccountsSearch,
     setPage,
-    setActiveEmailAccountId
+    setActiveEmailAccountId,
+    toggleSidebarCollapse
 } = crmSlice.actions;
 export default crmSlice.reducer;

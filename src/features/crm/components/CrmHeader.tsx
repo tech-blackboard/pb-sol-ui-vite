@@ -7,6 +7,7 @@ import {
     setAccountsActiveDomain,
     clearSelection,
     toggleSidebar,
+    toggleSidebarCollapse,
     setSearchTerm,
     setAccountsSearchTerm,
     triggerSearch,
@@ -138,14 +139,20 @@ export default function CrmHeader() {
 
     return (
         <div className="flex flex-nowrap items-end gap-2 p-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-30 overflow-x-auto no-scrollbar">
-            {/* Mobile Toggle */}
-            <div className="mb-1 md:hidden flex-shrink-0">
+            {/* Desktop & Mobile Toggle */}
+            <div className="mb-1 flex-shrink-0">
                 <button
-                    onClick={() => dispatch(toggleSidebar())}
-                    className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    onClick={() => {
+                        if (window.innerWidth < 768) {
+                            dispatch(toggleSidebar());
+                        } else {
+                            dispatch(toggleSidebarCollapse());
+                        }
+                    }}
+                    className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400"
                     aria-label="Toggle Sidebar"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-gray-600 dark:text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                     </svg>
                 </button>

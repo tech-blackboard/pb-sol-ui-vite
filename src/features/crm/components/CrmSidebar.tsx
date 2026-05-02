@@ -5,7 +5,7 @@ import { selectAuth } from '../../../store/slices/authSlice';
 
 export default function CrmSidebar() {
     const dispatch = useAppDispatch();
-    const { activeFolder, unreadCount, starredCount, sentCount, draftsCount, isSidebarOpen } = useAppSelector((state: RootState) => state.crm);
+    const { activeFolder, unreadCount, starredCount, sentCount, draftsCount, isSidebarOpen, isSidebarCollapsed } = useAppSelector((state: RootState) => state.crm);
     const { user } = useAppSelector(selectAuth);
     const isAdmin = Boolean(user?.isAdmin);
 
@@ -21,20 +21,21 @@ export default function CrmSidebar() {
 
     return (
         <div className={`
-            fixed top-0 bottom-0 left-0 z-50 w-64 md:relative md:h-full flex-shrink-0 
+            fixed top-0 bottom-0 left-0 z-50 md:relative md:h-full flex-shrink-0 
             border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 
-            p-4 overflow-y-auto transition-transform duration-300 ease-in-out
+            overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out
             ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+            ${isSidebarCollapsed ? 'w-20 p-2' : 'w-64 p-4'}
         `}>
-            <button className="w-full h-11 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-colors mb-6 shadow-sm">
+            <button className={`w-full bg-green-600 hover:bg-green-700 text-white rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all mb-6 shadow-sm ${isSidebarCollapsed ? 'h-11 w-11 mx-auto' : 'h-11'}`}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
                 </svg>
-                Compose Mail
+                {!isSidebarCollapsed && <span>Compose Mail</span>}
             </button>
 
             <div className="space-y-4">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-2">Folders</h3>
+                {!isSidebarCollapsed && <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-2">Folders</h3>}
                 <nav className="space-y-1">
                     {folders.map((folder) => (
                         <button
@@ -43,16 +44,17 @@ export default function CrmSidebar() {
                                 dispatch(clearSelection());
                                 dispatch(setActiveFolder(folder.name));
                             }}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${activeFolder === folder.name
+                            title={isSidebarCollapsed ? folder.name : undefined}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all ${activeFolder === folder.name
                                 ? 'bg-blue-50 text-blue-700 font-semibold dark:bg-blue-900/20 dark:text-blue-400'
                                 : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
-                                }`}
+                                } ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 flex-shrink-0">
                                 <path strokeLinecap="round" strokeLinejoin="round" d={folder.icon} />
                             </svg>
-                            <span className="flex-grow text-left">{folder.name}</span>
-                            {folder.name === 'Inbox' && unreadCount > 0 && (
+                            {!isSidebarCollapsed && <span className="flex-grow text-left">{folder.name}</span>}
+                            {!isSidebarCollapsed && folder.name === 'Inbox' && unreadCount > 0 && (
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeFolder === 'Inbox'
                                     ? 'bg-blue-100 text-blue-700'
                                     : 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400'
@@ -60,7 +62,7 @@ export default function CrmSidebar() {
                                     {unreadCount}
                                 </span>
                             )}
-                            {folder.name === 'Drafts' && draftsCount > 0 && (
+                            {!isSidebarCollapsed && folder.name === 'Drafts' && draftsCount > 0 && (
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeFolder === 'Drafts'
                                     ? 'bg-blue-100 text-blue-700'
                                     : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
@@ -68,7 +70,7 @@ export default function CrmSidebar() {
                                     {draftsCount}
                                 </span>
                             )}
-                            {folder.name === 'Sent' && sentCount > 0 && (
+                            {!isSidebarCollapsed && folder.name === 'Sent' && sentCount > 0 && (
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeFolder === 'Sent'
                                     ? 'bg-blue-100 text-blue-700'
                                     : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
@@ -76,7 +78,7 @@ export default function CrmSidebar() {
                                     {sentCount}
                                 </span>
                             )}
-                            {folder.name === 'Starred' && starredCount > 0 && (
+                            {!isSidebarCollapsed && folder.name === 'Starred' && starredCount > 0 && (
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeFolder === 'Starred'
                                     ? 'bg-blue-100 text-blue-700'
                                     : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400'
@@ -84,28 +86,38 @@ export default function CrmSidebar() {
                                     {starredCount}
                                 </span>
                             )}
+                            {isSidebarCollapsed && folder.name === 'Inbox' && unreadCount > 0 && (
+                                <div className="absolute top-1 right-2 h-2 w-2 bg-blue-600 rounded-full border border-white dark:border-gray-900" />
+                            )}
                         </button>
                     ))}
                 </nav>
             </div>
 
             <div className="mt-8 space-y-4">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-2">System</h3>
+                {!isSidebarCollapsed && <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-2">System</h3>}
                 <nav className="space-y-1">
-                    <button className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <button
+                        title={isSidebarCollapsed ? "Data Migration" : undefined}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 flex-shrink-0">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
                         </svg>
-                        Data Migration
+                        {!isSidebarCollapsed && <span>Data Migration</span>}
                     </button>
-                    <button className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <button
+                        title={isSidebarCollapsed ? "Black List" : undefined}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 ${isSidebarCollapsed ? 'justify-center px-0' : ''}`}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 flex-shrink-0">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
                         </svg>
-                        Black List
+                        {!isSidebarCollapsed && <span>Black List</span>}
                     </button>
                 </nav>
             </div>
         </div>
     );
 }
+
