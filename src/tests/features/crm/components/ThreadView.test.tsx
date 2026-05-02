@@ -62,6 +62,7 @@ const makeThread = (overrides: Partial<Thread> = {}): Thread => ({
   domain: 'inbox.example.com', createdAt: '2025-06-15T09:00:00Z',
   contact: makeContact(),
   isStarred: false,
+  isTrash: false,
   ...overrides,
 });
 
@@ -542,6 +543,69 @@ describe('ThreadView', () => {
         events: [{ id: 1, replyEmails: ['sup@test.com'] } as unknown as CrmEvent]
       });
       expect(screen.getByTestId('reply-form')).toBeInTheDocument();
+    });
+
+    it('handles trashing thread from toolbar', async () => {
+      window.confirm = jest.fn().mockReturnValue(true);
+      const thunkSpy = jest.spyOn(crmThunks, 'trashThreadsThunk');
+      renderView({
+        threads: [makeThread({ id: 't1' })],
+        messages: [makeMessage()],
+        selectedThreadId: 't1',
+      });
+
+      fireEvent.click(screen.getByTitle('Move to Trash'));
+      expect(window.confirm).toHaveBeenCalled();
+      await waitFor(() => expect(thunkSpy).toHaveBeenCalledWith(['t1']));
+    });
+
+    it('handles restoring thread from toolbar', async () => {
+      const thunkSpy = jest.spyOn(crmThunks, 'restoreThreadsThunk');
+      renderView({
+        threads: [makeThread({ id: 't1', isTrash: true })],
+        messages: [makeMessage({ threadId: 't1' })],
+        selectedThreadId: 't1',
+        activeFolder: 'Trash'
+      });
+
+      fireEvent.click(screen.getByTitle('Restore'));
+      await waitFor(() => expect(thunkSpy).toHaveBeenCalledWith(['t1']));
+    });
+
+    it('handles permanent delete from toolbar', async () => {
+      window.confirm = jest.fn().mockReturnValue(true);
+      const thunkSpy = jest.spyOn(crmThunks, 'deleteThreadsPermanentlyThunk');
+      renderView({
+        threads: [makeThread({ id: 't1', isTrash: true })],
+        messages: [makeMessage({ threadId: 't1' })],
+        selectedThreadId: 't1',
+        activeFolder: 'Trash'
+      });
+
+      fireEvent.click(screen.getByTitle('Delete Permanently'));
+      expect(window.confirm).toHaveBeenCalled();
+      await waitFor(() => expect(thunkSpy).toHaveBeenCalledWith(['t1']));
+    });
+
+    it('reconstructs thread from messages if not found in threads list (line 53-68)', () => {
+      const msg = makeMessage({ id: 'm1', threadId: 't-none', subject: 'Orphan' });
+      renderView({
+        threads: [], // empty
+        messages: [msg],
+        selectedThreadId: 't-none',
+      });
+      expect(screen.getByText('Orphan')).toBeInTheDocument();
+    });
+
+    it('handles toggle read from toolbar (line 131-137)', () => {
+      const thunkSpy = jest.spyOn(crmThunks, 'toggleThreadReadThunk');
+      renderView({
+        threads: [makeThread({ id: 't1', isRead: true })],
+        messages: [makeMessage()],
+        selectedThreadId: 't1',
+      });
+      fireEvent.click(screen.getByTitle('Mark as unread'));
+      expect(thunkSpy).toHaveBeenCalledWith({ threadId: 't1', isRead: false });
     });
   });
 });

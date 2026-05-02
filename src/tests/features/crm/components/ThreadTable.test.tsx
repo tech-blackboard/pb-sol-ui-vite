@@ -38,6 +38,7 @@ const makeThread = (overrides: Partial<Thread> = {}): Thread => ({
   createdAt: '2025-06-15T09:00:00Z',
   contact: makeContact(),
   isStarred: false,
+  isTrash: false,
   ...overrides,
 });
 
@@ -177,11 +178,11 @@ describe('ThreadTable', () => {
     window.confirm = jest.fn().mockReturnValue(true);
     const drafts = [{ id: 'd1', subject: 'Delete Me', direction: 'outbound', status: 'draft', contactId: 1, eventId: 1 } as Message];
     const { spy } = renderTableWithSpy({ drafts, activeFolder: 'Drafts' });
-
-    const deleteBtn = screen.getByTitle('Delete Draft');
+ 
+    const deleteBtn = screen.getByTitle('Move to Trash');
     fireEvent.click(deleteBtn);
-
-    expect(window.confirm).toHaveBeenCalled();
+ 
+    expect(window.confirm).toHaveBeenCalledWith('Move this draft to Trash?');
     expect(spy).toHaveBeenCalled();
   });
 
@@ -301,6 +302,78 @@ describe('ThreadTable', () => {
     });
     // Should call fetchMessagesThunk
     expect(spy).toHaveBeenCalled();
+  });
+
+  it('handles trash thread with confirmation', async () => {
+    window.confirm = jest.fn().mockReturnValue(true);
+    const threads = [makeThread({ id: 't1', subject: 'Trash Me' })];
+    const { spy } = renderTableWithSpy({ threads });
+
+    const trashBtn = screen.getByTitle('Move to Trash');
+    fireEvent.click(trashBtn);
+
+    expect(window.confirm).toHaveBeenCalledWith('Move this conversation to Trash?');
+    expect(spy).toHaveBeenCalled();
+    expect(toast.success).toHaveBeenCalledWith('Conversation moved to Trash');
+  });
+
+  it('handles restore thread', async () => {
+    const threads = [makeThread({ id: 't1', subject: 'Restore Me', isTrash: true })];
+    const { spy } = renderTableWithSpy({ threads, activeFolder: 'Trash' });
+
+    const restoreBtn = screen.getByTitle('Restore');
+    fireEvent.click(restoreBtn);
+
+    expect(spy).toHaveBeenCalled();
+    expect(toast.success).toHaveBeenCalledWith('Conversation restored');
+  });
+
+  it('handles permanent delete with confirmation', async () => {
+    window.confirm = jest.fn().mockReturnValue(true);
+    const threads = [makeThread({ id: 't1', subject: 'Kill Me', isTrash: true })];
+    const { spy } = renderTableWithSpy({ threads, activeFolder: 'Trash' });
+
+    const deleteBtn = screen.getByTitle('Delete Permanently');
+    fireEvent.click(deleteBtn);
+
+    expect(window.confirm).toHaveBeenCalledWith('Permanently delete this conversation? This cannot be undone.');
+    expect(spy).toHaveBeenCalled();
+    expect(toast.success).toHaveBeenCalledWith('Conversation permanently deleted');
+  });
+
+  it('handles bulk selection', () => {
+    const threads = [
+      makeThread({ id: 't1', subject: 'T1' }),
+      makeThread({ id: 't2', subject: 'T2' }),
+    ];
+    const { spy } = renderTableWithSpy({ threads });
+
+    const selectAllCheckbox = screen.getAllByRole('checkbox')[0];
+    fireEvent.click(selectAllCheckbox);
+
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'crm/selectAllThreads',
+      payload: ['t1', 't2']
+    }));
+ 
+    fireEvent.click(selectAllCheckbox);
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'crm/selectAllThreads',
+      payload: []
+    }));
+  });
+ 
+  it('handles individual thread selection (line 90-91)', () => {
+    const threads = [makeThread({ id: 't1', subject: 'T1' })];
+    const { spy } = renderTableWithSpy({ threads });
+ 
+    const checkboxes = screen.getAllByRole('checkbox');
+    fireEvent.click(checkboxes[1]); // Index 0 is select all, index 1 is first row
+ 
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'crm/toggleThreadSelection',
+      payload: 't1'
+    }));
   });
 
 });

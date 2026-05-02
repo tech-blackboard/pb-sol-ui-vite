@@ -180,6 +180,51 @@ describe('MailboxPage', () => {
       expect(spy).toHaveBeenCalledWith(expect.any(Function));
     });
   });
+
+  describe('Bulk Actions and Trash', () => {
+    it('handles bulk trash action (line 154-162)', async () => {
+      window.confirm = jest.fn().mockReturnValue(true);
+      const store = makeStore({ selectedThreadIds: ['t1', 't2'], activeFolder: 'Inbox' });
+      const spy = jest.spyOn(store, 'dispatch');
+      render(<Provider store={store}><MailboxPage /></Provider>);
+
+      const bulkTrashBtn = screen.getByTitle('Move Selected to Trash');
+      fireEvent.click(bulkTrashBtn);
+      
+      expect(window.confirm).toHaveBeenCalled();
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('handles bulk restore and permanent delete in Trash folder (line 129-150)', async () => {
+      window.confirm = jest.fn().mockReturnValue(true);
+      const store = makeStore({ selectedThreadIds: ['t1'], activeFolder: 'Trash' });
+      const spy = jest.spyOn(store, 'dispatch');
+      render(<Provider store={store}><MailboxPage /></Provider>);
+
+      const restoreBtn = screen.getByTitle('Restore Selected');
+      fireEvent.click(restoreBtn);
+      expect(spy).toHaveBeenCalled();
+
+      spy.mockClear();
+      const deleteBtn = screen.getByTitle('Delete Selected Permanently');
+      fireEvent.click(deleteBtn);
+      expect(window.confirm).toHaveBeenCalled();
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('handles empty trash action (line 206-219)', async () => {
+      window.confirm = jest.fn().mockReturnValue(true);
+      const store = makeStore({ activeFolder: 'Trash', activeEventId: 1 });
+      const spy = jest.spyOn(store, 'dispatch');
+      render(<Provider store={store}><MailboxPage /></Provider>);
+
+      const emptyBtn = screen.getByText('Empty Trash now');
+      fireEvent.click(emptyBtn);
+      
+      expect(window.confirm).toHaveBeenCalledWith('Empty Trash? All conversations in Trash will be permanently deleted.');
+      expect(spy).toHaveBeenCalled();
+    });
+  });
 });
 
 

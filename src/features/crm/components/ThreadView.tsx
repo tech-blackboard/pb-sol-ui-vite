@@ -1,7 +1,7 @@
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import type { RootState } from '../../../store';
 import { setSelectedThread } from '../../../store/slices/crm/crm.slice';
-import { updateLabelsThunk, fetchMessagesThunk, toggleThreadReadThunk } from '../../../store/slices/crm/crm.thunks';
+import { updateLabelsThunk, fetchMessagesThunk, toggleThreadReadThunk, trashThreadsThunk, restoreThreadsThunk, deleteThreadsPermanentlyThunk } from '../../../store/slices/crm/crm.thunks';
 import * as crmService from '../services/crmService';
 import ReplyForm from './ReplyForm';
 import EmailBody from './EmailBody';
@@ -13,7 +13,7 @@ import type { Thread, Contact, Message, Attachment, CrmEvent } from '../types';
 
 export default function ThreadView() {
     const dispatch = useAppDispatch();
-    const { messages, threads, events, selectedThreadId, loading } = useAppSelector((state: RootState) => state.crm);
+    const { messages, threads, events, selectedThreadId, loading, activeFolder } = useAppSelector((state: RootState) => state.crm);
     const [isUnsubscribing, setIsUnsubscribing] = useState(false);
     const [expandedDetailsId, setExpandedDetailsId] = useState<string | null>(null);
     const [downloadingIds, setDownloadingIds] = useState<Set<number>>(new Set());
@@ -109,6 +109,34 @@ export default function ThreadView() {
         }
     };
 
+    const handleTrashThread = () => {
+        if (selectedThreadId) {
+            if (confirm('Move this conversation to Trash?')) {
+                dispatch(trashThreadsThunk([selectedThreadId]));
+                dispatch(setSelectedThread(null));
+                toast.success('Conversation moved to Trash');
+            }
+        }
+    };
+
+    const handleRestoreThread = () => {
+        if (selectedThreadId) {
+            dispatch(restoreThreadsThunk([selectedThreadId]));
+            dispatch(setSelectedThread(null));
+            toast.success('Conversation restored');
+        }
+    };
+
+    const handleDeletePermanently = () => {
+        if (selectedThreadId) {
+            if (confirm('Permanently delete this conversation? This cannot be undone.')) {
+                dispatch(deleteThreadsPermanentlyThunk([selectedThreadId]));
+                dispatch(setSelectedThread(null));
+                toast.success('Conversation permanently deleted');
+            }
+        }
+    };
+
     const handleDownload = async (attachmentId: number, filename: string) => {
         try {
             setDownloadingIds(prev => new Set(prev).add(attachmentId));
@@ -150,21 +178,38 @@ export default function ThreadView() {
                         </svg>
                     </button>
                     <div className="h-6 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1"></div>
-                    <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500" title="Archive">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-                        </svg>
-                    </button>
-                    <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500" title="Report spam">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                        </svg>
-                    </button>
-                    <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500" title="Delete">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.247 2.118H8.086a2.25 2.25 0 01-2.247-2.118L6.822 5.792m11.142 0c.243-.077.48-.154.718-.23a2.25 2.25 0 00-1.25-4.25H8.37A2.25 2.25 0 007.12 1.54c.238.077.475.154.718.23m11.142 0l-1.815 3.085a11.95 11.95 0 01-5.045 4.519 11.95 11.95 0 01-5.045-4.519L4.088 5.792" />
-                        </svg>
-                    </button>
+                    {activeFolder === 'Trash' ? (
+                        <>
+                            <button
+                                onClick={handleRestoreThread}
+                                className="p-2 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20 text-green-600"
+                                title="Restore"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                                </svg>
+                            </button>
+                            <button
+                                onClick={handleDeletePermanently}
+                                className="p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600"
+                                title="Delete Permanently"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.247 2.118H8.086a2.25 2.25 0 01-2.247-2.118L6.822 5.792m11.142 0c.243-.077.48-.154.718-.23a2.25 2.25 0 00-1.25-4.25H8.37A2.25 2.25 0 007.12 1.54c.238.077.475.154.718.23m11.142 0l-1.815 3.085a11.95 11.95 0 01-5.045 4.519 11.95 11.95 0 01-5.045-4.519L4.088 5.792" />
+                                </svg>
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            onClick={handleTrashThread}
+                            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-red-500"
+                            title="Move to Trash"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.247 2.118H8.086a2.25 2.25 0 01-2.247-2.118L6.822 5.792m11.142 0c.243-.077.48-.154.718-.23a2.25 2.25 0 00-1.25-4.25H8.37A2.25 2.25 0 007.12 1.54c.238.077.475.154.718.23m11.142 0l-1.815 3.085a11.95 11.95 0 01-5.045 4.519 11.95 11.95 0 01-5.045-4.519L4.088 5.792" />
+                            </svg>
+                        </button>
+                    )}
                     <div className="h-6 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1"></div>
                     <button
                         onClick={handleToggleRead}

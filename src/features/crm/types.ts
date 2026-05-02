@@ -33,6 +33,8 @@ export interface Thread {
     contactId: number;
     isRead: boolean;
     isStarred: boolean;
+    isTrash: boolean;
+    trashedAt?: string;
     contact?: Contact;
     messageCount: number;
     domain: string;

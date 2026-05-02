@@ -168,3 +168,55 @@ export const fetchLabelDefinitionsThunk = createAsyncThunk(
         }
     }
 );
+
+export const trashThreadsThunk = createAsyncThunk(
+    'crm/trashThreads',
+    async (threadIds: string[], { rejectWithValue }) => {
+        try {
+            await crmService.trashThreads(threadIds);
+            return threadIds;
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to move threads to trash';
+            return rejectWithValue(message);
+        }
+    }
+);
+
+export const restoreThreadsThunk = createAsyncThunk(
+    'crm/restoreThreads',
+    async (threadIds: string[], { rejectWithValue }) => {
+        try {
+            await crmService.restoreThreads(threadIds);
+            return threadIds;
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to restore threads from trash';
+            return rejectWithValue(message);
+        }
+    }
+);
+
+export const deleteThreadsPermanentlyThunk = createAsyncThunk(
+    'crm/deleteThreadsPermanently',
+    async (threadIds: string[], { rejectWithValue }) => {
+        try {
+            await crmService.deleteThreadsPermanently(threadIds);
+            return threadIds;
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to delete threads permanently';
+            return rejectWithValue(message);
+        }
+    }
+);
+
+export const emptyTrashThunk = createAsyncThunk(
+    'crm/emptyTrash',
+    async (eventId: number, { rejectWithValue }) => {
+        try {
+            await crmService.emptyTrash(eventId);
+            return eventId;
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to empty trash';
+            return rejectWithValue(message);
+        }
+    }
+);

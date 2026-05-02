@@ -248,4 +248,30 @@ describe('crmService', () => {
       expect(mockApi.get).toHaveBeenCalledWith(expect.stringContaining('/labels/definitions'), expect.anything());
     });
   });
+
+  describe('Trash Management', () => {
+    it('trashThreads calls api.post', async () => {
+      mockApi.post.mockResolvedValueOnce({});
+      await crmService.trashThreads(['t1']);
+      expect(mockApi.post).toHaveBeenCalledWith(expect.stringContaining('/threads/trash'), { threadIds: ['t1'] }, expect.anything());
+    });
+
+    it('restoreThreads calls api.post', async () => {
+      mockApi.post.mockResolvedValueOnce({});
+      await crmService.restoreThreads(['t1']);
+      expect(mockApi.post).toHaveBeenCalledWith(expect.stringContaining('/threads/restore'), { threadIds: ['t1'] }, expect.anything());
+    });
+
+    it('deleteThreadsPermanently calls api.delete', async () => {
+      mockApi.delete.mockResolvedValueOnce({});
+      await crmService.deleteThreadsPermanently(['t1']);
+      expect(mockApi.delete).toHaveBeenCalledWith(expect.stringContaining('/threads/permanent'), expect.objectContaining({ data: { threadIds: ['t1'] } }));
+    });
+
+    it('emptyTrash calls api.delete', async () => {
+      mockApi.delete.mockResolvedValueOnce({});
+      await crmService.emptyTrash(1);
+      expect(mockApi.delete).toHaveBeenCalledWith(expect.stringContaining('/threads/empty-trash/1'), expect.anything());
+    });
+  });
 });

@@ -89,6 +89,16 @@ describe('CrmSidebar', () => {
     renderWithProviders(<CrmSidebar />, { starredCount: 2 });
     expect(screen.getByText('2')).toBeInTheDocument();
   });
+ 
+  it('renders trash count badge', () => {
+    renderWithProviders(<CrmSidebar />, { trashCount: 7 });
+    expect(screen.getByText('7')).toBeInTheDocument();
+  });
+ 
+  it('renders accounts count badge', () => {
+    renderWithProviders(<CrmSidebar />, { accountsCount: 4 });
+    expect(screen.getByText('4')).toBeInTheDocument();
+  });
 
   it('applies correct styles to active folder count badge', () => {
     renderWithProviders(<CrmSidebar />, { unreadCount: 5, activeFolder: 'Inbox' });

@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { CrmEvent, Thread, Message, CrmLabel, EmailAccount } from '../../../features/crm/types';
-import { fetchEventsThunk, fetchThreadsThunk, fetchMessagesThunk, sendReplyThunk, updateLabelsThunk, saveDraftThunk, fetchDraftsThunk, deleteDraftThunk, toggleThreadStarThunk, toggleThreadReadThunk, fetchLabelDefinitionsThunk, fetchEmailAccountsThunk } from './crm.thunks';
+import { fetchEventsThunk, fetchThreadsThunk, fetchMessagesThunk, sendReplyThunk, updateLabelsThunk, saveDraftThunk, fetchDraftsThunk, deleteDraftThunk, toggleThreadStarThunk, toggleThreadReadThunk, fetchLabelDefinitionsThunk, fetchEmailAccountsThunk, trashThreadsThunk, restoreThreadsThunk, deleteThreadsPermanentlyThunk, emptyTrashThunk } from './crm.thunks';
 
 export interface CrmState {
     events: CrmEvent[];
@@ -16,6 +16,7 @@ export interface CrmState {
     accountsActiveDomain: string | null;
     activeFolder: 'Inbox' | 'Drafts' | 'Sent' | 'Starred' | 'Junk' | 'Trash' | 'Accounts' | 'Contact Bucket';
     selectedThreadId: string | null;
+    selectedThreadIds: string[];
     searchTerm: string;
     accountsSearchTerm: string;
     searchTrigger: number;
@@ -39,6 +40,8 @@ export interface CrmState {
     starredCount: number;
     sentCount: number;
     draftsCount: number;
+    trashCount: number;
+    accountsCount: number;
     totalDrafts: number;
 
     loading: {
@@ -66,6 +69,7 @@ export const initialState: CrmState = {
     accountsActiveDomain: null,
     activeFolder: 'Inbox',
     selectedThreadId: null,
+    selectedThreadIds: [],
     searchTerm: '',
     accountsSearchTerm: '',
     searchTrigger: 0,
@@ -86,6 +90,8 @@ export const initialState: CrmState = {
     starredCount: 0,
     sentCount: 0,
     draftsCount: 0,
+    trashCount: 0,
+    accountsCount: 0,
     totalDrafts: 0,
 
     isSidebarOpen: false,
@@ -110,10 +116,16 @@ const crmSlice = createSlice({
             state.activeDomain = null; // Reset domain when event changes
             state.activeEmailAccountId = null; // Reset email account ID when event changes
             state.currentPage = 1;
+            state.selectedThreadId = null;
+            state.selectedThreadIds = [];
+            state.messages = [];
         },
         setAccountsActiveEvent(state, action: PayloadAction<number | null>) {
             state.accountsActiveEventId = action.payload;
             state.accountsActiveDomain = null; // Reset domain when event changes
+            state.selectedThreadId = null;
+            state.selectedThreadIds = [];
+            state.messages = [];
         },
         setActiveDomain(state, action: PayloadAction<string | null>) {
             state.activeDomain = action.payload;
@@ -127,10 +139,25 @@ const crmSlice = createSlice({
         },
         setActiveFolder(state, action: PayloadAction<'Inbox' | 'Drafts' | 'Sent' | 'Starred' | 'Junk' | 'Trash' | 'Accounts' | 'Contact Bucket'>) {
             state.activeFolder = action.payload;
+            state.selectedThreadId = null;
+            state.selectedThreadIds = [];
+            state.messages = [];
         },
         clearSelection(state) {
             state.selectedThreadId = null;
+            state.selectedThreadIds = [];
             state.messages = [];
+        },
+        toggleThreadSelection(state, action: PayloadAction<string>) {
+            const index = state.selectedThreadIds.indexOf(action.payload);
+            if (index !== -1) {
+                state.selectedThreadIds.splice(index, 1);
+            } else {
+                state.selectedThreadIds.push(action.payload);
+            }
+        },
+        selectAllThreads(state, action: PayloadAction<string[]>) {
+            state.selectedThreadIds = action.payload;
         },
         setSelectedThread(state, action: PayloadAction<string | null>) {
             if (state.selectedThreadId !== action.payload) {
@@ -210,6 +237,8 @@ const crmSlice = createSlice({
                 state.starredCount = action.payload.starredCount || 0;
                 state.sentCount = action.payload.sentCount || 0;
                 state.draftsCount = action.payload.draftsCount || 0;
+                state.trashCount = action.payload.trashCount || 0;
+                state.accountsCount = action.payload.accountsCount || 0;
             })
             .addCase(fetchThreadsThunk.rejected, (state, action) => {
                 state.loading.threads = false;
@@ -334,6 +363,48 @@ const crmSlice = createSlice({
             // Fetch Email Accounts
             .addCase(fetchEmailAccountsThunk.fulfilled, (state, { payload }) => {
                 state.emailAccounts = payload;
+            })
+            // Trash Threads
+            .addCase(trashThreadsThunk.fulfilled, (state, { payload }) => {
+                state.threads = state.threads.filter(t => !payload.includes(t.id));
+                state.totalThreads = Math.max(0, state.totalThreads - payload.length);
+                state.trashCount += payload.length;
+                if (state.selectedThreadId && payload.includes(state.selectedThreadId)) {
+                    state.selectedThreadId = null;
+                    state.messages = [];
+                }
+            })
+            // Restore Threads
+            .addCase(restoreThreadsThunk.fulfilled, (state, { payload }) => {
+                state.threads = state.threads.filter(t => !payload.includes(t.id));
+                state.totalThreads = Math.max(0, state.totalThreads - payload.length);
+                state.trashCount = Math.max(0, state.trashCount - payload.length);
+                if (state.selectedThreadId && payload.includes(state.selectedThreadId)) {
+                    state.selectedThreadId = null;
+                    state.messages = [];
+                }
+            })
+            // Delete Permanently
+            .addCase(deleteThreadsPermanentlyThunk.fulfilled, (state, { payload }) => {
+                state.threads = state.threads.filter(t => !payload.includes(t.id));
+                state.totalThreads = Math.max(0, state.totalThreads - payload.length);
+                if (state.activeFolder === 'Trash') {
+                    state.trashCount = Math.max(0, state.trashCount - payload.length);
+                }
+                if (state.selectedThreadId && payload.includes(state.selectedThreadId)) {
+                    state.selectedThreadId = null;
+                    state.messages = [];
+                }
+            })
+            // Empty Trash
+            .addCase(emptyTrashThunk.fulfilled, (state) => {
+                if (state.activeFolder === 'Trash') {
+                    state.threads = [];
+                    state.totalThreads = 0;
+                }
+                state.trashCount = 0;
+                state.selectedThreadId = null;
+                state.messages = [];
             });
     },
 });
@@ -355,6 +426,8 @@ export const {
     triggerAccountsSearch,
     setPage,
     setActiveEmailAccountId,
-    toggleSidebarCollapse
+    toggleSidebarCollapse,
+    toggleThreadSelection,
+    selectAllThreads
 } = crmSlice.actions;
 export default crmSlice.reducer;

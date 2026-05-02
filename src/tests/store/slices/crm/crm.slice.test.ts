@@ -26,9 +26,14 @@ import {
     saveDraftThunk,
     fetchDraftsThunk,
     deleteDraftThunk,
-    fetchLabelDefinitionsThunk
+    fetchLabelDefinitionsThunk,
+    trashThreadsThunk,
+    restoreThreadsThunk,
+    emptyTrashThunk,
+    fetchEmailAccountsThunk,
+    deleteThreadsPermanentlyThunk
 } from '../../../../store/slices/crm/crm.thunks';
-import type { Message, CrmEvent, Thread, CrmLabel } from '../../../../features/crm/types';
+import type { Message, CrmEvent, Thread, CrmLabel, EmailAccount } from '../../../../features/crm/types';
 import type { CrmState } from '../../../../store/slices/crm/crm.slice';
 import type { UnknownAction } from '@reduxjs/toolkit';
 
@@ -187,7 +192,9 @@ describe('crm slice', () => {
                 unreadCount: 1,
                 starredCount: 0,
                 sentCount: 0,
-                draftsCount: 0
+                draftsCount: 0,
+                trashCount: 0,
+                accountsCount: 0
             };
             const state = reducer(initialState, fetchThreadsThunk.fulfilled(payload, '', { eventId: 1 }));
             expect(state.loading.threads).toBe(false);
@@ -200,7 +207,7 @@ describe('crm slice', () => {
                 threads: [],
                 total: 0
                 // counts missing
-            } as unknown as { threads: Thread[]; total: number; unreadCount: number; starredCount: number; sentCount: number; draftsCount: number };
+            } as unknown as { threads: Thread[]; total: number; unreadCount: number; starredCount: number; sentCount: number; draftsCount: number; trashCount: number; accountsCount: number };
             const state = reducer(initialState, fetchThreadsThunk.fulfilled(payload, '', { eventId: 1 }));
             expect(state.unreadCount).toBe(0);
             expect(state.starredCount).toBe(0);
@@ -385,6 +392,104 @@ describe('crm slice', () => {
             const labels = [{ id: 1, name: 'L1' } as unknown as CrmLabel];
             const state = reducer(initialState, fetchLabelDefinitionsThunk.fulfilled(labels, '', undefined));
             expect(state.labelDefinitions).toEqual(labels);
+        });
+
+        it('handles trashThreadsThunk.fulfilled', () => {
+            const startState = {
+                ...initialState,
+                threads: [{ id: 't1' } as unknown as Thread, { id: 't2' } as unknown as Thread],
+                totalThreads: 2
+            };
+            const state = reducer(startState, trashThreadsThunk.fulfilled(['t1'], '', ['t1']));
+            // Should remove trashed thread from view
+            expect(state.threads).toHaveLength(1);
+            expect(state.threads[0].id).toBe('t2');
+            expect(state.totalThreads).toBe(1);
+        });
+
+        it('handles trashThreadsThunk.fulfilled and clears selected thread (line 373-375)', () => {
+            const startState = {
+                ...initialState,
+                threads: [{ id: 't1' } as unknown as Thread],
+                selectedThreadId: 't1',
+                messages: [{ id: 'm1' } as unknown as Message]
+            };
+            const state = reducer(startState, trashThreadsThunk.fulfilled(['t1'], '', ['t1']));
+            expect(state.selectedThreadId).toBeNull();
+            expect(state.messages).toHaveLength(0);
+        });
+
+        it('handles restoreThreadsThunk.fulfilled', () => {
+            const startState = {
+                ...initialState,
+                activeFolder: 'Trash' as const,
+                threads: [{ id: 't1' } as unknown as Thread],
+                totalThreads: 1
+            };
+            const state = reducer(startState, restoreThreadsThunk.fulfilled(['t1'], '', ['t1']));
+            // Should remove restored thread from Trash view
+            expect(state.threads).toHaveLength(0);
+            expect(state.totalThreads).toBe(0);
+        });
+
+        it('handles restoreThreadsThunk.fulfilled and clears selected thread (line 383-385)', () => {
+            const startState = {
+                ...initialState,
+                threads: [{ id: 't1' } as unknown as Thread],
+                selectedThreadId: 't1',
+                messages: [{ id: 'm1' } as unknown as Message]
+            };
+            const state = reducer(startState, restoreThreadsThunk.fulfilled(['t1'], '', ['t1']));
+            expect(state.selectedThreadId).toBeNull();
+            expect(state.messages).toHaveLength(0);
+        });
+
+        it('handles deleteThreadsPermanentlyThunk.fulfilled in Trash folder (line 391-393)', () => {
+            const startState = {
+                ...initialState,
+                activeFolder: 'Trash' as const,
+                threads: [{ id: 't1' } as unknown as Thread],
+                trashCount: 1
+            };
+            const state = reducer(startState, deleteThreadsPermanentlyThunk.fulfilled(['t1'], '', ['t1']));
+            expect(state.trashCount).toBe(0);
+        });
+
+        it('handles deleteThreadsPermanentlyThunk.fulfilled and clears selected thread (line 394-396)', () => {
+            const startState = {
+                ...initialState,
+                selectedThreadId: 't1',
+                messages: [{ id: 'm1' } as unknown as Message]
+            };
+            const state = reducer(startState, deleteThreadsPermanentlyThunk.fulfilled(['t1'], '', ['t1']));
+            expect(state.selectedThreadId).toBeNull();
+            expect(state.messages).toHaveLength(0);
+        });
+
+        it('handles fetchEmailAccountsThunk.fulfilled (line 365)', () => {
+            const accounts = [{ id: 1, name: 'Acc1' } as unknown as EmailAccount];
+            const state = reducer(initialState, fetchEmailAccountsThunk.fulfilled(accounts, '', 1));
+            expect(state.emailAccounts).toEqual(accounts);
+        });
+
+        it('handles thunk rejections (line 154, 175, etc)', () => {
+            const state = reducer(initialState, fetchEventsThunk.rejected(new Error('Fail'), '', undefined, 'Fail'));
+            expect(state.loading.events).toBe(false);
+            expect(state.error).toBe('Fail');
+        });
+
+        it('handles emptyTrashThunk.fulfilled', () => {
+            const startState = {
+                ...initialState,
+                activeFolder: 'Trash' as const,
+                threads: [{ id: 't1' } as unknown as Thread],
+                totalThreads: 1,
+                trashCount: 1
+            };
+            const state = reducer(startState, emptyTrashThunk.fulfilled(1, '', 1));
+            expect(state.threads).toHaveLength(0);
+            expect(state.totalThreads).toBe(0);
+            expect(state.trashCount).toBe(0);
         });
     });
 });

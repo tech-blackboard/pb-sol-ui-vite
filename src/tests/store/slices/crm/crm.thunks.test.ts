@@ -9,7 +9,11 @@ import {
     saveDraftThunk,
     fetchDraftsThunk,
     deleteDraftThunk,
-    fetchLabelDefinitionsThunk
+    fetchLabelDefinitionsThunk,
+    trashThreadsThunk,
+    restoreThreadsThunk,
+    deleteThreadsPermanentlyThunk,
+    emptyTrashThunk
 } from '../../../../store/slices/crm/crm.thunks';
 import * as crmService from '../../../../features/crm/services/crmService';
 
@@ -192,5 +196,62 @@ describe('crm thunks catch blocks', () => {
         });
         const result = await fetchMessagesThunk('t1')(dispatch, getState, undefined);
         expect(result.payload).toBe('Messages Network Error');
+    });
+
+    it('trashThreadsThunk should return threadIds on success', async () => {
+        (crmService.trashThreads as jest.Mock).mockResolvedValue({});
+        const result = await trashThreadsThunk(['t1', 't2'])(dispatch, getState, undefined);
+        expect(result.payload).toEqual(['t1', 't2']);
+    });
+
+    it('trashThreadsThunk should reject with axios error message', async () => {
+        (crmService.trashThreads as jest.Mock).mockRejectedValue({
+            isAxiosError: true,
+            response: { data: { message: 'Trash Error' } }
+        });
+        const result = await trashThreadsThunk(['t1'])(dispatch, getState, undefined);
+        expect(result.payload).toBe('Trash Error');
+    });
+
+    it('restoreThreadsThunk should return threadIds on success', async () => {
+        (crmService.restoreThreads as jest.Mock).mockResolvedValue({});
+        const result = await restoreThreadsThunk(['t1'])(dispatch, getState, undefined);
+        expect(result.payload).toEqual(['t1']);
+    });
+
+    it('restoreThreadsThunk should reject with axios error message', async () => {
+        (crmService.restoreThreads as jest.Mock).mockRejectedValue({
+            isAxiosError: true,
+            response: { data: { message: 'Restore Error' } }
+        });
+        const result = await restoreThreadsThunk(['t1'])(dispatch, getState, undefined);
+        expect(result.payload).toBe('Restore Error');
+    });
+
+    it('deleteThreadsPermanentlyThunk should return threadIds on success', async () => {
+        (crmService.deleteThreadsPermanently as jest.Mock).mockResolvedValue({});
+        const result = await deleteThreadsPermanentlyThunk(['t1'])(dispatch, getState, undefined);
+        expect(result.payload).toEqual(['t1']);
+    });
+
+    it('deleteThreadsPermanentlyThunk should reject with axios error message', async () => {
+        (crmService.deleteThreadsPermanently as jest.Mock).mockRejectedValue({
+            isAxiosError: true,
+            response: { data: { message: 'Delete Error' } }
+        });
+        const result = await deleteThreadsPermanentlyThunk(['t1'])(dispatch, getState, undefined);
+        expect(result.payload).toBe('Delete Error');
+    });
+
+    it('emptyTrashThunk should return eventId on success', async () => {
+        (crmService.emptyTrash as jest.Mock).mockResolvedValue({});
+        const result = await emptyTrashThunk(1)(dispatch, getState, undefined);
+        expect(result.payload).toBe(1);
+    });
+
+    it('emptyTrashThunk should reject with fallback message', async () => {
+        (crmService.emptyTrash as jest.Mock).mockRejectedValue(new Error('Fail'));
+        const result = await emptyTrashThunk(1)(dispatch, getState, undefined);
+        expect(result.payload).toBe('Failed to empty trash');
     });
 });

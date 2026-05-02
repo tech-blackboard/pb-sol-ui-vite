@@ -5,7 +5,7 @@ import { selectAuth } from '../../../store/slices/authSlice';
 
 export default function CrmSidebar() {
     const dispatch = useAppDispatch();
-    const { activeFolder, unreadCount, starredCount, sentCount, draftsCount, isSidebarOpen, isSidebarCollapsed } = useAppSelector((state: RootState) => state.crm);
+    const { activeFolder, unreadCount, starredCount, sentCount, draftsCount, trashCount, accountsCount, isSidebarOpen, isSidebarCollapsed } = useAppSelector((state: RootState) => state.crm);
     const { user } = useAppSelector(selectAuth);
     const isAdmin = Boolean(user?.isAdmin);
 
@@ -84,6 +84,22 @@ export default function CrmSidebar() {
                                     : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400'
                                     }`}>
                                     {starredCount}
+                                </span>
+                            )}
+                            {!isSidebarCollapsed && folder.name === 'Trash' && trashCount > 0 && (
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeFolder === 'Trash'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                                    }`}>
+                                    {trashCount}
+                                </span>
+                            )}
+                            {!isSidebarCollapsed && folder.name === 'Accounts' && accountsCount > 0 && (
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeFolder === 'Accounts'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                                    }`}>
+                                    {accountsCount}
                                 </span>
                             )}
                             {isSidebarCollapsed && folder.name === 'Inbox' && unreadCount > 0 && (

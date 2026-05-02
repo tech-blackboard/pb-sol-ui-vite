@@ -22,8 +22,8 @@ export async function fetchCrmEvents(): Promise<CrmEvent[]> {
 /**
  * Fetch threads for a specific event
  */
-export async function fetchThreads(eventId: number, search?: string, domain?: string, emailAccountId?: number, folder?: string, page: number = 1, limit: number = 50, label?: string): Promise<{ threads: Thread[]; total: number; unreadCount: number; starredCount: number; sentCount: number; draftsCount: number }> {
-    const { data } = await api.get<{ threads: Thread[]; total: number; unreadCount: number; starredCount: number; sentCount: number; draftsCount: number }>(`${CRM_BASE}/threads`, {
+export async function fetchThreads(eventId: number, search?: string, domain?: string, emailAccountId?: number, folder?: string, page: number = 1, limit: number = 50, label?: string): Promise<{ threads: Thread[]; total: number; unreadCount: number; starredCount: number; sentCount: number; draftsCount: number; trashCount: number; accountsCount: number }> {
+    const { data } = await api.get<{ threads: Thread[]; total: number; unreadCount: number; starredCount: number; sentCount: number; draftsCount: number; trashCount: number; accountsCount: number }>(`${CRM_BASE}/threads`, {
         params: { eventId, search, domain, emailAccountId, folder, page, limit, label },
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
@@ -245,4 +245,37 @@ export async function getMicrosoftAuthUrl(id: number): Promise<string> {
         withCredentials: true,
     });
     return data.url;
+}
+
+/**
+ * Trash Management
+ */
+
+export async function trashThreads(threadIds: string[]): Promise<void> {
+    await api.post(`${CRM_BASE}/threads/trash`, { threadIds }, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+}
+
+export async function restoreThreads(threadIds: string[]): Promise<void> {
+    await api.post(`${CRM_BASE}/threads/restore`, { threadIds }, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+}
+
+export async function deleteThreadsPermanently(threadIds: string[]): Promise<void> {
+    await api.delete(`${CRM_BASE}/threads/permanent`, {
+        data: { threadIds },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+}
+
+export async function emptyTrash(eventId: number): Promise<void> {
+    await api.delete(`${CRM_BASE}/threads/empty-trash/${eventId}`, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
 }
