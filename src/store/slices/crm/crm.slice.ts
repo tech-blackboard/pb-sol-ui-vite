@@ -355,6 +355,7 @@ const crmSlice = createSlice({
             // Delete Draft
             .addCase(deleteDraftThunk.fulfilled, (state, { payload }) => {
                 state.drafts = state.drafts.filter(d => d.id !== payload);
+                state.selectedThreadIds = state.selectedThreadIds.filter(id => id !== payload);
             })
             // Fetch Label Definitions
             .addCase(fetchLabelDefinitionsThunk.fulfilled, (state, { payload }) => {
@@ -369,6 +370,7 @@ const crmSlice = createSlice({
                 state.threads = state.threads.filter(t => !payload.includes(t.id));
                 state.totalThreads = Math.max(0, state.totalThreads - payload.length);
                 state.trashCount += payload.length;
+                state.selectedThreadIds = state.selectedThreadIds.filter(id => !payload.includes(id));
                 if (state.selectedThreadId && payload.includes(state.selectedThreadId)) {
                     state.selectedThreadId = null;
                     state.messages = [];
@@ -379,6 +381,7 @@ const crmSlice = createSlice({
                 state.threads = state.threads.filter(t => !payload.includes(t.id));
                 state.totalThreads = Math.max(0, state.totalThreads - payload.length);
                 state.trashCount = Math.max(0, state.trashCount - payload.length);
+                state.selectedThreadIds = state.selectedThreadIds.filter(id => !payload.includes(id));
                 if (state.selectedThreadId && payload.includes(state.selectedThreadId)) {
                     state.selectedThreadId = null;
                     state.messages = [];
@@ -388,6 +391,7 @@ const crmSlice = createSlice({
             .addCase(deleteThreadsPermanentlyThunk.fulfilled, (state, { payload }) => {
                 state.threads = state.threads.filter(t => !payload.includes(t.id));
                 state.totalThreads = Math.max(0, state.totalThreads - payload.length);
+                state.selectedThreadIds = state.selectedThreadIds.filter(id => !payload.includes(id));
                 if (state.activeFolder === 'Trash') {
                     state.trashCount = Math.max(0, state.trashCount - payload.length);
                 }
@@ -404,6 +408,7 @@ const crmSlice = createSlice({
                 }
                 state.trashCount = 0;
                 state.selectedThreadId = null;
+                state.selectedThreadIds = [];
                 state.messages = [];
             });
     },

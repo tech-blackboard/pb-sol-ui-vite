@@ -398,6 +398,7 @@ describe('crm slice', () => {
             const startState = {
                 ...initialState,
                 threads: [{ id: 't1' } as unknown as Thread, { id: 't2' } as unknown as Thread],
+                selectedThreadIds: ['t1'],
                 totalThreads: 2
             };
             const state = reducer(startState, trashThreadsThunk.fulfilled(['t1'], '', ['t1']));
@@ -405,6 +406,8 @@ describe('crm slice', () => {
             expect(state.threads).toHaveLength(1);
             expect(state.threads[0].id).toBe('t2');
             expect(state.totalThreads).toBe(1);
+            // Should clear from selectedThreadIds
+            expect(state.selectedThreadIds).toEqual([]);
         });
 
         it('handles trashThreadsThunk.fulfilled and clears selected thread (line 373-375)', () => {

@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { fetchThreadsThunk } from '../../../store/slices/crm/crm.thunks';
 import ThreadTable from './ThreadTable';
-import { setPage, setActiveEvent, setActiveFolder, setSelectedThread } from '../../../store/slices/crm/crm.slice';
-import { fetchMessagesThunk } from '../../../store/slices/crm/crm.thunks';
+import { setPage, setActiveEvent, setActiveFolder, setSelectedThread, setSearchTerm, triggerSearch } from '../../../store/slices/crm/crm.slice';
 import type { Message, Thread } from '../types';
 
 export default function ContactBucketView() {
@@ -34,10 +33,16 @@ export default function ContactBucketView() {
 
     const handleRowClick: (item: Thread | Message) => void = (item) => {
         const thread = item as Thread;
+        const contactEmail = thread.contact?.email;
+
         dispatch(setActiveEvent(thread.eventId));
         dispatch(setActiveFolder('Inbox'));
-        dispatch(setSelectedThread(thread.id));
-        dispatch(fetchMessagesThunk(thread.id));
+
+        if (contactEmail) {
+            dispatch(setSearchTerm(contactEmail));
+            dispatch(triggerSearch());
+        }
+
         window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'crm' }));
     };
 
