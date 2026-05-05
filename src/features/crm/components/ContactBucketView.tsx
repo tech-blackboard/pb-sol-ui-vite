@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { fetchThreadsThunk } from '../../../store/slices/crm/crm.thunks';
 import ThreadTable from './ThreadTable';
-import { setPage, setActiveEvent, setActiveFolder, setSelectedThread, setSearchTerm, triggerSearch } from '../../../store/slices/crm/crm.slice';
+import { setPage, setActiveEvent, setActiveFolder, setSearchTerm, triggerSearch } from '../../../store/slices/crm/crm.slice';
 import type { Message, Thread } from '../types';
 
 export default function ContactBucketView() {
