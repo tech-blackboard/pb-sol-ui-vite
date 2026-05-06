@@ -100,39 +100,55 @@ export default function ThreadView() {
         }
     };
 
-    const handleToggleRead = () => {
+    const handleToggleRead = async () => {
         if (selectedThreadId) {
-            // In ThreadView, we usually want to mark it as UNREAD and go back
-            dispatch(toggleThreadReadThunk({ threadId: selectedThreadId, isRead: false }));
-            dispatch(setSelectedThread(null));
-            toast.success('Conversation marked as unread');
-        }
-    };
-
-    const handleTrashThread = () => {
-        if (selectedThreadId) {
-            if (confirm('Move this conversation to Trash?')) {
-                dispatch(trashThreadsThunk([selectedThreadId]));
+            try {
+                // In ThreadView, we usually want to mark it as UNREAD and go back
+                await dispatch(toggleThreadReadThunk({ threadId: selectedThreadId, isRead: false })).unwrap();
                 dispatch(setSelectedThread(null));
-                toast.success('Conversation moved to Trash');
+                toast.success('Conversation marked as unread');
+            } catch (err: unknown) {
+                toast.error(err as string);
             }
         }
     };
 
-    const handleRestoreThread = () => {
+    const handleTrashThread = async () => {
         if (selectedThreadId) {
-            dispatch(restoreThreadsThunk([selectedThreadId]));
-            dispatch(setSelectedThread(null));
-            toast.success('Conversation restored');
+            if (confirm('Move this conversation to Trash?')) {
+                try {
+                    await dispatch(trashThreadsThunk([selectedThreadId])).unwrap();
+                    dispatch(setSelectedThread(null));
+                    toast.success('Conversation moved to Trash');
+                } catch (err: unknown) {
+                    toast.error(err as string);
+                }
+            }
         }
     };
 
-    const handleDeletePermanently = () => {
+    const handleRestoreThread = async () => {
+        if (selectedThreadId) {
+            try {
+                await dispatch(restoreThreadsThunk([selectedThreadId])).unwrap();
+                dispatch(setSelectedThread(null));
+                toast.success('Conversation restored');
+            } catch (err: unknown) {
+                toast.error(err as string);
+            }
+        }
+    };
+
+    const handleDeletePermanently = async () => {
         if (selectedThreadId) {
             if (confirm('Permanently delete this conversation? This cannot be undone.')) {
-                dispatch(deleteThreadsPermanentlyThunk([selectedThreadId]));
-                dispatch(setSelectedThread(null));
-                toast.success('Conversation permanently deleted');
+                try {
+                    await dispatch(deleteThreadsPermanentlyThunk([selectedThreadId])).unwrap();
+                    dispatch(setSelectedThread(null));
+                    toast.success('Conversation permanently deleted');
+                } catch (err: unknown) {
+                    toast.error(err as string);
+                }
             }
         }
     };

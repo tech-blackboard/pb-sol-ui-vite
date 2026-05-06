@@ -28,7 +28,7 @@ export const fetchThreadsThunk = createAsyncThunk(
 
 export const fetchEmailAccountsThunk = createAsyncThunk(
     'crm/fetchEmailAccounts',
-    async (eventId: number, { rejectWithValue }) => {
+    async (eventId: number | undefined, { rejectWithValue }) => {
         try {
             return await crmService.fetchEmailAccounts(eventId);
         } catch (err: unknown) {
@@ -152,7 +152,7 @@ export const deleteDraftThunk = createAsyncThunk(
             return draftId;
         } catch (err: unknown) {
             const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to delete draft';
-            return rejectWithValue(message);
+            return rejectWithValue(Array.isArray(message) ? message.join(', ') : message);
         }
     }
 );
@@ -177,7 +177,7 @@ export const trashThreadsThunk = createAsyncThunk(
             return threadIds;
         } catch (err: unknown) {
             const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to move threads to trash';
-            return rejectWithValue(message);
+            return rejectWithValue(Array.isArray(message) ? message.join(', ') : message);
         }
     }
 );
@@ -190,7 +190,7 @@ export const restoreThreadsThunk = createAsyncThunk(
             return threadIds;
         } catch (err: unknown) {
             const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to restore threads from trash';
-            return rejectWithValue(message);
+            return rejectWithValue(Array.isArray(message) ? message.join(', ') : message);
         }
     }
 );
@@ -203,7 +203,7 @@ export const deleteThreadsPermanentlyThunk = createAsyncThunk(
             return threadIds;
         } catch (err: unknown) {
             const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to delete threads permanently';
-            return rejectWithValue(message);
+            return rejectWithValue(Array.isArray(message) ? message.join(', ') : message);
         }
     }
 );
@@ -216,7 +216,7 @@ export const emptyTrashThunk = createAsyncThunk(
             return eventId;
         } catch (err: unknown) {
             const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to empty trash';
-            return rejectWithValue(message);
+            return rejectWithValue(Array.isArray(message) ? message.join(', ') : message);
         }
     }
 );

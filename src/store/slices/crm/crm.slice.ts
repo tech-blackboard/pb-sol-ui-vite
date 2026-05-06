@@ -42,6 +42,7 @@ export interface CrmState {
     draftsCount: number;
     trashCount: number;
     accountsCount: number;
+    totalAccountsCount: number;
     totalDrafts: number;
 
     loading: {
@@ -92,6 +93,7 @@ export const initialState: CrmState = {
     draftsCount: 0,
     trashCount: 0,
     accountsCount: 0,
+    totalAccountsCount: 0,
     totalDrafts: 0,
 
     isSidebarOpen: false,
@@ -142,6 +144,10 @@ const crmSlice = createSlice({
             state.selectedThreadId = null;
             state.selectedThreadIds = [];
             state.messages = [];
+            // Reset accounts count to total when not in Accounts tab
+            if (action.payload !== 'Accounts') {
+                state.accountsCount = state.totalAccountsCount;
+            }
         },
         clearSelection(state) {
             state.selectedThreadId = null;
@@ -238,7 +244,6 @@ const crmSlice = createSlice({
                 state.sentCount = action.payload.sentCount || 0;
                 state.draftsCount = action.payload.draftsCount || 0;
                 state.trashCount = action.payload.trashCount || 0;
-                state.accountsCount = action.payload.accountsCount || 0;
             })
             .addCase(fetchThreadsThunk.rejected, (state, action) => {
                 state.loading.threads = false;
@@ -362,8 +367,17 @@ const crmSlice = createSlice({
                 state.labelDefinitions = payload;
             })
             // Fetch Email Accounts
-            .addCase(fetchEmailAccountsThunk.fulfilled, (state, { payload }) => {
+            .addCase(fetchEmailAccountsThunk.fulfilled, (state, { payload, meta }) => {
                 state.emailAccounts = payload;
+                if (!meta.arg) {
+                    state.totalAccountsCount = payload.length;
+                }
+
+                if (state.activeFolder === 'Accounts') {
+                    state.accountsCount = payload.length;
+                } else {
+                    state.accountsCount = state.totalAccountsCount;
+                }
             })
             // Trash Threads
             .addCase(trashThreadsThunk.fulfilled, (state, { payload }) => {

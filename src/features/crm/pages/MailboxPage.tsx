@@ -10,6 +10,7 @@ import ThreadView from '../components/ThreadView';
 import EmailAccountsPage from './EmailAccountsPage';
 
 import ContactBucketView from '../components/ContactBucketView';
+import toast from 'react-hot-toast';
 
 export default function MailboxPage() {
     const dispatch = useAppDispatch();
@@ -68,25 +69,45 @@ export default function MailboxPage() {
         dispatch(setPage(1));
     }, [activeFolder, activeEventId, searchTrigger, appliedSearchTerm, appliedDomain, appliedEmailAccountId, dispatch]);
 
-    const handleBulkTrash = () => {
+    const handleBulkTrash = async () => {
         if (confirm(`Move ${selectedThreadIds.length} conversations to Trash?`)) {
-            dispatch(trashThreadsThunk(selectedThreadIds));
+            try {
+                await dispatch(trashThreadsThunk(selectedThreadIds)).unwrap();
+                toast.success(`${selectedThreadIds.length} conversations moved to Trash`);
+            } catch (err: unknown) {
+                toast.error(err as string);
+            }
         }
     };
 
-    const handleBulkRestore = () => {
-        dispatch(restoreThreadsThunk(selectedThreadIds));
+    const handleBulkRestore = async () => {
+        try {
+            await dispatch(restoreThreadsThunk(selectedThreadIds)).unwrap();
+            toast.success(`${selectedThreadIds.length} conversations restored`);
+        } catch (err: unknown) {
+            toast.error(err as string);
+        }
     };
 
-    const handleBulkDeletePermanently = () => {
+    const handleBulkDeletePermanently = async () => {
         if (confirm(`Permanently delete ${selectedThreadIds.length} conversations? This cannot be undone.`)) {
-            dispatch(deleteThreadsPermanentlyThunk(selectedThreadIds));
+            try {
+                await dispatch(deleteThreadsPermanentlyThunk(selectedThreadIds)).unwrap();
+                toast.success(`${selectedThreadIds.length} conversations permanently deleted`);
+            } catch (err: unknown) {
+                toast.error(err as string);
+            }
         }
     };
 
-    const handleEmptyTrash = () => {
+    const handleEmptyTrash = async () => {
         if (activeEventId && confirm('Empty Trash? All conversations in Trash will be permanently deleted.')) {
-            dispatch(emptyTrashThunk(activeEventId));
+            try {
+                await dispatch(emptyTrashThunk(activeEventId)).unwrap();
+                toast.success('Trash emptied successfully');
+            } catch (err: unknown) {
+                toast.error(err as string);
+            }
         }
     };
 

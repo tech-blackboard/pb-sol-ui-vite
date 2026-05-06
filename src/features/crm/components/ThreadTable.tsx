@@ -36,11 +36,15 @@ export default function ThreadTable({ onSelectItem }: { onSelectItem?: (item: Th
         }
     };
 
-    const handleDeleteDraft = (e: React.MouseEvent, id: string) => {
+    const handleDeleteDraft = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
         if (confirm('Move this draft to Trash?')) {
-            dispatch(deleteDraftThunk(id));
-            toast.success('Draft moved to Trash');
+            try {
+                await dispatch(deleteDraftThunk(id)).unwrap();
+                toast.success('Draft moved to Trash');
+            } catch (err: unknown) {
+                toast.error(err as string);
+            }
         }
     };
 
@@ -49,31 +53,47 @@ export default function ThreadTable({ onSelectItem }: { onSelectItem?: (item: Th
         dispatch(toggleThreadStarThunk({ threadId, isStarred: !isStarred }));
     };
 
-    const handleToggleRead = (e: React.MouseEvent, threadId: string, isRead: boolean) => {
+    const handleToggleRead = async (e: React.MouseEvent, threadId: string, isRead: boolean) => {
         e.stopPropagation();
-        dispatch(toggleThreadReadThunk({ threadId, isRead: !isRead }));
-        toast.success(`Conversation marked as ${isRead ? 'unread' : 'read'}`);
-    };
-
-    const handleTrashThread = (e: React.MouseEvent, threadId: string) => {
-        e.stopPropagation();
-        if (confirm('Move this conversation to Trash?')) {
-            dispatch(trashThreadsThunk([threadId]));
-            toast.success('Conversation moved to Trash');
+        try {
+            await dispatch(toggleThreadReadThunk({ threadId, isRead: !isRead })).unwrap();
+            toast.success(`Conversation marked as ${isRead ? 'unread' : 'read'}`);
+        } catch (err: unknown) {
+            toast.error(err as string);
         }
     };
 
-    const handleRestoreThread = (e: React.MouseEvent, threadId: string) => {
+    const handleTrashThread = async (e: React.MouseEvent, threadId: string) => {
         e.stopPropagation();
-        dispatch(restoreThreadsThunk([threadId]));
-        toast.success('Conversation restored');
+        if (confirm('Move this conversation to Trash?')) {
+            try {
+                await dispatch(trashThreadsThunk([threadId])).unwrap();
+                toast.success('Conversation moved to Trash');
+            } catch (err: unknown) {
+                toast.error(err as string);
+            }
+        }
     };
 
-    const handleDeletePermanently = (e: React.MouseEvent, threadId: string) => {
+    const handleRestoreThread = async (e: React.MouseEvent, threadId: string) => {
+        e.stopPropagation();
+        try {
+            await dispatch(restoreThreadsThunk([threadId])).unwrap();
+            toast.success('Conversation restored');
+        } catch (err: unknown) {
+            toast.error(err as string);
+        }
+    };
+
+    const handleDeletePermanently = async (e: React.MouseEvent, threadId: string) => {
         e.stopPropagation();
         if (confirm('Permanently delete this conversation? This cannot be undone.')) {
-            dispatch(deleteThreadsPermanentlyThunk([threadId]));
-            toast.success('Conversation permanently deleted');
+            try {
+                await dispatch(deleteThreadsPermanentlyThunk([threadId])).unwrap();
+                toast.success('Conversation permanently deleted');
+            } catch (err: unknown) {
+                toast.error(err as string);
+            }
         }
     };
 

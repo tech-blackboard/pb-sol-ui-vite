@@ -39,16 +39,18 @@ export default function CrmHeader() {
     const currentActiveEventId = isAccountsTab ? accountsActiveEventId : activeEventId;
     // const currentActiveDomain = isAccountsTab ? accountsActiveDomain : activeDomain;
     const currentSearchTerm = isAccountsTab ? accountsSearchTerm : searchTerm;
-
     // const activeEvent = events.find(e => e.id === currentActiveEventId);
     // Domains for the currently selected conference
     // const currentEventDomains = activeEvent?.domains || [];
 
     useEffect(() => {
+        // Fetch all accounts once on mount to get total count for badge
+        dispatch(fetchEmailAccountsThunk());
+    }, [dispatch]);
+
+    useEffect(() => {
         const relevantEventId = isAccountsTab ? accountsActiveEventId : activeEventId;
-        if (relevantEventId) {
-            dispatch(fetchEmailAccountsThunk(relevantEventId));
-        }
+        dispatch(fetchEmailAccountsThunk(relevantEventId || undefined));
     }, [activeEventId, accountsActiveEventId, isAccountsTab, dispatch]);
 
     const handleSync = () => {

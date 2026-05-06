@@ -194,12 +194,13 @@ describe('crm slice', () => {
                 sentCount: 0,
                 draftsCount: 0,
                 trashCount: 0,
-                accountsCount: 0
+                accountsCount: 5 // Should be ignored
             };
             const state = reducer(initialState, fetchThreadsThunk.fulfilled(payload, '', { eventId: 1 }));
             expect(state.loading.threads).toBe(false);
             expect(state.threads).toEqual(payload.threads);
             expect(state.totalThreads).toBe(1);
+            expect(state.accountsCount).toBe(0); // No longer updated from here
         });
 
         it('handles fetchThreadsThunk.fulfilled with missing counts', () => {
@@ -469,10 +470,33 @@ describe('crm slice', () => {
             expect(state.messages).toHaveLength(0);
         });
 
-        it('handles fetchEmailAccountsThunk.fulfilled (line 365)', () => {
-            const accounts = [{ id: 1, name: 'Acc1' } as unknown as EmailAccount];
-            const state = reducer(initialState, fetchEmailAccountsThunk.fulfilled(accounts, '', 1));
+        it('handles fetchEmailAccountsThunk.fulfilled', () => {
+            const accounts = [{ id: 1, name: 'Acc1' }, { id: 2, name: 'Acc2' }] as unknown as EmailAccount[];
+            
+            // Case 1: Fetching all accounts (no arg)
+            let state = reducer(initialState, fetchEmailAccountsThunk.fulfilled(accounts, '', undefined));
             expect(state.emailAccounts).toEqual(accounts);
+            expect(state.totalAccountsCount).toBe(2);
+            expect(state.accountsCount).toBe(2); // Since initialState activeFolder is 'Inbox' (not Accounts), it sets accountsCount to totalAccountsCount
+
+            // Case 2: Fetching conference accounts while in Inbox
+            const conferenceAccounts = [{ id: 1, name: 'Acc1' }] as unknown as EmailAccount[];
+            state = reducer({ ...state, activeFolder: 'Inbox' }, fetchEmailAccountsThunk.fulfilled(conferenceAccounts, '', 1));
+            expect(state.emailAccounts).toEqual(conferenceAccounts);
+            expect(state.totalAccountsCount).toBe(2); // Unchanged
+            expect(state.accountsCount).toBe(2); // Still total because folder is Inbox
+
+            // Case 3: Fetching conference accounts while in Accounts tab
+            state = reducer({ ...state, activeFolder: 'Accounts' }, fetchEmailAccountsThunk.fulfilled(conferenceAccounts, '', 1));
+            expect(state.emailAccounts).toEqual(conferenceAccounts);
+            expect(state.accountsCount).toBe(1); // Updated to filtered count
+        });
+
+        it('resets accountsCount when navigating away from Accounts tab', () => {
+            const startState = { ...initialState, accountsCount: 1, totalAccountsCount: 5, activeFolder: 'Accounts' as const };
+            const state = reducer(startState, setActiveFolder('Inbox'));
+            expect(state.activeFolder).toBe('Inbox');
+            expect(state.accountsCount).toBe(5); // Reset to total
         });
 
         it('handles thunk rejections (line 154, 175, etc)', () => {
