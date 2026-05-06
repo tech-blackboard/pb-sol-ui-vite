@@ -16,7 +16,7 @@ export const fetchEventsThunk = createAsyncThunk(
 
 export const fetchThreadsThunk = createAsyncThunk(
     'crm/fetchThreads',
-    async ({ eventId, search, domain, emailAccountId, folder, page, limit, label }: { eventId: number; search?: string; domain?: string; emailAccountId?: number; folder?: string; page?: number; limit?: number; label?: string }, { rejectWithValue }) => {
+    async ({ eventId, search, domain, emailAccountId, folder, page, limit, label }: { eventId?: number; search?: string; domain?: string; emailAccountId?: number; folder?: string; page?: number; limit?: number; label?: string }, { rejectWithValue }) => {
         try {
             return await crmService.fetchThreads(eventId, search, domain, emailAccountId, folder, page, limit, label);
         } catch (err: unknown) {

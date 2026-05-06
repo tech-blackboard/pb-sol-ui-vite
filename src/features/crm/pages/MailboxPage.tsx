@@ -28,23 +28,21 @@ export default function MailboxPage() {
     }, [dispatch]);
 
     useEffect(() => {
-        if (activeEventId) {
-            if (activeFolder === 'Drafts') {
-                dispatch(fetchDraftsThunk({ page: currentPage, limit, eventId: activeEventId }));
-            } else if (activeFolder === 'Contact Bucket') {
-                // Fetching is handled internally by ContactBucketView to allow independent filter state
-                // but we might want to close sidebar etc.
-            } else {
-                dispatch(fetchThreadsThunk({
-                    eventId: activeEventId,
-                    search: appliedSearchTerm || undefined,
-                    domain: appliedDomain || undefined,
-                    emailAccountId: appliedEmailAccountId || undefined,
-                    folder: activeFolder,
-                    page: currentPage,
-                    limit
-                }));
-            }
+        if (activeFolder === 'Drafts') {
+            dispatch(fetchDraftsThunk({ page: currentPage, limit, eventId: activeEventId || undefined }));
+        } else if (activeFolder === 'Contact Bucket') {
+            // Fetching is handled internally by ContactBucketView to allow independent filter state
+            // but we might want to close sidebar etc.
+        } else {
+            dispatch(fetchThreadsThunk({
+                eventId: activeEventId || undefined,
+                search: appliedSearchTerm || undefined,
+                domain: appliedDomain || undefined,
+                emailAccountId: appliedEmailAccountId || undefined,
+                folder: activeFolder,
+                page: currentPage,
+                limit
+            }));
         }
         // Close sidebar on mobile when folder changes
         if (window.innerWidth < 768) {

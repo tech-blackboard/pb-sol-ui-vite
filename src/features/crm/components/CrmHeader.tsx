@@ -54,15 +54,13 @@ export default function CrmHeader() {
     }, [activeEventId, accountsActiveEventId, isAccountsTab, dispatch]);
 
     const handleSync = () => {
-        if (activeEventId) {
-            dispatch(fetchThreadsThunk({
-                eventId: activeEventId,
-                search: searchTerm || undefined,
-                domain: activeDomain || undefined,
-                emailAccountId: activeEmailAccountId || undefined,
-                folder: activeFolder
-            }));
-        }
+        dispatch(fetchThreadsThunk({
+            eventId: activeEventId || undefined,
+            search: searchTerm || undefined,
+            domain: activeDomain || undefined,
+            emailAccountId: activeEmailAccountId || undefined,
+            folder: activeFolder
+        }));
     };
 
     const handleEventChange = (eventId: number) => {
