@@ -87,6 +87,12 @@ export default function Nav({ links, activeId, onNavigate, headerSlot, isOpen, o
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
         )
+      case 'globalContacts':
+        return (
+          <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        )
       case 'deviceManagment':
         return (
           <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -161,7 +167,7 @@ export default function Nav({ links, activeId, onNavigate, headerSlot, isOpen, o
         className={
           [
             'fixed top-0 bottom-0 left-0 z-50 transform border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 transition-all duration-200 ease-in-out',
-            'md:static md:top-auto md:bottom-auto md:h-auto md:translate-x-0 md:z-10',
+            'md:static md:top-auto md:bottom-auto md:h-full md:translate-x-0 md:z-10',
             isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
             isCollapsed ? 'md:w-16' : 'w-64',
           ].join(' ')
@@ -203,7 +209,7 @@ export default function Nav({ links, activeId, onNavigate, headerSlot, isOpen, o
           </button>
         )}
 
-        <nav className="px-3 py-4 md:pt-4 md:pb-6 md:px-2 overflow-y-auto h-[calc(100%-4rem)] md:h-auto ">
+        <nav className="px-3 py-4 md:pt-4 md:pb-6 md:px-2 overflow-y-auto h-[calc(100%-4rem)] md:h-[calc(100%-4rem)] ">
           <ul className="space-y-1">
             {renderNavItems(links)}
           </ul>

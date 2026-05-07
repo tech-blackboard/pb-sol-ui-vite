@@ -22,6 +22,7 @@ import BrochuresPage from './features/brochures/pages/BrochuresPage'
 import AccRegistrationsPage from './features/accRegistrations/pages/AccRegistrationsPage'
 import ContactsPage from './features/contacts/pages/ContactsPage'
 import MailboxPage from './features/crm/pages/MailboxPage'
+import GlobalContactsPage from './features/globalContacts/pages/GlobalContactsPage'
 
 
 function App() {
@@ -95,7 +96,8 @@ function App() {
     },
     ...(isAdmin ? [{ id: 'deviceManagment', label: 'Device Management' }] : []),
     { id: 'crm', label: 'Mailbox' },
-    { id: 'contactBucket', label: 'Contact Bucket' }
+    { id: 'contactBucket', label: 'Contact Bucket' },
+    { id: 'globalContacts', label: 'Global Contacts' }
   ];
 
   const user: User | null = (authUser as unknown as User) ?? null
@@ -205,6 +207,8 @@ function App() {
                 <ContactsPage />
               ) : activeId === 'crm' || activeId === 'contactBucket' ? (
                 <MailboxPage />
+              ) : activeId === 'globalContacts' ? (
+                <GlobalContactsPage />
               ) : activeId === 'deviceManagment' ? (
 
                 <DeviceManagement />
