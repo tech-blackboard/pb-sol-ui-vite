@@ -20,20 +20,20 @@ interface ReplyFormProps {
     threadId?: string;
 }
 
-export default function ReplyForm({ 
-    contactId, eventId, defaultSubject, recipientEmail, replyEmails, 
-    onSuccess, initialDraftId, initialHtmlBody, initialFromEmail, 
-    initialEmailAccountId, threadId 
+export default function ReplyForm({
+    contactId, eventId, defaultSubject, recipientEmail, replyEmails,
+    onSuccess, initialDraftId, initialHtmlBody, initialFromEmail,
+    initialEmailAccountId, threadId
 }: ReplyFormProps) {
     const dispatch = useAppDispatch();
     const { loading } = useAppSelector((state: RootState) => state.crm);
-    
+
     // State
     const [htmlBody, setHtmlBody] = useState(initialHtmlBody || '');
     const [fromEmail, setFromEmail] = useState(initialFromEmail || replyEmails[0] || '');
     const [emailAccountId, setEmailAccountId] = useState<number | undefined>(initialEmailAccountId);
     const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>([]);
-    
+
     const [isExpanded, setIsExpanded] = useState(!!initialDraftId || !!initialHtmlBody);
     const [draftId, setDraftId] = useState<string | undefined>(initialDraftId);
     const [lastSavedBody, setLastSavedBody] = useState(initialHtmlBody || '');
@@ -46,7 +46,7 @@ export default function ReplyForm({
 
     // Fetch connected accounts
     useEffect(() => {
-        fetchEmailAccounts().then(setEmailAccounts).catch(() => {});
+        fetchEmailAccounts().then(setEmailAccounts).catch(() => { });
     }, []);
 
     // Keep refs in sync with state
@@ -93,7 +93,7 @@ export default function ReplyForm({
             if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
             saveTimeoutRef.current = setTimeout(() => {
                 handleSaveDraft(htmlBody);
-            }, 30000); 
+            }, 30000);
         }
         return () => {
             if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -120,7 +120,7 @@ export default function ReplyForm({
                 }));
             }
         };
-    }, [contactId, eventId, defaultSubject, fromEmail, emailAccountId, threadId, dispatch]); 
+    }, [contactId, eventId, defaultSubject, fromEmail, emailAccountId, threadId, dispatch]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

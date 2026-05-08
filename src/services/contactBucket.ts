@@ -1,7 +1,13 @@
 import { api } from '../lib/api';
 import { getAuthHeaders } from './abstracts';
+import { CONTACT_BUCKET_BASE } from '../config/env';
 
-export const CONTACT_BUCKET_BASE = import.meta.env.VITE_CONTACT_BUCKET_BASE ?? '/contact-bucket';
+
+export type CrmLabel = {
+    id: number;
+    name: string;
+    description: string;
+};
 
 export type ContactBucketItem = {
     id: number;
@@ -12,7 +18,9 @@ export type ContactBucketItem = {
     wphone?: string;
     organization?: string;
     country?: string;
-    labels?: string[];
+    label?: CrmLabel | null;
+    labels?: CrmLabel[];
+    labelIds?: number[];
     notes?: string;
     lastInteraction?: string;
     createdAt?: string;
@@ -25,7 +33,7 @@ export type ContactBucketSearchParams = {
     limit?: number;
     search?: string;
     website_id?: number;
-    label?: string;
+    labelId?: number;
     sortBy?: string;
     sortOrder?: 'ASC' | 'DESC';
     [key: string]: string | number | boolean | undefined;
@@ -79,27 +87,11 @@ export async function updateContactBucket(id: number, payload: Partial<ContactBu
     return data;
 }
 
-export async function getContactBucketLabels(): Promise<string[]> {
-    const { data } = await api.get(`${CONTACT_BUCKET_BASE}/labels`, {
+export async function getContactBucketLabels(): Promise<CrmLabel[]> {
+    const { data } = await api.get(`${CONTACT_BUCKET_BASE}/all-labels`, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });
     return data;
 }
 
-export async function addLabelToContact(id: number, label: string): Promise<ContactBucketItem> {
-    const { data } = await api.post(`${CONTACT_BUCKET_BASE}/${id}/labels`, { label }, {
-        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-        withCredentials: true,
-    });
-    return data;
-}
-
-export async function removeLabelFromContact(id: number, label: string): Promise<ContactBucketItem> {
-    const { data } = await api.delete(`${CONTACT_BUCKET_BASE}/${id}/labels`, {
-        data: { label },
-        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-        withCredentials: true,
-    });
-    return data;
-}

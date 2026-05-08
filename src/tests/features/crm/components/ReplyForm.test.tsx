@@ -231,17 +231,19 @@ describe('ReplyForm', () => {
 
       // Change to a specific email
       fireEvent.change(screen.getByRole('combobox'), { target: { value: 'other@test.com' } });
-      
+
       // Submit and check if correct email was used
       const serviceSpy = jest.spyOn(crmService, 'sendReply').mockResolvedValue({ status: 'ok', messageId: 'm1' });
       fireEvent.change(screen.getByPlaceholderText('Write your reply here...'), { target: { value: 'Body' } });
       fireEvent.submit(screen.getByRole('button', { name: /send reply/i }));
 
       await waitFor(() => expect(serviceSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ 
+        expect.objectContaining({
           fromEmail: 'other@test.com'
         })
       ));
     });
+
+
   });
 });

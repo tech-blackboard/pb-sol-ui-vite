@@ -162,4 +162,14 @@ describe('CrmSidebar', () => {
     const sidebarDiv = container.firstChild as HTMLElement;
     expect(sidebarDiv.className).toContain('translate-x-0');
   });
+
+  it('renders collapsed state indicator for unread Inbox', () => {
+    const { container } = renderWithProviders(<CrmSidebar />, { 
+      isSidebarCollapsed: true, 
+      unreadCount: 5 
+    });
+    // The dot is an anonymous div with specific classes
+    const unreadDot = container.querySelector('.bg-blue-600.rounded-full.absolute');
+    expect(unreadDot).toBeInTheDocument();
+  });
 });

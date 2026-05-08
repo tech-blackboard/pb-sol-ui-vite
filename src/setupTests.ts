@@ -5,6 +5,7 @@ jest.mock('./config/env', () => ({
   SOURCEDB_BASE: 'http://test-api',
   API_BASE: 'http://test-api',
   API_DEVICE: 'http://test-api',
+  CONTACT_BUCKET_BASE: 'http://test-api/contact-bucket',
 }))
 // Mock matchMedia for react-hot-toast and other libraries
 Object.defineProperty(window, 'matchMedia', {

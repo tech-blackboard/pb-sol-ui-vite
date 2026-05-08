@@ -20,7 +20,8 @@ jest.mock('../../../../features/crm/components/ThreadTable', () => ({
   __esModule: true,
   default: ({ onSelectItem }: { onSelectItem: (item: Thread | Message) => void }) => (
     <div data-testid="thread-table">
-      <button onClick={() => onSelectItem({ id: 't1', eventId: 1 } as Thread)}>Click Thread</button>
+      <button onClick={() => onSelectItem({ id: 't1', eventId: 1, contact: { email: 'test@example.com' } } as Thread)}>Click Thread</button>
+      <button onClick={() => onSelectItem({ id: 't2', eventId: 1 } as Thread)}>Click Thread No Email</button>
     </div>
   ),
 }));
@@ -179,6 +180,30 @@ describe('ContactBucketView', () => {
     expect(lastCallDetail).toBe('crm');
 
     window.removeEventListener('app:navigate', navigateSpy as EventListener);
+  });
+
+  it('sets search term and triggers search when a thread with contact email is clicked (coverage line 42-44)', async () => {
+    const store = makeStore({
+      events: mockEvents,
+      loading: { ...initialState.loading, threads: false }
+    });
+    const spy = jest.spyOn(store, 'dispatch');
+    
+    render(
+      <Provider store={store}>
+        <ContactBucketView />
+      </Provider>
+    );
+
+    fireEvent.change(screen.getByRole('combobox', { name: /conference edition/i }), { target: { value: '1' } });
+
+    await screen.findByTestId('thread-table');
+
+    // Click the thread with email
+    fireEvent.click(screen.getByText('Click Thread'));
+
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/setSearchTerm', payload: 'test@example.com' }));
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/triggerSearch' }));
   });
 
   it('dispatches setPage when pagination buttons are clicked', async () => {

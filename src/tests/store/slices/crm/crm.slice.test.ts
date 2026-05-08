@@ -6,7 +6,10 @@ import reducer, {
     setActiveFolder,
     clearSelection,
     setSelectedThread,
+    toggleThreadSelection,
+    selectAllThreads,
     toggleSidebar,
+    toggleSidebarCollapse,
     setSidebarOpen,
     clearError,
     setSearchTerm,
@@ -94,6 +97,30 @@ describe('crm slice', () => {
         expect(state1.isSidebarOpen).toBe(true); // initialState is false
         const state2 = reducer(state1, toggleSidebar());
         expect(state2.isSidebarOpen).toBe(false);
+    });
+
+    it('should toggle sidebar collapse', () => {
+        const state1 = reducer(initialState, toggleSidebarCollapse());
+        expect(state1.isSidebarCollapsed).toBe(true); // initialState is false
+        const state2 = reducer(state1, toggleSidebarCollapse());
+        expect(state2.isSidebarCollapsed).toBe(false);
+    });
+
+    it('should toggle thread selection', () => {
+        const state1 = reducer(initialState, toggleThreadSelection('t1'));
+        expect(state1.selectedThreadIds).toEqual(['t1']);
+        const state2 = reducer(state1, toggleThreadSelection('t2'));
+        expect(state2.selectedThreadIds).toEqual(['t1', 't2']);
+        const state3 = reducer(state2, toggleThreadSelection('t1'));
+        expect(state3.selectedThreadIds).toEqual(['t2']);
+    });
+
+    it('should select all threads', () => {
+        const ids = ['t1', 't2', 't3'];
+        const state = reducer(initialState, selectAllThreads(ids));
+        expect(state.selectedThreadIds).toEqual(ids);
+        const clearedState = reducer(state, selectAllThreads([]));
+        expect(clearedState.selectedThreadIds).toEqual([]);
     });
 
     it('should set sidebar open', () => {

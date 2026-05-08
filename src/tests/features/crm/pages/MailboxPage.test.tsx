@@ -5,6 +5,8 @@ import { configureStore } from '@reduxjs/toolkit';
 import MailboxPage from '../../../../features/crm/pages/MailboxPage';
 import crmReducer, { initialState, setPage, setSidebarOpen, type CrmState } from '../../../../store/slices/crm/crm.slice';
 import authReducer from '../../../../store/slices/authSlice';
+import * as crmThunks from '../../../../store/slices/crm/crm.thunks';
+import toast from 'react-hot-toast';
 
 // ── Mocks ──
 
@@ -27,6 +29,24 @@ jest.mock('../../../../features/crm/components/ThreadView', () => ({
   __esModule: true,
   default: () => <div data-testid="thread-view">ThreadView Mock</div>,
 }));
+
+jest.mock('react-hot-toast', () => ({
+  __esModule: true,
+  default: { success: jest.fn(), error: jest.fn() },
+}));
+
+jest.mock('../../../../store/slices/crm/crm.thunks', () => {
+  const actual = jest.requireActual('../../../../store/slices/crm/crm.thunks');
+  return {
+    ...actual,
+    trashThreadsThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.trashThreadsThunk),
+    restoreThreadsThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.restoreThreadsThunk),
+    deleteThreadsPermanentlyThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.deleteThreadsPermanentlyThunk),
+    emptyTrashThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.emptyTrashThunk),
+    fetchThreadsThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.fetchThreadsThunk),
+    fetchDraftsThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.fetchDraftsThunk),
+  };
+});
 
 // Mock the components that are rendered conditionally
 jest.mock('../../../../features/crm/pages/EmailAccountsPage', () => ({
@@ -78,6 +98,13 @@ describe('MailboxPage', () => {
     // Header and Sidebar should be hidden for Contact Bucket
     expect(screen.queryByTestId('crm-header')).not.toBeInTheDocument();
     expect(screen.queryByTestId('crm-sidebar')).not.toBeInTheDocument();
+  });
+
+  it('renders CrmHeader and CrmSidebar when activeFolder is Inbox', () => {
+    const store = makeStore({ activeFolder: 'Inbox' });
+    render(<Provider store={store}><MailboxPage /></Provider>);
+    expect(screen.getByTestId('crm-header')).toBeInTheDocument();
+    expect(screen.getByTestId('crm-sidebar')).toBeInTheDocument();
   });
 
   it('handles pagination button clicks', async () => {
@@ -224,7 +251,58 @@ describe('MailboxPage', () => {
       expect(window.confirm).toHaveBeenCalledWith('Empty Trash? All conversations in Trash will be permanently deleted.');
       expect(spy).toHaveBeenCalled();
     });
+
+    it('handles bulk trash success and error (coverage 74-77)', async () => {
+      window.confirm = jest.fn().mockReturnValue(true);
+      const store = makeStore({ selectedThreadIds: ['t1'], activeFolder: 'Inbox' });
+      render(<Provider store={store}><MailboxPage /></Provider>);
+
+      // Success
+      fireEvent.click(screen.getByTitle('Move Selected to Trash'));
+      await waitFor(() => expect(toast.success).toHaveBeenCalledWith('1 conversations moved to Trash'));
+
+      // Error
+      (crmThunks.trashThreadsThunk as unknown as jest.Mock).mockReturnValueOnce(() => ({ unwrap: () => Promise.reject('Trash Error') }));
+      fireEvent.click(screen.getByTitle('Move Selected to Trash'));
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Trash Error'));
+    });
+
+    it('handles bulk restore success and error (coverage 84-87)', async () => {
+      const store = makeStore({ selectedThreadIds: ['t1'], activeFolder: 'Trash' });
+      render(<Provider store={store}><MailboxPage /></Provider>);
+
+      fireEvent.click(screen.getByTitle('Restore Selected'));
+      await waitFor(() => expect(toast.success).toHaveBeenCalledWith('1 conversations restored'));
+
+      (crmThunks.restoreThreadsThunk as unknown as jest.Mock).mockReturnValueOnce(() => ({ unwrap: () => Promise.reject('Restore Error') }));
+      fireEvent.click(screen.getByTitle('Restore Selected'));
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Restore Error'));
+    });
+
+    it('handles bulk delete permanent success and error (coverage 94-97)', async () => {
+      window.confirm = jest.fn().mockReturnValue(true);
+      const store = makeStore({ selectedThreadIds: ['t1'], activeFolder: 'Trash' });
+      render(<Provider store={store}><MailboxPage /></Provider>);
+
+      fireEvent.click(screen.getByTitle('Delete Selected Permanently'));
+      await waitFor(() => expect(toast.success).toHaveBeenCalledWith('1 conversations permanently deleted'));
+
+      (crmThunks.deleteThreadsPermanentlyThunk as unknown as jest.Mock).mockReturnValueOnce(() => ({ unwrap: () => Promise.reject('Delete Error') }));
+      fireEvent.click(screen.getByTitle('Delete Selected Permanently'));
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Delete Error'));
+    });
+
+    it('handles empty trash success and error (coverage 105-108)', async () => {
+      window.confirm = jest.fn().mockReturnValue(true);
+      const store = makeStore({ activeFolder: 'Trash', activeEventId: 1 });
+      render(<Provider store={store}><MailboxPage /></Provider>);
+
+      fireEvent.click(screen.getByText('Empty Trash now'));
+      await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Trash emptied successfully'));
+
+      (crmThunks.emptyTrashThunk as unknown as jest.Mock).mockReturnValueOnce(() => ({ unwrap: () => Promise.reject('Empty Error') }));
+      fireEvent.click(screen.getByText('Empty Trash now'));
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Empty Error'));
+    });
   });
 });
-
-

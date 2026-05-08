@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, User, Mail, Phone, Building2, Globe } from 'lucide-react';
+import { X, User, Mail, Phone, Building2, Globe, Tag, Plus, Check } from 'lucide-react';
 import { listWebsites, type SourceWebsite } from '../../../services/sourcedb';
-import { createContactBucket, updateContactBucket } from '../../../services/contactBucket';
+import { createContactBucket, updateContactBucket, getContactBucketLabels, type CrmLabel } from '../../../services/contactBucket';
 import type { ContactBucketItem } from '../../../services/contactBucket';
 import toast from 'react-hot-toast';
 
@@ -46,7 +46,10 @@ export default function ContactBucketFormModal({ mode, item, onClose, onSuccess 
     const formRef = useRef<HTMLFormElement>(null);
     const [submitting, setSubmitting] = useState(false);
     const [websites, setWebsites] = useState<SourceWebsite[]>([]);
+    const [allLabels, setAllLabels] = useState<CrmLabel[]>([]);
     const [webLoading, setWebLoading] = useState(false);
+    const [showLabelDropdown, setShowLabelDropdown] = useState(false);
+    const labelDropdownRef = useRef<HTMLDivElement>(null);
 
     const isViewMode = mode === 'view';
     const isEditMode = mode === 'edit';
@@ -61,6 +64,7 @@ export default function ContactBucketFormModal({ mode, item, onClose, onSuccess 
         country: item?.country || '',
         website_id: item?.website?.id || '',
         notes: item?.notes || '',
+        labelIds: item?.labels?.map(l => l.id) || [],
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -70,19 +74,35 @@ export default function ContactBucketFormModal({ mode, item, onClose, onSuccess 
         (async () => {
             try {
                 setWebLoading(true);
-                const ws = await listWebsites();
+                const [ws, ls] = await Promise.all([
+                    listWebsites(),
+                    getContactBucketLabels()
+                ]);
                 if (!mounted) return;
                 setWebsites(ws);
+                setAllLabels(ls);
             } catch (err) {
-                console.error('Failed to load websites:', err);
+                console.error('Failed to load data:', err);
             } finally {
                 setWebLoading(false);
             }
         })();
-        return () => { mounted = false; };
+
+        // Handle outside click for label dropdown
+        const handleClickOutside = (e: MouseEvent) => {
+            if (labelDropdownRef.current && !labelDropdownRef.current.contains(e.target as Node)) {
+                setShowLabelDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+
+        return () => {
+            mounted = false;
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
     }, []);
 
-    const handleChange = (field: string, value: string | number) => {
+    const handleChange = (field: string, value: any) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
         if (errors[field]) {
             setErrors((prev) => {
@@ -93,45 +113,40 @@ export default function ContactBucketFormModal({ mode, item, onClose, onSuccess 
         }
     };
 
-    const validate = () => {
+    const handleSelectLabel = (labelId: number) => {
+        const currentIds = formData.labelIds as number[];
+        if (currentIds.includes(labelId)) {
+            handleChange('labelIds', currentIds.filter(id => id !== labelId));
+        } else {
+            handleChange('labelIds', [...currentIds, labelId]);
+        }
+    };
+
+    const handleClearLabels = () => {
+        handleChange('labelIds', []);
+        setShowLabelDropdown(false);
+    };
+
+    const validateFields = () => {
         const newErrors: Record<string, string> = {};
-        
+
         // Email
         if (!formData.email.trim()) newErrors.email = 'Email is required';
         else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Invalid email format';
-        
-        // Alternative Email
-        if (formData.altemail.trim() && !/\S+@\S+\.\S+/.test(formData.altemail)) {
-            newErrors.altemail = 'Invalid email format';
-        }
-
-        // Name
-        if (!formData.name.trim()) newErrors.name = 'Full Name is required';
-
-        // Organization
-        if (!formData.organization.trim()) newErrors.organization = 'Organization is required';
-
-        // Phone
-        if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
-
-        // WhatsApp Phone
-        if (!formData.wphone.trim()) newErrors.wphone = 'WhatsApp number is required';
-
-        // Country
-        if (!formData.country) newErrors.country = 'Country is required';
 
         // Conference
         if (!formData.website_id) newErrors.website_id = 'Conference is required';
 
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+        return newErrors;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (isViewMode) return;
-        if (!validate()) {
+        const newErrors = validateFields();
+        if (Object.keys(newErrors).length > 0) {
             toast.error('Please fill all required fields');
+            setErrors(newErrors);
             formRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
@@ -141,13 +156,14 @@ export default function ContactBucketFormModal({ mode, item, onClose, onSuccess 
             const payload = {
                 ...formData,
                 website_id: Number(formData.website_id),
+                labelIds: formData.labelIds,
             };
 
             if (isEditMode && item?.id) {
                 await updateContactBucket(item.id, payload);
                 toast.success('Contact updated successfully');
             } else {
-                await createContactBucket(payload);
+                await createContactBucket(payload as any);
                 toast.success('Contact created successfully');
             }
             onSuccess();
@@ -205,7 +221,7 @@ export default function ContactBucketFormModal({ mode, item, onClose, onSuccess 
 
                         {/* Name */}
                         <FormInput
-                            label="Full Name*"
+                            label="Full Name"
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
@@ -217,7 +233,7 @@ export default function ContactBucketFormModal({ mode, item, onClose, onSuccess 
 
                         {/* Organization */}
                         <FormInput
-                            label="Organization*"
+                            label="Organization"
                             name="organization"
                             value={formData.organization}
                             onChange={handleChange}
@@ -229,7 +245,7 @@ export default function ContactBucketFormModal({ mode, item, onClose, onSuccess 
 
                         {/* Phone */}
                         <FormInput
-                            label="Phone*"
+                            label="Phone"
                             name="phone"
                             value={formData.phone}
                             onChange={handleChange}
@@ -241,7 +257,7 @@ export default function ContactBucketFormModal({ mode, item, onClose, onSuccess 
 
                         {/* WhatsApp Phone */}
                         <FormInput
-                            label="WhatsApp Phone*"
+                            label="WhatsApp Phone"
                             name="wphone"
                             value={formData.wphone}
                             onChange={handleChange}
@@ -254,7 +270,7 @@ export default function ContactBucketFormModal({ mode, item, onClose, onSuccess 
                         {/* Country */}
                         <div>
                             <label htmlFor="country" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Country*
+                                Country
                             </label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400">
@@ -296,7 +312,7 @@ export default function ContactBucketFormModal({ mode, item, onClose, onSuccess 
                             {errors.website_id && <p className="text-xs text-red-500 mt-1">{errors.website_id}</p>}
                         </div>
                     </div>
-                    
+
                     {/* Notes */}
                     <div className="col-span-1 md:col-span-2">
                         <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -313,22 +329,107 @@ export default function ContactBucketFormModal({ mode, item, onClose, onSuccess 
                         />
                     </div>
 
-                    {/* Labels (view only) */}
-                    {isViewMode && item?.labels && item.labels.length > 0 && (
-                        <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
-                            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">Interaction Labels</h3>
-                            <div className="flex flex-wrap gap-1.5">
-                                {item.labels.map((label) => (
-                                    <span
-                                        key={label}
-                                        className="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                    {/* Label Selection */}
+                    <div className="col-span-1 md:col-span-2 pt-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                            Interaction Labels
+                        </label>
+
+                        {!isViewMode ? (
+                            <div className="space-y-3">
+                                <div className="relative" ref={labelDropdownRef}>
+                                    <div
+                                        onClick={() => !isViewMode && setShowLabelDropdown(!showLabelDropdown)}
+                                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm cursor-pointer hover:border-blue-500 transition-all ${isViewMode ? 'opacity-60 cursor-not-allowed' : ''}`}
                                     >
-                                        {label}
-                                    </span>
-                                ))}
+                                        <Tag className="w-4 h-4 text-gray-400" />
+                                        <span className={`flex-1 ${formData.labelIds.length === 0 ? 'text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                                            {formData.labelIds.length > 0 
+                                                ? `${formData.labelIds.length} label(s) selected`
+                                                : "Select labels..."
+                                            }
+                                        </span>
+                                        <Plus className={`w-4 h-4 text-gray-400 transition-transform ${showLabelDropdown ? 'rotate-45' : ''}`} />
+                                    </div>
+
+                                    {showLabelDropdown && (
+                                        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                                            <div className="max-h-60 overflow-y-auto py-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleClearLabels}
+                                                    className="w-full flex items-center px-3 py-2 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border-b border-gray-100 dark:border-gray-700"
+                                                >
+                                                    Clear All
+                                                </button>
+                                                {allLabels.length > 0 ? (
+                                                    allLabels.map(l => {
+                                                        const isSelected = (formData.labelIds as number[]).includes(l.id);
+                                                        return (
+                                                            <button
+                                                                key={l.id}
+                                                                type="button"
+                                                                onClick={() => handleSelectLabel(l.id)}
+                                                                className={`w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors ${isSelected ? 'text-blue-600 font-bold bg-blue-50/50 dark:bg-blue-900/10' : 'text-gray-700 dark:text-gray-300'}`}
+                                                            >
+                                                                <div className="flex flex-col items-start">
+                                                                    <span className="font-semibold">{l.name}</span>
+                                                                    {l.description && <span className="text-[10px] opacity-60">{l.description}</span>}
+                                                                </div>
+                                                                {isSelected && <Check className="w-3 h-3" />}
+                                                            </button>
+                                                        );
+                                                    })
+                                                ) : (
+                                                    <div className="px-3 py-2 text-[10px] text-gray-400 italic text-center">
+                                                        No labels found
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Tag Display */}
+                                <div className="flex flex-wrap gap-2">
+                                    {(formData.labelIds as number[]).map(id => {
+                                        const label = allLabels.find(l => l.id === id);
+                                        if (!label) return null;
+                                        return (
+                                            <span
+                                                key={id}
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 text-xs font-medium text-blue-700 dark:text-blue-300"
+                                            >
+                                                {label.name}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleSelectLabel(id)}
+                                                    className="p-0.5 hover:bg-blue-100 dark:hover:bg-blue-800 rounded-md transition-colors"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </span>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        ) : (
+                            <div className="flex flex-wrap gap-1.5">
+                                {item?.labels && item.labels.length > 0 ? (
+                                    item.labels.map(l => (
+                                        <span key={l.id} className="inline-flex flex-col px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+                                            <span className="text-xs font-bold text-blue-700 dark:text-blue-300">{l.name}</span>
+                                            {l.description && (
+                                                <span className="text-[10px] text-blue-600/70 dark:text-blue-400/70 italic">{l.description}</span>
+                                            )}
+                                        </span>
+                                    ))
+                                ) : (
+                                    <span className="text-xs text-gray-400 italic">No interaction labels assigned.</span>
+                                )}
+                            </div>
+                        )}
+                    </div>
 
                     {/* Timestamps (view mode) */}
                     {isViewMode && (

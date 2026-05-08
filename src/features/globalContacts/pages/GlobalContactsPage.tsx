@@ -1,12 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { searchContactBucket, getContactBucketLabels, addLabelToContact, removeLabelFromContact } from '../../../services/contactBucket';
+import { useState, useEffect, useCallback } from 'react';
+import { searchContactBucket, getContactBucketLabels, type CrmLabel } from '../../../services/contactBucket';
 import type { ContactBucketItem } from '../../../services/contactBucket';
 import { listWebsites } from '../../../services/sourcedb';
 import type { SourceWebsite } from '../../../services/sourcedb';
 import { formatDate } from '../../../utils/utils';
 import AbstractPagination from '../../abstracts/components/AbstractPagination';
 import ContactBucketFormModal from '../components/ContactBucketFormModal';
-import toast from 'react-hot-toast';
 
 const LABEL_COLORS: Record<string, string> = {
     'Abstract Submitted': 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
@@ -17,133 +16,6 @@ const LABEL_COLORS: Record<string, string> = {
     'Sponsorship/Exhibitor': 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
 };
 
-function LabelBadge({ label, onRemove }: { label: string; onRemove?: () => void }) {
-    const colorClass = LABEL_COLORS[label] || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
-    return (
-        <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${colorClass}`}>
-            {label}
-            {onRemove && (
-                <button
-                    onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                    className="ml-0.5 hover:opacity-70 transition-opacity"
-                    title={`Remove "${label}"`}
-                >
-                    ×
-                </button>
-            )}
-        </span>
-    );
-}
-
-/* ─── Add-label popover ─── */
-function AddLabelPopover({
-    contactId,
-    existingLabels,
-    allLabels,
-    onLabelAdded,
-    onClose,
-}: {
-    contactId: number;
-    existingLabels: string[];
-    allLabels: string[];
-    onLabelAdded: (contactId: number, updatedItem: ContactBucketItem) => void;
-    onClose: () => void;
-}) {
-    const [newLabel, setNewLabel] = useState('');
-    const [saving, setSaving] = useState(false);
-    const popoverRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
-
-    // Suggestions = all known labels that this contact doesn't already have
-    const suggestions = allLabels.filter((l) => !existingLabels.includes(l));
-
-    useEffect(() => {
-        inputRef.current?.focus();
-    }, []);
-
-    // Close on outside click
-    useEffect(() => {
-        const handler = (e: MouseEvent) => {
-            if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-                onClose();
-            }
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [onClose]);
-
-    const handleAdd = async (label: string) => {
-        const trimmed = label.trim();
-        if (!trimmed) return;
-        if (existingLabels.includes(trimmed)) {
-            toast.error(`Label "${trimmed}" already exists`);
-            return;
-        }
-        setSaving(true);
-        try {
-            const updated = await addLabelToContact(contactId, trimmed);
-            onLabelAdded(contactId, updated);
-            toast.success(`Label "${trimmed}" added`);
-            setNewLabel('');
-            onClose();
-        } catch {
-            toast.error('Failed to add label');
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    return (
-        <div
-            ref={popoverRef}
-            className="absolute right-0 top-full mt-1 z-50 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3"
-        >
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">Add Label</p>
-
-            {/* Custom label input */}
-            <div className="flex gap-1 mb-2">
-                <input
-                    ref={inputRef}
-                    type="text"
-                    value={newLabel}
-                    onChange={(e) => setNewLabel(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(newLabel); }}
-                    placeholder="Type a new label..."
-                    disabled={saving}
-                    className="flex-1 h-8 px-2 rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50"
-                />
-                <button
-                    onClick={() => handleAdd(newLabel)}
-                    disabled={saving || !newLabel.trim()}
-                    className="h-8 px-2.5 rounded-md bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                    {saving ? '...' : 'Add'}
-                </button>
-            </div>
-
-            {/* Suggestions */}
-            {suggestions.length > 0 && (
-                <>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1.5">Or pick an existing label:</p>
-                    <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto">
-                        {suggestions.map((s) => (
-                            <button
-                                key={s}
-                                onClick={() => handleAdd(s)}
-                                disabled={saving}
-                                className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all disabled:opacity-50 ${LABEL_COLORS[s] || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                                    }`}
-                            >
-                                + {s}
-                            </button>
-                        ))}
-                    </div>
-                </>
-            )}
-        </div>
-    );
-}
-
 export default function GlobalContactsPage() {
     const [items, setItems] = useState<ContactBucketItem[]>([]);
     const [loading, setLoading] = useState(false);
@@ -153,11 +25,10 @@ export default function GlobalContactsPage() {
     const [search, setSearch] = useState('');
     const [searchInput, setSearchInput] = useState('');
     const [websiteId, setWebsiteId] = useState<number | ''>('');
-    const [selectedLabel, setSelectedLabel] = useState('');
+    const [selectedLabelId, setSelectedLabelId] = useState<number | ''>('');
     const [websites, setWebsites] = useState<SourceWebsite[]>([]);
-    const [labels, setLabels] = useState<string[]>([]);
+    const [labels, setLabels] = useState<CrmLabel[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [openPopoverId, setOpenPopoverId] = useState<number | null>(null);
     const [modalMode, setModalMode] = useState<'view' | 'add' | 'edit' | null>(null);
     const [modalItem, setModalItem] = useState<ContactBucketItem | null>(null);
 
@@ -180,7 +51,7 @@ export default function GlobalContactsPage() {
                 limit: pageSize,
                 search: search || undefined,
                 website_id: websiteId || undefined,
-                label: selectedLabel || undefined,
+                labelId: selectedLabelId || undefined,
                 sortBy: 'lastInteraction',
                 sortOrder: 'DESC',
             });
@@ -192,7 +63,7 @@ export default function GlobalContactsPage() {
         } finally {
             setLoading(false);
         }
-    }, [page, pageSize, search, websiteId, selectedLabel]);
+    }, [page, pageSize, search, websiteId, selectedLabelId]);
 
     useEffect(() => {
         fetchData();
@@ -201,7 +72,7 @@ export default function GlobalContactsPage() {
     // Reset page when filters change
     useEffect(() => {
         setPage(1);
-    }, [search, websiteId, selectedLabel]);
+    }, [search, websiteId, selectedLabelId]);
 
     const handleSearch = () => {
         setSearch(searchInput.trim());
@@ -209,22 +80,6 @@ export default function GlobalContactsPage() {
 
     const handleSearchKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') handleSearch();
-    };
-
-    const handleLabelAdded = (contactId: number, updated: ContactBucketItem) => {
-        setItems((prev) => prev.map((item) => (item.id === contactId ? { ...item, labels: updated.labels } : item)));
-        refreshLabels();
-    };
-
-    const handleRemoveLabel = async (contactId: number, label: string) => {
-        try {
-            const updated = await removeLabelFromContact(contactId, label);
-            setItems((prev) => prev.map((item) => (item.id === contactId ? { ...item, labels: updated.labels } : item)));
-            toast.success(`Label "${label}" removed`);
-            refreshLabels();
-        } catch {
-            toast.error('Failed to remove label');
-        }
     };
 
     return (
@@ -279,8 +134,9 @@ export default function GlobalContactsPage() {
 
                 {/* Conference Filter */}
                 <div className="min-w-[180px]">
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Conference</label>
+                    <label htmlFor="conference-filter" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Conference</label>
                     <select
+                        id="conference-filter"
                         className="w-full h-9 px-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                         value={websiteId}
                         onChange={(e) => setWebsiteId(e.target.value ? Number(e.target.value) : '')}
@@ -294,15 +150,16 @@ export default function GlobalContactsPage() {
 
                 {/* Label Filter */}
                 <div className="min-w-[180px]">
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Label</label>
+                    <label htmlFor="label-filter" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Label</label>
                     <select
+                        id="label-filter"
                         className="w-full h-9 px-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                        value={selectedLabel}
-                        onChange={(e) => setSelectedLabel(e.target.value)}
+                        value={selectedLabelId}
+                        onChange={(e) => setSelectedLabelId(e.target.value ? Number(e.target.value) : '')}
                     >
                         <option value="">All Labels</option>
                         {labels.map(l => (
-                            <option key={l} value={l}>{l}</option>
+                            <option key={l.id} value={l.id}>{l.name}</option>
                         ))}
                     </select>
                 </div>
@@ -322,7 +179,7 @@ export default function GlobalContactsPage() {
                                 <th className="px-3 py-2 font-semibold min-w-[8rem]">WhatsApp</th>
                                 <th className="px-3 py-2 font-semibold min-w-[10rem]">Organization</th>
                                 <th className="px-3 py-2 font-semibold min-w-[8rem]">Country</th>
-                                <th className="px-3 py-2 font-semibold min-w-[18rem]">Labels</th>
+                                <th className="px-3 py-2 font-semibold min-w-[15rem]">Label</th>
                                 <th className="px-3 py-2 font-semibold min-w-[10rem]">Notes</th>
                                 <th className="px-3 py-2 font-semibold min-w-[10rem]">Last Interaction</th>
 
@@ -396,38 +253,19 @@ export default function GlobalContactsPage() {
                                         {item.country ?? '—'}
                                     </td>
                                     <td className="px-3 py-1.5">
-                                        <div className="relative flex flex-wrap items-center gap-1">
-                                            {item.labels?.map((label) => (
-                                                <LabelBadge
-                                                    key={label}
-                                                    label={label}
-                                                    onRemove={() => handleRemoveLabel(item.id, label)}
-                                                />
-                                            ))}
-                                            {(!item.labels || item.labels.length === 0) && (
-                                                <span className="text-gray-400 text-xs">—</span>
-                                            )}
-
-                                            {/* Add label button */}
-                                            <button
-                                                onClick={() => setOpenPopoverId(openPopoverId === item.id ? null : item.id)}
-                                                className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-dashed border-gray-400 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-blue-500 hover:text-blue-500 transition-colors ml-0.5"
-                                                title="Add label"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
-                                                    <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-                                                </svg>
-                                            </button>
-
-                                            {/* Popover */}
-                                            {openPopoverId === item.id && (
-                                                <AddLabelPopover
-                                                    contactId={item.id}
-                                                    existingLabels={item.labels || []}
-                                                    allLabels={labels}
-                                                    onLabelAdded={handleLabelAdded}
-                                                    onClose={() => setOpenPopoverId(null)}
-                                                />
+                                        <div className="flex flex-wrap gap-1">
+                                            {item.labels && item.labels.length > 0 ? (
+                                                item.labels.map(l => (
+                                                    <div key={l.id} className="flex flex-col">
+                                                        <span
+                                                            className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium border w-fit ${LABEL_COLORS[l.name] || 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'}`}
+                                                        >
+                                                            {l.name}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <span className="text-[10px] text-gray-400 italic">No labels</span>
                                             )}
                                         </div>
                                     </td>

@@ -54,9 +54,10 @@ export default function CrmHeader() {
     }, [activeEventId, accountsActiveEventId, isAccountsTab, dispatch]);
 
     const handleSync = () => {
+        if (!activeEventId && !isAccountsTab) return;
         dispatch(fetchThreadsThunk({
-            eventId: activeEventId || undefined,
-            search: searchTerm || undefined,
+            eventId: currentActiveEventId || undefined,
+            search: currentSearchTerm || undefined,
             domain: activeDomain || undefined,
             emailAccountId: activeEmailAccountId || undefined,
             folder: activeFolder

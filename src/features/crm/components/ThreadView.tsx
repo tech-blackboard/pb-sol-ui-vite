@@ -506,7 +506,7 @@ export default function ThreadView() {
                                     eventId={thread.eventId}
                                     replyEmails={event?.replyEmails || []}
                                     defaultSubject={thread.subject}
-                                    recipientEmail={contact?.email || ''}
+                                    recipientEmail={draft?.toEmail || contact?.email || ''}
                                     onSuccess={handleReplySuccess}
                                     initialDraftId={draft?.id}
                                     initialHtmlBody={draft?.htmlBody}

@@ -236,4 +236,30 @@ describe('CrmHeader', () => {
       expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/triggerAccountsSearch' }));
     });
   });
+
+  describe('Sidebar Toggle', () => {
+    let originalInnerWidth: number;
+
+    beforeEach(() => {
+      originalInnerWidth = window.innerWidth;
+    });
+
+    afterEach(() => {
+      Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: originalInnerWidth });
+    });
+
+    it('dispatches toggleSidebar when button is clicked and screen is mobile (< 768px)', () => {
+      Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 500 });
+      const { spy } = renderHeaderWithSpy();
+      fireEvent.click(screen.getByLabelText('Toggle Sidebar'));
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/toggleSidebar' }));
+    });
+
+    it('dispatches toggleSidebarCollapse when button is clicked and screen is desktop (>= 768px)', () => {
+      Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1024 });
+      const { spy } = renderHeaderWithSpy();
+      fireEvent.click(screen.getByLabelText('Toggle Sidebar'));
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'crm/toggleSidebarCollapse' }));
+    });
+  });
 });

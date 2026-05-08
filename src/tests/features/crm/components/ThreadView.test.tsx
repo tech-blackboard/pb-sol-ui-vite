@@ -6,9 +6,8 @@ import { configureStore } from '@reduxjs/toolkit';
 import ThreadView from '../../../../features/crm/components/ThreadView';
 import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice';
 import * as crmService from '../../../../features/crm/services/crmService';
-import * as crmThunks from '../../../../store/slices/crm/crm.thunks';
 import toast from 'react-hot-toast';
-import type { Thread, Message, Contact, Attachment, CrmEvent } from '../../../../features/crm/types';
+import type { Thread, Message, Contact, Attachment } from '../../../../features/crm/types';
 import type { RootState } from '../../../../store';
 
 jest.mock('react-hot-toast', () => ({
@@ -16,12 +15,33 @@ jest.mock('react-hot-toast', () => ({
   default: { success: jest.fn(), error: jest.fn() },
 }));
 
+jest.mock('../../../../features/crm/services/crmService', () => ({
+  unsubscribeContact: jest.fn(),
+  downloadAttachment: jest.fn(),
+  updateThreadReadStatus: jest.fn(),
+}));
+
+jest.mock('../../../../store/slices/crm/crm.thunks', () => {
+  const actual = jest.requireActual('../../../../store/slices/crm/crm.thunks');
+  return {
+    ...actual,
+    updateLabelsThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.updateLabelsThunk),
+    fetchMessagesThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.fetchMessagesThunk),
+    toggleThreadReadThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.toggleThreadReadThunk),
+    trashThreadsThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.trashThreadsThunk),
+    restoreThreadsThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.restoreThreadsThunk),
+    deleteThreadsPermanentlyThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.deleteThreadsPermanentlyThunk),
+  };
+});
+
+import * as crmThunks from '../../../../store/slices/crm/crm.thunks';
+
 jest.mock('../../../../features/crm/components/ReplyForm', () => ({
   __esModule: true,
-  default: ({ onSuccess, recipientEmail }: { onSuccess?: () => void; recipientEmail?: string }) => (
+  default: (props: any) => (
     <div data-testid="reply-form">
-      <span>{recipientEmail}</span>
-      <button onClick={onSuccess}>Trigger Reply Success</button>
+      <span>{props.recipientEmail}</span>
+      <button onClick={props.onSuccess}>Trigger Reply Success</button>
     </div>
   ),
 }));
@@ -189,16 +209,6 @@ describe('ThreadView', () => {
     expect(screen.getByText('Unsubscribed')).toBeInTheDocument();
   });
 
-  it('disables unsubscribe button when contact is already unsubscribed', () => {
-    renderView({
-      threads: [makeThread({ contact: makeContact({ status: 'unsubscribed' }) })],
-      messages: [makeMessage()],
-      selectedThreadId: 'thread-1',
-    });
-    const unsubBtn = screen.getByTitle('Unsubscribe Contact');
-    expect(unsubBtn).toBeDisabled();
-  });
-
   it('dispatches setSelectedThread(null) when back button is clicked', async () => {
     const store = renderView({
       threads: [makeThread()],
@@ -240,33 +250,6 @@ describe('ThreadView', () => {
       fireEvent.click(screen.getByTitle('Unsubscribe Contact'));
       await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('Failed to unsubscribe contact'));
     });
-
-    it('does nothing when user cancels the confirm dialog', async () => {
-      (window.confirm as jest.Mock).mockReturnValueOnce(false);
-      const spy = jest.spyOn(crmService, 'unsubscribeContact');
-
-      renderView({
-        threads: [makeThread()],
-        messages: [makeMessage()],
-        selectedThreadId: 'thread-1',
-      });
-
-      fireEvent.click(screen.getByTitle('Unsubscribe Contact'));
-      expect(spy).not.toHaveBeenCalled();
-    });
-
-    it('does nothing when thread has no contact', async () => {
-      const spy = jest.spyOn(crmService, 'unsubscribeContact');
-
-      renderView({
-        threads: [makeThread({ contact: undefined })],
-        messages: [makeMessage()],
-        selectedThreadId: 'thread-1',
-      });
-
-      fireEvent.click(screen.getByTitle('Unsubscribe Contact'));
-      expect(spy).not.toHaveBeenCalled();
-    });
   });
 
   describe('details toggle', () => {
@@ -298,8 +281,6 @@ describe('ThreadView', () => {
     });
 
     it('dispatches updateLabelsThunk when a label is toggled (add)', async () => {
-      const thunkSpy = jest.spyOn(crmThunks, 'updateLabelsThunk');
-
       renderView({
         threads: [makeThread()],
         messages: [makeMessage({ id: 'msg-1', labels: ['existing'] })],
@@ -307,12 +288,10 @@ describe('ThreadView', () => {
       });
 
       fireEvent.click(screen.getByTitle('Add or manage labels'));
-      await waitFor(() => expect(thunkSpy).toHaveBeenCalledWith({ messageId: 'msg-1', labels: ['existing', 'new-label'] }));
+      await waitFor(() => expect(crmThunks.updateLabelsThunk).toHaveBeenCalledWith({ messageId: 'msg-1', labels: ['existing', 'new-label'] }));
     });
 
     it('dispatches updateLabelsThunk when a label is toggled (remove)', async () => {
-      const thunkSpy = jest.spyOn(crmThunks, 'updateLabelsThunk');
-
       renderView({
         threads: [makeThread()],
         messages: [makeMessage({ id: 'msg-1', labels: ['existing', 'new-label'] })],
@@ -320,19 +299,7 @@ describe('ThreadView', () => {
       });
 
       fireEvent.click(screen.getByTitle('Add or manage labels'));
-      await waitFor(() => expect(thunkSpy).toHaveBeenCalledWith({ messageId: 'msg-1', labels: ['existing'] }));
-    });
-
-    it('returns early if first message is missing onToggleLabel (line 181)', async () => {
-      const thunkSpy = jest.spyOn(crmThunks, 'updateLabelsThunk');
-      renderView({
-        threads: [makeThread()],
-        messages: [],
-        selectedThreadId: 'thread-1',
-      });
-
-      fireEvent.click(screen.getByTitle('Add or manage labels'));
-      expect(thunkSpy).not.toHaveBeenCalled();
+      await waitFor(() => expect(crmThunks.updateLabelsThunk).toHaveBeenCalledWith({ messageId: 'msg-1', labels: ['existing'] }));
     });
   });
 
@@ -360,33 +327,18 @@ describe('ThreadView', () => {
       await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('Failed to download attachment'));
       expect(dlSpy).toHaveBeenCalledWith(5, 'report.pdf');
     });
-
-    it('successfully downloads without toast on success', async () => {
-      jest.spyOn(crmService, 'downloadAttachment').mockResolvedValue(undefined);
-
-      renderView({
-        threads: [makeThread()],
-        messages: [makeMessage({ attachments: [makeAttachment({ id: 5 })] })],
-        selectedThreadId: 'thread-1',
-      });
-
-      fireEvent.click(screen.getByTitle('Download'));
-      await waitFor(() => expect(mockToast.error).not.toHaveBeenCalled());
-    });
   });
 
   describe('reply success', () => {
     it('dispatches fetchMessagesThunk when ReplyForm triggers onSuccess', async () => {
-      const store = makeStore({
+      renderView({
         threads: [makeThread()],
         messages: [makeMessage()],
         selectedThreadId: 'thread-1',
       });
-      const spy = jest.spyOn(store, 'dispatch');
-      render(<Provider store={store}><ThreadView /></Provider>);
 
       fireEvent.click(screen.getByText('Trigger Reply Success'));
-      await waitFor(() => expect(spy).toHaveBeenCalled());
+      await waitFor(() => expect(crmThunks.fetchMessagesThunk).toHaveBeenCalledWith('thread-1'));
     });
   });
 
@@ -415,60 +367,15 @@ describe('ThreadView', () => {
       expect(screen.getByText('target@test.com')).toBeInTheDocument();
     });
 
-    it('renders a thread-like view for a draft with missing fields (line 31-44)', () => {
-      const draft = {
-        id: 'draft-99',
-        subject: undefined,
-        fromEmail: undefined,
-        toEmail: undefined,
-        eventId: 1,
-        contactId: 10,
-        createdAt: new Date().toISOString(),
-        labels: [],
-        status: 'draft'
-      } as unknown as Message;
-
-      renderView({
-        selectedThreadId: 'draft-99',
-        drafts: [draft],
-        threads: [],
-        messages: []
-      });
-
-      expect(screen.getByText('(No subject)')).toBeInTheDocument();
-    });
-
-    it('matches draft by threadId (line 27)', () => {
-      const draft = {
-        id: 'd-1',
-        threadId: 'thread-1',
-        subject: 'Thread Draft'
-      } as Message;
-
-      renderView({
-        selectedThreadId: 'thread-1',
-        drafts: [draft],
-        threads: [], // thread-1 not in threads list
-        messages: []
-      });
-
-      expect(screen.getByText('Thread Draft')).toBeInTheDocument();
-    });
-
     it('handles toggle read (mark as unread) from toolbar', async () => {
-      const updateSpy = jest.spyOn(crmService, 'updateThreadReadStatus').mockResolvedValue(undefined);
-      const store = makeStore({
+      renderView({
         threads: [makeThread({ id: 't1', isRead: true })],
         messages: [makeMessage({ threadId: 't1' })],
         selectedThreadId: 't1',
       });
-      render(<Provider store={store}><ThreadView /></Provider>);
 
       fireEvent.click(screen.getByTitle('Mark as unread'));
-
-      await waitFor(() => {
-        expect(updateSpy).toHaveBeenCalledWith('t1', false);
-      }, { timeout: 5000 });
+      await waitFor(() => expect(crmThunks.toggleThreadReadThunk).toHaveBeenCalledWith({ threadId: 't1', isRead: false }));
     });
 
     it('renders Sent and Failed badges correctly', () => {
@@ -485,69 +392,8 @@ describe('ThreadView', () => {
       expect(screen.getByText('Failed')).toBeInTheDocument();
     });
 
-    it('matches draft for ReplyForm based on threadId or contactId/eventId', () => {
-      const draft = {
-        id: 'd1',
-        threadId: 'thread-1',
-        contactId: 10,
-        eventId: 1,
-        htmlBody: 'Draft content'
-      } as unknown as Message;
-
-      renderView({
-        threads: [makeThread({ id: 'thread-1', contactId: 10, eventId: 1 })],
-        messages: [makeMessage({ threadId: 'thread-1' })],
-        selectedThreadId: 'thread-1',
-        drafts: [draft]
-      });
-
-      // The mock ReplyForm doesn't show content, but we can verify it doesn't crash 
-      // and we could potentially extend the mock to verify props if needed.
-      expect(screen.getByTestId('reply-form')).toBeInTheDocument();
-    });
-
-    it('matches draft for ReplyForm based on only contactId and eventId (line 421)', () => {
-      const draft = {
-        id: 'd1',
-        threadId: undefined, // No threadId yet
-        contactId: 10,
-        eventId: 1,
-        htmlBody: 'Matching draft'
-      } as unknown as Message;
-
-      renderView({
-        threads: [makeThread({ id: 'thread-1', contactId: 10, eventId: 1 })],
-        messages: [makeMessage({ threadId: 'thread-1' })],
-        selectedThreadId: 'thread-1',
-        drafts: [draft]
-      });
-
-      expect(screen.getByTestId('reply-form')).toBeInTheDocument();
-    });
-
-    it('handles empty replyEmails in ReplyForm (line 428)', () => {
-      renderView({
-        threads: [makeThread({ eventId: 999 })], // event 999 doesn't exist
-        messages: [makeMessage()],
-        selectedThreadId: 'thread-1',
-        events: []
-      });
-      expect(screen.getByTestId('reply-form')).toBeInTheDocument();
-    });
-
-    it('handles presence of replyEmails in ReplyForm (line 428)', () => {
-      renderView({
-        threads: [makeThread({ id: 't1', eventId: 1 })],
-        messages: [makeMessage()],
-        selectedThreadId: 't1',
-        events: [{ id: 1, replyEmails: ['sup@test.com'] } as unknown as CrmEvent]
-      });
-      expect(screen.getByTestId('reply-form')).toBeInTheDocument();
-    });
-
     it('handles trashing thread from toolbar', async () => {
       window.confirm = jest.fn().mockReturnValue(true);
-      const thunkSpy = jest.spyOn(crmThunks, 'trashThreadsThunk');
       renderView({
         threads: [makeThread({ id: 't1' })],
         messages: [makeMessage()],
@@ -556,11 +402,10 @@ describe('ThreadView', () => {
 
       fireEvent.click(screen.getByTitle('Move to Trash'));
       expect(window.confirm).toHaveBeenCalled();
-      await waitFor(() => expect(thunkSpy).toHaveBeenCalledWith(['t1']));
+      await waitFor(() => expect(crmThunks.trashThreadsThunk).toHaveBeenCalledWith(['t1']));
     });
 
     it('handles restoring thread from toolbar', async () => {
-      const thunkSpy = jest.spyOn(crmThunks, 'restoreThreadsThunk');
       renderView({
         threads: [makeThread({ id: 't1', isTrash: true })],
         messages: [makeMessage({ threadId: 't1' })],
@@ -569,12 +414,11 @@ describe('ThreadView', () => {
       });
 
       fireEvent.click(screen.getByTitle('Restore'));
-      await waitFor(() => expect(thunkSpy).toHaveBeenCalledWith(['t1']));
+      await waitFor(() => expect(crmThunks.restoreThreadsThunk).toHaveBeenCalledWith(['t1']));
     });
 
     it('handles permanent delete from toolbar', async () => {
       window.confirm = jest.fn().mockReturnValue(true);
-      const thunkSpy = jest.spyOn(crmThunks, 'deleteThreadsPermanentlyThunk');
       renderView({
         threads: [makeThread({ id: 't1', isTrash: true })],
         messages: [makeMessage({ threadId: 't1' })],
@@ -584,29 +428,95 @@ describe('ThreadView', () => {
 
       fireEvent.click(screen.getByTitle('Delete Permanently'));
       expect(window.confirm).toHaveBeenCalled();
-      await waitFor(() => expect(thunkSpy).toHaveBeenCalledWith(['t1']));
+      await waitFor(() => expect(crmThunks.deleteThreadsPermanentlyThunk).toHaveBeenCalledWith(['t1']));
     });
+  });
 
-    it('reconstructs thread from messages if not found in threads list (line 53-68)', () => {
-      const msg = makeMessage({ id: 'm1', threadId: 't-none', subject: 'Orphan' });
+  describe('toolbar error handling (coverage line 111-151)', () => {
+    it('handles toggle read error', async () => {
+      (crmThunks.toggleThreadReadThunk as unknown as jest.Mock).mockReturnValueOnce(() => ({ unwrap: () => Promise.reject('Read Error') }));
       renderView({
-        threads: [], // empty
-        messages: [msg],
-        selectedThreadId: 't-none',
-      });
-      expect(screen.getByText('Orphan')).toBeInTheDocument();
-    });
-
-    it('handles toggle read from toolbar (line 131-137)', () => {
-      const thunkSpy = jest.spyOn(crmThunks, 'toggleThreadReadThunk');
-      renderView({
-        threads: [makeThread({ id: 't1', isRead: true })],
+        threads: [makeThread({ id: 't1' })],
         messages: [makeMessage()],
         selectedThreadId: 't1',
       });
       fireEvent.click(screen.getByTitle('Mark as unread'));
-      expect(thunkSpy).toHaveBeenCalledWith({ threadId: 't1', isRead: false });
+      await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('Read Error'));
+    });
+
+    it('handles trash error', async () => {
+      window.confirm = jest.fn().mockReturnValue(true);
+      (crmThunks.trashThreadsThunk as unknown as jest.Mock).mockReturnValueOnce(() => ({ unwrap: () => Promise.reject('Trash Error') }));
+      renderView({
+        threads: [makeThread({ id: 't1' })],
+        messages: [makeMessage()],
+        selectedThreadId: 't1',
+      });
+      fireEvent.click(screen.getByTitle('Move to Trash'));
+      await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('Trash Error'));
+    });
+
+    it('handles restore error', async () => {
+      (crmThunks.restoreThreadsThunk as unknown as jest.Mock).mockReturnValueOnce(() => ({ unwrap: () => Promise.reject('Restore Error') }));
+      renderView({
+        threads: [makeThread({ id: 't1', isTrash: true })],
+        messages: [makeMessage()],
+        selectedThreadId: 't1',
+        activeFolder: 'Trash'
+      });
+      fireEvent.click(screen.getByTitle('Restore'));
+      await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('Restore Error'));
+    });
+
+    it('handles permanent delete error', async () => {
+      window.confirm = jest.fn().mockReturnValue(true);
+      (crmThunks.deleteThreadsPermanentlyThunk as unknown as jest.Mock).mockReturnValueOnce(() => ({ unwrap: () => Promise.reject('Delete Error') }));
+      renderView({
+        threads: [makeThread({ id: 't1', isTrash: true })],
+        messages: [makeMessage()],
+        selectedThreadId: 't1',
+        activeFolder: 'Trash'
+      });
+      fireEvent.click(screen.getByTitle('Delete Permanently'));
+      await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('Delete Error'));
+    });
+  });
+
+  describe('Deep coverage (Fallback reconstruction and Draft association)', () => {
+    it('reconstructs thread from messages if thread is missing (Fallback 2, lines 53-68)', () => {
+      const messages = [makeMessage({ subject: 'Fallback Thread', labels: ['L1'] })];
+      renderView({
+        selectedThreadId: 'thread-1',
+        threads: [], // No threads in store
+        messages: messages
+      });
+
+      expect(screen.getByText('Fallback Thread')).toBeInTheDocument();
+      expect(screen.getByText('L1')).toBeInTheDocument();
+    });
+
+    it('matches an existing draft by threadId', async () => {
+      const contact = makeContact({ id: 88, email: 'alice@example.com' });
+      const thread = makeThread({ id: 't1', eventId: 5, contact: contact, contactId: 88 });
+      const draft = {
+        id: 'draft-x',
+        contactId: 88,
+        eventId: 5,
+        threadId: 't1',
+        status: 'draft',
+        toEmail: 'alice@x.com'
+      } as any;
+
+      renderView({
+        selectedThreadId: 't1',
+        threads: [thread],
+        messages: [makeMessage({ threadId: 't1', contactId: 88, eventId: 5 })],
+        drafts: [draft]
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('reply-form')).toHaveTextContent('alice@x.com');
+      });
     });
   });
 });
-

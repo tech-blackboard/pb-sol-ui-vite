@@ -13,7 +13,8 @@ import {
     trashThreadsThunk,
     restoreThreadsThunk,
     deleteThreadsPermanentlyThunk,
-    emptyTrashThunk
+    emptyTrashThunk,
+    fetchEmailAccountsThunk
 } from '../../../../store/slices/crm/crm.thunks';
 import * as crmService from '../../../../features/crm/services/crmService';
 
@@ -253,5 +254,20 @@ describe('crm thunks catch blocks', () => {
         (crmService.emptyTrash as jest.Mock).mockRejectedValue(new Error('Fail'));
         const result = await emptyTrashThunk(1)(dispatch, getState, undefined);
         expect(result.payload).toBe('Failed to empty trash');
+    });
+
+    it('fetchEmailAccountsThunk should reject with axios error message', async () => {
+        (crmService.fetchEmailAccounts as jest.Mock).mockRejectedValue({
+            isAxiosError: true,
+            response: { data: { message: 'Accounts Error' } }
+        });
+        const result = await fetchEmailAccountsThunk(1)(dispatch, getState, undefined);
+        expect(result.payload).toBe('Accounts Error');
+    });
+
+    it('fetchEmailAccountsThunk should reject with fallback message', async () => {
+        (crmService.fetchEmailAccounts as jest.Mock).mockRejectedValue(new Error('Fail'));
+        const result = await fetchEmailAccountsThunk(1)(dispatch, getState, undefined);
+        expect(result.payload).toBe('Failed to fetch email accounts');
     });
 });

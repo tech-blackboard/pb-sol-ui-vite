@@ -12,3 +12,4 @@ export const BROCHURE_BASE = import.meta.env.VITE_BROCHURE_BASE ?? '';
 export const CRM_BASE = import.meta.env.VITE_CRM_BASE ?? '/mail';
 export const PAYMENT_LINK = import.meta.env.VITE_PAYMENT_LINK ?? '';
 export const UPLOAD_BASE = import.meta.env.VITE_UPLOAD_BASE ?? '';
+export const CONTACT_BUCKET_BASE = import.meta.env.VITE_CONTACT_BUCKET_BASE ?? '/contact-bucket';
