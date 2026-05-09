@@ -175,11 +175,11 @@ export default function GlobalContactsPage() {
                                 <th className="px-3 py-2 font-semibold min-w-[14rem]">Conference</th>
                                 <th className="px-3 py-2 font-semibold min-w-[10rem]">Name</th>
                                 <th className="px-3 py-2 font-semibold min-w-[12rem]">Email</th>
+                                <th className="px-3 py-2 font-semibold min-w-[15rem]">Label</th>
                                 <th className="px-3 py-2 font-semibold min-w-[8rem]">Phone</th>
                                 <th className="px-3 py-2 font-semibold min-w-[8rem]">WhatsApp</th>
                                 <th className="px-3 py-2 font-semibold min-w-[10rem]">Organization</th>
                                 <th className="px-3 py-2 font-semibold min-w-[8rem]">Country</th>
-                                <th className="px-3 py-2 font-semibold min-w-[15rem]">Label</th>
                                 <th className="px-3 py-2 font-semibold min-w-[10rem]">Notes</th>
                                 <th className="px-3 py-2 font-semibold min-w-[10rem]">Last Interaction</th>
 
@@ -240,18 +240,6 @@ export default function GlobalContactsPage() {
                                     <td className="px-3 py-1.5" title={item.email}>
                                         <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">{item.email}</a>
                                     </td>
-                                    <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300 truncate" title={item.phone ?? '—'}>
-                                        {item.phone ?? '—'}
-                                    </td>
-                                    <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300 truncate" title={item.wphone ?? '—'}>
-                                        {item.wphone ?? '—'}
-                                    </td>
-                                    <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300 truncate max-w-[10rem]" title={item.organization ?? '—'}>
-                                        {item.organization ?? '—'}
-                                    </td>
-                                    <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300 truncate" title={item.country ?? '—'}>
-                                        {item.country ?? '—'}
-                                    </td>
                                     <td className="px-3 py-1.5">
                                         <div className="flex flex-wrap gap-1">
                                             {item.labels && item.labels.length > 0 ? (
@@ -268,6 +256,18 @@ export default function GlobalContactsPage() {
                                                 <span className="text-[10px] text-gray-400 italic">No labels</span>
                                             )}
                                         </div>
+                                    </td>
+                                    <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300 truncate" title={item.phone ?? '—'}>
+                                        {item.phone ?? '—'}
+                                    </td>
+                                    <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300 truncate" title={item.wphone ?? '—'}>
+                                        {item.wphone ?? '—'}
+                                    </td>
+                                    <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300 truncate max-w-[10rem]" title={item.organization ?? '—'}>
+                                        {item.organization ?? '—'}
+                                    </td>
+                                    <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300 truncate" title={item.country ?? '—'}>
+                                        {item.country ?? '—'}
                                     </td>
                                     <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300 truncate" title={item.notes || '—'}>
                                         {item.notes || '—'}

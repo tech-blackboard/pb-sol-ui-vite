@@ -18,12 +18,13 @@ interface ReplyFormProps {
     initialFromEmail?: string;
     initialEmailAccountId?: number;
     threadId?: string;
+    initialSubject?: string;
 }
 
 export default function ReplyForm({
     contactId, eventId, defaultSubject, recipientEmail, replyEmails,
     onSuccess, initialDraftId, initialHtmlBody, initialFromEmail,
-    initialEmailAccountId, threadId
+    initialEmailAccountId, threadId, initialSubject
 }: ReplyFormProps) {
     const dispatch = useAppDispatch();
     const { loading } = useAppSelector((state: RootState) => state.crm);
@@ -32,6 +33,7 @@ export default function ReplyForm({
     const [htmlBody, setHtmlBody] = useState(initialHtmlBody || '');
     const [fromEmail, setFromEmail] = useState(initialFromEmail || replyEmails[0] || '');
     const [emailAccountId, setEmailAccountId] = useState<number | undefined>(initialEmailAccountId);
+    const [subject, setSubject] = useState(initialSubject || (defaultSubject.startsWith('Re:') ? defaultSubject : `Re: ${defaultSubject}`));
     const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>([]);
 
     const [isExpanded, setIsExpanded] = useState(!!initialDraftId || !!initialHtmlBody);
@@ -43,6 +45,7 @@ export default function ReplyForm({
     const htmlBodyRef = useRef(htmlBody);
     const lastSavedBodyRef = useRef(lastSavedBody);
     const draftIdRef = useRef(draftId);
+    const subjectRef = useRef(subject);
 
     // Fetch connected accounts
     useEffect(() => {
@@ -62,6 +65,10 @@ export default function ReplyForm({
         draftIdRef.current = draftId;
     }, [draftId]);
 
+    useEffect(() => {
+        subjectRef.current = subject;
+    }, [subject]);
+
     const handleSaveDraft = useCallback(async (currentBody: string) => {
         if (!currentBody.trim() || currentBody === lastSavedBody || isSavingRef.current) return;
 
@@ -69,7 +76,7 @@ export default function ReplyForm({
         const result = await dispatch(saveDraftThunk({
             contactId,
             eventId,
-            subject: defaultSubject.startsWith('Re:') ? defaultSubject : `Re: ${defaultSubject}`,
+            subject,
             htmlBody: currentBody.replace(/\n/g, '<br>'),
             textBody: currentBody,
             fromEmail: fromEmail || undefined,
@@ -83,7 +90,7 @@ export default function ReplyForm({
             setLastSavedBody(currentBody);
         }
         isSavingRef.current = false;
-    }, [contactId, eventId, defaultSubject, fromEmail, emailAccountId, draftId, lastSavedBody, threadId, dispatch]);
+    }, [contactId, eventId, subject, fromEmail, emailAccountId, draftId, lastSavedBody, threadId, dispatch]);
 
     useEffect(() => {
         const charDifference = Math.abs(htmlBody.length - lastSavedBody.length);
@@ -110,7 +117,7 @@ export default function ReplyForm({
                 dispatch(saveDraftThunk({
                     contactId,
                     eventId,
-                    subject: defaultSubject.startsWith('Re:') ? defaultSubject : `Re: ${defaultSubject}`,
+                    subject: subjectRef.current,
                     htmlBody: bodyToSave.replace(/\n/g, '<br>'),
                     textBody: bodyToSave,
                     fromEmail: fromEmail || undefined,
@@ -120,7 +127,7 @@ export default function ReplyForm({
                 }));
             }
         };
-    }, [contactId, eventId, defaultSubject, fromEmail, emailAccountId, threadId, dispatch]);
+    }, [contactId, eventId, fromEmail, emailAccountId, threadId, dispatch]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -134,7 +141,7 @@ export default function ReplyForm({
             eventId,
             fromEmail: fromEmail || undefined,
             emailAccountId,
-            subject: defaultSubject.startsWith('Re:') ? defaultSubject : `Re: ${defaultSubject}`,
+            subject,
             htmlBody: htmlBody.replace(/\n/g, '<br>'),
             textBody: htmlBody,
             draftId: draftId,
@@ -214,6 +221,17 @@ export default function ReplyForm({
                                 <option key={email} value={email}>{email}</option>
                             ))}
                         </select>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm">
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">Subject:</span>
+                        <input
+                            type="text"
+                            value={subject}
+                            onChange={(e) => setSubject(e.target.value)}
+                            className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500 font-medium"
+                            placeholder="Email subject"
+                        />
                     </div>
                 </div>
 

@@ -511,6 +511,7 @@ export default function ThreadView() {
                                     initialDraftId={draft?.id}
                                     initialHtmlBody={draft?.htmlBody}
                                     initialFromEmail={draft?.fromEmail}
+                                    initialSubject={draft?.subject}
                                     threadId={thread.id}
                                 />
                             );

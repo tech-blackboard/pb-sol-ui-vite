@@ -133,11 +133,11 @@ export default function MailboxPage() {
                         <EmailAccountsPage />
                     ) : activeFolder === 'Contact Bucket' ? (
                         <ContactBucketView />
-                    ) : selectedThreadId ? (
-                        <ThreadView />
                     ) : (
                         <>
-                            {/* Toolbar Above Email List */}
+                            {/* Thread List & Toolbar Container */}
+                            <div className={`flex flex-col h-full min-w-0 flex-1 ${selectedThreadId ? 'hidden' : ''}`}>
+                                {/* Toolbar Above Email List */}
                             <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40">
                                 <div className="flex items-center gap-2">
                                     {selectedThreadIds.length > 0 ? (
@@ -240,6 +240,10 @@ export default function MailboxPage() {
 
                             {/* Email Listing Table */}
                             <ThreadTable />
+                            </div>
+
+                            {/* Thread View Container */}
+                            {selectedThreadId && <ThreadView />}
                         </>
 
                     )}
