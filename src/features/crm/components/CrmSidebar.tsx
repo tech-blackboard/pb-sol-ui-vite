@@ -5,7 +5,7 @@ import { selectAuth } from '../../../store/slices/authSlice';
 
 export default function CrmSidebar() {
     const dispatch = useAppDispatch();
-    const { activeFolder, unreadCount, starredCount, sentCount, draftsCount, trashCount, accountsCount, isSidebarOpen, isSidebarCollapsed } = useAppSelector((state: RootState) => state.crm);
+    const { activeFolder, unreadCount, starredCount, sentCount, draftsCount, trashCount, junkCount, accountsCount, isSidebarOpen, isSidebarCollapsed } = useAppSelector((state: RootState) => state.crm);
     const { user } = useAppSelector(selectAuth);
     const isAdmin = Boolean(user?.isAdmin);
 
@@ -84,6 +84,14 @@ export default function CrmSidebar() {
                                     : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400'
                                     }`}>
                                     {starredCount}
+                                </span>
+                            )}
+                            {!isSidebarCollapsed && folder.name === 'Junk' && junkCount > 0 && (
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeFolder === 'Junk'
+                                    ? 'bg-orange-100 text-orange-700'
+                                    : 'bg-orange-50 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400'
+                                    }`}>
+                                    {junkCount}
                                 </span>
                             )}
                             {!isSidebarCollapsed && folder.name === 'Trash' && trashCount > 0 && (

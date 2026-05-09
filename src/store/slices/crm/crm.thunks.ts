@@ -220,3 +220,29 @@ export const emptyTrashThunk = createAsyncThunk(
         }
     }
 );
+
+export const junkThreadsThunk = createAsyncThunk(
+    'crm/junkThreads',
+    async (threadIds: string[], { rejectWithValue }) => {
+        try {
+            await crmService.junkThreads(threadIds);
+            return threadIds;
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to report threads as spam';
+            return rejectWithValue(Array.isArray(message) ? message.join(', ') : message);
+        }
+    }
+);
+
+export const restoreThreadsFromJunkThunk = createAsyncThunk(
+    'crm/restoreThreadsFromJunk',
+    async (threadIds: string[], { rejectWithValue }) => {
+        try {
+            await crmService.restoreThreadsFromJunk(threadIds);
+            return threadIds;
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to restore threads from junk';
+            return rejectWithValue(Array.isArray(message) ? message.join(', ') : message);
+        }
+    }
+);

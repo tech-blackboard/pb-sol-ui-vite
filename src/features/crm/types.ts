@@ -35,6 +35,8 @@ export interface Thread {
     isStarred: boolean;
     isTrash: boolean;
     trashedAt?: string;
+    isJunk: boolean;
+    junkedAt?: string;
     contact?: Contact;
     messageCount: number;
     domain: string;
@@ -64,6 +66,10 @@ export interface Message {
     htmlBody?: string;
     direction: MessageDirection;
     status: MessageStatus;
+    isTrash: boolean;
+    trashedAt?: string;
+    isJunk: boolean;
+    junkedAt?: string;
     eventId: number;
     contactId: number;
     createdAt: string;

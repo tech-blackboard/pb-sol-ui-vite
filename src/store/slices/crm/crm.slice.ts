@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { CrmEvent, Thread, Message, CrmLabel, EmailAccount } from '../../../features/crm/types';
-import { fetchEventsThunk, fetchThreadsThunk, fetchMessagesThunk, sendReplyThunk, updateLabelsThunk, saveDraftThunk, fetchDraftsThunk, deleteDraftThunk, toggleThreadStarThunk, toggleThreadReadThunk, fetchLabelDefinitionsThunk, fetchEmailAccountsThunk, trashThreadsThunk, restoreThreadsThunk, deleteThreadsPermanentlyThunk, emptyTrashThunk } from './crm.thunks';
+import { fetchEventsThunk, fetchThreadsThunk, fetchMessagesThunk, sendReplyThunk, updateLabelsThunk, saveDraftThunk, fetchDraftsThunk, deleteDraftThunk, toggleThreadStarThunk, toggleThreadReadThunk, fetchLabelDefinitionsThunk, fetchEmailAccountsThunk, trashThreadsThunk, restoreThreadsThunk, deleteThreadsPermanentlyThunk, emptyTrashThunk, junkThreadsThunk, restoreThreadsFromJunkThunk } from './crm.thunks';
 
 export interface CrmState {
     events: CrmEvent[];
@@ -41,6 +41,7 @@ export interface CrmState {
     sentCount: number;
     draftsCount: number;
     trashCount: number;
+    junkCount: number;
     accountsCount: number;
     totalAccountsCount: number;
     totalDrafts: number;
@@ -92,6 +93,7 @@ export const initialState: CrmState = {
     sentCount: 0,
     draftsCount: 0,
     trashCount: 0,
+    junkCount: 0,
     accountsCount: 0,
     totalAccountsCount: 0,
     totalDrafts: 0,
@@ -244,6 +246,7 @@ const crmSlice = createSlice({
                 state.sentCount = action.payload.sentCount || 0;
                 state.draftsCount = action.payload.draftsCount || 0;
                 state.trashCount = action.payload.trashCount || 0;
+                state.junkCount = action.payload.junkCount || 0;
             })
             .addCase(fetchThreadsThunk.rejected, (state, action) => {
                 state.loading.threads = false;
@@ -424,6 +427,28 @@ const crmSlice = createSlice({
                 state.selectedThreadId = null;
                 state.selectedThreadIds = [];
                 state.messages = [];
+            })
+            // Junk Threads
+            .addCase(junkThreadsThunk.fulfilled, (state, { payload }) => {
+                state.threads = state.threads.filter(t => !payload.includes(t.id));
+                state.totalThreads = Math.max(0, state.totalThreads - payload.length);
+                state.junkCount += payload.length;
+                state.selectedThreadIds = state.selectedThreadIds.filter(id => !payload.includes(id));
+                if (state.selectedThreadId && payload.includes(state.selectedThreadId)) {
+                    state.selectedThreadId = null;
+                    state.messages = [];
+                }
+            })
+            // Restore from Junk
+            .addCase(restoreThreadsFromJunkThunk.fulfilled, (state, { payload }) => {
+                state.threads = state.threads.filter(t => !payload.includes(t.id));
+                state.totalThreads = Math.max(0, state.totalThreads - payload.length);
+                state.junkCount = Math.max(0, state.junkCount - payload.length);
+                state.selectedThreadIds = state.selectedThreadIds.filter(id => !payload.includes(id));
+                if (state.selectedThreadId && payload.includes(state.selectedThreadId)) {
+                    state.selectedThreadId = null;
+                    state.messages = [];
+                }
             });
     },
 });

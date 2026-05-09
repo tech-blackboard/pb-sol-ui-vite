@@ -1,7 +1,7 @@
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import type { RootState } from '../../../store';
 import { setSelectedThread } from '../../../store/slices/crm/crm.slice';
-import { updateLabelsThunk, fetchMessagesThunk, toggleThreadReadThunk, trashThreadsThunk, restoreThreadsThunk, deleteThreadsPermanentlyThunk } from '../../../store/slices/crm/crm.thunks';
+import { updateLabelsThunk, fetchMessagesThunk, toggleThreadReadThunk, trashThreadsThunk, restoreThreadsThunk, deleteThreadsPermanentlyThunk, junkThreadsThunk, restoreThreadsFromJunkThunk } from '../../../store/slices/crm/crm.thunks';
 import * as crmService from '../services/crmService';
 import ReplyForm from './ReplyForm';
 import EmailBody from './EmailBody';
@@ -47,7 +47,7 @@ export default function ThreadView() {
                 eventId: draft.eventId,
                 createdAt: draft.createdAt
             } as Contact;
-        } 
+        }
         // Fallback 2: Reconstruct from messages (important for redirections from Contact Bucket)
         else if (messages.length > 0) {
             const firstMsg = messages[0];
@@ -153,6 +153,30 @@ export default function ThreadView() {
         }
     };
 
+    const handleJunkThread = async () => {
+        if (selectedThreadId) {
+            try {
+                await dispatch(junkThreadsThunk([selectedThreadId])).unwrap();
+                dispatch(setSelectedThread(null));
+                toast.success('Conversation reported as spam');
+            } catch (err: unknown) {
+                toast.error(err as string);
+            }
+        }
+    };
+
+    const handleRestoreFromJunk = async () => {
+        if (selectedThreadId) {
+            try {
+                await dispatch(restoreThreadsFromJunkThunk([selectedThreadId])).unwrap();
+                dispatch(setSelectedThread(null));
+                toast.success('Conversation moved to Inbox');
+            } catch (err: unknown) {
+                toast.error(err as string);
+            }
+        }
+    };
+
     const handleDownload = async (attachmentId: number, filename: string) => {
         try {
             setDownloadingIds(prev => new Set(prev).add(attachmentId));
@@ -223,6 +247,28 @@ export default function ThreadView() {
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.247 2.118H8.086a2.25 2.25 0 01-2.247-2.118L6.822 5.792m11.142 0c.243-.077.48-.154.718-.23a2.25 2.25 0 00-1.25-4.25H8.37A2.25 2.25 0 007.12 1.54c.238.077.475.154.718.23m11.142 0l-1.815 3.085a11.95 11.95 0 01-5.045 4.519 11.95 11.95 0 01-5.045-4.519L4.088 5.792" />
+                            </svg>
+                        </button>
+                    )}
+                    <div className="h-6 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1"></div>
+                    {activeFolder === 'Junk' ? (
+                        <button
+                            onClick={handleRestoreFromJunk}
+                            className="p-2 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20 text-green-600"
+                            title="Not Spam"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleJunkThread}
+                            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-orange-500"
+                            title="Report Spam"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
                         </button>
                     )}
