@@ -88,6 +88,8 @@ export const sendReplyThunk = createAsyncThunk(
         emailAccountId?: number;
         draftId?: string;
         threadId?: string;
+        cc?: string;
+        bcc?: string;
     }, { rejectWithValue }) => {
         try {
             return await crmService.sendReply(payload);
@@ -122,6 +124,8 @@ export const saveDraftThunk = createAsyncThunk(
         emailAccountId?: number;
         threadId?: string;
         draftId?: string;
+        cc?: string;
+        bcc?: string;
     }, { rejectWithValue }) => {
         try {
             return await crmService.saveDraft(payload);

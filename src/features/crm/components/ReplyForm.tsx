@@ -1,10 +1,14 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import type { RootState } from '../../../store';
 import { sendReplyThunk, saveDraftThunk } from '../../../store/slices/crm/crm.thunks';
 import { fetchEmailAccounts } from '../services/crmService';
 import type { EmailAccount } from '../types';
 import toast from 'react-hot-toast';
+
+export interface ReplyFormHandle {
+    expand: () => void;
+}
 
 interface ReplyFormProps {
     contactId: number;
@@ -19,13 +23,15 @@ interface ReplyFormProps {
     initialEmailAccountId?: number;
     threadId?: string;
     initialSubject?: string;
+    initialCc?: string;
+    initialBcc?: string;
 }
 
-export default function ReplyForm({
+const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
     contactId, eventId, defaultSubject, recipientEmail, replyEmails,
     onSuccess, initialDraftId, initialHtmlBody, initialFromEmail,
-    initialEmailAccountId, threadId, initialSubject
-}: ReplyFormProps) {
+    initialEmailAccountId, threadId, initialSubject, initialCc, initialBcc
+}, ref) => {
     const dispatch = useAppDispatch();
     const { loading } = useAppSelector((state: RootState) => state.crm);
 
@@ -38,6 +44,16 @@ export default function ReplyForm({
 
     const [isExpanded, setIsExpanded] = useState(!!initialDraftId || !!initialHtmlBody);
     const [draftId, setDraftId] = useState<string | undefined>(initialDraftId);
+
+    const [cc, setCc] = useState(initialCc || '');
+    const [bcc, setBcc] = useState(initialBcc || '');
+    const [showCC, setShowCC] = useState(!!initialCc);
+    const [showBCC, setShowBCC] = useState(!!initialBcc);
+
+    useImperativeHandle(ref, () => ({
+        expand: () => setIsExpanded(true)
+    }));
+
     const [lastSavedBody, setLastSavedBody] = useState(initialHtmlBody || '');
 
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -46,6 +62,8 @@ export default function ReplyForm({
     const lastSavedBodyRef = useRef(lastSavedBody);
     const draftIdRef = useRef(draftId);
     const subjectRef = useRef(subject);
+    const ccRef = useRef(cc);
+    const bccRef = useRef(bcc);
 
     // Fetch connected accounts
     useEffect(() => {
@@ -69,6 +87,14 @@ export default function ReplyForm({
         subjectRef.current = subject;
     }, [subject]);
 
+    useEffect(() => {
+        ccRef.current = cc;
+    }, [cc]);
+
+    useEffect(() => {
+        bccRef.current = bcc;
+    }, [bcc]);
+
     const handleSaveDraft = useCallback(async (currentBody: string) => {
         if (!currentBody.trim() || currentBody === lastSavedBody || isSavingRef.current) return;
 
@@ -83,6 +109,8 @@ export default function ReplyForm({
             emailAccountId,
             draftId: draftId,
             threadId,
+            cc: ccRef.current,
+            bcc: bccRef.current,
         }));
 
         if (saveDraftThunk.fulfilled.match(result)) {
@@ -107,6 +135,25 @@ export default function ReplyForm({
         };
     }, [htmlBody, isExpanded, lastSavedBody, handleSaveDraft]);
 
+    // Prepare dropdown options: prioritize Accounts with IDs, fallback to plain emails
+    const accountOptions = useMemo(() => {
+        const options: { label: string; value: string }[] = [];
+
+        // Only include emails that are part of the 'replyEmails' list
+        replyEmails.forEach(email => {
+            // Find if this specific reply email matches a connected account
+            const matchingAcc = emailAccounts.find(acc => acc.email.toLowerCase() === email.toLowerCase());
+            
+            if (matchingAcc) {
+                options.push({ label: email, value: `acc_${matchingAcc.id}` });
+            } else {
+                options.push({ label: email, value: email });
+            }
+        });
+
+        return options;
+    }, [emailAccounts, replyEmails]);
+
     // Save on unmount
     useEffect(() => {
         return () => {
@@ -124,6 +171,8 @@ export default function ReplyForm({
                     emailAccountId,
                     draftId: draftIdRef.current,
                     threadId,
+                    cc: ccRef.current,
+                    bcc: bccRef.current,
                 }));
             }
         };
@@ -146,12 +195,18 @@ export default function ReplyForm({
             textBody: htmlBody,
             draftId: draftId,
             threadId,
+            cc,
+            bcc,
         }));
 
         if (sendReplyThunk.fulfilled.match(result)) {
             toast.success('Reply sent successfully');
             setHtmlBody('');
             setLastSavedBody('');
+            setCc('');
+            setBcc('');
+            setShowCC(false);
+            setShowBCC(false);
             setDraftId(undefined);
             setIsExpanded(false);
             if (onSuccess) onSuccess();
@@ -162,10 +217,10 @@ export default function ReplyForm({
 
     const handleAccountChange = (val: string) => {
         if (val.startsWith('acc_')) {
-            const id = parseInt(val.replace('acc_', ''));
-            const acc = emailAccounts.find(a => a.id === id);
+            const id = parseInt(val.replace('acc_', ''), 10);
+            const account = emailAccounts.find(a => a.id === id);
             setEmailAccountId(id);
-            setFromEmail(acc?.email || '');
+            if (account) setFromEmail(account.email);
         } else {
             setEmailAccountId(undefined);
             setFromEmail(val);
@@ -193,43 +248,104 @@ export default function ReplyForm({
     return (
         <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <div className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <span className="font-semibold text-gray-700 dark:text-gray-300">Reply to:</span>
-                            <span>{recipientEmail}</span>
+                <div className="flex flex-col">
+                    <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 py-2 group/to">
+                        <div className="flex flex-1 items-center gap-2 text-sm">
+                            <span className="text-gray-400 w-10 text-xs">To:</span>
+                            <div className="flex-1 flex items-center justify-between pr-2">
+                                <span className="text-gray-900 dark:text-gray-100 font-medium">{recipientEmail}</span>
+                                <div className="flex items-center gap-3 opacity-0 group-hover/to:opacity-100 transition-opacity">
+                                    {!showCC && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowCC(true)}
+                                            className="text-gray-400 hover:text-blue-600 hover:underline text-[11px] font-medium transition-colors"
+                                        >
+                                            Cc
+                                        </button>
+                                    )}
+                                    {!showBCC && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowBCC(true)}
+                                            className="text-gray-400 hover:text-blue-600 hover:underline text-[11px] font-medium transition-colors"
+                                        >
+                                            Bcc
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                         <button
                             type="button"
                             onClick={() => setIsExpanded(false)}
-                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 ml-2"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm">
-                        <span className="font-semibold text-gray-700 dark:text-gray-300">From:</span>
+                    {showCC && (
+                        <div className="flex items-center gap-2 text-sm border-b border-gray-100 dark:border-gray-800 py-2 animate-in slide-in-from-top-1 duration-200">
+                            <span className="text-gray-400 w-10 text-xs">Cc:</span>
+                            <input
+                                type="text"
+                                value={cc}
+                                onChange={(e) => setCc(e.target.value)}
+                                className="flex-1 bg-transparent outline-none text-gray-900 dark:text-gray-100 text-xs"
+                                placeholder="Recipient Cc"
+                                autoFocus
+                            />
+                            {!showBCC && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowBCC(true)}
+                                    className="text-gray-400 hover:text-blue-600 text-[11px] font-medium mr-2"
+                                >
+                                    Bcc
+                                </button>
+                            )}
+                            <button type="button" onClick={() => { setShowCC(false); setCc(''); }} className="text-gray-300 hover:text-red-500 px-1">×</button>
+                        </div>
+                    )}
+
+                    {showBCC && (
+                        <div className="flex items-center gap-2 text-sm border-b border-gray-100 dark:border-gray-800 py-2 animate-in slide-in-from-top-1 duration-200">
+                            <span className="text-gray-400 w-10 text-xs">Bcc:</span>
+                            <input
+                                type="text"
+                                value={bcc}
+                                onChange={(e) => setBcc(e.target.value)}
+                                className="flex-1 bg-transparent outline-none text-gray-900 dark:text-gray-100 text-xs"
+                                placeholder="Recipient Bcc"
+                                autoFocus={!showCC}
+                            />
+                            <button type="button" onClick={() => { setShowBCC(false); setBcc(''); }} className="text-gray-300 hover:text-red-500 px-1">×</button>
+                        </div>
+                    )}
+
+                    <div className="flex items-center gap-2 text-sm border-b border-gray-100 dark:border-gray-800 py-2">
+                        <span className="text-gray-400 w-10 text-xs">From:</span>
                         <select
                             value={emailAccountId ? `acc_${emailAccountId}` : fromEmail}
                             onChange={(e) => handleAccountChange(e.target.value)}
-                            className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                            className="bg-transparent border-none rounded text-xs outline-none focus:ring-0 text-blue-600 font-medium cursor-pointer"
                         >
-                            {replyEmails.map(email => (
-                                <option key={email} value={email}>{email}</option>
+                            {accountOptions.map((opt: { label: string; value: string }) => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
                             ))}
                         </select>
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm">
-                        <span className="font-semibold text-gray-700 dark:text-gray-300">Subject:</span>
+                    <div className="flex items-center gap-2 text-sm border-b border-gray-100 dark:border-gray-800 py-2">
+                        <span className="text-gray-400 w-10 text-xs">Subject:</span>
                         <input
                             type="text"
                             value={subject}
                             onChange={(e) => setSubject(e.target.value)}
-                            className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500 font-medium"
+                            className="flex-1 bg-transparent outline-none text-gray-900 dark:text-gray-100 text-xs font-medium"
                             placeholder="Email subject"
                         />
                     </div>
@@ -289,4 +405,6 @@ export default function ReplyForm({
             </form>
         </div>
     );
-}
+});
+
+export default ReplyForm;

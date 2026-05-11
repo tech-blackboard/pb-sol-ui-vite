@@ -64,6 +64,8 @@ export interface Message {
     subject: string;
     textBody?: string;
     htmlBody?: string;
+    ccEmail?: string;
+    bccEmail?: string;
     direction: MessageDirection;
     status: MessageStatus;
     isTrash: boolean;

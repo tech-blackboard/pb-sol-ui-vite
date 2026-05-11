@@ -221,6 +221,7 @@ describe('crm slice', () => {
                 sentCount: 0,
                 draftsCount: 0,
                 trashCount: 0,
+                junkCount: 0,
                 accountsCount: 5 // Should be ignored
             };
             const state = reducer(initialState, fetchThreadsThunk.fulfilled(payload, '', { eventId: 1 }));
@@ -233,9 +234,15 @@ describe('crm slice', () => {
         it('handles fetchThreadsThunk.fulfilled with missing counts', () => {
             const payload = {
                 threads: [],
-                total: 0
-                // counts missing
-            } as unknown as { threads: Thread[]; total: number; unreadCount: number; starredCount: number; sentCount: number; draftsCount: number; trashCount: number; accountsCount: number };
+                total: 0,
+                unreadCount: 0,
+                starredCount: 0,
+                sentCount: 0,
+                draftsCount: 0,
+                trashCount: 0,
+                junkCount: 0,
+                accountsCount: 0
+            } as any;
             const state = reducer(initialState, fetchThreadsThunk.fulfilled(payload, '', { eventId: 1 }));
             expect(state.unreadCount).toBe(0);
             expect(state.starredCount).toBe(0);

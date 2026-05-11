@@ -3,12 +3,12 @@ import type { RootState } from '../../../store';
 import { setSelectedThread } from '../../../store/slices/crm/crm.slice';
 import { updateLabelsThunk, fetchMessagesThunk, toggleThreadReadThunk, trashThreadsThunk, restoreThreadsThunk, deleteThreadsPermanentlyThunk, junkThreadsThunk, restoreThreadsFromJunkThunk } from '../../../store/slices/crm/crm.thunks';
 import * as crmService from '../services/crmService';
-import ReplyForm from './ReplyForm';
+import ReplyForm, { type ReplyFormHandle } from './ReplyForm';
 import EmailBody from './EmailBody';
 import MessageLabelDropdown from './MessageLabelDropdown';
 import { getLabelColorClasses } from '../utils/labelUtils';
 import toast from 'react-hot-toast';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { Thread, Contact, Message, Attachment, CrmEvent } from '../types';
 
 export default function ThreadView() {
@@ -18,6 +18,16 @@ export default function ThreadView() {
     const [expandedDetailsId, setExpandedDetailsId] = useState<string | null>(null);
     const [downloadingIds, setDownloadingIds] = useState<Set<number>>(new Set());
     const drafts = useAppSelector((state: RootState) => state.crm.drafts);
+
+    const replyFormRef = useRef<ReplyFormHandle>(null);
+    const replyFormContainerRef = useRef<HTMLDivElement>(null);
+
+    const handleReplyClick = () => {
+        replyFormRef.current?.expand();
+        setTimeout(() => {
+            replyFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    };
 
     let thread = threads.find((t: Thread) => t.id === selectedThreadId);
     let contact = thread?.contact;
@@ -302,16 +312,16 @@ export default function ThreadView() {
                         <MessageLabelDropdown
                             currentLabels={messages[0]?.labels || []}
                             onToggleLabel={(toggledLabel) => {
-                                const firstMsg = messages[0];
-                                if (!firstMsg) return;
+                                const latestMsg = messages[0];
+                                if (!latestMsg) return;
                                 let newLabels;
-                                const exists = firstMsg.labels.some((l: string) => l.toLowerCase() === toggledLabel.toLowerCase());
+                                const exists = latestMsg.labels.some((l: string) => l.toLowerCase() === toggledLabel.toLowerCase());
                                 if (exists) {
-                                    newLabels = firstMsg.labels.filter((l: string) => l.toLowerCase() !== toggledLabel.toLowerCase());
+                                    newLabels = latestMsg.labels.filter((l: string) => l.toLowerCase() !== toggledLabel.toLowerCase());
                                 } else {
-                                    newLabels = [...firstMsg.labels, toggledLabel];
+                                    newLabels = [...latestMsg.labels, toggledLabel];
                                 }
-                                dispatch(updateLabelsThunk({ messageId: firstMsg.id, labels: newLabels }));
+                                dispatch(updateLabelsThunk({ messageId: latestMsg.id, labels: newLabels }));
                             }}
                         />
                     </div>
@@ -348,16 +358,6 @@ export default function ThreadView() {
                                 )}
                             </div>
                             <div className="flex items-center gap-2 text-gray-400">
-                                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                                    </svg>
-                                </button>
-                                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18c-2.305 0-4.408.867-6 2.292m0-14.25V21" />
-                                    </svg>
-                                </button>
                             </div>
                         </div>
 
@@ -433,6 +433,20 @@ export default function ThreadView() {
                                                                 <span className="text-gray-400 text-right">to:</span>
                                                                 <span className="text-gray-900 dark:text-gray-100">{message.toEmail}</span>
 
+                                                                {message.ccEmail && (
+                                                                    <>
+                                                                        <span className="text-gray-400 text-right">cc:</span>
+                                                                        <span className="text-gray-900 dark:text-gray-100">{message.ccEmail}</span>
+                                                                    </>
+                                                                )}
+
+                                                                {message.bccEmail && (
+                                                                    <>
+                                                                        <span className="text-gray-400 text-right">bcc:</span>
+                                                                        <span className="text-gray-900 dark:text-gray-100">{message.bccEmail}</span>
+                                                                    </>
+                                                                )}
+
                                                                 <span className="text-gray-400 text-right">date:</span>
                                                                 <span className="text-gray-900 dark:text-gray-100">
                                                                     {new Date(message.createdAt).toLocaleString([], {
@@ -470,12 +484,11 @@ export default function ThreadView() {
                                                 })}
                                             </span>
                                             <div className="flex gap-1">
-                                                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-                                                    </svg>
-                                                </button>
-                                                <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+                                                <button
+                                                    onClick={handleReplyClick}
+                                                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                                                    title="Reply"
+                                                >
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
                                                     </svg>
@@ -537,7 +550,7 @@ export default function ThreadView() {
                         })}
                     </div>
 
-                    <div className="mt-8 border-t border-gray-100 dark:border-gray-800 pt-8">
+                    <div ref={replyFormContainerRef} className="mt-8 border-t border-gray-100 dark:border-gray-800 pt-8">
                         {(() => {
                             const draft = drafts.find((d: Message) =>
                                 d.id === selectedThreadId ||
@@ -548,6 +561,7 @@ export default function ThreadView() {
 
                             return (
                                 <ReplyForm
+                                    ref={replyFormRef}
                                     contactId={contact?.id || 0}
                                     eventId={thread.eventId}
                                     replyEmails={event?.replyEmails || []}
@@ -558,6 +572,8 @@ export default function ThreadView() {
                                     initialHtmlBody={draft?.htmlBody}
                                     initialFromEmail={draft?.fromEmail}
                                     initialSubject={draft?.subject}
+                                    initialCc={draft?.ccEmail}
+                                    initialBcc={draft?.bccEmail}
                                     threadId={thread.id}
                                 />
                             );

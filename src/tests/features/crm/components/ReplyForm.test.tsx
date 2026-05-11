@@ -130,7 +130,8 @@ describe('ReplyForm', () => {
         htmlBody: 'Testing auto-save logic', threadId: 'thread-1',
         createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
         labels: [], contactId: 1, eventId: 1,
-        direction: 'outbound', status: 'draft', attachments: []
+        direction: 'outbound', status: 'draft', attachments: [],
+        isTrash: false, isJunk: false
       } as Message);
       renderForm();
       expand();
@@ -153,7 +154,8 @@ describe('ReplyForm', () => {
         htmlBody: 'Unmount test', threadId: 'thread-1',
         createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
         labels: [], contactId: 1, eventId: 1,
-        direction: 'outbound', status: 'draft', attachments: []
+        direction: 'outbound', status: 'draft', attachments: [],
+        isTrash: false, isJunk: false
       } as Message);
       const { unmount } = render(
         <Provider store={makeStore()}>

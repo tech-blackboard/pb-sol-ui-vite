@@ -96,6 +96,8 @@ export async function sendReply(payload: {
     emailAccountId?: number;
     draftId?: string;
     threadId?: string;
+    cc?: string;
+    bcc?: string;
 }): Promise<{ status: string; messageId: string }> {
     const { data } = await api.post(`${CRM_BASE}/reply`, payload, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
@@ -116,6 +118,8 @@ export async function saveDraft(payload: {
     fromEmail?: string;
     threadId?: string;
     draftId?: string;
+    cc?: string;
+    bcc?: string;
 }): Promise<Message> {
     const { data } = await api.post<Message>(`${CRM_BASE}/drafts`, payload, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },

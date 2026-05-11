@@ -83,6 +83,7 @@ const makeThread = (overrides: Partial<Thread> = {}): Thread => ({
   contact: makeContact(),
   isStarred: false,
   isTrash: false,
+  isJunk: false,
   ...overrides,
 });
 
@@ -96,7 +97,7 @@ const makeMessage = (overrides: Partial<Message> = {}): Message => ({
   fromName: 'Alice', toEmail: 'me@conf.com', subject: 'Hello World',
   textBody: 'Hello there', htmlBody: '', direction: 'inbound', status: 'received',
   eventId: 1, contactId: 10, createdAt: '2025-06-15T10:00:00Z',
-  labels: [], attachments: [], ...overrides,
+  labels: [], attachments: [], isTrash: false, isJunk: false, ...overrides,
 });
 
 const makeStore = (overrides: object = {}) =>

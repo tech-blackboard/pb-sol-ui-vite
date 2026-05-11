@@ -53,6 +53,7 @@ const makeThread = (overrides: Partial<Thread> = {}): Thread => ({
   contact: makeContact(),
   isStarred: false,
   isTrash: false,
+  isJunk: false,
   ...overrides,
 });
 
