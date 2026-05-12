@@ -167,7 +167,7 @@ export default function CrmHeader() {
                     value={currentActiveEventId || ''}
                     onChange={(e) => handleEventChange(Number(e.target.value))}
                 >
-                    <option value="">{isAccountsTab ? 'All Conferences' : 'Select Conference'}</option>
+                    <option value="">All Conferences</option>
                     {events.map(e => (
                         <option key={e.id} value={e.id}>{e.name}</option>
                     ))}
