@@ -266,8 +266,18 @@ export default function ThreadTable({ onSelectItem }: { onSelectItem?: (item: Th
                                         </div>
                                     </div>
                                 </td>
-                                <td className={`px-2 py-2 text-[11px] text-right whitespace-nowrap ${!isRead ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-500'}`}>
-                                    {formatDate(isDraftsView ? (item as Message).updatedAt || item.createdAt : (item as Thread).lastMessageAt)}
+                                <td className="px-2 py-2 whitespace-nowrap">
+                                    <div className="flex flex-col items-end gap-0.5">
+                                        {!isDraftsView && (item as Thread).importance === 'high' && (
+                                            <span className="text-[#C8102E] font-black text-sm leading-none" title="High Importance">!</span>
+                                        )}
+                                        {!isDraftsView && (item as Thread).importance === 'low' && (
+                                            <span className="text-blue-500 font-bold text-xs leading-none" title="Low Importance">↓</span>
+                                        )}
+                                        <span className={`text-[11px] text-right ${!isRead ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-500'}`}>
+                                            {formatDate(isDraftsView ? (item as Message).updatedAt || item.createdAt : (item as Thread).lastMessageAt)}
+                                        </span>
+                                    </div>
                                 </td>
                             </tr>
                         )

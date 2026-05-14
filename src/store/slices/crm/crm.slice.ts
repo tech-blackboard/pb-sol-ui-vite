@@ -219,9 +219,6 @@ const crmSlice = createSlice({
                 state.loading.events = false;
                 if (Array.isArray(payload)) {
                     state.events = payload;
-                    if (payload.length > 0 && !state.activeEventId) {
-                        state.activeEventId = payload[0].id;
-                    }
                 } else {
                     console.error('CRM: fetchEvents returned non-array payload', payload);
                     state.events = [];

@@ -497,6 +497,20 @@ export default function ThreadView() {
                                         </div>
                                     </div>
 
+                                    {/* Outlook-style High Importance Indicator */}
+                                    {message.importance === 'high' && (
+                                        <div className="ml-14 mt-3 mb-2 flex items-center gap-2 text-[#C8102E] dark:text-red-400">
+                                            <span className="text-xl font-black leading-none">!</span>
+                                            <span className="text-[14px] font-bold">High importance</span>
+                                        </div>
+                                    )}
+                                    {message.importance === 'low' && (
+                                        <div className="ml-14 mt-2 mb-1 flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                                            <span className="text-sm font-black leading-none">↓</span>
+                                            <span className="text-[14px] font-bold">Low importance</span>
+                                        </div>
+                                    )}
+
                                     {/* Message Body */}
                                     <div className="ml-14 mt-1">
                                         <EmailBody html={message.htmlBody} text={message.textBody} />

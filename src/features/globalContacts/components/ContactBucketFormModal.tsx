@@ -102,7 +102,7 @@ export default function ContactBucketFormModal({ mode, item, onClose, onSuccess 
         };
     }, []);
 
-    const handleChange = (field: string, value: any) => {
+    const handleChange = (field: string, value: string | number | number[]) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
         if (errors[field]) {
             setErrors((prev) => {
@@ -163,7 +163,7 @@ export default function ContactBucketFormModal({ mode, item, onClose, onSuccess 
                 await updateContactBucket(item.id, payload);
                 toast.success('Contact updated successfully');
             } else {
-                await createContactBucket(payload as any);
+                await createContactBucket(payload as Parameters<typeof createContactBucket>[0]);
                 toast.success('Contact created successfully');
             }
             onSuccess();

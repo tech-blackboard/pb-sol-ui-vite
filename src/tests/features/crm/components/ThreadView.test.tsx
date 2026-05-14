@@ -38,7 +38,7 @@ import * as crmThunks from '../../../../store/slices/crm/crm.thunks';
 
 jest.mock('../../../../features/crm/components/ReplyForm', () => ({
   __esModule: true,
-  default: (props: any) => (
+  default: (props: { recipientEmail: string; onSuccess: () => void }) => (
     <div data-testid="reply-form">
       <span>{props.recipientEmail}</span>
       <button onClick={props.onSuccess}>Trigger Reply Success</button>
@@ -506,7 +506,7 @@ describe('ThreadView', () => {
         threadId: 't1',
         status: 'draft',
         toEmail: 'alice@x.com'
-      } as any;
+      } as Message;
 
       renderView({
         selectedThreadId: 't1',

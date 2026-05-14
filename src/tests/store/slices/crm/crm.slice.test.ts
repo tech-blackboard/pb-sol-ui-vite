@@ -242,7 +242,7 @@ describe('crm slice', () => {
                 trashCount: 0,
                 junkCount: 0,
                 accountsCount: 0
-            } as any;
+            } as { threads: Thread[]; total: number; unreadCount: number; starredCount: number; sentCount: number; draftsCount: number; trashCount: number; junkCount: number; accountsCount: number };
             const state = reducer(initialState, fetchThreadsThunk.fulfilled(payload, '', { eventId: 1 }));
             expect(state.unreadCount).toBe(0);
             expect(state.starredCount).toBe(0);

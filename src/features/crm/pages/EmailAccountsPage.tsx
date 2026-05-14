@@ -40,6 +40,7 @@ export default function EmailAccountsPage() {
     const [editingAccount, setEditingAccount] = useState<EmailAccount | null>(null);
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
     const [bulkJson, setBulkJson] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'disabled'>('all');
 
     // Form state
     const [formData, setFormData] = useState<Partial<EmailAccount>>({
@@ -236,7 +237,16 @@ export default function EmailAccountsPage() {
         );
     }
 
-    const filteredAccounts = accounts.filter(a => !activeDomain || a.email === activeDomain);
+    const activeCount = accounts.filter(a => a.isActive).length;
+    const disabledCount = accounts.filter(a => !a.isActive).length;
+
+    const filteredAccounts = accounts.filter(a => {
+        const matchesDomain = !activeDomain || a.email === activeDomain;
+        const matchesStatus = statusFilter === 'all'
+            || (statusFilter === 'active' && a.isActive)
+            || (statusFilter === 'disabled' && !a.isActive);
+        return matchesDomain && matchesStatus;
+    });
 
     if (loading) return <div className="p-8 text-center">Loading accounts...</div>;
 
@@ -285,6 +295,45 @@ export default function EmailAccountsPage() {
                         Add Account
                     </button>
                 </div>
+            </div>
+
+            <div className="flex items-center gap-2 mb-8 p-1 bg-gray-100/50 dark:bg-gray-800/50 rounded-lg w-fit">
+                <button
+                    onClick={() => setStatusFilter('all')}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${statusFilter === 'all'
+                        ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                        }`}
+                >
+                    All Accounts
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${statusFilter === 'all' ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-gray-200 dark:bg-gray-800'}`}>
+                        {accounts.length}
+                    </span>
+                </button>
+                <button
+                    onClick={() => setStatusFilter('active')}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${statusFilter === 'active'
+                        ? 'bg-white dark:bg-gray-700 text-green-600 dark:text-green-400 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                        }`}
+                >
+                    Active
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${statusFilter === 'active' ? 'bg-green-100 dark:bg-green-900/40' : 'bg-gray-200 dark:bg-gray-800'}`}>
+                        {activeCount}
+                    </span>
+                </button>
+                <button
+                    onClick={() => setStatusFilter('disabled')}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${statusFilter === 'disabled'
+                        ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                        }`}
+                >
+                    Disabled
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${statusFilter === 'disabled' ? 'bg-red-100 dark:bg-red-900/40' : 'bg-gray-200 dark:bg-gray-800'}`}>
+                        {disabledCount}
+                    </span>
+                </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -469,14 +518,30 @@ export default function EmailAccountsPage() {
                                         </>
                                     )}
                                 </div>
-                            </div>
-
-                            <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex gap-4">
-                                <button type="button" onClick={() => setIsFormOpen(false)} className="flex-1 h-12 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-bold rounded-xl transition-all">Cancel</button>
-                                <button type="submit" className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/30">
-                                    {editingAccount ? 'Update Account' : 'Create Account'}
-                                </button>
-                            </div>
+                             </div>
+ 
+                             <div className="pt-4 border-t border-gray-100 dark:border-gray-800 space-y-4">
+                                 <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                                     <div className="flex flex-col">
+                                         <span className="text-sm font-bold dark:text-white">Active Status</span>
+                                         <span className="text-xs text-gray-500">Enable or disable background synchronization</span>
+                                     </div>
+                                     <button
+                                         type="button"
+                                         onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
+                                         className={`w-12 h-6 rounded-full transition-all relative ${formData.isActive ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                                     >
+                                         <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${formData.isActive ? 'right-1' : 'left-1'}`}></div>
+                                     </button>
+                                 </div>
+ 
+                                 <div className="flex gap-4">
+                                     <button type="button" onClick={() => setIsFormOpen(false)} className="flex-1 h-12 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-bold rounded-xl transition-all">Cancel</button>
+                                     <button type="submit" className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/30">
+                                         {editingAccount ? 'Update Account' : 'Create Account'}
+                                     </button>
+                                 </div>
+                             </div>
                         </form>
                     </div>
                 </div>

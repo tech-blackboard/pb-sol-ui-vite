@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import type { RootState } from '../../../store';
 import { sendReplyThunk, saveDraftThunk } from '../../../store/slices/crm/crm.thunks';
 import { fetchEmailAccounts } from '../services/crmService';
-import type { EmailAccount } from '../types';
+import type { EmailAccount, MessageImportance } from '../types';
 import toast from 'react-hot-toast';
 
 export interface ReplyFormHandle {
@@ -49,6 +49,24 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
     const [bcc, setBcc] = useState(initialBcc || '');
     const [showCC, setShowCC] = useState(!!initialCc);
     const [showBCC, setShowBCC] = useState(!!initialBcc);
+    const [importance, setImportance] = useState<MessageImportance>('normal');
+    const [isImportanceOpen, setIsImportanceOpen] = useState(false);
+    const importanceRef = useRef<HTMLDivElement>(null);
+
+    // Handle importance dropdown click outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (importanceRef.current && !importanceRef.current.contains(event.target as Node)) {
+                setIsImportanceOpen(false);
+            }
+        }
+        if (isImportanceOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isImportanceOpen]);
 
     useImperativeHandle(ref, () => ({
         expand: () => setIsExpanded(true)
@@ -64,6 +82,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
     const subjectRef = useRef(subject);
     const ccRef = useRef(cc);
     const bccRef = useRef(bcc);
+    const importanceValueRef = useRef(importance);
 
     // Fetch connected accounts
     useEffect(() => {
@@ -95,6 +114,10 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
         bccRef.current = bcc;
     }, [bcc]);
 
+    useEffect(() => {
+        importanceValueRef.current = importance;
+    }, [importance]);
+
     const handleSaveDraft = useCallback(async (currentBody: string) => {
         if (!currentBody.trim() || currentBody === lastSavedBody || isSavingRef.current) return;
 
@@ -111,6 +134,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
             threadId,
             cc: ccRef.current,
             bcc: bccRef.current,
+            importance: importanceValueRef.current,
         }));
 
         if (saveDraftThunk.fulfilled.match(result)) {
@@ -143,7 +167,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
         replyEmails.forEach(email => {
             // Find if this specific reply email matches a connected account
             const matchingAcc = emailAccounts.find(acc => acc.email.toLowerCase() === email.toLowerCase());
-            
+
             if (matchingAcc) {
                 options.push({ label: email, value: `acc_${matchingAcc.id}` });
             } else {
@@ -173,6 +197,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                     threadId,
                     cc: ccRef.current,
                     bcc: bccRef.current,
+                    importance: importanceValueRef.current,
                 }));
             }
         };
@@ -197,6 +222,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
             threadId,
             cc,
             bcc,
+            importance,
         }));
 
         if (sendReplyThunk.fulfilled.match(result)) {
@@ -207,6 +233,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
             setBcc('');
             setShowCC(false);
             setShowBCC(false);
+            setImportance('normal');
             setDraftId(undefined);
             setIsExpanded(false);
             if (onSuccess) onSuccess();
@@ -376,6 +403,67 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                             )}
                             Send Reply
                         </button>
+
+                        {/* Importance Selector */}
+                        <div className="relative" ref={importanceRef}>
+                            <button
+                                type="button"
+                                onClick={() => setIsImportanceOpen(!isImportanceOpen)}
+                                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                                    importance === 'high'
+                                        ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-[#C8102E] dark:text-red-400 shadow-sm'
+                                        : importance === 'low'
+                                            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                                            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 hover:bg-gray-50'
+                                }`}
+                                title="Set message importance"
+                            >
+                                {importance === 'high' && <span className="w-4 h-4 flex items-center justify-center font-black text-lg">!</span>}
+                                {importance === 'low' && <span className="w-4 h-4 flex items-center justify-center font-black text-lg">↓</span>}
+                                {importance === 'normal' && <span className="w-4 h-4 flex items-center justify-center font-black text-lg opacity-0">!</span>}
+                                {importance === 'high' ? 'High' : importance === 'low' ? 'Low' : 'Importance'}
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-4 h-4 transition-transform ${isImportanceOpen ? 'rotate-180' : ''}`}>
+                                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+
+                            {isImportanceOpen && (
+                                <div className="absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-100 dark:border-gray-700 z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
+                                    <div className="px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Set Importance</span>
+                                    </div>
+                                    <div className="p-1">
+                                        {[
+                                            { id: 'high', label: 'High Importance', color: 'text-[#C8102E]', icon: '!', bg: 'hover:bg-red-50 dark:hover:bg-red-900/20' },
+                                            { id: 'normal', label: 'Normal Importance', color: 'text-gray-600', icon: '', bg: 'hover:bg-gray-100 dark:hover:bg-gray-700' },
+                                            { id: 'low', label: 'Low Importance', color: 'text-blue-600', icon: '↓', bg: 'hover:bg-blue-50 dark:hover:bg-blue-900/20' }
+                                        ].map((opt) => (
+                                            <button
+                                                key={opt.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setImportance(opt.id as MessageImportance);
+                                                    setIsImportanceOpen(false);
+                                                }}
+                                                className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${opt.bg} ${importance === opt.id ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
+                                            >
+                                                <span className={`w-4 h-4 flex items-center justify-center font-black text-lg ${opt.color}`}>
+                                                    {opt.icon}
+                                                </span>
+                                                <span className={`flex-1 text-left font-medium ${importance === opt.id ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
+                                                    {opt.label}
+                                                </span>
+                                                {importance === opt.id && (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-green-500">
+                                                        <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                                                    </svg>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         <div className="flex items-center gap-4">
                             {loading.savingDraft && (

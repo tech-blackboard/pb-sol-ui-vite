@@ -1,5 +1,6 @@
 export type MessageDirection = 'inbound' | 'outbound';
 export type MessageStatus = 'received' | 'sent' | 'failed' | 'draft';
+export type MessageImportance = 'low' | 'normal' | 'high';
 export type ContactStatus = 'active' | 'unsubscribed' | 'bounced' | 'complained';
 
 export interface CrmEvent {
@@ -43,6 +44,7 @@ export interface Thread {
     createdAt: string;
     status?: MessageStatus;
     labels?: string[];
+    importance?: MessageImportance;
 }
 
 export interface Attachment {
@@ -81,6 +83,7 @@ export interface Message {
     userId?: number;
     contact?: Contact;
     event?: CrmEvent;
+    importance?: MessageImportance;
 }
 
 export interface LabelResponse {

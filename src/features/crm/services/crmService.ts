@@ -1,6 +1,6 @@
 import { CRM_BASE } from "../../../config/env";
 import { api } from "../../../lib/api";
-import type { CrmEvent, LabelResponse, Message, Thread, EmailAccount, CrmLabel } from "../types";
+import type { CrmEvent, LabelResponse, Message, Thread, EmailAccount, CrmLabel, MessageImportance } from "../types";
 
 
 function getAuthHeaders(): Record<string, string> {
@@ -98,6 +98,7 @@ export async function sendReply(payload: {
     threadId?: string;
     cc?: string;
     bcc?: string;
+    importance?: MessageImportance;
 }): Promise<{ status: string; messageId: string }> {
     const { data } = await api.post(`${CRM_BASE}/reply`, payload, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
@@ -120,6 +121,7 @@ export async function saveDraft(payload: {
     draftId?: string;
     cc?: string;
     bcc?: string;
+    importance?: MessageImportance;
 }): Promise<Message> {
     const { data } = await api.post<Message>(`${CRM_BASE}/drafts`, payload, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
