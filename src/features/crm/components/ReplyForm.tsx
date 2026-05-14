@@ -53,6 +53,18 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
     const [isImportanceOpen, setIsImportanceOpen] = useState(false);
     const importanceRef = useRef<HTMLDivElement>(null);
 
+    const [lastSavedBody, setLastSavedBody] = useState(initialHtmlBody || '');
+
+    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isSavingRef = useRef(false);
+    const htmlBodyRef = useRef(htmlBody);
+    const lastSavedBodyRef = useRef(lastSavedBody);
+    const draftIdRef = useRef(draftId);
+    const subjectRef = useRef(subject);
+    const ccRef = useRef(cc);
+    const bccRef = useRef(bcc);
+    const importanceValueRef = useRef(importance);
+
     // Handle importance dropdown click outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -71,18 +83,6 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
     useImperativeHandle(ref, () => ({
         expand: () => setIsExpanded(true)
     }));
-
-    const [lastSavedBody, setLastSavedBody] = useState(initialHtmlBody || '');
-
-    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const isSavingRef = useRef(false);
-    const htmlBodyRef = useRef(htmlBody);
-    const lastSavedBodyRef = useRef(lastSavedBody);
-    const draftIdRef = useRef(draftId);
-    const subjectRef = useRef(subject);
-    const ccRef = useRef(cc);
-    const bccRef = useRef(bcc);
-    const importanceValueRef = useRef(importance);
 
     // Fetch connected accounts
     useEffect(() => {
@@ -125,12 +125,12 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
         const result = await dispatch(saveDraftThunk({
             contactId,
             eventId,
-            subject,
+            subject: subjectRef.current,
             htmlBody: currentBody.replace(/\n/g, '<br>'),
             textBody: currentBody,
             fromEmail: fromEmail || undefined,
             emailAccountId,
-            draftId: draftId,
+            draftId: draftIdRef.current,
             threadId,
             cc: ccRef.current,
             bcc: bccRef.current,
@@ -142,7 +142,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
             setLastSavedBody(currentBody);
         }
         isSavingRef.current = false;
-    }, [contactId, eventId, subject, fromEmail, emailAccountId, draftId, lastSavedBody, threadId, dispatch]);
+    }, [contactId, eventId, fromEmail, emailAccountId, lastSavedBody, threadId, dispatch]);
 
     useEffect(() => {
         const charDifference = Math.abs(htmlBody.length - lastSavedBody.length);
@@ -159,22 +159,17 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
         };
     }, [htmlBody, isExpanded, lastSavedBody, handleSaveDraft]);
 
-    // Prepare dropdown options: prioritize Accounts with IDs, fallback to plain emails
+    // Prepare dropdown options
     const accountOptions = useMemo(() => {
         const options: { label: string; value: string }[] = [];
-
-        // Only include emails that are part of the 'replyEmails' list
         replyEmails.forEach(email => {
-            // Find if this specific reply email matches a connected account
             const matchingAcc = emailAccounts.find(acc => acc.email.toLowerCase() === email.toLowerCase());
-
             if (matchingAcc) {
                 options.push({ label: email, value: `acc_${matchingAcc.id}` });
             } else {
                 options.push({ label: email, value: email });
             }
         });
-
         return options;
     }, [emailAccounts, replyEmails]);
 
@@ -183,7 +178,6 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
         return () => {
             const bodyToSave = htmlBodyRef.current;
             const lastSaved = lastSavedBodyRef.current;
-
             if (bodyToSave.trim() && bodyToSave !== lastSaved && !isSavingRef.current) {
                 dispatch(saveDraftThunk({
                     contactId,
@@ -276,85 +270,220 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
         <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className="flex flex-col">
-                    <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 py-2 group/to">
-                        <div className="flex flex-1 items-center gap-2 text-sm">
-                            <span className="text-gray-400 w-10 text-xs">To:</span>
-                            <div className="flex-1 flex items-center justify-between pr-2">
-                                <span className="text-gray-900 dark:text-gray-100 font-medium">{recipientEmail}</span>
-                                <div className="flex items-center gap-3 opacity-0 group-hover/to:opacity-100 transition-opacity">
-                                    {!showCC && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowCC(true)}
-                                            className="text-gray-400 hover:text-blue-600 hover:underline text-[11px] font-medium transition-colors"
-                                        >
-                                            Cc
-                                        </button>
-                                    )}
-                                    {!showBCC && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowBCC(true)}
-                                            className="text-gray-400 hover:text-blue-600 hover:underline text-[11px] font-medium transition-colors"
-                                        >
-                                            Bcc
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
+                    {/* To Row */}
+                    <div className="flex items-start gap-4 border-b border-gray-100 dark:border-gray-800 py-3 group/to">
+                        <div className="w-12 h-7 flex items-center justify-center border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded text-[11px] font-bold text-gray-600 dark:text-gray-400 shrink-0 mt-0.5">
+                            To
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => setIsExpanded(false)}
-                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 ml-2"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    {showCC && (
-                        <div className="flex items-center gap-2 text-sm border-b border-gray-100 dark:border-gray-800 py-2 animate-in slide-in-from-top-1 duration-200">
-                            <span className="text-gray-400 w-10 text-xs">Cc:</span>
-                            <input
-                                type="text"
-                                value={cc}
-                                onChange={(e) => setCc(e.target.value)}
-                                className="flex-1 bg-transparent outline-none text-gray-900 dark:text-gray-100 text-xs"
-                                placeholder="Recipient Cc"
-                                autoFocus
-                            />
-                            {!showBCC && (
+                        <div className="flex-1 flex flex-wrap items-center gap-2 min-h-[28px]">
+                            <div className="inline-flex items-center gap-2 px-2 py-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-xs text-gray-900 dark:text-gray-100">
+                                <span>{recipientEmail}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-3 ml-auto">
+                                {!showCC && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCC(true)}
+                                        className="text-gray-400 hover:text-blue-600 text-[11px] font-semibold transition-colors"
+                                    >
+                                        Cc
+                                    </button>
+                                )}
+                                {!showBCC && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowBCC(true)}
+                                        className="text-gray-400 hover:text-blue-600 text-[11px] font-semibold transition-colors"
+                                    >
+                                        Bcc
+                                    </button>
+                                )}
                                 <button
                                     type="button"
-                                    onClick={() => setShowBCC(true)}
-                                    className="text-gray-400 hover:text-blue-600 text-[11px] font-medium mr-2"
+                                    onClick={() => setIsExpanded(false)}
+                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 ml-1"
                                 >
-                                    Bcc
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
                                 </button>
-                            )}
-                            <button type="button" onClick={() => { setShowCC(false); setCc(''); }} className="text-gray-300 hover:text-red-500 px-1">×</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Cc Row */}
+                    {showCC && (
+                        <div className="flex items-start gap-4 border-b border-gray-100 dark:border-gray-800 py-2 animate-in slide-in-from-top-1 duration-200">
+                            <div className="w-12 h-7 flex items-center justify-center border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded text-[11px] font-bold text-gray-600 dark:text-gray-400 shrink-0 mt-0.5">
+                                Cc
+                            </div>
+                            <div className="flex-1 flex flex-wrap items-center gap-2 min-h-[28px]">
+                                {cc.split(/[;,]+/).filter(e => e.trim()).map((email, idx) => (
+                                    <div key={idx} className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-xs text-gray-900 dark:text-gray-100">
+                                        <span>{email.trim()}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const emails = cc.split(/[;,]+/).filter(e => e.trim());
+                                                emails.splice(idx, 1);
+                                                setCc(emails.join(', '));
+                                            }}
+                                            className="text-amber-400 hover:text-amber-600"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))}
+                                <input
+                                    type="text"
+                                    className="flex-1 min-w-[120px] bg-transparent outline-none text-gray-900 dark:text-gray-100 text-xs py-1"
+                                    placeholder={cc ? "" : "Add Cc..."}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        if (val.endsWith(',') || val.endsWith(';') || val.endsWith(' ')) {
+                                            const newEmail = val.slice(0, -1).trim();
+                                            if (newEmail) {
+                                                const existing = cc.split(/[;,]+/).map(e => e.trim()).filter(Boolean);
+                                                if (!existing.includes(newEmail)) {
+                                                    setCc(existing.concat(newEmail).join(', ') + ', ');
+                                                }
+                                            }
+                                            e.target.value = '';
+                                        }
+                                    }}
+                                    onBlur={(e) => {
+                                        const val = e.target.value.trim();
+                                        if (val) {
+                                            const existing = cc.split(/[;,]+/).map(e => e.trim()).filter(Boolean);
+                                            if (!existing.includes(val)) {
+                                                setCc(existing.concat(val).join(', '));
+                                            }
+                                            e.target.value = '';
+                                        }
+                                    }}
+                                    onKeyDown={(e) => {
+                                        const val = (e.target as HTMLInputElement).value;
+                                        if (e.key === 'Backspace' && !val && cc.length > 0) {
+                                            const parts = cc.split(/[;,]+/).map(e => e.trim()).filter(Boolean);
+                                            parts.pop();
+                                            setCc(parts.join(', '));
+                                        } else if (e.key === 'Enter' && val) {
+                                            e.preventDefault();
+                                            const newEmail = val.trim();
+                                            const existing = cc.split(/[;,]+/).map(e => e.trim()).filter(Boolean);
+                                            if (!existing.includes(newEmail)) {
+                                                setCc(existing.concat(newEmail).join(', '));
+                                            }
+                                            (e.target as HTMLInputElement).value = '';
+                                        }
+                                    }}
+                                    autoFocus
+                                />
+                                {!showBCC && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowBCC(true)}
+                                        className="text-gray-400 hover:text-blue-600 text-[11px] font-medium ml-auto"
+                                    >
+                                        Bcc
+                                    </button>
+                                )}
+                                <button type="button" onClick={() => { setShowCC(false); setCc(''); }} className="text-gray-300 hover:text-red-500 ml-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     )}
 
+                    {/* Bcc Row */}
                     {showBCC && (
-                        <div className="flex items-center gap-2 text-sm border-b border-gray-100 dark:border-gray-800 py-2 animate-in slide-in-from-top-1 duration-200">
-                            <span className="text-gray-400 w-10 text-xs">Bcc:</span>
-                            <input
-                                type="text"
-                                value={bcc}
-                                onChange={(e) => setBcc(e.target.value)}
-                                className="flex-1 bg-transparent outline-none text-gray-900 dark:text-gray-100 text-xs"
-                                placeholder="Recipient Bcc"
-                                autoFocus={!showCC}
-                            />
-                            <button type="button" onClick={() => { setShowBCC(false); setBcc(''); }} className="text-gray-300 hover:text-red-500 px-1">×</button>
+                        <div className="flex items-start gap-4 border-b border-gray-100 dark:border-gray-800 py-2 animate-in slide-in-from-top-1 duration-200">
+                            <div className="w-12 h-7 flex items-center justify-center border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded text-[11px] font-bold text-gray-600 dark:text-gray-400 shrink-0 mt-0.5">
+                                Bcc
+                            </div>
+                            <div className="flex-1 flex flex-wrap items-center gap-2 min-h-[28px]">
+                                {bcc.split(/[;,]+/).filter(e => e.trim()).map((email, idx) => (
+                                    <div key={idx} className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-xs text-gray-900 dark:text-gray-100">
+                                        <span>{email.trim()}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const emails = bcc.split(/[;,]+/).filter(e => e.trim());
+                                                emails.splice(idx, 1);
+                                                setBcc(emails.join(', '));
+                                            }}
+                                            className="text-amber-400 hover:text-amber-600"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))}
+                                <input
+                                    type="text"
+                                    className="flex-1 min-w-[120px] bg-transparent outline-none text-gray-900 dark:text-gray-100 text-xs py-1"
+                                    placeholder={bcc ? "" : "Add Bcc..."}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        if (val.endsWith(',') || val.endsWith(';') || val.endsWith(' ')) {
+                                            const newEmail = val.slice(0, -1).trim();
+                                            if (newEmail) {
+                                                const existing = bcc.split(/[;,]+/).map(e => e.trim()).filter(Boolean);
+                                                if (!existing.includes(newEmail)) {
+                                                    setBcc(existing.concat(newEmail).join(', ') + ', ');
+                                                }
+                                            }
+                                            e.target.value = '';
+                                        }
+                                    }}
+                                    onBlur={(e) => {
+                                        const val = e.target.value.trim();
+                                        if (val) {
+                                            const existing = bcc.split(/[;,]+/).map(e => e.trim()).filter(Boolean);
+                                            if (!existing.includes(val)) {
+                                                setBcc(existing.concat(val).join(', '));
+                                            }
+                                            e.target.value = '';
+                                        }
+                                    }}
+                                    onKeyDown={(e) => {
+                                        const val = (e.target as HTMLInputElement).value;
+                                        if (e.key === 'Backspace' && !val && bcc.length > 0) {
+                                            const parts = bcc.split(/[;,]+/).map(e => e.trim()).filter(Boolean);
+                                            parts.pop();
+                                            setBcc(parts.join(', '));
+                                        } else if (e.key === 'Enter' && val) {
+                                            e.preventDefault();
+                                            const newEmail = val.trim();
+                                            const existing = bcc.split(/[;,]+/).map(e => e.trim()).filter(Boolean);
+                                            if (!existing.includes(newEmail)) {
+                                                setBcc(existing.concat(newEmail).join(', '));
+                                            }
+                                            (e.target as HTMLInputElement).value = '';
+                                        }
+                                    }}
+                                    autoFocus={!showCC}
+                                />
+                                <button type="button" onClick={() => { setShowBCC(false); setBcc(''); }} className="text-gray-300 hover:text-red-500 ml-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     )}
 
-                    <div className="flex items-center gap-2 text-sm border-b border-gray-100 dark:border-gray-800 py-2">
-                        <span className="text-gray-400 w-10 text-xs">From:</span>
+                    {/* From Row */}
+                    <div className="flex items-center gap-4 border-b border-gray-100 dark:border-gray-800 py-2">
+                        <div className="w-12 h-7 flex items-center justify-center border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded text-[11px] font-bold text-gray-600 dark:text-gray-400 shrink-0">
+                            From
+                        </div>
                         <select
                             value={emailAccountId ? `acc_${emailAccountId}` : fromEmail}
                             onChange={(e) => handleAccountChange(e.target.value)}
@@ -366,8 +495,11 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                         </select>
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm border-b border-gray-100 dark:border-gray-800 py-2">
-                        <span className="text-gray-400 w-10 text-xs">Subject:</span>
+                    {/* Subject Row */}
+                    <div className="flex items-center gap-4 border-b border-gray-100 dark:border-gray-800 py-2">
+                        <div className="w-12 h-7 flex items-center justify-center border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded text-[11px] font-bold text-gray-600 dark:text-gray-400 shrink-0">
+                            Subject
+                        </div>
                         <input
                             type="text"
                             value={subject}
@@ -387,6 +519,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                     disabled={loading.sending}
                 />
 
+                {/* Footer Actions */}
                 <div className="flex items-center justify-between pt-2">
                     <div className="flex items-center gap-4">
                         <button
@@ -465,6 +598,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                             )}
                         </div>
 
+                        {/* Status Messages */}
                         <div className="flex items-center gap-4">
                             {loading.savingDraft && (
                                 <span className="text-xs text-gray-400 animate-pulse flex items-center gap-1">
