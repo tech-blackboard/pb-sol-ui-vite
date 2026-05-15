@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import type { RootState } from '../../../store';
 import { sendReplyThunk, saveDraftThunk } from '../../../store/slices/crm/crm.thunks';
 import { fetchEmailAccounts } from '../services/crmService';
-import type { EmailAccount, MessageImportance } from '../types';
+import type { Attachment, EmailAccount, MessageImportance } from '../types';
 import toast from 'react-hot-toast';
 
 export interface ReplyFormHandle {
@@ -25,36 +25,46 @@ interface ReplyFormProps {
     initialSubject?: string;
     initialCc?: string;
     initialBcc?: string;
+    mode?: 'reply' | 'forward';
+    forwardedFromId?: string;
+    initialAttachmentIds?: number[];
+    originalAttachments?: Attachment[];
 }
 
 const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
     contactId, eventId, defaultSubject, recipientEmail, replyEmails,
     onSuccess, initialDraftId, initialHtmlBody, initialFromEmail,
-    initialEmailAccountId, threadId, initialSubject, initialCc, initialBcc
+    initialEmailAccountId, threadId, initialSubject, initialCc, initialBcc,
+    mode = 'reply', forwardedFromId, initialAttachmentIds, originalAttachments
 }, ref) => {
     const dispatch = useAppDispatch();
     const { loading } = useAppSelector((state: RootState) => state.crm);
+    const contentRef = useRef<HTMLDivElement>(null);
 
     // State
     const [htmlBody, setHtmlBody] = useState(initialHtmlBody || '');
     const [fromEmail, setFromEmail] = useState(initialFromEmail || replyEmails[0] || '');
     const [emailAccountId, setEmailAccountId] = useState<number | undefined>(initialEmailAccountId);
-    const [subject, setSubject] = useState(initialSubject || (defaultSubject.startsWith('Re:') ? defaultSubject : `Re: ${defaultSubject}`));
+    const [subject, setSubject] = useState(initialSubject || (mode === 'forward' ? `Fwd: ${defaultSubject}` : (defaultSubject.startsWith('Re:') ? defaultSubject : `Re: ${defaultSubject}`)));
     const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>([]);
 
     const [isExpanded, setIsExpanded] = useState(!!initialDraftId || !!initialHtmlBody);
     const [draftId, setDraftId] = useState<string | undefined>(initialDraftId);
 
+    const [attachmentIds, setAttachmentIds] = useState<number[]>(initialAttachmentIds || []);
+    const [attachments, setAttachments] = useState<Attachment[]>(originalAttachments || []);
+
     const [cc, setCc] = useState(initialCc || '');
     const [bcc, setBcc] = useState(initialBcc || '');
     const [showCC, setShowCC] = useState(!!initialCc);
     const [showBCC, setShowBCC] = useState(!!initialBcc);
+    const [toEmail, setToEmail] = useState('');
     const [importance, setImportance] = useState<MessageImportance>('normal');
     const [isImportanceOpen, setIsImportanceOpen] = useState(false);
-    const importanceRef = useRef<HTMLDivElement>(null);
-
     const [lastSavedBody, setLastSavedBody] = useState(initialHtmlBody || '');
+    const [showErrorModal, setShowErrorModal] = useState(false);
 
+    const importanceRef = useRef<HTMLDivElement>(null);
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isSavingRef = useRef(false);
     const htmlBodyRef = useRef(htmlBody);
@@ -64,6 +74,39 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
     const ccRef = useRef(cc);
     const bccRef = useRef(bcc);
     const importanceValueRef = useRef(importance);
+
+    const lastInitializedKeyRef = useRef('');
+    const initializationKey = `${mode}|${forwardedFromId || ''}|${initialDraftId || ''}|${isExpanded}`;
+
+    useEffect(() => {
+        if (!isExpanded) {
+            lastInitializedKeyRef.current = '';
+            return;
+        }
+
+        // We re-initialize if:
+        // 1. It's a brand new expansion (!lastInitializedKeyRef.current)
+        // 2. The mode or source message changed
+        // 3. The initialDraftId changed to something other than what we have in state
+        const prevKey = lastInitializedKeyRef.current;
+        const isFirstExpand = !prevKey;
+        const isModeChange = prevKey && prevKey.split('|')[0] !== mode;
+        const isSourceChange = prevKey && prevKey.split('|')[1] !== (forwardedFromId || '');
+        const isExternalDraftChange = initialDraftId !== draftId;
+
+        if (isFirstExpand || isModeChange || isSourceChange || isExternalDraftChange) {
+            lastInitializedKeyRef.current = initializationKey;
+
+            setDraftId(initialDraftId);
+            setSubject(initialSubject || (mode === 'forward' ? `Fwd: ${defaultSubject}` : (defaultSubject.startsWith('Re:') ? defaultSubject : `Re: ${defaultSubject}`)));
+            setHtmlBody(initialHtmlBody || '');
+            if (contentRef.current && contentRef.current.innerHTML !== (initialHtmlBody || '')) {
+                contentRef.current.innerHTML = initialHtmlBody || '';
+            }
+            setAttachmentIds(initialAttachmentIds || []);
+            setAttachments(originalAttachments || []);
+        }
+    }, [initializationKey, initialSubject, initialHtmlBody, initialAttachmentIds, originalAttachments, mode, defaultSubject, isExpanded, draftId, initialDraftId, forwardedFromId]);
 
     // Handle importance dropdown click outside
     useEffect(() => {
@@ -126,7 +169,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
             contactId,
             eventId,
             subject: subjectRef.current,
-            htmlBody: currentBody.replace(/\n/g, '<br>'),
+            htmlBody: currentBody,
             textBody: currentBody,
             fromEmail: fromEmail || undefined,
             emailAccountId,
@@ -135,6 +178,9 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
             cc: ccRef.current,
             bcc: bccRef.current,
             importance: importanceValueRef.current,
+            isForwarded: mode === 'forward',
+            forwardedFromId: forwardedFromId,
+            attachmentIds: attachmentIds,
         }));
 
         if (saveDraftThunk.fulfilled.match(result)) {
@@ -142,7 +188,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
             setLastSavedBody(currentBody);
         }
         isSavingRef.current = false;
-    }, [contactId, eventId, fromEmail, emailAccountId, lastSavedBody, threadId, dispatch]);
+    }, [contactId, eventId, fromEmail, emailAccountId, lastSavedBody, threadId, dispatch, attachmentIds, forwardedFromId, mode]);
 
     useEffect(() => {
         const charDifference = Math.abs(htmlBody.length - lastSavedBody.length);
@@ -183,7 +229,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                     contactId,
                     eventId,
                     subject: subjectRef.current,
-                    htmlBody: bodyToSave.replace(/\n/g, '<br>'),
+                    htmlBody: bodyToSave,
                     textBody: bodyToSave,
                     fromEmail: fromEmail || undefined,
                     emailAccountId,
@@ -192,15 +238,23 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                     cc: ccRef.current,
                     bcc: bccRef.current,
                     importance: importanceValueRef.current,
+                    isForwarded: mode === 'forward',
+                    forwardedFromId: forwardedFromId,
+                    attachmentIds: attachmentIds,
                 }));
             }
         };
-    }, [contactId, eventId, fromEmail, emailAccountId, threadId, dispatch]);
+    }, [contactId, eventId, fromEmail, emailAccountId, threadId, dispatch, attachmentIds, forwardedFromId, mode]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!htmlBody.trim()) {
             toast.error('Please enter a message');
+            return;
+        }
+
+        if (mode === 'forward' && !toEmail.trim()) {
+            setShowErrorModal(true);
             return;
         }
 
@@ -210,13 +264,17 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
             fromEmail: fromEmail || undefined,
             emailAccountId,
             subject,
-            htmlBody: htmlBody.replace(/\n/g, '<br>'),
+            htmlBody,
             textBody: htmlBody,
             draftId: draftId,
             threadId,
             cc,
             bcc,
             importance,
+            isForwarded: mode === 'forward',
+            forwardedFromId: forwardedFromId,
+            attachmentIds: attachmentIds,
+            ...(mode === 'forward' && toEmail ? { toEmail } : {})
         }));
 
         if (sendReplyThunk.fulfilled.match(result)) {
@@ -260,11 +318,20 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
                         </svg>
                     </div>
-                    Click here to <span className="text-blue-600 font-medium">Reply</span> to {recipientEmail}...
+                    Click here to <span className="text-blue-600 font-medium">{mode === 'forward' ? 'Forward' : 'Reply'}</span> to {recipientEmail || '...'}
                 </button>
             </div>
         );
     }
+
+    const removeAttachment = (id: number) => {
+        setAttachmentIds(prev => prev.filter(aid => aid !== id));
+        setAttachments(prev => prev.filter(a => a.id !== id));
+    };
+
+    const handleContentInput = (e: React.FormEvent<HTMLDivElement>) => {
+        setHtmlBody(e.currentTarget.innerHTML);
+    };
 
     return (
         <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -276,10 +343,65 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                             To
                         </div>
                         <div className="flex-1 flex flex-wrap items-center gap-2 min-h-[28px]">
-                            <div className="inline-flex items-center gap-2 px-2 py-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-xs text-gray-900 dark:text-gray-100">
-                                <span>{recipientEmail}</span>
-                            </div>
-                            
+                            {mode === 'forward' ? (
+                                <>
+                                    {toEmail.split(/[;,]+/).filter(e => e.trim()).map((email, idx) => (
+                                        <div key={idx} className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-xs text-gray-900 dark:text-gray-100 animate-in zoom-in-95 duration-200">
+                                            <span>{email.trim()}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const emails = toEmail.split(/[;,]+/).filter(e => e.trim());
+                                                    emails.splice(idx, 1);
+                                                    setToEmail(emails.join(', '));
+                                                }}
+                                                className="text-amber-400 hover:text-amber-600 transition-colors"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    ))}
+                                    <input
+                                        type="text"
+                                        className="flex-1 min-w-[150px] bg-transparent outline-none text-gray-900 dark:text-gray-100 text-xs py-1"
+                                        placeholder={toEmail ? "" : "Add recipients..."}
+                                        onKeyDown={(e) => {
+                                            const val = (e.target as HTMLInputElement).value;
+                                            if (e.key === 'Enter') e.preventDefault();
+                                            if ((e.key === ',' || e.key === ';' || e.key === ' ' || e.key === 'Enter') && val.trim()) {
+                                                e.preventDefault();
+                                                const newEmail = val.trim();
+                                                const existing = toEmail.split(/[;,]+/).map(e => e.trim()).filter(Boolean);
+                                                if (!existing.includes(newEmail)) {
+                                                    setToEmail(existing.concat(newEmail).join(', '));
+                                                }
+                                                (e.target as HTMLInputElement).value = '';
+                                            } else if (e.key === 'Backspace' && !val && toEmail) {
+                                                const existing = toEmail.split(/[;,]+/).map(e => e.trim()).filter(Boolean);
+                                                existing.pop();
+                                                setToEmail(existing.join(', '));
+                                            }
+                                        }}
+                                        onBlur={(e) => {
+                                            const val = e.target.value.trim();
+                                            if (val) {
+                                                const existing = toEmail.split(/[;,]+/).map(e => e.trim()).filter(Boolean);
+                                                if (!existing.includes(val)) {
+                                                    setToEmail(existing.concat(val).join(', '));
+                                                }
+                                                e.target.value = '';
+                                            }
+                                        }}
+                                    />
+                                </>
+                            ) : (
+                                <div className="inline-flex items-center gap-2 px-2 py-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-xs text-gray-900 dark:text-gray-100">
+                                    <span>{recipientEmail}</span>
+                                </div>
+                            )}
+
                             <div className="flex items-center gap-3 ml-auto">
                                 {!showCC && (
                                     <button
@@ -370,14 +492,16 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                                             const parts = cc.split(/[;,]+/).map(e => e.trim()).filter(Boolean);
                                             parts.pop();
                                             setCc(parts.join(', '));
-                                        } else if (e.key === 'Enter' && val) {
+                                        } else if (e.key === 'Enter') {
                                             e.preventDefault();
-                                            const newEmail = val.trim();
-                                            const existing = cc.split(/[;,]+/).map(e => e.trim()).filter(Boolean);
-                                            if (!existing.includes(newEmail)) {
-                                                setCc(existing.concat(newEmail).join(', '));
+                                            if (val) {
+                                                const newEmail = val.trim();
+                                                const existing = cc.split(/[;,]+/).map(e => e.trim()).filter(Boolean);
+                                                if (!existing.includes(newEmail)) {
+                                                    setCc(existing.concat(newEmail).join(', '));
+                                                }
+                                                (e.target as HTMLInputElement).value = '';
                                             }
-                                            (e.target as HTMLInputElement).value = '';
                                         }
                                     }}
                                     autoFocus
@@ -458,14 +582,16 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                                             const parts = bcc.split(/[;,]+/).map(e => e.trim()).filter(Boolean);
                                             parts.pop();
                                             setBcc(parts.join(', '));
-                                        } else if (e.key === 'Enter' && val) {
+                                        } else if (e.key === 'Enter') {
                                             e.preventDefault();
-                                            const newEmail = val.trim();
-                                            const existing = bcc.split(/[;,]+/).map(e => e.trim()).filter(Boolean);
-                                            if (!existing.includes(newEmail)) {
-                                                setBcc(existing.concat(newEmail).join(', '));
+                                            if (val) {
+                                                const newEmail = val.trim();
+                                                const existing = bcc.split(/[;,]+/).map(e => e.trim()).filter(Boolean);
+                                                if (!existing.includes(newEmail)) {
+                                                    setBcc(existing.concat(newEmail).join(', '));
+                                                }
+                                                (e.target as HTMLInputElement).value = '';
                                             }
-                                            (e.target as HTMLInputElement).value = '';
                                         }
                                     }}
                                     autoFocus={!showCC}
@@ -504,20 +630,46 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                             type="text"
                             value={subject}
                             onChange={(e) => setSubject(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                             className="flex-1 bg-transparent outline-none text-gray-900 dark:text-gray-100 text-xs font-medium"
                             placeholder="Email subject"
                         />
                     </div>
                 </div>
 
-                <textarea
-                    autoFocus
-                    className="w-full min-h-[200px] p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
-                    placeholder="Write your reply here..."
-                    value={htmlBody}
-                    onChange={(e) => setHtmlBody(e.target.value)}
-                    disabled={loading.sending}
+                <div
+                    ref={contentRef}
+                    contentEditable
+                    onInput={handleContentInput}
+                    className="w-full min-h-[300px] p-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none overflow-y-auto prose dark:prose-invert max-w-none"
+                    onBlur={() => {
+                        // Ensure state is synced on blur just in case
+                        if (contentRef.current) setHtmlBody(contentRef.current.innerHTML);
+                    }}
                 />
+
+                {/* Attachments UI */}
+                {attachments.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                        {attachments.map(att => (
+                            <div key={att.id} className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700 text-xs">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 text-gray-500">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32a.75.75 0 1 1-1.06-1.06l10.94-10.94" />
+                                </svg>
+                                <span className="text-gray-700 dark:text-gray-300 max-w-[150px] truncate">{att.filename}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => removeAttachment(att.id)}
+                                    className="p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-gray-400 hover:text-red-500 transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Footer Actions */}
                 <div className="flex items-center justify-between pt-2">
@@ -534,7 +686,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                                 </svg>
                             )}
-                            Send Reply
+                            {mode === 'forward' ? 'Forward' : 'Send Reply'}
                         </button>
 
                         {/* Importance Selector */}
@@ -542,13 +694,12 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                             <button
                                 type="button"
                                 onClick={() => setIsImportanceOpen(!isImportanceOpen)}
-                                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
-                                    importance === 'high'
+                                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${importance === 'high'
                                         ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-[#C8102E] dark:text-red-400 shadow-sm'
                                         : importance === 'low'
                                             ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 shadow-sm'
                                             : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 hover:bg-gray-50'
-                                }`}
+                                    }`}
                                 title="Set message importance"
                             >
                                 {importance === 'high' && <span className="w-4 h-4 flex items-center justify-center font-black text-lg">!</span>}
@@ -625,6 +776,23 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                     </div>
                 </div>
             </form>
+            {showErrorModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-gray-900 rounded-[32px] shadow-2xl p-8 w-full max-w-[400px] animate-in zoom-in-95 duration-200 mx-4">
+                        <h2 className="text-3xl font-semibold text-gray-900 dark:text-white mb-4">Error</h2>
+                        <p className="text-gray-600 dark:text-gray-400 mb-10 text-lg">Please specify at least one recipient.</p>
+                        <div className="flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setShowErrorModal(false)}
+                                className="bg-[#0B57D0] hover:bg-blue-700 text-white px-8 py-2.5 rounded-full font-semibold transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+                            >
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 });

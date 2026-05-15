@@ -45,6 +45,8 @@ export interface Thread {
     status?: MessageStatus;
     labels?: string[];
     importance?: MessageImportance;
+    isForwarded?: boolean;
+    forwardedFromId?: string;
 }
 
 export interface Attachment {
@@ -84,6 +86,8 @@ export interface Message {
     contact?: Contact;
     event?: CrmEvent;
     importance?: MessageImportance;
+    isForwarded?: boolean;
+    forwardedFromId?: string;
 }
 
 export interface LabelResponse {

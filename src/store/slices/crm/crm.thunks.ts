@@ -92,6 +92,10 @@ export const sendReplyThunk = createAsyncThunk(
         cc?: string;
         bcc?: string;
         importance?: MessageImportance;
+        isForwarded?: boolean;
+        forwardedFromId?: string;
+        attachmentIds?: number[];
+        toEmail?: string;
     }, { rejectWithValue }) => {
         try {
             return await crmService.sendReply(payload);
@@ -129,6 +133,9 @@ export const saveDraftThunk = createAsyncThunk(
         cc?: string;
         bcc?: string;
         importance?: MessageImportance;
+        isForwarded?: boolean;
+        forwardedFromId?: string;
+        attachmentIds?: number[];
     }, { rejectWithValue }) => {
         try {
             return await crmService.saveDraft(payload);

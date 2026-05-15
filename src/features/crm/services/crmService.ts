@@ -99,6 +99,10 @@ export async function sendReply(payload: {
     cc?: string;
     bcc?: string;
     importance?: MessageImportance;
+    isForwarded?: boolean;
+    forwardedFromId?: string;
+    attachmentIds?: number[];
+    toEmail?: string;
 }): Promise<{ status: string; messageId: string }> {
     const { data } = await api.post(`${CRM_BASE}/reply`, payload, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
@@ -122,6 +126,9 @@ export async function saveDraft(payload: {
     cc?: string;
     bcc?: string;
     importance?: MessageImportance;
+    isForwarded?: boolean;
+    forwardedFromId?: string;
+    attachmentIds?: number[];
 }): Promise<Message> {
     const { data } = await api.post<Message>(`${CRM_BASE}/drafts`, payload, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },

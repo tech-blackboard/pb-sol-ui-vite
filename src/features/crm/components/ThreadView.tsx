@@ -21,8 +21,57 @@ export default function ThreadView() {
 
     const replyFormRef = useRef<ReplyFormHandle>(null);
     const replyFormContainerRef = useRef<HTMLDivElement>(null);
+    const [forwardData, setForwardData] = useState<{
+        mode: 'reply' | 'forward';
+        forwardedFromId?: string;
+        htmlBody?: string;
+        subject?: string;
+        attachmentIds?: number[];
+        attachments?: Attachment[];
+    }>({ mode: 'reply' });
 
     const handleReplyClick = () => {
+        setForwardData({ mode: 'reply' });
+        replyFormRef.current?.expand();
+        setTimeout(() => {
+            replyFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    };
+
+    const handleForwardClick = (message: Message) => {
+        const dateStr = new Date(message.createdAt).toLocaleString([], {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        const forwardTemplate = `
+            <div class="forward-header" style="padding-top: 8px; margin-top: 16px; border-top: 1px solid #edf2f7;">
+                <p style="margin: 0 0 12px 0; font-size: 13px;"><strong>---------- Forwarded message ---------</strong></p>
+                <div style="margin: 0; font-size: 12px; line-height: 1.6; color: #4a5568;">
+                    <strong>From:</strong> ${message.fromName ? `${message.fromName} &lt;${message.fromEmail}&gt;` : message.fromEmail}<br>
+                    <strong>Date:</strong> ${dateStr}<br>
+                    <strong>Subject:</strong> ${message.subject}<br>
+                    <strong>To:</strong> ${message.toEmail}<br>
+                </div>
+                <div class="forward-body" style="margin-top: 16px; color: #2d3748;">
+                    ${message.htmlBody || message.textBody?.replace(/\n/g, '<br>') || ''}
+                </div>
+            </div>
+        `;
+
+        setForwardData({
+            mode: 'forward',
+            forwardedFromId: message.id,
+            htmlBody: forwardTemplate,
+            subject: `Fwd: ${message.subject}`,
+            attachmentIds: message.attachments?.map(a => a.id) || [],
+            attachments: message.attachments || []
+        });
+
         replyFormRef.current?.expand();
         setTimeout(() => {
             replyFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -403,7 +452,7 @@ export default function ThreadView() {
                                                     </span>
                                                 </div>
                                                 <div className="text-xs text-gray-500 mt-0.5 relative flex items-center gap-2">
-                                                    <span>to {isOutbound ? contact?.email : 'me'}</span>
+                                                    <span>to {isOutbound ? (message.toEmail || contact?.email) : 'me'}</span>
                                                     {isOutbound && (
                                                         <>
                                                             {message.status === 'sent' && (
@@ -491,6 +540,15 @@ export default function ThreadView() {
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleForwardClick(message)}
+                                                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded flex items-center gap-1 text-gray-500"
+                                                    title="Forward"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" />
                                                     </svg>
                                                 </button>
                                             </div>
@@ -583,12 +641,16 @@ export default function ThreadView() {
                                     recipientEmail={draft?.toEmail || contact?.email || ''}
                                     onSuccess={handleReplySuccess}
                                     initialDraftId={draft?.id}
-                                    initialHtmlBody={draft?.htmlBody}
                                     initialFromEmail={draft?.fromEmail}
-                                    initialSubject={draft?.subject}
+                                    initialSubject={forwardData.subject || draft?.subject}
                                     initialCc={draft?.ccEmail}
                                     initialBcc={draft?.bccEmail}
                                     threadId={thread.id}
+                                    mode={forwardData.mode}
+                                    forwardedFromId={forwardData.forwardedFromId}
+                                    initialAttachmentIds={forwardData.attachmentIds}
+                                    originalAttachments={forwardData.attachments}
+                                    initialHtmlBody={forwardData.htmlBody || draft?.htmlBody}
                                 />
                             );
                         })()}
