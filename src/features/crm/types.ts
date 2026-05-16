@@ -13,6 +13,8 @@ export interface CrmEvent {
     isActive: boolean;
     contactCount?: number;
     unreadThreads?: number;
+    signatureName?: string;
+    signaturePlace?: string;
     createdAt: string;
 }
 

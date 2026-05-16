@@ -38,7 +38,8 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
     mode = 'reply', forwardedFromId, initialAttachmentIds, originalAttachments
 }, ref) => {
     const dispatch = useAppDispatch();
-    const { loading } = useAppSelector((state: RootState) => state.crm);
+    const { loading, events } = useAppSelector((state: RootState) => state.crm);
+    const event = events.find(e => e.id === eventId);
     const contentRef = useRef<HTMLDivElement>(null);
 
     // State
@@ -99,14 +100,51 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
 
             setDraftId(initialDraftId);
             setSubject(initialSubject || (mode === 'forward' ? `Fwd: ${defaultSubject}` : (defaultSubject.startsWith('Re:') ? defaultSubject : `Re: ${defaultSubject}`)));
-            setHtmlBody(initialHtmlBody || '');
-            if (contentRef.current && contentRef.current.innerHTML !== (initialHtmlBody || '')) {
-                contentRef.current.innerHTML = initialHtmlBody || '';
+            
+            // Signature Logic
+            let finalBody = initialHtmlBody || '';
+            const hasSignature = finalBody.includes('class="email-signature"');
+            
+            if (!initialDraftId && !hasSignature && event && (event.signatureName || event.signaturePlace)) {
+                const sigHtml = `
+                    <div class="email-signature" style="margin-top: 24px; color: #4a5568; font-family: sans-serif; line-height: 1.5;">
+                        <p style="margin: 0; font-size: 14px;">Best regards,</p>
+                        <p style="margin: 4px 0 0 0; font-size: 14px;"><strong>${event.signatureName || ''}</strong> | Program Manager</p>
+                        <p style="margin: 0; font-size: 14px;">${event.signaturePlace || ''}</p>
+                        <p style="margin: 0; font-size: 14px;">Phone: +1-571-556-1014</p>
+                    </div>
+                `;
+                
+                if (mode === 'forward') {
+                    // Prepend to forwarded content
+                    finalBody = `<div class="reply-content"><br></div>` + sigHtml + finalBody;
+                } else {
+                    // Fresh reply
+                    finalBody = `<div class="reply-content"><br><br></div>` + sigHtml;
+                }
+            }
+
+            setHtmlBody(finalBody);
+            if (contentRef.current) {
+                contentRef.current.innerHTML = finalBody;
+                // Move cursor to start
+                setTimeout(() => {
+                    if (contentRef.current) {
+                        contentRef.current.focus();
+                        const range = document.createRange();
+                        const sel = window.getSelection();
+                        const firstLine = contentRef.current.querySelector('.reply-content') || contentRef.current;
+                        range.setStart(firstLine, 0);
+                        range.collapse(true);
+                        sel?.removeAllRanges();
+                        sel?.addRange(range);
+                    }
+                }, 100);
             }
             setAttachmentIds(initialAttachmentIds || []);
             setAttachments(originalAttachments || []);
         }
-    }, [initializationKey, initialSubject, initialHtmlBody, initialAttachmentIds, originalAttachments, mode, defaultSubject, isExpanded, draftId, initialDraftId, forwardedFromId]);
+    }, [initializationKey, initialSubject, initialHtmlBody, initialAttachmentIds, originalAttachments, mode, defaultSubject, isExpanded, draftId, initialDraftId, forwardedFromId, event]);
 
     // Handle importance dropdown click outside
     useEffect(() => {

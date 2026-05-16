@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { useAppSelector } from '../../../store/hooks';
 import type { RootState } from '../../../store';
 import { fetchEmailAccounts, createEmailAccount, updateEmailAccount, deleteEmailAccount, getMicrosoftAuthUrl } from '../services/crmService';
@@ -41,6 +41,12 @@ export default function EmailAccountsPage() {
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
     const [bulkJson, setBulkJson] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'disabled'>('all');
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    const handleStatusFilterChange = (status: 'all' | 'active' | 'disabled') => {
+        setStatusFilter(status);
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     // Form state
     const [formData, setFormData] = useState<Partial<EmailAccount>>({
@@ -251,162 +257,169 @@ export default function EmailAccountsPage() {
     if (loading) return <div className="p-8 text-center">Loading accounts...</div>;
 
     return (
-        <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-gray-900 p-6 overflow-auto">
-            {error && (
-                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-3 text-red-700 dark:text-red-400 animate-fade-in">
-                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <p className="text-sm font-medium">{error}</p>
-                </div>
-            )}
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Email Accounts</h1>
-                    <p className="text-gray-500 text-sm">Manage IMAP and SMTP configurations for shared inbox.</p>
-                </div>
-                <div className="flex gap-3 items-center">
-                    <button
-                        onClick={() => setIsBulkModalOpen(true)}
-                        className="px-4 py-2 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+        <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-gray-900 h-full overflow-hidden">
+            {/* Fixed Header Section */}
+            <div className="flex-shrink-0 px-6 py-4 border-b border-gray-100 dark:border-gray-800/50">
+                {error && (
+                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-3 text-red-700 dark:text-red-400 animate-fade-in">
+                        <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        Bulk Upload
+                        <p className="text-sm font-medium">{error}</p>
+                    </div>
+                )}
+                <div className="flex justify-between items-center mb-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Email Accounts</h1>
+                        <p className="text-gray-500 text-sm">Manage IMAP and SMTP configurations for shared inbox.</p>
+                    </div>
+                    <div className="flex gap-3 items-center">
+                        <button
+                            onClick={() => setIsBulkModalOpen(true)}
+                            className="px-4 py-2 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                            Bulk Upload
+                        </button>
+                        <button
+                            onClick={() => {
+                                setEditingAccount(null);
+                                setFormData({
+                                    name: '', email: '', imapHost: '', imapPort: 993, imapUser: '',
+                                    imapPassword: '', imapEncryption: 'ssl' as const, smtpHost: '',
+                                    smtpPort: 465, smtpUser: '', smtpPassword: '',
+                                    smtpEncryption: 'ssl' as const, outboundProvider: 'smtp',
+                                    apiKey: '', apiRegion: '', isActive: true
+                                });
+                                setIsFormOpen(true);
+                            }}
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Account
+                        </button>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 mb-4 p-1 bg-gray-100/50 dark:bg-gray-800/50 rounded-lg w-full sm:w-fit overflow-x-auto scrollbar-hide">
+                    <button
+                        onClick={() => handleStatusFilterChange('all')}
+                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 flex-shrink-0 ${statusFilter === 'all'
+                            ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                            }`}
+                    >
+                        All Accounts
+                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${statusFilter === 'all' ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-gray-200 dark:bg-gray-800'}`}>
+                            {accounts.length}
+                        </span>
                     </button>
                     <button
-                        onClick={() => {
-                            setEditingAccount(null);
-                            setFormData({
-                                name: '', email: '', imapHost: '', imapPort: 993, imapUser: '',
-                                imapPassword: '', imapEncryption: 'ssl' as const, smtpHost: '',
-                                smtpPort: 465, smtpUser: '', smtpPassword: '',
-                                smtpEncryption: 'ssl' as const, outboundProvider: 'smtp',
-                                apiKey: '', apiRegion: '', isActive: true
-                            });
-                            setIsFormOpen(true);
-                        }}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                        onClick={() => handleStatusFilterChange('active')}
+                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 flex-shrink-0 ${statusFilter === 'active'
+                            ? 'bg-white dark:bg-gray-700 text-green-600 dark:text-green-400 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                            }`}
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        Add Account
+                        Active
+                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${statusFilter === 'active' ? 'bg-green-100 dark:bg-green-900/40' : 'bg-gray-200 dark:bg-gray-800'}`}>
+                            {activeCount}
+                        </span>
+                    </button>
+                    <button
+                        onClick={() => handleStatusFilterChange('disabled')}
+                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 flex-shrink-0 ${statusFilter === 'disabled'
+                            ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                            }`}
+                    >
+                        Disabled
+                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${statusFilter === 'disabled' ? 'bg-red-100 dark:bg-red-900/40' : 'bg-gray-200 dark:bg-gray-800'}`}>
+                            {disabledCount}
+                        </span>
                     </button>
                 </div>
             </div>
 
-            <div className="flex items-center gap-2 mb-8 p-1 bg-gray-100/50 dark:bg-gray-800/50 rounded-lg w-fit">
-                <button
-                    onClick={() => setStatusFilter('all')}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${statusFilter === 'all'
-                        ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                        }`}
-                >
-                    All Accounts
-                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${statusFilter === 'all' ? 'bg-blue-100 dark:bg-blue-900/40' : 'bg-gray-200 dark:bg-gray-800'}`}>
-                        {accounts.length}
-                    </span>
-                </button>
-                <button
-                    onClick={() => setStatusFilter('active')}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${statusFilter === 'active'
-                        ? 'bg-white dark:bg-gray-700 text-green-600 dark:text-green-400 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                        }`}
-                >
-                    Active
-                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${statusFilter === 'active' ? 'bg-green-100 dark:bg-green-900/40' : 'bg-gray-200 dark:bg-gray-800'}`}>
-                        {activeCount}
-                    </span>
-                </button>
-                <button
-                    onClick={() => setStatusFilter('disabled')}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${statusFilter === 'disabled'
-                        ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                        }`}
-                >
-                    Disabled
-                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${statusFilter === 'disabled' ? 'bg-red-100 dark:bg-red-900/40' : 'bg-gray-200 dark:bg-gray-800'}`}>
-                        {disabledCount}
-                    </span>
-                </button>
-            </div>
+            {/* Scrollable Grid Section */}
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6 min-h-0">
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredAccounts.map(account => (
-                    <div key={account.id} className="border border-gray-200 dark:border-gray-800 rounded-xl p-5 bg-gray-50/50 dark:bg-gray-800/40 hover:shadow-md transition-shadow relative group">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                </svg>
-                            </div>
-                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => handleEdit(account)} aria-label="Edit account" className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredAccounts.map(account => (
+                        <div key={account.id} className="border border-gray-200 dark:border-gray-800 rounded-xl p-5 bg-gray-50/50 dark:bg-gray-800/40 hover:shadow-md transition-shadow relative group">
+                            <div className="flex items-start justify-between mb-4">
+                                <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                     </svg>
-                                </button>
-                                <button onClick={() => handleDelete(account.id)} aria-label="Delete account" className="p-1.5 text-gray-400 hover:text-red-600">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                        <h3 className="font-bold text-gray-900 dark:text-white truncate">{account.name}</h3>
-                        <p className="text-gray-500 text-sm truncate mb-4">{account.email}</p>
-
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 text-xs text-gray-500">
-                                    <div className={`w-2 h-2 rounded-full ${account.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                    {account.isActive ? 'Active Sync' : 'Disabled'}
                                 </div>
-                                {account.authMethod === 'oauth2' && (
-                                    <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded-full uppercase">
-                                        OAuth2 Ready
-                                    </span>
-                                )}
+                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onClick={() => handleEdit(account)} aria-label="Edit account" className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                        </svg>
+                                    </button>
+                                    <button onClick={() => handleDelete(account.id)} aria-label="Delete account" className="p-1.5 text-gray-400 hover:text-red-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
+                            <h3 className="font-bold text-gray-900 dark:text-white truncate">{account.name}</h3>
+                            <p className="text-gray-500 text-sm truncate mb-4">{account.email}</p>
 
-                            {(account.email.includes('outlook.com') || account.email.includes('precisionsummits.com')) && account.authMethod !== 'oauth2' && (
-                                <button
-                                    onClick={() => handleMicrosoftAuth(account.id)}
-                                    className="w-full py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 border border-blue-200 dark:border-blue-800"
-                                >
-                                    <svg viewBox="0 0 23 23" className="w-3 h-3 fill-current" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M0 0h11.045v11.045H0z" fill="#f25022" /><path d="M11.955 0H23v11.045H11.955z" fill="#7fbb00" /><path d="M0 11.955h11.045V23H0z" fill="#00a1f1" /><path d="M11.955 11.955H23V23H11.955z" fill="#ffbb00" />
-                                    </svg>
-                                    Connect Microsoft
-                                </button>
-                            )}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                                        <div className={`w-2 h-2 rounded-full ${account.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                        {account.isActive ? 'Active Sync' : 'Disabled'}
+                                    </div>
+                                    {account.authMethod === 'oauth2' && (
+                                        <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded-full uppercase">
+                                            OAuth2 Ready
+                                        </span>
+                                    )}
+                                </div>
 
-                            <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
-                                Last Sync: {account.lastSyncAt ? new Date(account.lastSyncAt).toLocaleString() : 'Never'}
+                                {(account.email.includes('outlook.com') || account.email.includes('precisionsummits.com')) && account.authMethod !== 'oauth2' && (
+                                    <button
+                                        onClick={() => handleMicrosoftAuth(account.id)}
+                                        className="w-full py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 border border-blue-200 dark:border-blue-800"
+                                    >
+                                        <svg viewBox="0 0 23 23" className="w-3 h-3 fill-current" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M0 0h11.045v11.045H0z" fill="#f25022" /><path d="M11.955 0H23v11.045H11.955z" fill="#7fbb00" /><path d="M0 11.955h11.045V23H0z" fill="#00a1f1" /><path d="M11.955 11.955H23V23H11.955z" fill="#ffbb00" />
+                                        </svg>
+                                        Connect Microsoft
+                                    </button>
+                                )}
+
+                                <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
+                                    Last Sync: {account.lastSyncAt ? new Date(account.lastSyncAt).toLocaleString() : 'Never'}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
-            </div>
-
-            {filteredAccounts.length === 0 && !loading && (
-                <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-gray-50/10 dark:bg-gray-800/10 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 mt-6">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-full mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">No email accounts found</h3>
-                    <p className="text-gray-500 text-sm max-w-xs mx-auto">
-                        We couldn't find any email accounts matching your criteria. Try adjusting your filters or add a new account.
-                    </p>
+                    ))}
                 </div>
-            )}
+
+                {filteredAccounts.length === 0 && !loading && (
+                    <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-gray-50/10 dark:bg-gray-800/10 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 mt-6">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-full mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">No email accounts found</h3>
+                        <p className="text-gray-500 text-sm max-w-xs mx-auto">
+                            We couldn't find any email accounts matching your criteria. Try adjusting your filters or add a new account.
+                        </p>
+                    </div>
+                )}
+            </div>
 
             {/* Modal / Slide-over for adding/editing account */}
             {isFormOpen && (
@@ -518,30 +531,30 @@ export default function EmailAccountsPage() {
                                         </>
                                     )}
                                 </div>
-                             </div>
- 
-                             <div className="pt-4 border-t border-gray-100 dark:border-gray-800 space-y-4">
-                                 <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                                     <div className="flex flex-col">
-                                         <span className="text-sm font-bold dark:text-white">Active Status</span>
-                                         <span className="text-xs text-gray-500">Enable or disable background synchronization</span>
-                                     </div>
-                                     <button
-                                         type="button"
-                                         onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
-                                         className={`w-12 h-6 rounded-full transition-all relative ${formData.isActive ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
-                                     >
-                                         <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${formData.isActive ? 'right-1' : 'left-1'}`}></div>
-                                     </button>
-                                 </div>
- 
-                                 <div className="flex gap-4">
-                                     <button type="button" onClick={() => setIsFormOpen(false)} className="flex-1 h-12 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-bold rounded-xl transition-all">Cancel</button>
-                                     <button type="submit" className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/30">
-                                         {editingAccount ? 'Update Account' : 'Create Account'}
-                                     </button>
-                                 </div>
-                             </div>
+                            </div>
+
+                            <div className="pt-4 border-t border-gray-100 dark:border-gray-800 space-y-4">
+                                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-bold dark:text-white">Active Status</span>
+                                        <span className="text-xs text-gray-500">Enable or disable background synchronization</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
+                                        className={`w-12 h-6 rounded-full transition-all relative ${formData.isActive ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                                    >
+                                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${formData.isActive ? 'right-1' : 'left-1'}`}></div>
+                                    </button>
+                                </div>
+
+                                <div className="flex gap-4">
+                                    <button type="button" onClick={() => setIsFormOpen(false)} className="flex-1 h-12 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-bold rounded-xl transition-all">Cancel</button>
+                                    <button type="submit" className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/30">
+                                        {editingAccount ? 'Update Account' : 'Create Account'}
+                                    </button>
+                                </div>
+                            </div>
                         </form>
                     </div>
                 </div>
