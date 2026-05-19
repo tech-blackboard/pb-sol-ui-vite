@@ -41,6 +41,7 @@ export default function EmailAccountsPage() {
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
     const [bulkJson, setBulkJson] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'disabled'>('all');
+    const [viewingAccount, setViewingAccount] = useState<EmailAccount | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const handleStatusFilterChange = (status: 'all' | 'active' | 'disabled') => {
@@ -346,61 +347,69 @@ export default function EmailAccountsPage() {
             </div>
 
             {/* Scrollable Grid Section */}
-            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6 min-h-0">
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-2 min-h-0">
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
                     {filteredAccounts.map(account => (
-                        <div key={account.id} className="border border-gray-200 dark:border-gray-800 rounded-xl p-5 bg-gray-50/50 dark:bg-gray-800/40 hover:shadow-md transition-shadow relative group">
-                            <div className="flex items-start justify-between mb-4">
-                                <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        <div key={account.id} className="border border-gray-200 dark:border-gray-800 rounded-xl p-2.5 bg-gray-50/50 dark:bg-gray-800/40 hover:shadow-md transition-shadow relative group flex flex-col justify-between min-h-[105px]">
+                            <div className="flex items-center justify-between mb-1">
+                                <button
+                                    onClick={() => setViewingAccount(account)}
+                                    className="px-2 py-0.5 text-[10px] font-semibold bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-md border border-blue-200 dark:border-blue-800 transition-colors flex items-center gap-1"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                     </svg>
-                                </div>
-                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => handleEdit(account)} aria-label="Edit account" className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    View
+                                </button>
+                                
+                                <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                    <button onClick={() => handleEdit(account)} aria-label="Edit account" className="p-0.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                         </svg>
                                     </button>
-                                    <button onClick={() => handleDelete(account.id)} aria-label="Delete account" className="p-1.5 text-gray-400 hover:text-red-600">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <button onClick={() => handleDelete(account.id)} aria-label="Delete account" className="p-0.5 text-gray-400 hover:text-red-600 dark:hover:text-red-500 transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
                                     </button>
                                 </div>
                             </div>
-                            <h3 className="font-bold text-gray-900 dark:text-white truncate">{account.name}</h3>
-                            <p className="text-gray-500 text-sm truncate mb-4">{account.email}</p>
-
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                                        <div className={`w-2 h-2 rounded-full ${account.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                        {account.isActive ? 'Active Sync' : 'Disabled'}
-                                    </div>
-                                    {account.authMethod === 'oauth2' && (
-                                        <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded-full uppercase">
-                                            OAuth2 Ready
-                                        </span>
-                                    )}
+                            <div className="mt-0.5 flex-1">
+                                <h3 className="font-bold text-gray-900 dark:text-white truncate text-sm">{account.name}</h3>
+                                <p className="text-gray-500 dark:text-gray-400 text-xs break-all mt-0.5">{account.email}</p>
+                            </div>
+                            
+                            <div className="mt-1.5 flex items-center justify-between">
+                                <div className="flex items-center gap-1.5 text-[11px] text-gray-500 font-medium">
+                                    <div className={`w-1.5 h-1.5 rounded-full ${account.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                    {account.isActive ? 'Active Sync' : 'Disabled'}
                                 </div>
+                                {account.authMethod === 'oauth2' && (
+                                    <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[9px] font-bold rounded uppercase">
+                                        OAuth2 Ready
+                                    </span>
+                                )}
+                            </div>
 
-                                {(account.email.includes('outlook.com') || account.email.includes('precisionsummits.com')) && account.authMethod !== 'oauth2' && (
+                            {(account.email.includes('outlook.com') || account.email.includes('precisionsummits.com')) && account.authMethod !== 'oauth2' && (
+                                <div className="mt-1.5">
                                     <button
                                         onClick={() => handleMicrosoftAuth(account.id)}
-                                        className="w-full py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 border border-blue-200 dark:border-blue-800"
+                                        className="w-full py-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-[11px] font-bold rounded transition-colors flex items-center justify-center gap-1.5 border border-blue-200 dark:border-blue-800"
                                     >
                                         <svg viewBox="0 0 23 23" className="w-3 h-3 fill-current" xmlns="http://www.w3.org/2000/svg">
                                             <path d="M0 0h11.045v11.045H0z" fill="#f25022" /><path d="M11.955 0H23v11.045H11.955z" fill="#7fbb00" /><path d="M0 11.955h11.045V23H0z" fill="#00a1f1" /><path d="M11.955 11.955H23V23H11.955z" fill="#ffbb00" />
                                         </svg>
                                         Connect Microsoft
                                     </button>
-                                )}
-
-                                <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
-                                    Last Sync: {account.lastSyncAt ? new Date(account.lastSyncAt).toLocaleString() : 'Never'}
                                 </div>
+                            )}
+
+                            <div className="mt-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-800/50 text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
+                                Last Sync: {account.lastSyncAt ? new Date(account.lastSyncAt).toLocaleString() : 'Never'}
                             </div>
                         </div>
                     ))}
@@ -604,6 +613,155 @@ export default function EmailAccountsPage() {
                             >
                                 Create Bulk Accounts
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* View Details Modal */}
+            {viewingAccount && (
+                <div className="fixed inset-0 z-50 flex items-center justify-end">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setViewingAccount(null)}></div>
+                    <div className="relative w-full max-w-xl bg-white dark:bg-gray-900 h-full shadow-2xl flex flex-col p-4 sm:p-8 overflow-y-auto transform transition-transform animate-slide-in">
+                        <div className="flex justify-between items-center mb-6 sm:mb-8">
+                            <h2 className="text-2xl font-bold dark:text-white">Account Details</h2>
+                            <button onClick={() => setViewingAccount(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="space-y-6 sm:space-y-8 text-sm">
+                            {/* Base Info */}
+                            <div className="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 border-b dark:border-gray-800 pb-3">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white break-all sm:break-normal">{viewingAccount.name}</h3>
+                                        <p className="text-gray-500 dark:text-gray-400 break-all mt-0.5">{viewingAccount.email}</p>
+                                    </div>
+                                    <div className="flex">
+                                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 ${viewingAccount.isActive ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400'}`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${viewingAccount.isActive ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                            {viewingAccount.isActive ? 'Syncing' : 'Disabled'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 pt-2">
+                                    <div>
+                                        <span className="text-[10px] uppercase font-bold text-gray-400">Auth Method</span>
+                                        <p className="font-semibold text-gray-800 dark:text-gray-200 mt-0.5 uppercase">
+                                            {(viewingAccount.authMethod === 'oauth2' && (viewingAccount.email.includes('outlook.com') || viewingAccount.email.includes('precisionsummits.com'))) ? 'oauth' : (viewingAccount.authMethod || 'password')}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] uppercase font-bold text-gray-400">Last Sync</span>
+                                        <p className="font-semibold text-gray-800 dark:text-gray-200 mt-0.5">{viewingAccount.lastSyncAt ? new Date(viewingAccount.lastSyncAt).toLocaleString() : 'Never'}</p>
+                                    </div>
+                                </div>
+                                
+                                {/* Microsoft connection inside details modal */}
+                                {(viewingAccount.email.includes('outlook.com') || viewingAccount.email.includes('precisionsummits.com')) && viewingAccount.authMethod !== 'oauth2' && (
+                                    <div className="pt-4 border-t dark:border-gray-800 mt-2">
+                                        <button
+                                            onClick={() => {
+                                                handleMicrosoftAuth(viewingAccount.id);
+                                                setViewingAccount(null);
+                                            }}
+                                            className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md shadow-blue-500/20"
+                                        >
+                                            <svg viewBox="0 0 23 23" className="w-3.5 h-3.5 fill-current" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M0 0h11.045v11.045H0z" fill="#f25022" /><path d="M11.955 0H23v11.045H11.955z" fill="#7fbb00" /><path d="M0 11.955h11.045V23H0z" fill="#00a1f1" /><path d="M11.955 11.955H23V23H11.955z" fill="#ffbb00" />
+                                            </svg>
+                                            Connect Microsoft OAuth2
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Inbound settings */}
+                            <div className="space-y-4">
+                                <h3 className="text-xs font-bold text-blue-600 uppercase tracking-widest">Inbound (IMAP) Settings</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50/50 dark:bg-gray-800/30 rounded-xl border border-gray-100 dark:border-gray-800/50">
+                                    <div className="col-span-1 sm:col-span-1">
+                                        <span className="text-[10px] uppercase font-bold text-gray-400">IMAP Server</span>
+                                        <p className="font-medium text-gray-800 dark:text-gray-200 mt-0.5 break-all sm:break-normal">{viewingAccount.imapHost || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] uppercase font-bold text-gray-400">IMAP Port</span>
+                                        <p className="font-medium text-gray-800 dark:text-gray-200 mt-0.5">{viewingAccount.imapPort || 'N/A'}</p>
+                                    </div>
+                                    <div className="col-span-1 sm:col-span-2">
+                                        <span className="text-[10px] uppercase font-bold text-gray-400">IMAP User</span>
+                                        <p className="font-medium text-gray-800 dark:text-gray-200 mt-0.5 break-all">{viewingAccount.imapUser || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] uppercase font-bold text-gray-400">Encryption</span>
+                                        <p className="font-medium text-gray-800 dark:text-gray-200 mt-0.5 uppercase">{viewingAccount.imapEncryption || 'N/A'}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Outbound settings */}
+                            <div className="space-y-4">
+                                <h3 className="text-xs font-bold text-blue-600 uppercase tracking-widest">Outbound Setup</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50/50 dark:bg-gray-800/30 rounded-xl border border-gray-100 dark:border-gray-800/50">
+                                    <div className="col-span-1 sm:col-span-2">
+                                        <span className="text-[10px] uppercase font-bold text-gray-400">Provider</span>
+                                        <p className="font-medium text-gray-800 dark:text-gray-200 mt-0.5 uppercase">{viewingAccount.outboundProvider || 'SMTP'}</p>
+                                    </div>
+                                    
+                                    {viewingAccount.outboundProvider === 'smtp' || !viewingAccount.outboundProvider ? (
+                                        <>
+                                            <div className="col-span-1 sm:col-span-1">
+                                                <span className="text-[10px] uppercase font-bold text-gray-400">SMTP Server</span>
+                                                <p className="font-medium text-gray-800 dark:text-gray-200 mt-0.5 break-all sm:break-normal">{viewingAccount.smtpHost || 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] uppercase font-bold text-gray-400">SMTP Port</span>
+                                                <p className="font-medium text-gray-800 dark:text-gray-200 mt-0.5">{viewingAccount.smtpPort || 'N/A'}</p>
+                                            </div>
+                                            <div className="col-span-1 sm:col-span-2">
+                                                <span className="text-[10px] uppercase font-bold text-gray-400">SMTP User</span>
+                                                <p className="font-medium text-gray-800 dark:text-gray-200 mt-0.5 break-all">{viewingAccount.smtpUser || viewingAccount.email}</p>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="col-span-1 sm:col-span-2">
+                                                <span className="text-[10px] uppercase font-bold text-gray-400">API Key</span>
+                                                <p className="font-medium text-gray-800 dark:text-gray-200 mt-0.5">••••••••••••••••</p>
+                                            </div>
+                                            {viewingAccount.apiRegion && (
+                                                <div>
+                                                    <span className="text-[10px] uppercase font-bold text-gray-400">AWS Region</span>
+                                                    <p className="font-medium text-gray-800 dark:text-gray-200 mt-0.5">{viewingAccount.apiRegion}</p>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Action Buttons inside Details Modal */}
+                            <div className="pt-6 border-t dark:border-gray-800 flex gap-4">
+                                <button
+                                    onClick={() => {
+                                        setViewingAccount(null);
+                                        handleEdit(viewingAccount);
+                                    }}
+                                    className="flex-1 h-11 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-bold rounded-xl transition-all border border-blue-200 dark:border-blue-800"
+                                >
+                                    Edit Settings
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewingAccount(null)}
+                                    className="flex-1 h-11 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-bold rounded-xl transition-all"
+                                >
+                                    Close
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

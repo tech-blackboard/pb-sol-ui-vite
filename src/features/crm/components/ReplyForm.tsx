@@ -5,6 +5,8 @@ import { sendReplyThunk, saveDraftThunk } from '../../../store/slices/crm/crm.th
 import { fetchEmailAccounts } from '../services/crmService';
 import type { Attachment, EmailAccount, MessageImportance } from '../types';
 import toast from 'react-hot-toast';
+import { GmailToolbar } from './GmailToolbar';
+import { GmailReplyEditor } from './GmailReplyEditor';
 
 export interface ReplyFormHandle {
     expand: () => void;
@@ -29,18 +31,26 @@ interface ReplyFormProps {
     forwardedFromId?: string;
     initialAttachmentIds?: number[];
     originalAttachments?: Attachment[];
+    expanded?: boolean;
+    onCollapse?: () => void;
+    onExpand?: () => void;
 }
 
 const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
     contactId, eventId, defaultSubject, recipientEmail, replyEmails,
     onSuccess, initialDraftId, initialHtmlBody, initialFromEmail,
     initialEmailAccountId, threadId, initialSubject, initialCc, initialBcc,
-    mode = 'reply', forwardedFromId, initialAttachmentIds, originalAttachments
+    mode = 'reply', forwardedFromId, initialAttachmentIds, originalAttachments,
+    expanded, onCollapse, onExpand
 }, ref) => {
     const dispatch = useAppDispatch();
     const { loading, events } = useAppSelector((state: RootState) => state.crm);
     const event = events.find(e => e.id === eventId);
-    const contentRef = useRef<HTMLDivElement>(null);
+    const signatureInitializedRef = useRef(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+    // TipTap Editor States
+    const [editorInstance, setEditorInstance] = useState<any>(null);
+    const [showToolbar, setShowToolbar] = useState(false);
 
     // State
     const [htmlBody, setHtmlBody] = useState(initialHtmlBody || '');
@@ -49,7 +59,14 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
     const [subject, setSubject] = useState(initialSubject || (mode === 'forward' ? `Fwd: ${defaultSubject}` : (defaultSubject.startsWith('Re:') ? defaultSubject : `Re: ${defaultSubject}`)));
     const [emailAccounts, setEmailAccounts] = useState<EmailAccount[]>([]);
 
-    const [isExpanded, setIsExpanded] = useState(!!initialDraftId || !!initialHtmlBody);
+    const [isExpanded, setIsExpanded] = useState(expanded ?? (!!initialDraftId || !!initialHtmlBody));
+
+    useEffect(() => {
+        if (expanded !== undefined) {
+            setIsExpanded(expanded);
+        }
+    }, [expanded]);
+
     const [draftId, setDraftId] = useState<string | undefined>(initialDraftId);
 
     const [attachmentIds, setAttachmentIds] = useState<number[]>(initialAttachmentIds || []);
@@ -80,8 +97,23 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
     const initializationKey = `${mode}|${forwardedFromId || ''}|${initialDraftId || ''}|${isExpanded}`;
 
     useEffect(() => {
+        if (isExpanded && editorInstance) {
+            const timer = setTimeout(() => {
+                containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 150);
+            return () => clearTimeout(timer);
+        }
+    }, [isExpanded, editorInstance]);
+
+    useEffect(() => {
         if (!isExpanded) {
             lastInitializedKeyRef.current = '';
+            signatureInitializedRef.current = false;
+            return;
+        }
+
+        // Wait until editorInstance is ready before doing any initialization
+        if (!editorInstance) {
             return;
         }
 
@@ -95,56 +127,94 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
         const isSourceChange = prevKey && prevKey.split('|')[1] !== (forwardedFromId || '');
         const isExternalDraftChange = initialDraftId !== draftId;
 
-        if (isFirstExpand || isModeChange || isSourceChange || isExternalDraftChange) {
+        const keyChanged = isFirstExpand || isModeChange || isSourceChange || isExternalDraftChange;
+
+        if (keyChanged) {
             lastInitializedKeyRef.current = initializationKey;
+            signatureInitializedRef.current = false;
 
             setDraftId(initialDraftId);
             setSubject(initialSubject || (mode === 'forward' ? `Fwd: ${defaultSubject}` : (defaultSubject.startsWith('Re:') ? defaultSubject : `Re: ${defaultSubject}`)));
-            
-            // Signature Logic
-            let finalBody = initialHtmlBody || '';
-            const hasSignature = finalBody.includes('class="email-signature"');
-            
-            if (!initialDraftId && !hasSignature && event && (event.signatureName || event.signaturePlace)) {
-                const sigHtml = `
-                    <div class="email-signature" style="margin-top: 24px; color: #4a5568; font-family: sans-serif; line-height: 1.5;">
-                        <p style="margin: 0; font-size: 14px;">Best regards,</p>
-                        <p style="margin: 4px 0 0 0; font-size: 14px;"><strong>${event.signatureName || ''}</strong> | Program Manager</p>
-                        <p style="margin: 0; font-size: 14px;">${event.signaturePlace || ''}</p>
-                        <p style="margin: 0; font-size: 14px;">Phone: +1-571-556-1014</p>
-                    </div>
-                `;
-                
-                if (mode === 'forward') {
-                    // Prepend to forwarded content
-                    finalBody = `<div class="reply-content"><br></div>` + sigHtml + finalBody;
-                } else {
-                    // Fresh reply
-                    finalBody = `<div class="reply-content"><br><br></div>` + sigHtml;
-                }
-            }
-
-            setHtmlBody(finalBody);
-            if (contentRef.current) {
-                contentRef.current.innerHTML = finalBody;
-                // Move cursor to start
-                setTimeout(() => {
-                    if (contentRef.current) {
-                        contentRef.current.focus();
-                        const range = document.createRange();
-                        const sel = window.getSelection();
-                        const firstLine = contentRef.current.querySelector('.reply-content') || contentRef.current;
-                        range.setStart(firstLine, 0);
-                        range.collapse(true);
-                        sel?.removeAllRanges();
-                        sel?.addRange(range);
-                    }
-                }, 100);
-            }
             setAttachmentIds(initialAttachmentIds || []);
             setAttachments(originalAttachments || []);
+            const newBody = initialHtmlBody || '';
+            setHtmlBody(newBody);
+
+            editorInstance.commands.setContent(newBody, {
+                emitUpdate: false,
+            });
         }
-    }, [initializationKey, initialSubject, initialHtmlBody, initialAttachmentIds, originalAttachments, mode, defaultSubject, isExpanded, draftId, initialDraftId, forwardedFromId, event]);
+
+        // Now evaluate signature initialization if it hasn't been done yet for this key
+        if (!signatureInitializedRef.current) {
+            const currentBody = keyChanged ? (initialHtmlBody || '') : htmlBodyRef.current;
+            const hasSignature = currentBody.includes('class="email-signature"');
+
+            if (initialDraftId || hasSignature) {
+                // Draft already has the text/signature saved, or the signature is already in the body.
+                signatureInitializedRef.current = true;
+            } else if (event) {
+                let finalBody = currentBody;
+                if (event.signatureName || event.signaturePlace) {
+                    const sigHtml = `
+        <div class="email-signature"
+            style="margin-top:24px;color:#475569;font-family:sans-serif;line-height:1.5;">
+
+            <p style="margin:0;font-size:14px;">
+                Best regards,
+            </p>
+
+            <p style="margin:4px 0 0 0;font-size:14px;">
+                <strong>${event.signatureName || ''}</strong>
+                | Program Manager
+            </p>
+
+            <p style="margin:0;font-size:14px;">
+                ${event.signaturePlace || ''}
+            </p>
+
+            <p style="margin:0;font-size:14px;">
+                Phone: +1-571-556-1014
+            </p>
+
+        </div>
+    `;
+
+                    if (mode === 'forward') {
+                        finalBody = `<div><br></div>${sigHtml}${finalBody}`;
+                    } else {
+                        finalBody = `<div><br></div>${sigHtml}`;
+                    }
+                }
+                setHtmlBody(finalBody);
+                signatureInitializedRef.current = true;
+
+                editorInstance.commands.setContent(finalBody, {
+                    emitUpdate: false,
+                });
+                setTimeout(() => {
+                    editorInstance.commands.focus('start');
+                }, 100);
+            } else {
+                // Event is not loaded yet. Keep signatureInitializedRef.current as false
+                // and wait for the event dependency to change.
+            }
+        }
+    }, [
+        initializationKey,
+        initialSubject,
+        initialHtmlBody,
+        initialAttachmentIds,
+        originalAttachments,
+        mode,
+        defaultSubject,
+        isExpanded,
+        draftId,
+        initialDraftId,
+        forwardedFromId,
+        event,
+        editorInstance
+    ]);
 
     // Handle importance dropdown click outside
     useEffect(() => {
@@ -198,6 +268,12 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
     useEffect(() => {
         importanceValueRef.current = importance;
     }, [importance]);
+    const handleCollapse = () => {
+        setIsExpanded(false);
+        if (onCollapse) {
+            onCollapse();
+        }
+    };
 
     const handleSaveDraft = useCallback(async (currentBody: string) => {
         if (!currentBody.trim() || currentBody === lastSavedBody || isSavingRef.current) return;
@@ -325,7 +401,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
             setShowBCC(false);
             setImportance('normal');
             setDraftId(undefined);
-            setIsExpanded(false);
+            handleCollapse();
             if (onSuccess) onSuccess();
         } else {
             toast.error('Failed to send reply');
@@ -346,9 +422,14 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
 
     if (!isExpanded) {
         return (
-            <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/20">
+            <div ref={containerRef} className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/20">
                 <button
-                    onClick={() => setIsExpanded(true)}
+                    onClick={() => {
+                        setIsExpanded(true);
+                        if (onExpand) {
+                            onExpand();
+                        }
+                    }}
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-500 hover:border-blue-400 hover:ring-1 hover:ring-blue-100 transition-all text-left"
                 >
                     <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
@@ -367,12 +448,8 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
         setAttachments(prev => prev.filter(a => a.id !== id));
     };
 
-    const handleContentInput = (e: React.FormEvent<HTMLDivElement>) => {
-        setHtmlBody(e.currentTarget.innerHTML);
-    };
-
     return (
-        <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div ref={containerRef} className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className="flex flex-col">
                     {/* To Row */}
@@ -461,7 +538,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                                 )}
                                 <button
                                     type="button"
-                                    onClick={() => setIsExpanded(false)}
+                                    onClick={handleCollapse}
                                     className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 ml-1"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
@@ -675,16 +752,35 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                     </div>
                 </div>
 
-                <div
-                    ref={contentRef}
-                    contentEditable
-                    onInput={handleContentInput}
-                    className="w-full min-h-[300px] p-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 outline-none overflow-y-auto prose dark:prose-invert max-w-none"
-                    onBlur={() => {
-                        // Ensure state is synced on blur just in case
-                        if (contentRef.current) setHtmlBody(contentRef.current.innerHTML);
-                    }}
-                />
+                <div className="flex flex-col w-full">
+                    {showToolbar && <GmailToolbar editor={editorInstance} />}
+                    <GmailReplyEditor
+                        content={htmlBody}
+                        onChange={(html) => {
+                            const cleanText = html.replace(/<[^>]*>/g, '').trim();
+
+                            // Prevent overwriting signature with initial empty updates from editor
+                            if (
+                                cleanText === '' &&
+                                htmlBody.includes('email-signature') &&
+                                (!editorInstance || !editorInstance.isFocused)
+                            ) {
+                                return;
+                            }
+                            setHtmlBody(html);
+                        }}
+                        placeholder="Write your reply here..."
+                        disabled={loading.sending}
+                        onEditorReady={(editor) => {
+                            setEditorInstance(editor);
+                            if (!editorInstance && editor) {
+                                setTimeout(() => {
+                                    editor.commands.focus('start');
+                                }, 100);
+                            }
+                        }}
+                    />
+                </div>
 
                 {/* Attachments UI */}
                 {attachments.length > 0 && (
@@ -711,7 +807,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
 
                 {/* Footer Actions */}
                 <div className="flex items-center justify-between pt-2">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                         <button
                             type="submit"
                             disabled={loading.sending}
@@ -727,16 +823,30 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                             {mode === 'forward' ? 'Forward' : 'Send Reply'}
                         </button>
 
+                        {/* Formatting Toggle Button (Aa) */}
+                        <button
+                            type="button"
+                            onClick={() => setShowToolbar(!showToolbar)}
+                            className={`px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-0.5 border ${showToolbar
+                                ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 font-bold shadow-sm'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-500 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300'
+                                }`}
+                            title="Formatting options"
+                        >
+                            <span className="font-bold text-sm select-none">A</span>
+                            <span className="text-xs font-semibold select-none underline decoration-2">a</span>
+                        </button>
+
                         {/* Importance Selector */}
                         <div className="relative" ref={importanceRef}>
                             <button
                                 type="button"
                                 onClick={() => setIsImportanceOpen(!isImportanceOpen)}
                                 className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${importance === 'high'
-                                        ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-[#C8102E] dark:text-red-400 shadow-sm'
-                                        : importance === 'low'
-                                            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 shadow-sm'
-                                            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 hover:bg-gray-50'
+                                    ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-[#C8102E] dark:text-red-400 shadow-sm'
+                                    : importance === 'low'
+                                        ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 hover:bg-gray-50'
                                     }`}
                                 title="Set message importance"
                             >

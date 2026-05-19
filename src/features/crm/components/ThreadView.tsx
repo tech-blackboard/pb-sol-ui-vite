@@ -28,14 +28,16 @@ export default function ThreadView() {
         subject?: string;
         attachmentIds?: number[];
         attachments?: Attachment[];
-    }>({ mode: 'reply' });
+        isExpanded?: boolean;
+    }>({ mode: 'reply', isExpanded: false });
 
-    const handleReplyClick = () => {
-        setForwardData({ mode: 'reply' });
+    const handleReplyClick = (message?: Message) => {
+        setForwardData({
+            mode: 'reply',
+            forwardedFromId: message?.id,
+            isExpanded: true
+        });
         replyFormRef.current?.expand();
-        setTimeout(() => {
-            replyFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
     };
 
     const handleForwardClick = (message: Message) => {
@@ -49,16 +51,18 @@ export default function ThreadView() {
         });
 
         const forwardTemplate = `
-            <div class="forward-header" style="padding-top: 8px; margin-top: 16px; border-top: 1px solid #edf2f7;">
-                <p style="margin: 0 0 12px 0; font-size: 13px;"><strong>---------- Forwarded message ---------</strong></p>
-                <div style="margin: 0; font-size: 12px; line-height: 1.6; color: #4a5568;">
-                    <strong>From:</strong> ${message.fromName ? `${message.fromName} &lt;${message.fromEmail}&gt;` : message.fromEmail}<br>
-                    <strong>Date:</strong> ${dateStr}<br>
-                    <strong>Subject:</strong> ${message.subject}<br>
-                    <strong>To:</strong> ${message.toEmail}<br>
-                </div>
-                <div class="forward-body" style="margin-top: 16px; color: #2d3748;">
-                    ${message.htmlBody || message.textBody?.replace(/\n/g, '<br>') || ''}
+            <div class="gmail_quote not-prose" contenteditable="false">
+                <div class="forward-header" style="padding-top: 8px; margin-top: 16px; border-top: 1px solid #edf2f7;">
+                    <p style="margin: 0 0 12px 0; font-size: 13px;"><strong>---------- Forwarded message ---------</strong></p>
+                    <div style="margin: 0; font-size: 12px; line-height: 1.6; color: #4a5568;">
+                        <strong>From:</strong> ${message.fromName ? `${message.fromName} &lt;${message.fromEmail}&gt;` : message.fromEmail}<br>
+                        <strong>Date:</strong> ${dateStr}<br>
+                        <strong>Subject:</strong> ${message.subject}<br>
+                        <strong>To:</strong> ${message.toEmail}<br>
+                    </div>
+                    <div class="forward-body" style="margin-top: 16px; color: #2d3748;">
+                        ${message.htmlBody || message.textBody?.replace(/\n/g, '<br>') || ''}
+                    </div>
                 </div>
             </div>
         `;
@@ -69,13 +73,11 @@ export default function ThreadView() {
             htmlBody: forwardTemplate,
             subject: `Fwd: ${message.subject}`,
             attachmentIds: message.attachments?.map(a => a.id) || [],
-            attachments: message.attachments || []
+            attachments: message.attachments || [],
+            isExpanded: true
         });
 
         replyFormRef.current?.expand();
-        setTimeout(() => {
-            replyFormContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
     };
 
     let thread = threads.find((t: Thread) => t.id === selectedThreadId);
@@ -157,6 +159,7 @@ export default function ThreadView() {
         if (selectedThreadId) {
             dispatch(fetchMessagesThunk(selectedThreadId));
         }
+        setForwardData(prev => ({ ...prev, isExpanded: false }));
     };
 
     const handleToggleRead = async () => {
@@ -534,7 +537,7 @@ export default function ThreadView() {
                                             </span>
                                             <div className="flex gap-1">
                                                 <button
-                                                    onClick={handleReplyClick}
+                                                    onClick={() => handleReplyClick(message)}
                                                     className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
                                                     title="Reply"
                                                 >
@@ -633,6 +636,7 @@ export default function ThreadView() {
 
                             return (
                                 <ReplyForm
+                                    key={`${forwardData.mode}-${forwardData.forwardedFromId || ''}`}
                                     ref={replyFormRef}
                                     contactId={contact?.id || 0}
                                     eventId={thread.eventId}
@@ -651,6 +655,9 @@ export default function ThreadView() {
                                     initialAttachmentIds={forwardData.attachmentIds}
                                     originalAttachments={forwardData.attachments}
                                     initialHtmlBody={forwardData.htmlBody || draft?.htmlBody}
+                                    expanded={forwardData.isExpanded}
+                                    onCollapse={() => setForwardData(prev => ({ ...prev, isExpanded: false }))}
+                                    onExpand={() => setForwardData(prev => ({ ...prev, isExpanded: true }))}
                                 />
                             );
                         })()}
