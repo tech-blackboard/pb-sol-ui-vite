@@ -29,7 +29,7 @@ export default function ThreadView() {
         attachmentIds?: number[];
         attachments?: Attachment[];
         isExpanded?: boolean;
-    }>({ mode: 'reply', isExpanded: false });
+    }>({ mode: 'reply' });
 
     const handleReplyClick = (message?: Message) => {
         setForwardData({
@@ -649,7 +649,7 @@ export default function ThreadView() {
                                     initialSubject={forwardData.subject || draft?.subject}
                                     initialCc={draft?.ccEmail}
                                     initialBcc={draft?.bccEmail}
-                                    threadId={thread.id}
+                                    threadId={draft?.threadId ? draft.threadId : (messages.length > 0 ? thread.id : undefined)}
                                     mode={forwardData.mode}
                                     forwardedFromId={forwardData.forwardedFromId}
                                     initialAttachmentIds={forwardData.attachmentIds}

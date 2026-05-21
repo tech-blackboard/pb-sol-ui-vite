@@ -106,6 +106,31 @@ export const sendReplyThunk = createAsyncThunk(
     }
 );
 
+export const composeEmailThunk = createAsyncThunk(
+    'crm/composeEmail',
+    async (payload: {
+        eventId: number;
+        toEmail: string;
+        subject: string;
+        textBody?: string;
+        htmlBody: string;
+        fromEmail?: string;
+        emailAccountId?: number;
+        draftId?: string;
+        cc?: string;
+        bcc?: string;
+        importance?: MessageImportance;
+        attachmentIds?: number[];
+    }, { rejectWithValue }) => {
+        try {
+            return await crmService.composeEmail(payload);
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to send email';
+            return rejectWithValue(message);
+        }
+    }
+);
+
 export const updateLabelsThunk = createAsyncThunk(
     'crm/updateLabels',
     async ({ messageId, labels }: { messageId: string; labels: string[] }, { rejectWithValue }) => {
@@ -121,8 +146,9 @@ export const updateLabelsThunk = createAsyncThunk(
 export const saveDraftThunk = createAsyncThunk(
     'crm/saveDraft',
     async (payload: {
-        contactId: number;
+        contactId?: number;
         eventId: number;
+        toEmail?: string;
         subject: string;
         textBody?: string;
         htmlBody?: string;

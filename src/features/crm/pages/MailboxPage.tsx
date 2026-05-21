@@ -1,13 +1,14 @@
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import type { RootState } from '../../../store';
-import { fetchEventsThunk, fetchThreadsThunk, fetchDraftsThunk, fetchLabelDefinitionsThunk, trashThreadsThunk, restoreThreadsThunk, deleteThreadsPermanentlyThunk, emptyTrashThunk } from '../../../store/slices/crm/crm.thunks';
-import { setSidebarOpen, setPage } from '../../../store/slices/crm/crm.slice';
+import { fetchEventsThunk, fetchThreadsThunk, fetchDraftsThunk, fetchLabelDefinitionsThunk, trashThreadsThunk, restoreThreadsThunk, deleteThreadsPermanentlyThunk, emptyTrashThunk, deleteDraftThunk } from '../../../store/slices/crm/crm.thunks';
+import { setSidebarOpen, setPage, selectAllThreads } from '../../../store/slices/crm/crm.slice';
 import CrmHeader from '../components/CrmHeader';
 import CrmSidebar from '../components/CrmSidebar';
 import ThreadTable from '../components/ThreadTable';
 import ThreadView from '../components/ThreadView';
 import EmailAccountsPage from './EmailAccountsPage';
+import ComposeEmailModal from '../components/ComposeEmailModal';
 
 import ContactBucketView from '../components/ContactBucketView';
 import toast from 'react-hot-toast';
@@ -68,10 +69,17 @@ export default function MailboxPage() {
     }, [activeFolder, activeEventId, searchTrigger, appliedSearchTerm, appliedDomain, appliedEmailAccountId, dispatch]);
 
     const handleBulkTrash = async () => {
-        if (confirm(`Move ${selectedThreadIds.length} conversations to Trash?`)) {
+        const isDrafts = activeFolder === 'Drafts';
+        const typeName = isDrafts ? 'drafts' : 'conversations';
+        if (confirm(`Move ${selectedThreadIds.length} ${typeName} to Trash?`)) {
             try {
-                await dispatch(trashThreadsThunk(selectedThreadIds)).unwrap();
-                toast.success(`${selectedThreadIds.length} conversations moved to Trash`);
+                if (isDrafts) {
+                    await Promise.all(selectedThreadIds.map(id => dispatch(deleteDraftThunk(id)).unwrap()));
+                } else {
+                    await dispatch(trashThreadsThunk(selectedThreadIds)).unwrap();
+                }
+                dispatch(selectAllThreads([]));
+                toast.success(`${selectedThreadIds.length} ${typeName} moved to Trash`);
             } catch (err: unknown) {
                 toast.error(err as string);
             }
@@ -249,6 +257,8 @@ export default function MailboxPage() {
                     )}
                 </div>
             </div>
+            
+            <ComposeEmailModal />
         </div>
     );
 }

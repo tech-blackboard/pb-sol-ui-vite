@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { Editor } from '@tiptap/react';
 import {
   Undo2, Redo2, Bold, Italic, Underline, Baseline,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  List, ListOrdered, Outdent, Indent, Quote, Trash2
+  List, ListOrdered, Outdent, Indent, Quote, Trash2,
+  ChevronDown
 } from 'lucide-react';
 
 interface GmailToolbarProps {
@@ -52,17 +53,39 @@ const BG_COLORS = [
 
 export const GmailToolbar: React.FC<GmailToolbarProps> = ({ editor }) => {
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showAlignMenu, setShowAlignMenu] = useState(false);
+  const [showListMenu, setShowListMenu] = useState(false);
+
+  const alignRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const colorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (alignRef.current && !alignRef.current.contains(event.target as Node)) {
+        setShowAlignMenu(false);
+      }
+      if (listRef.current && !listRef.current.contains(event.target as Node)) {
+        setShowListMenu(false);
+      }
+      if (colorRef.current && !colorRef.current.contains(event.target as Node)) {
+        setShowColorPicker(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   if (!editor) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-1 p-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-t-lg select-none text-gray-700 dark:text-gray-200">
+    <div className="flex flex-nowrap items-center gap-0.5 p-0.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-t-lg select-none text-gray-700 dark:text-gray-200">
       {/* Undo/Redo */}
       <button
         type="button"
         onClick={() => editor.chain().focus().undo().run()}
         disabled={!editor.can().undo()}
-        className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 rounded transition-colors"
+        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 rounded transition-colors"
         title="Undo"
       >
         <Undo2 className="h-4 w-4" />
@@ -71,7 +94,7 @@ export const GmailToolbar: React.FC<GmailToolbarProps> = ({ editor }) => {
         type="button"
         onClick={() => editor.chain().focus().redo().run()}
         disabled={!editor.can().redo()}
-        className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 rounded transition-colors"
+        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 rounded transition-colors"
         title="Redo"
       >
         <Redo2 className="h-4 w-4" />
@@ -88,7 +111,7 @@ export const GmailToolbar: React.FC<GmailToolbarProps> = ({ editor }) => {
             (editor.chain().focus() as any).setFontFamily(e.target.value).run();
           }
         }}
-        className="text-xs bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 border-none outline-none py-1 px-2 rounded cursor-pointer font-medium"
+        className="text-xs bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 border-none outline-none py-1 px-1 rounded cursor-pointer font-medium max-w-[80px] sm:max-w-[100px] truncate"
         title="Font Family"
       >
         <option value="default">Sans Serif</option>
@@ -106,7 +129,7 @@ export const GmailToolbar: React.FC<GmailToolbarProps> = ({ editor }) => {
             (editor.chain().focus() as any).setFontSize(e.target.value).run();
           }
         }}
-        className="text-xs bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 border-none outline-none py-1 px-2 rounded cursor-pointer font-medium"
+        className="text-xs bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 border-none outline-none py-1 px-1 rounded cursor-pointer font-medium max-w-[65px] sm:max-w-[75px] truncate"
         title="Font Size"
       >
         <option value="default">Normal</option>
@@ -121,7 +144,7 @@ export const GmailToolbar: React.FC<GmailToolbarProps> = ({ editor }) => {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleBold().run()}
-        className={`p-1.5 rounded transition-colors ${editor.isActive('bold') ? 'bg-gray-200 dark:bg-gray-700 font-extrabold text-blue-600' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+        className={`p-1 rounded transition-colors ${editor.isActive('bold') ? 'bg-gray-200 dark:bg-gray-700 font-extrabold text-blue-600' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
         title="Bold"
       >
         <Bold className="h-4 w-4" />
@@ -129,7 +152,7 @@ export const GmailToolbar: React.FC<GmailToolbarProps> = ({ editor }) => {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleItalic().run()}
-        className={`p-1.5 rounded transition-colors ${editor.isActive('italic') ? 'bg-gray-200 dark:bg-gray-700 text-blue-600' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+        className={`p-1 rounded transition-colors ${editor.isActive('italic') ? 'bg-gray-200 dark:bg-gray-700 text-blue-600' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
         title="Italic"
       >
         <Italic className="h-4 w-4" />
@@ -137,18 +160,18 @@ export const GmailToolbar: React.FC<GmailToolbarProps> = ({ editor }) => {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleUnderline().run()}
-        className={`p-1.5 rounded transition-colors ${editor.isActive('underline') ? 'bg-gray-200 dark:bg-gray-700 text-blue-600' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+        className={`p-1 rounded transition-colors ${editor.isActive('underline') ? 'bg-gray-200 dark:bg-gray-700 text-blue-600' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
         title="Underline"
       >
         <Underline className="h-4 w-4" />
       </button>
 
       {/* Color Picker Dropdown */}
-      <div className="relative">
+      <div className="relative" ref={colorRef}>
         <button
           type="button"
           onClick={() => setShowColorPicker(!showColorPicker)}
-          className={`p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center gap-0.5 ${showColorPicker ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
+          className={`p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center gap-0.5 ${showColorPicker ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
           title="Text color"
         >
           <Baseline className="h-4 w-4" />
@@ -198,91 +221,126 @@ export const GmailToolbar: React.FC<GmailToolbarProps> = ({ editor }) => {
 
       <span className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1" />
 
-      {/* Alignments */}
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().setTextAlign('left').run()}
-        className={`p-1.5 rounded transition-colors ${editor.isActive({ textAlign: 'left' }) ? 'bg-gray-200 dark:bg-gray-700 text-blue-600' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-        title="Align Left"
-      >
-        <AlignLeft className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().setTextAlign('center').run()}
-        className={`p-1.5 rounded transition-colors ${editor.isActive({ textAlign: 'center' }) ? 'bg-gray-200 dark:bg-gray-700 text-blue-600' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-        title="Align Center"
-      >
-        <AlignCenter className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().setTextAlign('right').run()}
-        className={`p-1.5 rounded transition-colors ${editor.isActive({ textAlign: 'right' }) ? 'bg-gray-200 dark:bg-gray-700 text-blue-600' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-        title="Align Right"
-      >
-        <AlignRight className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().setTextAlign('justify').run()}
-        className={`p-1.5 rounded transition-colors ${editor.isActive({ textAlign: 'justify' }) ? 'bg-gray-200 dark:bg-gray-700 text-blue-600' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-        title="Justify"
-      >
-        <AlignJustify className="h-4 w-4" />
-      </button>
+      {/* Alignments Dropdown */}
+      <div className="relative" ref={alignRef}>
+        <button
+          type="button"
+          onClick={() => setShowAlignMenu(!showAlignMenu)}
+          className={`p-1 rounded transition-colors flex items-center gap-0.5 hover:bg-gray-200 dark:hover:bg-gray-700 ${showAlignMenu ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
+          title="Alignment"
+        >
+          {editor.isActive({ textAlign: 'center' }) ? <AlignCenter className="h-4 w-4" /> :
+           editor.isActive({ textAlign: 'right' }) ? <AlignRight className="h-4 w-4" /> :
+           editor.isActive({ textAlign: 'justify' }) ? <AlignJustify className="h-4 w-4" /> :
+           <AlignLeft className="h-4 w-4" />}
+          <ChevronDown className="h-3 w-3 opacity-60" />
+        </button>
+
+        {showAlignMenu && (
+          <div className="absolute top-full left-0 mt-1 p-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded shadow-xl z-50 flex flex-col gap-1 animate-in fade-in slide-in-from-top-1 duration-150">
+            <button
+              type="button"
+              onClick={() => { editor.chain().focus().setTextAlign('left').run(); setShowAlignMenu(false); }}
+              className={`p-1 rounded transition-colors flex items-center gap-3 ${editor.isActive({ textAlign: 'left' }) ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              title="Align Left"
+            >
+              <AlignLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => { editor.chain().focus().setTextAlign('center').run(); setShowAlignMenu(false); }}
+              className={`p-1 rounded transition-colors flex items-center gap-3 ${editor.isActive({ textAlign: 'center' }) ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              title="Align Center"
+            >
+              <AlignCenter className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => { editor.chain().focus().setTextAlign('right').run(); setShowAlignMenu(false); }}
+              className={`p-1 rounded transition-colors flex items-center gap-3 ${editor.isActive({ textAlign: 'right' }) ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              title="Align Right"
+            >
+              <AlignRight className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => { editor.chain().focus().setTextAlign('justify').run(); setShowAlignMenu(false); }}
+              className={`p-1 rounded transition-colors flex items-center gap-3 ${editor.isActive({ textAlign: 'justify' }) ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              title="Justify"
+            >
+              <AlignJustify className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+      </div>
 
       <span className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1" />
 
-      {/* Lists */}
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-        className={`p-1.5 rounded transition-colors ${editor.isActive('bulletList') ? 'bg-gray-200 dark:bg-gray-700 text-blue-600' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-        title="Bullet List"
-      >
-        <List className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        className={`p-1.5 rounded transition-colors ${editor.isActive('orderedList') ? 'bg-gray-200 dark:bg-gray-700 text-blue-600' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-        title="Numbered List"
-      >
-        <ListOrdered className="h-4 w-4" />
-      </button>
+      {/* Lists & More Dropdown */}
+      <div className="relative" ref={listRef}>
+        <button
+          type="button"
+          onClick={() => setShowListMenu(!showListMenu)}
+          className={`p-1 rounded transition-colors flex items-center gap-0.5 hover:bg-gray-200 dark:hover:bg-gray-700 ${showListMenu ? 'bg-gray-200 dark:bg-gray-700' : ''}`}
+          title="More formatting"
+        >
+          {editor.isActive('orderedList') ? <ListOrdered className="h-4 w-4" /> : <List className="h-4 w-4" />}
+          <ChevronDown className="h-3 w-3 opacity-60" />
+        </button>
 
-      {/* Indentation */}
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().sinkListItem('listItem').run()}
-        disabled={!editor.can().sinkListItem('listItem')}
-        className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 transition-colors"
-        title="Indent"
-      >
-        <Indent className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().liftListItem('listItem').run()}
-        disabled={!editor.can().liftListItem('listItem')}
-        className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 transition-colors"
-        title="Outdent"
-      >
-        <Outdent className="h-4 w-4" />
-      </button>
+        {showListMenu && (
+          <div className="absolute top-full left-0 mt-1 p-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded shadow-xl z-50 flex flex-col gap-1 animate-in fade-in slide-in-from-top-1 duration-150">
+            <button
+              type="button"
+              onClick={() => { editor.chain().focus().toggleBulletList().run(); setShowListMenu(false); }}
+              className={`p-1 rounded transition-colors flex items-center gap-3 ${editor.isActive('bulletList') ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              title="Bullet List"
+            >
+              <List className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => { editor.chain().focus().toggleOrderedList().run(); setShowListMenu(false); }}
+              className={`p-1 rounded transition-colors flex items-center gap-3 ${editor.isActive('orderedList') ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              title="Numbered List"
+            >
+              <ListOrdered className="h-4 w-4" />
+            </button>
+            
+            <div className="h-px bg-gray-200 dark:bg-gray-700 my-0.5" />
 
-      <span className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1" />
+            <button
+              type="button"
+              onClick={() => { editor.chain().focus().sinkListItem('listItem').run(); setShowListMenu(false); }}
+              disabled={!editor.can().sinkListItem('listItem')}
+              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 transition-colors flex items-center gap-3 text-gray-700 dark:text-gray-300"
+              title="Indent"
+            >
+              <Indent className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => { editor.chain().focus().liftListItem('listItem').run(); setShowListMenu(false); }}
+              disabled={!editor.can().liftListItem('listItem')}
+              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 transition-colors flex items-center gap-3 text-gray-700 dark:text-gray-300"
+              title="Outdent"
+            >
+              <Outdent className="h-4 w-4" />
+            </button>
 
-      {/* Blockquote & Link */}
-      <button
-        type="button"
-        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        className={`p-1.5 rounded transition-colors ${editor.isActive('blockquote') ? 'bg-gray-200 dark:bg-gray-700 text-blue-600' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-        title="Quote"
-      >
-        <Quote className="h-4 w-4" />
-      </button>
+            <div className="h-px bg-gray-200 dark:bg-gray-700 my-0.5" />
+
+            <button
+              type="button"
+              onClick={() => { editor.chain().focus().toggleBlockquote().run(); setShowListMenu(false); }}
+              className={`p-1 rounded transition-colors flex items-center gap-3 ${editor.isActive('blockquote') ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              title="Quote"
+            >
+              <Quote className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Clear Styles / Formatting */}
       <button
@@ -290,7 +348,7 @@ export const GmailToolbar: React.FC<GmailToolbarProps> = ({ editor }) => {
         onClick={() => {
           editor.chain().focus().clearNodes().unsetAllMarks().run();
         }}
-        className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors ml-auto"
+        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors ml-auto"
         title="Remove formatting"
       >
         <Trash2 className="h-4 w-4" />

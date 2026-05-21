@@ -111,12 +111,34 @@ export async function sendReply(payload: {
     return data;
 }
 
+export async function composeEmail(payload: {
+    eventId: number;
+    toEmail: string;
+    subject: string;
+    textBody?: string;
+    htmlBody: string;
+    fromEmail?: string;
+    emailAccountId?: number;
+    draftId?: string;
+    cc?: string;
+    bcc?: string;
+    importance?: MessageImportance;
+    attachmentIds?: number[];
+}): Promise<{ status: string; messageId: string }> {
+    const { data } = await api.post(`${CRM_BASE}/compose`, payload, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return data;
+}
+
 /**
  * Save or update an email draft
  */
 export async function saveDraft(payload: {
-    contactId: number;
+    contactId?: number;
     eventId: number;
+    toEmail?: string;
     subject: string;
     textBody?: string;
     htmlBody?: string;

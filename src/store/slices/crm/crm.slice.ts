@@ -25,6 +25,7 @@ export interface CrmState {
     appliedEmailAccountId: number | null;
     isSidebarOpen: boolean;
     isSidebarCollapsed: boolean;
+    isComposeModalOpen: boolean;
 
     // Applied filters (only updated on search trigger)
     appliedSearchTerm: string;
@@ -100,6 +101,7 @@ export const initialState: CrmState = {
 
     isSidebarOpen: false,
     isSidebarCollapsed: false,
+    isComposeModalOpen: false,
     loading: {
         events: false,
         threads: false,
@@ -181,6 +183,12 @@ const crmSlice = createSlice({
         },
         toggleSidebarCollapse(state) {
             state.isSidebarCollapsed = !state.isSidebarCollapsed;
+        },
+        openComposeModal(state) {
+            state.isComposeModalOpen = true;
+        },
+        closeComposeModal(state) {
+            state.isComposeModalOpen = false;
         },
         clearError(state) {
             state.error = null;
@@ -469,6 +477,8 @@ export const {
     setActiveEmailAccountId,
     toggleSidebarCollapse,
     toggleThreadSelection,
-    selectAllThreads
+    selectAllThreads,
+    openComposeModal,
+    closeComposeModal
 } = crmSlice.actions;
 export default crmSlice.reducer;

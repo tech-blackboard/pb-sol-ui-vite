@@ -1,6 +1,6 @@
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import type { RootState } from '../../../store';
-import { setActiveFolder, clearSelection } from '../../../store/slices/crm/crm.slice';
+import { setActiveFolder, clearSelection, openComposeModal } from '../../../store/slices/crm/crm.slice';
 import { selectAuth } from '../../../store/slices/authSlice';
 
 export default function CrmSidebar() {
@@ -27,7 +27,10 @@ export default function CrmSidebar() {
             ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
             ${isSidebarCollapsed ? 'w-20 p-2' : 'w-64 p-4'}
         `}>
-            <button className={`w-full bg-green-600 hover:bg-green-700 text-white rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all mb-6 shadow-sm ${isSidebarCollapsed ? 'h-11 w-11 mx-auto' : 'h-11'}`}>
+            <button 
+                onClick={() => dispatch(openComposeModal())}
+                className={`w-full bg-green-600 hover:bg-green-700 text-white rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all mb-6 shadow-sm ${isSidebarCollapsed ? 'h-11 w-11 mx-auto' : 'h-11'}`}
+            >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
                 </svg>

@@ -531,7 +531,7 @@ export const GmailReplyEditor: React.FC<GmailReplyEditorProps> = ({
     editorProps: {
 
       attributes: {
-        class: 'w-full min-h-[300px] max-h-[500px] overflow-y-auto outline-none focus:ring-0 prose dark:prose-invert max-w-none text-sm leading-relaxed p-4',
+        class: 'w-full min-h-[150px] max-h-[500px] overflow-y-auto outline-none focus:ring-0 prose dark:prose-invert max-w-none text-sm leading-relaxed p-4',
         placeholder: placeholder,
 
 
@@ -599,7 +599,7 @@ export const GmailReplyEditor: React.FC<GmailReplyEditorProps> = ({
   }, [disabled, editor]);
 
   return (
-    <div className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-b-lg min-h-[300px] max-h-[500px] overflow-y-auto">
+    <div className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-b-lg min-h-[150px] max-h-[500px] overflow-y-auto flex-1">
       <EditorContent editor={editor} />
     </div>
   );

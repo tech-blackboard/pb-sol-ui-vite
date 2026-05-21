@@ -49,8 +49,8 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
     const signatureInitializedRef = useRef(false);
     const containerRef = useRef<HTMLDivElement>(null);
     // TipTap Editor States
+    // TipTap Editor States
     const [editorInstance, setEditorInstance] = useState<any>(null);
-    const [showToolbar, setShowToolbar] = useState(false);
 
     // State
     const [htmlBody, setHtmlBody] = useState(initialHtmlBody || '');
@@ -92,6 +92,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
     const ccRef = useRef(cc);
     const bccRef = useRef(bcc);
     const importanceValueRef = useRef(importance);
+    const hasUserEditedRef = useRef(false);
 
     const lastInitializedKeyRef = useRef('');
     const initializationKey = `${mode}|${forwardedFromId || ''}|${initialDraftId || ''}|${isExpanded}`;
@@ -183,7 +184,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                     if (mode === 'forward') {
                         finalBody = `<div><br></div>${sigHtml}${finalBody}`;
                     } else {
-                        finalBody = `<div><br></div>${sigHtml}`;
+                        finalBody = `<div><br></div>${sigHtml}${finalBody}`;
                     }
                 }
                 setHtmlBody(finalBody);
@@ -338,7 +339,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
         return () => {
             const bodyToSave = htmlBodyRef.current;
             const lastSaved = lastSavedBodyRef.current;
-            if (bodyToSave.trim() && bodyToSave !== lastSaved && !isSavingRef.current) {
+            if (hasUserEditedRef.current && bodyToSave.trim() && bodyToSave !== lastSaved && !isSavingRef.current) {
                 dispatch(saveDraftThunk({
                     contactId,
                     eventId,
@@ -753,7 +754,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                 </div>
 
                 <div className="flex flex-col w-full">
-                    {showToolbar && <GmailToolbar editor={editorInstance} />}
+                    <GmailToolbar editor={editorInstance} />
                     <GmailReplyEditor
                         content={htmlBody}
                         onChange={(html) => {
@@ -767,6 +768,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                             ) {
                                 return;
                             }
+                            hasUserEditedRef.current = true;
                             setHtmlBody(html);
                         }}
                         placeholder="Write your reply here..."
@@ -811,7 +813,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                         <button
                             type="submit"
                             disabled={loading.sending}
-                            className="flex items-center gap-2 px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+                            className="flex items-center gap-2 px-6 py-2 rounded-lg bg-[#0b57d0] hover:bg-[#0842a0] active:bg-[#062e6f] text-white text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                         >
                             {loading.sending ? (
                                 <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -820,21 +822,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                                 </svg>
                             )}
-                            {mode === 'forward' ? 'Forward' : 'Send Reply'}
-                        </button>
-
-                        {/* Formatting Toggle Button (Aa) */}
-                        <button
-                            type="button"
-                            onClick={() => setShowToolbar(!showToolbar)}
-                            className={`px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-0.5 border ${showToolbar
-                                ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 font-bold shadow-sm'
-                                : 'border-gray-200 dark:border-gray-700 text-gray-500 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300'
-                                }`}
-                            title="Formatting options"
-                        >
-                            <span className="font-bold text-sm select-none">A</span>
-                            <span className="text-xs font-semibold select-none underline decoration-2">a</span>
+                            {mode === 'forward' ? 'Forward' : (threadId ? 'Send Reply' : 'Send')}
                         </button>
 
                         {/* Importance Selector */}
