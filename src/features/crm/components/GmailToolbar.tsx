@@ -84,8 +84,7 @@ export const GmailToolbar: React.FC<GmailToolbarProps> = ({ editor }) => {
       <button
         type="button"
         onClick={() => editor.chain().focus().undo().run()}
-        disabled={!editor.can().undo()}
-        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 rounded transition-colors"
+        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-300 dark:active:bg-gray-600 rounded transition-colors"
         title="Undo"
       >
         <Undo2 className="h-4 w-4" />
@@ -93,8 +92,7 @@ export const GmailToolbar: React.FC<GmailToolbarProps> = ({ editor }) => {
       <button
         type="button"
         onClick={() => editor.chain().focus().redo().run()}
-        disabled={!editor.can().redo()}
-        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40 rounded transition-colors"
+        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-300 dark:active:bg-gray-600 rounded transition-colors"
         title="Redo"
       >
         <Redo2 className="h-4 w-4" />

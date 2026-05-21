@@ -11,16 +11,17 @@ import { GmailReplyEditor } from './GmailReplyEditor';
 export const ComposeEmailForm = () => {
     const dispatch = useAppDispatch();
     const { loading, emailAccounts, activeEventId, events } = useAppSelector((state: RootState) => state.crm);
-    
 
-    
+
+
     // TipTap Editor States
     // TipTap Editor States
     const [editorInstance, setEditorInstance] = useState<any>(null);
+    const [showToolbar, setShowToolbar] = useState(true);
 
     // State
     const [htmlBody, setHtmlBody] = useState('');
-    
+
     const [fromEmail, setFromEmail] = useState('');
     const [emailAccountId, setEmailAccountId] = useState<number | undefined>(undefined);
 
@@ -28,7 +29,7 @@ export const ComposeEmailForm = () => {
     const currentEvent = useMemo(() => {
         return events.find(e => e.id === activeEventId) || events.find(e => e.replyEmails?.includes(fromEmail));
     }, [events, activeEventId, fromEmail]);
-    
+
     const [subject, setSubject] = useState('');
     const [toEmail, setToEmail] = useState('');
     const [cc, setCc] = useState('');
@@ -41,7 +42,7 @@ export const ComposeEmailForm = () => {
 
     const [draftId, setDraftId] = useState<string | undefined>(undefined);
     const [lastSavedBody, setLastSavedBody] = useState('');
-    
+
     const importanceRef = useRef<HTMLDivElement>(null);
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isSavingRef = useRef(false);
@@ -95,14 +96,14 @@ export const ComposeEmailForm = () => {
     useEffect(() => {
         draftIdRef.current = draftId;
     }, [draftId]);
-    
+
     // Prepare dropdown options for 'From'
     const accountOptions = useMemo(() => {
         const options: { label: string; value: string }[] = [];
         const seenEmails = new Set<string>();
 
         let allowedReplyEmails: string[] = [];
-        
+
         if (activeEventId && currentEvent) {
             allowedReplyEmails = currentEvent.replyEmails || [];
         } else {
@@ -125,7 +126,7 @@ export const ComposeEmailForm = () => {
                 }
             }
         });
-        
+
         return options;
     }, [emailAccounts, currentEvent, events, activeEventId]);
 
@@ -162,7 +163,7 @@ export const ComposeEmailForm = () => {
 
     const handleSaveDraft = useCallback(async (currentBody: string) => {
         if (!toEmail.trim() || currentBody === lastSavedBody || isSavingRef.current) return;
-        
+
         let targetEventId = activeEventId;
         if (!targetEventId) {
             const matchingEvent = events.find(e => e.replyEmails?.includes(fromEmail));
@@ -210,9 +211,9 @@ export const ComposeEmailForm = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         let targetEventId = activeEventId;
-        
+
         if (!targetEventId) {
             // Infer eventId from the selected fromEmail
             const matchingEvent = events.find(e => e.replyEmails?.includes(fromEmail));
@@ -555,7 +556,7 @@ export const ComposeEmailForm = () => {
                 </div>
 
                 <div className="flex flex-col w-full flex-1 min-h-[150px] overflow-hidden px-4 py-2">
-                    <GmailToolbar editor={editorInstance} />
+                    {showToolbar && <GmailToolbar editor={editorInstance} />}
                     <GmailReplyEditor
                         content={htmlBody}
                         onChange={(html) => setHtmlBody(html)}
@@ -581,7 +582,7 @@ export const ComposeEmailForm = () => {
                         {!loading.savingDraft && draftId && (
                             <span className="text-[11px] text-green-600 dark:text-green-500 mr-1 font-medium">Draft saved</span>
                         )}
-                        
+
                         <div className="flex items-center rounded-lg shadow-sm border border-transparent hover:border-blue-200 hover:shadow-blue-100 dark:hover:border-blue-800 dark:hover:shadow-none transition-all">
                             <button
                                 type="submit"
@@ -599,7 +600,20 @@ export const ComposeEmailForm = () => {
                                 ) : 'Send'}
                             </button>
                         </div>
-                        
+
+                        <button
+                            type="button"
+                            onClick={() => setShowToolbar(!showToolbar)}
+                            className={`hidden px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-0.5 border ${showToolbar
+                                ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 font-bold shadow-sm'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-500 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300'
+                                }`}
+                            title="Formatting options"
+                        >
+                            <span className="font-bold text-sm select-none">A</span>
+                            <span className="text-xs font-semibold select-none underline decoration-2">a</span>
+                        </button>
+
                         {/* Importance Selector */}
                         <div className="relative" ref={importanceRef}>
                             <button
@@ -675,7 +689,7 @@ export const ComposeEmailForm = () => {
                     </div>
                 </div>
             </form>
-            
+
             {showErrorModal && (
                 <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">

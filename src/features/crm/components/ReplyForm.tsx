@@ -51,6 +51,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
     // TipTap Editor States
     // TipTap Editor States
     const [editorInstance, setEditorInstance] = useState<any>(null);
+    const [showToolbar, setShowToolbar] = useState(true);
 
     // State
     const [htmlBody, setHtmlBody] = useState(initialHtmlBody || '');
@@ -754,7 +755,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                 </div>
 
                 <div className="flex flex-col w-full">
-                    <GmailToolbar editor={editorInstance} />
+                    {showToolbar && <GmailToolbar editor={editorInstance} />}
                     <GmailReplyEditor
                         content={htmlBody}
                         onChange={(html) => {
@@ -823,6 +824,20 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                                 </svg>
                             )}
                             {mode === 'forward' ? 'Forward' : (threadId ? 'Send Reply' : 'Send')}
+                        </button>
+
+                        {/* Formatting Toggle Button (Aa) */}
+                        <button
+                            type="button"
+                            onClick={() => setShowToolbar(!showToolbar)}
+                            className={` px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-0.5 border ${showToolbar
+                                ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 font-bold shadow-sm'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-500 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300'
+                                }`}
+                            title="Formatting options"
+                        >
+                            <span className="font-bold text-sm select-none">A</span>
+                            <span className="text-xs font-semibold select-none underline decoration-2">a</span>
                         </button>
 
                         {/* Importance Selector */}
