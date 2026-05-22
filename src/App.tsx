@@ -9,6 +9,7 @@ import Footer from './components/Footer'
 import SignInPage, { type SignInCredentials } from './pages/SignInPage'
 import { type AppDispatch } from './store'
 import { selectAuth, loginThunk, logoutThunk } from './store/slices/authSlice'
+import { setActiveFolder } from './store/slices/crm/crm.slice'
 import { selectTheme, toggleTheme } from './store/slices/themeSlice'
 import NetworkErrorAlert from './alerts/NetworkErrorAlert'
 import ServerIssueAlert from './alerts/ServerIssueAlert'
@@ -20,6 +21,9 @@ import SponsorshipsPage from './features/sponsorships/pages/SponsorshipsPage'
 import BrochuresPage from './features/brochures/pages/BrochuresPage'
 import AccRegistrationsPage from './features/accRegistrations/pages/AccRegistrationsPage'
 import ContactsPage from './features/contacts/pages/ContactsPage'
+import MailboxPage from './features/crm/pages/MailboxPage'
+import GlobalContactsPage from './features/globalContacts/pages/GlobalContactsPage'
+
 
 function App() {
   const dispatch = useDispatch<AppDispatch>()
@@ -53,12 +57,22 @@ function App() {
     window.addEventListener('app:auth-failure', onAuthFail as EventListener)
     window.addEventListener('app:device-not-approved', onDeviceRevoked as EventListener)
 
+    // Global navigation listener to email in contact bucket navigate to mailbox 
+    const onNavigate = (e: Event) => {
+      const customEvent = e as CustomEvent
+      if (customEvent.detail) {
+        setActiveId(customEvent.detail)
+      }
+    }
+    window.addEventListener('app:navigate', onNavigate as EventListener)
+
     return () => {
       window.removeEventListener('app:network-error', onNet as EventListener)
       window.removeEventListener('app:server-error', onSrv as EventListener)
       window.removeEventListener('app:server-unavailable', onUnavail as EventListener)
       window.removeEventListener('app:auth-failure', onAuthFail as EventListener)
       window.removeEventListener('app:device-not-approved', onDeviceRevoked as EventListener)
+      window.removeEventListener('app:navigate', onNavigate as EventListener)
     }
   }, [dispatch])
 
@@ -68,13 +82,22 @@ function App() {
   const themeMode = useSelector(selectTheme)
   const links: NavLink[] = [
     { id: 'dashboard', label: 'Dashboard' },
-    { id: 'abstracts', label: 'Abstracts' },
-    { id: 'registrations', label: 'Registrations' },
-    { id: 'accRegistrations', label: 'Accommodation Registrations' },
-    { id: 'brochures', label: 'Brochure' },
-    { id: 'sponsorships', label: 'Sponsorship' },
-    { id: 'contacts', label: 'Contact' },
+    {
+      id: 'websiteFormEntries',
+      label: 'Website Form Entries',
+      items: [
+        { id: 'abstracts', label: 'Abstracts' },
+        { id: 'registrations', label: 'Registrations' },
+        { id: 'accRegistrations', label: 'Accommodation Registrations' },
+        { id: 'sponsorships', label: 'Sponsors/Exhibitors' },
+        { id: 'brochures', label: 'Brochures' },
+        { id: 'contacts', label: 'Contacts' },
+      ]
+    },
     ...(isAdmin ? [{ id: 'deviceManagment', label: 'Device Management' }] : []),
+    { id: 'crm', label: 'Mailbox' },
+    { id: 'contactBucket', label: 'Contact Bucket' },
+    { id: 'globalContacts', label: 'Global Contacts' }
   ];
 
   const user: User | null = (authUser as unknown as User) ?? null
@@ -102,6 +125,14 @@ function App() {
     }
     localStorage.setItem('theme', themeMode)
   }, [themeMode])
+
+  useEffect(() => {
+    if (activeId === 'crm') {
+      dispatch(setActiveFolder('Inbox'));
+    } else if (activeId === 'contactBucket') {
+      dispatch(setActiveFolder('Contact Bucket'));
+    }
+  }, [activeId, dispatch]);
 
   if (!user) {
     return <SignInPage onSignIn={handleSignIn} isLoading={authLoading} error={authError} />
@@ -156,7 +187,7 @@ function App() {
           {/* Overlay for mobile when sidebar open */}
           {sidebarOpen && (
             <div
-              className="fixed inset-0 z-20 bg-black/30 backdrop-blur-sm md:hidden"
+              className="fixed inset-0 z-48 bg-black/30 backdrop-blur-sm md:hidden"
               onClick={() => setSidebarOpen(false)}
             />
           )}
@@ -174,7 +205,12 @@ function App() {
                 <SponsorshipsPage />
               ) : activeId === 'contacts' ? (
                 <ContactsPage />
+              ) : activeId === 'crm' || activeId === 'contactBucket' ? (
+                <MailboxPage />
+              ) : activeId === 'globalContacts' ? (
+                <GlobalContactsPage />
               ) : activeId === 'deviceManagment' ? (
+
                 <DeviceManagement />
               ) : (
                 <DashboardPage />

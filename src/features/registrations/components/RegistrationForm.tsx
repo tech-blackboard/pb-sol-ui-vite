@@ -293,8 +293,8 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                         Add New Registration
                     </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                        <X className="w-5 h-5" />
+                    <button type="button" onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <X className="w-5 h-5 pointer-events-none" />
                     </button>
                 </div>
 
@@ -523,7 +523,7 @@ interface InputFieldProps {
     onWheel?: React.WheelEventHandler<HTMLInputElement>
 }
 
-function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false, onWheel }: InputFieldProps) {
+export function InputField({ label, name, value, onChange, type = 'text', error, readOnly = false, onWheel }: InputFieldProps) {
     return (
         <div>
             <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
@@ -551,7 +551,7 @@ interface SelectFieldProps {
     isLoading?: boolean
 }
 
-function SelectField({ label, name, value, options, onChange, error, isLoading = false }: SelectFieldProps) {
+export function SelectField({ label, name, value, options, onChange, error, isLoading = false }: SelectFieldProps) {
     return (
         <div>
             <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>

@@ -11,6 +11,7 @@ import reducer, {
 import { fetchRegistrations, deleteRegistrationThunk, createRegistrationThunk } from '../../../../store/slices/registrations/registrations.thunks';
 import type { RegistrationItem } from '../../../../services/registrations';
 import type { RegistrationRecord } from '../../../../features/abstracts/types';
+import type { UnknownAction } from '@reduxjs/toolkit';
 
 describe('registrations slice', () => {
     const initialState = reducer(undefined, { type: 'INIT' });
@@ -104,10 +105,32 @@ describe('registrations slice', () => {
             expect(state.total).toBe(1);
         });
 
-        it('handles fetchRegistrations.rejected', () => {
+        it('handles fetchRegistrations.rejected with custom payload', () => {
             const state = reducer(initialState, fetchRegistrations.rejected(null, '', { page: 1, limit: 10, filters: {} }, 'Fail'));
             expect(state.loading).toBe(false);
             expect(state.error).toBe('Fail');
+        });
+
+        it('handles fetchRegistrations.rejected with generic message (line 76)', () => {
+            const rejectedAction = {
+                type: fetchRegistrations.rejected.type,
+                payload: null,
+                error: { message: 'Network Error' }
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Network Error');
+        });
+
+        it('handles createRegistrationThunk.rejected with generic message (line 95)', () => {
+            const rejectedAction = {
+                type: createRegistrationThunk.rejected.type,
+                payload: null,
+                error: { message: 'Create Error' }
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Create Error');
         });
 
         it('handles deleteRegistrationThunk.fulfilled', () => {
@@ -146,6 +169,21 @@ describe('registrations slice', () => {
         it('handles createRegistrationThunk.rejected', () => {
             const state = reducer(initialState, createRegistrationThunk.rejected(null, '', {} as unknown as RegistrationRecord, 'err'));
             expect(state.error).toBe('err');
+        });
+
+        it('handles fetchRegistrations.rejected fallback (line 76)', () => {
+            const rejectedAction = {
+                type: fetchRegistrations.rejected.type,
+                payload: null,
+                error: {} 
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.error).toBe('Failed to load');
+        });
+        it('handles createRegistrationThunk.rejected fallback (line 95)', () => {
+            const action = { type: createRegistrationThunk.rejected.type, payload: null, error: {} };
+            const state = reducer(initialState, action as UnknownAction);
+            expect(state.error).toBe('Failed to create registration');
         });
     });
 });

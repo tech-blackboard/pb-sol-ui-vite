@@ -108,6 +108,16 @@ describe('AbstractHeader', () => {
     expect(dispatchMock).toHaveBeenCalled()
   })
 
+  test('closes AbstractForm when onClose is called', () => {
+    render(<AbstractHeader />)
+
+    fireEvent.click(screen.getByText('Add Abstract'))
+    expect(screen.getByTestId('abstract-form')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('Close Form'))
+    expect(screen.queryByTestId('abstract-form')).not.toBeInTheDocument()
+  })
+
   test('opens Filters drawer when clicking Filters button', () => {
     render(<AbstractHeader />)
     fireEvent.click(screen.getByTitle('Filters'))

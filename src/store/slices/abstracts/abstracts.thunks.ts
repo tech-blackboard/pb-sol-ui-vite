@@ -5,11 +5,12 @@ import {
   sendConfirmationEmail,
   sendPaymentReceipt,
   sendPaymentReminder,
+  updateAbstract,
   updateAbstractStatus,
 } from '../../../services/abstracts'
 import type { AbstractFilters } from './abstracts.types'
 import { sendInvoice } from '../../../services/abstracts'
-import type { InvoiceData, PaymentReceiptData, PaymentReminderData } from '../../../services/abstracts'
+import type { AbstractItem, InvoiceData, PaymentReceiptData, PaymentReminderData } from '../../../services/abstracts'
 import { STATUS_TO_ID } from '../../../features/abstracts/status.constants'
 
 export const fetchAbstracts = createAsyncThunk(
@@ -39,7 +40,23 @@ export const fetchAbstracts = createAsyncThunk(
   }
 )
 
+export const updateAbstractThunk = createAsyncThunk(
+  'abstracts/update',
+  async (
+    { id, body }: { id: string | number; body: Partial<AbstractItem> | FormData },
+    { rejectWithValue }
+  ) => {
+    try {
+      return await updateAbstract(id, body)
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to update record';
+      return rejectWithValue(message);
+    }
+  }
+)
+
 export const updateStatusThunk = createAsyncThunk(
+
   'abstracts/status',
   async ({ id, statusId }: { id: string; statusId: number }, { rejectWithValue }) => {
     try {

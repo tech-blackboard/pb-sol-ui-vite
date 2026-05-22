@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 
 export type NavLink = {
   id: string
   label: string
+  items?: NavLink[]
 }
 
 type NavProps = {
@@ -17,16 +18,24 @@ type NavProps = {
 }
 
 export default function Nav({ links, activeId, onNavigate, headerSlot, isOpen, onClose, isCollapsed = false, onToggleCollapse }: NavProps) {
-
+  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({
+    websiteFormEntries: true // Defaultly expand this as per common dashboard UX
+  })
   // Icon mapping based on nav item ID
   const getIcon = (id: string) => {
-    const iconClass = "h-5 w-5"
+    const iconClass = "h-5 w-5 flex-shrink-0"
 
     switch (id) {
       case 'dashboard':
         return (
           <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
+          </svg>
+        )
+      case 'websiteFormEntries':
+        return (
+          <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         )
       case 'abstracts':
@@ -65,6 +74,25 @@ export default function Nav({ links, activeId, onNavigate, headerSlot, isOpen, o
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
         )
+      case 'mailbox':
+      case 'crm':
+        return (
+          <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        )
+      case 'contactBucket':
+        return (
+          <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        )
+      case 'globalContacts':
+        return (
+          <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        )
       case 'deviceManagment':
         return (
           <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,14 +108,66 @@ export default function Nav({ links, activeId, onNavigate, headerSlot, isOpen, o
     }
   }
 
+  const renderNavItems = (items: NavLink[], isSubItem = false) => {
+    return items.map((link) => {
+      const hasChildren = link.items && link.items.length > 0
+      const isExpanded = expandedIds[link.id]
+      const isActive = link.id === activeId || (hasChildren && link.items?.some(i => i.id === activeId))
+
+      return (
+        <li key={link.id} className="w-full">
+          <button
+            onClick={() => {
+              if (hasChildren) {
+                setExpandedIds(prev => ({ ...prev, [link.id]: !prev[link.id] }))
+              } else {
+                onNavigate(link.id)
+                onClose()
+              }
+            }}
+            className={
+              [
+                'w-full text-left rounded-md transition-all flex items-center gap-3',
+                isSubItem ? 'pl-9 pr-3 py-2 text-sm' : 'px-3 py-2.5',
+                isActive && !hasChildren
+                  ? 'bg-blue-50 text-blue-700 font-medium dark:bg-blue-500/10 dark:text-blue-300'
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100',
+                isActive && hasChildren ? 'text-blue-700 dark:text-blue-300 font-medium' : '',
+                isCollapsed ? 'md:justify-center md:px-0' : '',
+              ].join(' ')
+            }
+            title={isCollapsed ? link.label : undefined}
+          >
+            {!isSubItem && getIcon(link.id)}
+            <span className={isCollapsed ? 'md:hidden' : 'flex-1 overflow-hidden text-ellipsis whitespace-nowrap'}>{link.label}</span>
+            {hasChildren && !isCollapsed && (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+              >
+                <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+              </svg>
+            )}
+          </button>
+          {hasChildren && isExpanded && !isCollapsed && (
+            <ul className="mt-1 space-y-1">
+              {renderNavItems(link.items!, true)}
+            </ul>
+          )}
+        </li>
+      )
+    })
+  }
+
   return (
     <>
-      {/* Sidebar panel */}
       <aside
         className={
           [
-            'fixed top-16 bottom-12 left-0 z-30 transform border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 transition-all duration-200 ease-in-out',
-            'md:static md:top-auto md:bottom-auto md:h-auto md:translate-x-0 md:z-10',
+            'fixed top-0 bottom-0 left-0 z-50 transform border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 transition-all duration-200 ease-in-out',
+            'md:static md:top-auto md:bottom-auto md:h-full md:translate-x-0 md:z-10',
             isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
             isCollapsed ? 'md:w-16' : 'w-64',
           ].join(' ')
@@ -109,7 +189,6 @@ export default function Nav({ links, activeId, onNavigate, headerSlot, isOpen, o
           </div>
         </div>
 
-        {/* Desktop collapse toggle button */}
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
@@ -130,34 +209,9 @@ export default function Nav({ links, activeId, onNavigate, headerSlot, isOpen, o
           </button>
         )}
 
-        <nav className="px-3 py-4 md:pt-4 md:pb-6 md:px-2 overflow-y-auto h-[calc(100%-4rem)] md:h-auto ">
-          <ul className="space-y-1 ">
-            {links.map((link) => {
-              const isActive = link.id === activeId
-              return (
-                <li key={link.id}>
-                  <button
-                    onClick={() => {
-                      onNavigate(link.id)
-                      onClose()
-                    }}
-                    className={
-                      [
-                        'w-full text-left px-3 py-2.5 rounded-md transition-all flex items-center gap-3',
-                        isActive
-                          ? 'bg-blue-50 text-blue-700 font-medium dark:bg-blue-500/10 dark:text-blue-300'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100',
-                        isCollapsed ? 'md:justify-center md:px-0' : '',
-                      ].join(' ')
-                    }
-                    title={isCollapsed ? link.label : undefined}
-                  >
-                    {getIcon(link.id)}
-                    <span className={isCollapsed ? 'md:hidden ' : ''}>{link.label}</span>
-                  </button>
-                </li>
-              )
-            })}
+        <nav className="px-3 py-4 md:pt-4 md:pb-6 md:px-2 overflow-y-auto h-[calc(100%-4rem)] md:h-[calc(100%-4rem)] ">
+          <ul className="space-y-1">
+            {renderNavItems(links)}
           </ul>
         </nav>
       </aside>

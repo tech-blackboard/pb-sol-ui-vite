@@ -8,7 +8,7 @@ describe('AbstractStatusBadge', () => {
     { status: 'Accepted' as AbstractStatus, expectedClass: 'bg-green-50' },
     { status: 'Under Review' as AbstractStatus, expectedClass: 'bg-yellow-50' },
     { status: 'Rejected' as AbstractStatus, expectedClass: 'bg-red-50' },
-    { status: 'Out of Scope' as AbstractStatus, expectedClass: 'bg-gray-100' },
+    { status: 'Deleted' as AbstractStatus, expectedClass: 'bg-gray-100' },
     { status: 'Registered' as AbstractStatus, expectedClass: 'bg-blue-50' }, // default branch
   ])(
     'renders correct badge for status: $status',
