@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import type { Editor } from '@tiptap/react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import type { RootState } from '../../../store';
 import { composeEmailThunk, saveDraftThunk } from '../../../store/slices/crm/crm.thunks';
@@ -15,8 +16,7 @@ export const ComposeEmailForm = () => {
 
 
     // TipTap Editor States
-    // TipTap Editor States
-    const [editorInstance, setEditorInstance] = useState<any>(null);
+    const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
     const [showToolbar, setShowToolbar] = useState(true);
 
     // State
@@ -48,13 +48,14 @@ export const ComposeEmailForm = () => {
     const isSavingRef = useRef(false);
     const lastSavedBodyRef = useRef(lastSavedBody);
     const draftIdRef = useRef(draftId);
+    const lastEventIdRef = useRef<number | undefined>(undefined);
     const signatureInitializedRef = useRef(false);
 
-    // Initialize signature
+    // Initialize or update signature
     useEffect(() => {
-        if (!signatureInitializedRef.current && currentEvent && editorInstance) {
-            if (currentEvent.signatureName || currentEvent.signaturePlace) {
-                const sigHtml = `
+        if (!currentEvent || !editorInstance) return;
+
+        const sigHtml = `
         <div class="email-signature"
             style="margin-top:24px;color:#475569;font-family:sans-serif;line-height:1.5;">
 
@@ -77,6 +78,9 @@ export const ComposeEmailForm = () => {
 
         </div>
     `;
+
+        if (!signatureInitializedRef.current) {
+            if (currentEvent.signatureName || currentEvent.signaturePlace) {
                 const initialBody = `<div><br></div>${sigHtml}`;
                 setHtmlBody(initialBody);
                 setLastSavedBody(initialBody);
@@ -86,6 +90,33 @@ export const ComposeEmailForm = () => {
                 }, 50);
             }
             signatureInitializedRef.current = true;
+            lastEventIdRef.current = currentEvent.id;
+        } else if (lastEventIdRef.current !== currentEvent.id) {
+            const currentHtml = editorInstance.getHTML();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(currentHtml, 'text/html');
+            const sigEl = doc.querySelector('.email-signature');
+            
+            if (sigEl) {
+                if (currentEvent.signatureName || currentEvent.signaturePlace) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = sigHtml;
+                    sigEl.replaceWith(tempDiv.firstElementChild!);
+                } else {
+                    sigEl.remove();
+                }
+                const updatedHtml = doc.body.innerHTML;
+                editorInstance.commands.setContent(updatedHtml, { emitUpdate: false });
+                setHtmlBody(updatedHtml);
+            } else if (currentEvent.signatureName || currentEvent.signaturePlace) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = sigHtml;
+                doc.body.appendChild(tempDiv.firstElementChild!);
+                const updatedHtml = doc.body.innerHTML;
+                editorInstance.commands.setContent(updatedHtml, { emitUpdate: false });
+                setHtmlBody(updatedHtml);
+            }
+            lastEventIdRef.current = currentEvent.id;
         }
     }, [currentEvent, editorInstance]);
 

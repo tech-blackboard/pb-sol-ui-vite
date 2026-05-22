@@ -295,7 +295,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
             bcc: bccRef.current,
             importance: importanceValueRef.current,
             isForwarded: mode === 'forward',
-            forwardedFromId: forwardedFromId,
+            forwardedFromId: mode === 'forward' ? forwardedFromId : undefined,
             attachmentIds: attachmentIds,
         }));
 
@@ -335,32 +335,38 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
         return options;
     }, [emailAccounts, replyEmails]);
 
+    const saveStateRef = useRef({ contactId, eventId, fromEmail, emailAccountId, threadId, attachmentIds, forwardedFromId, mode });
+    useEffect(() => {
+        saveStateRef.current = { contactId, eventId, fromEmail, emailAccountId, threadId, attachmentIds, forwardedFromId, mode };
+    }, [contactId, eventId, fromEmail, emailAccountId, threadId, attachmentIds, forwardedFromId, mode]);
+
     // Save on unmount
     useEffect(() => {
         return () => {
             const bodyToSave = htmlBodyRef.current;
             const lastSaved = lastSavedBodyRef.current;
             if (hasUserEditedRef.current && bodyToSave.trim() && bodyToSave !== lastSaved && !isSavingRef.current) {
+                const s = saveStateRef.current;
                 dispatch(saveDraftThunk({
-                    contactId,
-                    eventId,
+                    contactId: s.contactId,
+                    eventId: s.eventId,
                     subject: subjectRef.current,
                     htmlBody: bodyToSave,
                     textBody: bodyToSave,
-                    fromEmail: fromEmail || undefined,
-                    emailAccountId,
+                    fromEmail: s.fromEmail || undefined,
+                    emailAccountId: s.emailAccountId,
                     draftId: draftIdRef.current,
-                    threadId,
+                    threadId: s.threadId,
                     cc: ccRef.current,
                     bcc: bccRef.current,
                     importance: importanceValueRef.current,
-                    isForwarded: mode === 'forward',
-                    forwardedFromId: forwardedFromId,
-                    attachmentIds: attachmentIds,
+                    isForwarded: s.mode === 'forward',
+                    forwardedFromId: s.mode === 'forward' ? s.forwardedFromId : undefined,
+                    attachmentIds: s.attachmentIds,
                 }));
             }
         };
-    }, [contactId, eventId, fromEmail, emailAccountId, threadId, dispatch, attachmentIds, forwardedFromId, mode]);
+    }, [dispatch]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -388,7 +394,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
             bcc,
             importance,
             isForwarded: mode === 'forward',
-            forwardedFromId: forwardedFromId,
+            forwardedFromId: mode === 'forward' ? forwardedFromId : undefined,
             attachmentIds: attachmentIds,
             ...(mode === 'forward' && toEmail ? { toEmail } : {})
         }));
@@ -830,7 +836,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                         <button
                             type="button"
                             onClick={() => setShowToolbar(!showToolbar)}
-                            className={` px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-0.5 border ${showToolbar
+                            className={`hidden px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-0.5 border ${showToolbar
                                 ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 font-bold shadow-sm'
                                 : 'border-gray-200 dark:border-gray-700 text-gray-500 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300'
                                 }`}
