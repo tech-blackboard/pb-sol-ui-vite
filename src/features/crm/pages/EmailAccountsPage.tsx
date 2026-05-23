@@ -353,16 +353,21 @@ export default function EmailAccountsPage() {
                     {filteredAccounts.map(account => (
                         <div key={account.id} className="border border-gray-200 dark:border-gray-800 rounded-xl p-2.5 bg-gray-50/50 dark:bg-gray-800/40 hover:shadow-md transition-shadow relative group flex flex-col justify-between min-h-[105px]">
                             <div className="flex items-center justify-between mb-1">
-                                <button
-                                    onClick={() => setViewingAccount(account)}
-                                    className="px-2 py-0.5 text-[10px] font-semibold bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-md border border-blue-200 dark:border-blue-800 transition-colors flex items-center gap-1"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                    View
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setViewingAccount(account)}
+                                        className="px-2 py-0.5 text-[10px] font-semibold bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-md border border-blue-200 dark:border-blue-800 transition-colors flex items-center gap-1"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        View
+                                    </button>
+                                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500">
+                                        #{account.id}
+                                    </span>
+                                </div>
                                 
                                 <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                     <button onClick={() => handleEdit(account)} aria-label="Edit account" className="p-0.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
