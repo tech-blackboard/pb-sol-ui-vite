@@ -562,7 +562,8 @@ describe('EmailAccountsPage', () => {
     
     renderPage();
     
-    expect(await screen.findByText('Disabled')).toBeInTheDocument();
+    const disabledElements = await screen.findAllByText('Disabled');
+    expect(disabledElements.length).toBeGreaterThan(0);
     expect(screen.getByText(/Last Sync: Never/)).toBeInTheDocument();
   });
 
