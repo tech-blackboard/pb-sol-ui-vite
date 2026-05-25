@@ -100,6 +100,17 @@ describe('CrmSidebar', () => {
     expect(screen.getByText('4')).toBeInTheDocument();
   });
 
+  it('renders junk count badge', () => {
+    renderWithProviders(<CrmSidebar />, { junkCount: 8 });
+    expect(screen.getByText('8')).toBeInTheDocument();
+  });
+
+  it('applies correct styles to active Junk folder badge', () => {
+    renderWithProviders(<CrmSidebar />, { junkCount: 8, activeFolder: 'Junk' });
+    const badge = screen.getByText('8');
+    expect(badge.className).toContain('bg-orange-100');
+  });
+
   it('applies correct styles to active folder count badge', () => {
     renderWithProviders(<CrmSidebar />, { unreadCount: 5, activeFolder: 'Inbox' });
     const badge = screen.getByText('5');
@@ -171,5 +182,35 @@ describe('CrmSidebar', () => {
     // The dot is an anonymous div with specific classes
     const unreadDot = container.querySelector('.bg-blue-600.rounded-full.absolute');
     expect(unreadDot).toBeInTheDocument();
+  });
+
+  it('applies correct styles to active Drafts folder badge', () => {
+    renderWithProviders(<CrmSidebar />, { draftsCount: 3, activeFolder: 'Drafts' });
+    const badge = screen.getByText('3');
+    expect(badge.className).toContain('bg-blue-100');
+  });
+  
+  it('applies correct styles to active Sent folder badge', () => {
+    renderWithProviders(<CrmSidebar />, { sentCount: 10, activeFolder: 'Sent' });
+    const badge = screen.getByText('10');
+    expect(badge.className).toContain('bg-blue-100');
+  });
+
+  it('applies correct styles to active Starred folder badge', () => {
+    renderWithProviders(<CrmSidebar />, { starredCount: 2, activeFolder: 'Starred' });
+    const badge = screen.getByText('2');
+    expect(badge.className).toContain('bg-blue-100');
+  });
+
+  it('applies correct styles to active Trash folder badge', () => {
+    renderWithProviders(<CrmSidebar />, { trashCount: 7, activeFolder: 'Trash' });
+    const badge = screen.getByText('7');
+    expect(badge.className).toContain('bg-blue-100');
+  });
+
+  it('applies correct styles to active Accounts folder badge', () => {
+    renderWithProviders(<CrmSidebar />, { accountsCount: 4, activeFolder: 'Accounts' });
+    const badge = screen.getByText('4');
+    expect(badge.className).toContain('bg-blue-100');
   });
 });

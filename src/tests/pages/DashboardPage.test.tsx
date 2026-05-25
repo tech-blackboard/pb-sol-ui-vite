@@ -205,26 +205,35 @@ describe('DashboardPage', () => {
         expect(screen.getAllByText('—').length).toBeGreaterThan(0) // Website fallback
     })
 
-    it('covers missing status counts and website ID reset (lines 115-116, 217)', async () => {
+    it('covers missing status counts and website ID reset (lines 80-93, 115-116, 217)', async () => {
         ;(fetchDashboard as jest.Mock).mockResolvedValue({ 
             ...mockDashboardData, 
-            statusCounts: [{ status_id: 1, count: 1 }] // Only status 1
+            total: null,
+            statusCounts: null,
+            recentAbstracts: null
         })
         render(<DashboardPage />)
         
         // Wait for stats
-        await screen.findByText('1') // Total Abstracts from mockDashboardData.total or statusCounts?
+        await screen.findAllByText('0') // Total Abstracts from mockDashboardData.total is null, so it falls back to 0
         // MapStatusCounts uses statusCounts. map[2] should be 0.
         
         fireEvent.click(screen.getByRole('button', { name: /Filters/i }))
         const select = screen.getByRole('combobox') as HTMLSelectElement
         fireEvent.change(select, { target: { value: '' } }) // Reset websiteId in select
         expect(select.value).toBe('')
+
+        const reBtn = screen.getByRole('button', { name: /Reload/i })
+        fireEvent.click(reBtn) // Covers line 331 fallback with recentAbstracts: null
     })
 
     it('covers recent abstracts fallbacks and date formatting (lines 331, 398-400, 418-419)', async () => {
         const minimalAbstracts = [
-            { id: 1, name: 'Minimal', website_id: 10, website: { name: 'Ext Website' }, now: null, status: null }
+            { id: 1, name: 'Minimal', website_id: 10, website: { name: 'Ext Website' }, now: null, status: null },
+            { uuid: '123', name: 'UUID Only' },
+            { email: 'x@x.com', name: 'Email Only' },
+            { website_id: 99, now: '2023', name: 'Website ID Only' },
+            { now: '2024', name: 'No IDs at all' }
         ]
         ;(fetchDashboard as jest.Mock).mockResolvedValue({ ...mockDashboardData, recentAbstracts: minimalAbstracts })
         

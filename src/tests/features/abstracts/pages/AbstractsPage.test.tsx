@@ -797,4 +797,67 @@ describe('AbstractsPage', () => {
             )
         })
     })
+
+    test('covers viewItem.status string fallback (line 60)', async () => {
+        const itemWithStringStatus = { ...mockAbstractItem, id: '99', status: 'Accepted' } as unknown as AbstractItem
+        const stateWithStringStatus = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                items: [{ ...mockAbstractRecord, id: '99' }],
+                selected: itemWithStringStatus,
+                modalStatus: 'Rejected', // different so it proceeds to update
+            }
+        }
+        ;(useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithStringStatus))
+        
+        dispatchMock.mockResolvedValueOnce({ type: 'fetch/fulfilled', payload: [] })
+        dispatchMock.mockResolvedValueOnce({
+            type: 'fulfilled',
+            payload: { whatsappSent: false }
+        })
+        ;(updateStatusThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(true)
+
+        render(<AbstractsPage />)
+        fireEvent.click(screen.getByText('Update'))
+
+        await waitFor(() => {
+            expect(updateStatusThunk).toHaveBeenCalled()
+        })
+    })
+
+    test('covers string payloads for invoice, receipt, reminder rejections (lines 100, 141, 173)', async () => {
+        const stateForModals = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                invoiceModal: { open: true, abstractId: '1', abstractName: 'Test' },
+                paymentReceiptModal: { open: true, abstractId: '1', abstractName: 'Test' },
+                paymentReminderModal: { open: true, abstractId: '1', abstractName: 'Test' },
+            }
+        }
+        ;(useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateForModals))
+        
+        // Mock matchers to false
+        ;(sendInvoiceThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
+        ;(sendPaymentReceiptThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
+        ;(sendPaymentReminderThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
+        
+        render(<AbstractsPage />)
+
+        // 1. Invoice
+        dispatchMock.mockResolvedValueOnce({ type: 'rejected', payload: 'Invoice String Error' })
+        fireEvent.click(screen.getByText('Submit Invoice'))
+        await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Invoice String Error'))
+
+        // 2. Receipt
+        dispatchMock.mockResolvedValueOnce({ type: 'rejected', payload: 'Receipt String Error' })
+        fireEvent.click(screen.getByText('Submit Receipt'))
+        await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Receipt String Error'))
+
+        // 3. Reminder
+        dispatchMock.mockResolvedValueOnce({ type: 'rejected', payload: 'Reminder String Error' })
+        fireEvent.click(screen.getByText('Submit Reminder'))
+        await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Reminder String Error'))
+    })
 })

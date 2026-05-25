@@ -31,20 +31,31 @@ jest.mock('../../../../store/slices/crm/crm.thunks', () => {
     trashThreadsThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.trashThreadsThunk),
     restoreThreadsThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.restoreThreadsThunk),
     deleteThreadsPermanentlyThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.deleteThreadsPermanentlyThunk),
+    junkThreadsThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.junkThreadsThunk),
+    restoreThreadsFromJunkThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.restoreThreadsFromJunkThunk),
   };
 });
 
 import * as crmThunks from '../../../../store/slices/crm/crm.thunks';
 
-jest.mock('../../../../features/crm/components/ReplyForm', () => ({
-  __esModule: true,
-  default: (props: { recipientEmail: string; onSuccess: () => void }) => (
-    <div data-testid="reply-form">
-      <span>{props.recipientEmail}</span>
-      <button onClick={props.onSuccess}>Trigger Reply Success</button>
-    </div>
-  ),
-}));
+jest.mock('../../../../features/crm/components/ReplyForm', () => {
+  const React = jest.requireActual('react');
+  return {
+    __esModule: true,
+    default: React.forwardRef((props: { recipientEmail: string; onSuccess: () => void; mode?: string; forwardedFromId?: string }, ref: unknown) => {
+      React.useImperativeHandle(ref, () => ({
+        expand: jest.fn(),
+        collapse: jest.fn()
+      }));
+      return (
+        <div data-testid="reply-form" data-mode={props.mode} data-forwarded-id={props.forwardedFromId}>
+          <span>{props.recipientEmail}</span>
+          <button onClick={props.onSuccess}>Trigger Reply Success</button>
+        </div>
+      );
+    })
+  };
+});
 
 jest.mock('../../../../features/crm/components/EmailBody', () => ({
   __esModule: true,
@@ -145,6 +156,79 @@ describe('ThreadView', () => {
     expect(container.querySelector('.animate-spin')).toBeInTheDocument();
   });
 
+  it('renders draft when selectedThreadId matches a draft instead of a thread', () => {
+    renderView({
+      threads: [],
+      drafts: [
+        {
+          id: 'draft-1',
+          subject: 'Draft Subject',
+          eventId: 1,
+          contactId: 1,
+          updatedAt: '2025-06-15T10:30:00Z',
+          fromEmail: 'test@example.com',
+          toEmail: 'contact@example.com',
+          createdAt: '2025-06-15T10:00:00Z',
+          direction: 'outbound',
+          status: 'draft',
+          textBody: 'draft body',
+          htmlBody: '',
+        } as unknown as Message
+      ],
+      messages: [],
+      selectedThreadId: 'draft-1',
+    });
+    expect(screen.getByText('Draft Subject')).toBeInTheDocument();
+  });
+
+  it('renders draft when draft.threadId matches selectedThreadId without matching threads', () => {
+    renderView({
+      threads: [],
+      drafts: [
+        {
+          id: 'draft-2',
+          threadId: 't-99',
+          eventId: 1,
+          contactId: 1,
+          createdAt: '2025-06-15T10:00:00Z',
+          direction: 'outbound',
+          status: 'draft',
+          textBody: 'draft body',
+          htmlBody: '',
+        } as unknown as Message
+      ],
+      messages: [],
+      selectedThreadId: 't-99',
+    });
+    expect(screen.getByText('(No subject)')).toBeInTheDocument();
+  });
+
+  it('reconstructs thread from messages (Fallback 2) when no thread or draft matches', () => {
+    renderView({
+      threads: [],
+      drafts: [],
+      messages: [
+        {
+          id: 'm-1',
+          threadId: 't-100',
+          subject: 'Message Subject',
+          eventId: 1,
+          contactId: 1,
+          createdAt: '2025-06-15T10:00:00Z',
+          direction: 'inbound',
+          fromEmail: 'm@example.com',
+          contact: makeContact(),
+          status: 'received',
+          textBody: 'msg body',
+          htmlBody: '',
+          labels: []
+        } as unknown as Message
+      ],
+      selectedThreadId: 't-100',
+    });
+    expect(screen.getByText('Message Subject')).toBeInTheDocument();
+  });
+
   it('renders thread subject and message content', () => {
     renderView({
       threads: [makeThread({ subject: 'My Subject' })],
@@ -239,6 +323,36 @@ describe('ThreadView', () => {
       expect(spy).toHaveBeenCalledWith(99, 'User manually unsubscribed from CRM UI');
     });
 
+    it('does not call unsubscribe if confirm is cancelled', () => {
+      jest.spyOn(window, 'confirm').mockReturnValue(false);
+      const spy = jest.spyOn(crmService, 'unsubscribeContact');
+
+      renderView({
+        threads: [makeThread({ contact: makeContact({ id: 99, email: 'alice@example.com' }) })],
+        messages: [makeMessage()],
+        selectedThreadId: 'thread-1',
+      });
+
+      fireEvent.click(screen.getByTitle('Unsubscribe Contact'));
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('does not call unsubscribe if contact is missing', () => {
+      const spy = jest.spyOn(crmService, 'unsubscribeContact');
+
+      renderView({
+        threads: [makeThread({ contact: undefined })],
+        messages: [makeMessage()],
+        selectedThreadId: 'thread-1',
+      });
+
+      const btn = screen.queryByTitle('Unsubscribe Contact');
+      if (btn) {
+        fireEvent.click(btn);
+      }
+      expect(spy).not.toHaveBeenCalled();
+    });
+
     it('shows error toast when unsubscribeContact throws', async () => {
       jest.spyOn(crmService, 'unsubscribeContact').mockRejectedValue(new Error('Network'));
 
@@ -251,19 +365,48 @@ describe('ThreadView', () => {
       fireEvent.click(screen.getByTitle('Unsubscribe Contact'));
       await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('Failed to unsubscribe contact'));
     });
+
+    it('handles clicking forward with missing attachments correctly', () => {
+      renderView({
+        messages: [makeMessage({ attachments: undefined })]
+      });
+
+      const forwardBtn = screen.getByTitle('Forward');
+      fireEvent.click(forwardBtn);
+
+      const replyForm = screen.getByTestId('reply-form');
+      expect(replyForm).toHaveAttribute('data-mode', 'forward');
+    });
+
+    it('toggles message details using the ellipsis button', () => {
+      renderView({
+        messages: [makeMessage({ direction: 'inbound' })],
+      });
+      // The toggle button has text "▼"
+      const toggleBtn = screen.getByText('▼');
+      
+      // Expand
+      fireEvent.click(toggleBtn);
+      // Collapse
+      fireEvent.click(toggleBtn);
+      // Just testing it doesn't crash since it's local state
+      expect(toggleBtn).toBeInTheDocument();
+    });
   });
 
   describe('details toggle', () => {
     it('toggles the details dropdown on ▼ click', () => {
       renderView({
         threads: [makeThread()],
-        messages: [makeMessage({ toEmail: 'me@conf.com' })],
+        messages: [makeMessage({ toEmail: 'me@conf.com', ccEmail: 'cc@test.com', bccEmail: 'bcc@test.com' })],
         selectedThreadId: 'thread-1',
       });
 
       expect(screen.queryByText('from:')).not.toBeInTheDocument();
       fireEvent.click(screen.getByText('▼'));
       expect(screen.getByText('from:')).toBeInTheDocument();
+      expect(screen.getByText('cc@test.com')).toBeInTheDocument();
+      expect(screen.getByText('bcc@test.com')).toBeInTheDocument();
       // Clicking again closes
       fireEvent.click(screen.getByText('▼'));
       expect(screen.queryByText('from:')).not.toBeInTheDocument();
@@ -481,11 +624,137 @@ describe('ThreadView', () => {
       fireEvent.click(screen.getByTitle('Delete Permanently'));
       await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('Delete Error'));
     });
+
+    it('handles spam report error', async () => {
+      (crmThunks.junkThreadsThunk as unknown as jest.Mock).mockReturnValueOnce(() => ({ unwrap: () => Promise.reject('Spam Error') }));
+      renderView({
+        threads: [makeThread({ id: 't1' })],
+        messages: [makeMessage()],
+        selectedThreadId: 't1',
+      });
+      fireEvent.click(screen.getByTitle('Report Spam'));
+      await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('Spam Error'));
+    });
+
+    it('handles restore from spam error', async () => {
+      (crmThunks.restoreThreadsFromJunkThunk as unknown as jest.Mock).mockReturnValueOnce(() => ({ unwrap: () => Promise.reject('Restore Spam Error') }));
+      renderView({
+        threads: [makeThread({ id: 't1', isJunk: true })],
+        messages: [makeMessage()],
+        selectedThreadId: 't1',
+        activeFolder: 'Junk'
+      });
+      fireEvent.click(screen.getByTitle('Not Spam'));
+      await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('Restore Spam Error'));
+    });
+  });
+
+  describe('Action buttons (Spam, Reply, Forward, Download Error)', () => {
+    it('handles marking thread as spam', async () => {
+      renderView({
+        selectedThreadId: 'thread-1',
+        threads: [makeThread()],
+        messages: [makeMessage()]
+      });
+
+      // Click "Report Spam" (has title "Report Spam")
+      fireEvent.click(screen.getByTitle('Report Spam'));
+      
+      await waitFor(() => {
+        expect(crmThunks.junkThreadsThunk).toHaveBeenCalledWith(['thread-1']);
+        expect(toast.success).toHaveBeenCalledWith('Conversation reported as spam');
+      });
+    });
+
+    it('handles restoring from spam', async () => {
+      renderView({
+        selectedThreadId: 'thread-spam',
+        threads: [makeThread({ id: 'thread-spam', isJunk: true })],
+        messages: [makeMessage({ threadId: 'thread-spam' })],
+        activeFolder: 'Junk'
+      });
+
+      fireEvent.click(screen.getByTitle('Not Spam'));
+      await waitFor(() => {
+        expect(crmThunks.restoreThreadsFromJunkThunk).toHaveBeenCalledWith(['thread-spam']);
+        expect(toast.success).toHaveBeenCalledWith('Conversation moved to Inbox');
+      });
+    });
+
+    it('handles Reply and Forward button clicks on a message with fromName', async () => {
+      renderView({
+        selectedThreadId: 'thread-1',
+        threads: [makeThread()],
+        messages: [makeMessage({ id: 'msg-1', subject: 'Hello Test', toEmail: 'alice@test.com', fromEmail: 'bob@test.com', fromName: 'Bob' })]
+      });
+
+      // Click Reply
+      fireEvent.click(screen.getByTitle('Reply'));
+      
+      await waitFor(() => {
+        const replyForm = screen.getByTestId('reply-form');
+        expect(replyForm).toHaveAttribute('data-mode', 'reply');
+        expect(replyForm).toHaveAttribute('data-forwarded-id', 'msg-1');
+      });
+
+      // Click Forward
+      fireEvent.click(screen.getByTitle('Forward'));
+
+      await waitFor(() => {
+        const replyForm = screen.getByTestId('reply-form');
+        expect(replyForm).toHaveAttribute('data-mode', 'forward');
+        expect(replyForm).toHaveAttribute('data-forwarded-id', 'msg-1');
+      });
+    });
+
+    it('handles Reply and Forward button clicks on a message without fromName', async () => {
+      renderView({
+        selectedThreadId: 'thread-1',
+        threads: [makeThread()],
+        messages: [makeMessage({ id: 'msg-1', subject: 'Hello Test', toEmail: 'alice@test.com', fromEmail: 'bob@test.com', fromName: undefined })]
+      });
+
+      // Click Reply
+      fireEvent.click(screen.getByTitle('Reply'));
+      
+      await waitFor(() => {
+        const replyForm = screen.getByTestId('reply-form');
+        expect(replyForm).toHaveAttribute('data-mode', 'reply');
+        expect(replyForm).toHaveAttribute('data-forwarded-id', 'msg-1');
+      });
+
+      // Click Forward
+      fireEvent.click(screen.getByTitle('Forward'));
+
+      await waitFor(() => {
+        const replyForm = screen.getByTestId('reply-form');
+        expect(replyForm).toHaveAttribute('data-mode', 'forward');
+        expect(replyForm).toHaveAttribute('data-forwarded-id', 'msg-1');
+      });
+    });
+
+    it('handles download attachment error', async () => {
+      (crmService.downloadAttachment as jest.Mock).mockRejectedValueOnce(new Error('Download Error'));
+      const msg = makeMessage({ 
+        attachments: [{ id: 'a1', filename: 'test.pdf', contentType: 'application/pdf', size: 100, url: 'x', messageId: 'm1', createdAt: '2023' } as unknown as Attachment] 
+      });
+      renderView({
+        selectedThreadId: 'thread-1',
+        threads: [makeThread()],
+        messages: [msg]
+      });
+
+      fireEvent.click(screen.getByTitle('Download'));
+      
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Failed to download attachment');
+      });
+    });
   });
 
   describe('Deep coverage (Fallback reconstruction and Draft association)', () => {
     it('reconstructs thread from messages if thread is missing (Fallback 2, lines 53-68)', () => {
-      const messages = [makeMessage({ subject: 'Fallback Thread', labels: ['L1'] })];
+      const messages = [makeMessage({ subject: 'Fallback Thread', labels: ['L1'], fromEmail: undefined })];
       renderView({
         selectedThreadId: 'thread-1',
         threads: [], // No threads in store
@@ -496,17 +765,17 @@ describe('ThreadView', () => {
       expect(screen.getByText('L1')).toBeInTheDocument();
     });
 
-    it('matches an existing draft by threadId', async () => {
+    it('matches an existing draft by threadId or event/contact when threadId is missing', async () => {
       const contact = makeContact({ id: 88, email: 'alice@example.com' });
       const thread = makeThread({ id: 't1', eventId: 5, contact: contact, contactId: 88 });
       const draft = {
         id: 'draft-x',
         contactId: 88,
         eventId: 5,
-        threadId: 't1',
+        threadId: undefined, // undefined threadId fallback
         status: 'draft',
         toEmail: 'alice@x.com'
-      } as Message;
+      } as unknown as Message;
 
       renderView({
         selectedThreadId: 't1',
@@ -518,6 +787,45 @@ describe('ThreadView', () => {
       await waitFor(() => {
         expect(screen.getByTestId('reply-form')).toHaveTextContent('alice@x.com');
       });
+    });
+
+    it('renders high importance indicator', () => {
+      renderView({
+        threads: [makeThread({ id: 't1' })],
+        messages: [makeMessage({ id: 'm1', importance: 'high' })],
+        selectedThreadId: 't1',
+      });
+      expect(screen.getByText('High importance')).toBeInTheDocument();
+    });
+
+    it('renders low importance indicator', () => {
+      renderView({
+        threads: [makeThread({ id: 't1' })],
+        messages: [makeMessage({ id: 'm1', importance: 'low' })],
+        selectedThreadId: 't1',
+      });
+      expect(screen.getByText('Low importance')).toBeInTheDocument();
+    });
+
+    it('renders outbound message with fallback contact email when toEmail is missing', () => {
+      renderView({
+        threads: [makeThread({ id: 't1', contact: makeContact({ email: 'fallback@test.com' }) })],
+        messages: [makeMessage({ id: 'm1', direction: 'outbound', toEmail: undefined })],
+        selectedThreadId: 't1',
+      });
+      expect(screen.getByText('to fallback@test.com')).toBeInTheDocument();
+    });
+
+    it('handles empty messages array when toggling labels', async () => {
+      renderView({
+        threads: [makeThread({ id: 't1' })],
+        messages: [],
+        selectedThreadId: 't1',
+      });
+      // Try to toggle label when there's no message
+      fireEvent.click(screen.getByTitle('Add or manage labels'));
+      // shouldn't throw error and shouldn't dispatch
+      expect(crmThunks.updateLabelsThunk).not.toHaveBeenCalled();
     });
   });
 });

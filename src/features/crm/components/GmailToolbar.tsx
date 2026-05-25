@@ -11,7 +11,14 @@ interface GmailToolbarProps {
   editor: Editor | null;
 }
 
-export const GMAIL_FONTS = [
+interface CustomEditorChain {
+  unsetFontFamily: () => { run: () => void };
+  setFontFamily: (val: string) => { run: () => void };
+  unsetFontSize: () => { run: () => void };
+  setFontSize: (val: string) => { run: () => void };
+}
+
+const GMAIL_FONTS = [
   { label: 'Sans Serif', value: 'sans-serif' },
   { label: 'Arial', value: 'Arial' },
   { label: 'Serif', value: 'serif' },
@@ -26,7 +33,7 @@ export const GMAIL_FONTS = [
   { label: 'Verdana', value: 'Verdana' }
 ];
 
-export const GMAIL_SIZES = [
+const GMAIL_SIZES = [
   { label: 'Small', value: '12px' },
   { label: 'Normal', value: '14px' },
   { label: 'Large', value: '18px' },
@@ -104,9 +111,9 @@ export const GmailToolbar: React.FC<GmailToolbarProps> = ({ editor }) => {
       <select
         onChange={(e) => {
           if (e.target.value === 'default') {
-            (editor.chain().focus() as any).unsetFontFamily().run();
+            (editor.chain().focus() as unknown as CustomEditorChain).unsetFontFamily().run();
           } else {
-            (editor.chain().focus() as any).setFontFamily(e.target.value).run();
+            (editor.chain().focus() as unknown as CustomEditorChain).setFontFamily(e.target.value).run();
           }
         }}
         className="text-xs bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 border-none outline-none py-1 px-1 rounded cursor-pointer font-medium max-w-[80px] sm:max-w-[100px] truncate"
@@ -122,9 +129,9 @@ export const GmailToolbar: React.FC<GmailToolbarProps> = ({ editor }) => {
       <select
         onChange={(e) => {
           if (e.target.value === 'default') {
-            (editor.chain().focus() as any).unsetFontSize().run();
+            (editor.chain().focus() as unknown as CustomEditorChain).unsetFontSize().run();
           } else {
-            (editor.chain().focus() as any).setFontSize(e.target.value).run();
+            (editor.chain().focus() as unknown as CustomEditorChain).setFontSize(e.target.value).run();
           }
         }}
         className="text-xs bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 border-none outline-none py-1 px-1 rounded cursor-pointer font-medium max-w-[65px] sm:max-w-[75px] truncate"

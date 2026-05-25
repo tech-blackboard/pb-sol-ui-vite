@@ -17,6 +17,7 @@ describe('DeviceManagement Page', () => {
             os: 'Windows',
             isAllowed: false,
             createdAt: '2023-01-01',
+            lastUsedAt: '2023-01-01T12:00:00Z',
             user: { id: 1, useremail: 'user1@test.com', firstname: 'John', lastname: 'Doe' }
         },
         {
@@ -27,6 +28,7 @@ describe('DeviceManagement Page', () => {
             os: 'macOS',
             isAllowed: true,
             createdAt: '2023-01-01',
+            lastUsedAt: '2023-01-02T12:00:00Z',
             user: { id: 2, useremail: 'user2@test.com', firstname: 'Jane', lastname: 'Smith' }
         }
     ]
@@ -195,6 +197,19 @@ describe('DeviceManagement Page', () => {
         const approveBtn = await screen.findByText('Approve')
         fireEvent.click(approveBtn)
         await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Failed to approve device'))
+        
+        // Test revoke fallback
+        const revokeBtn = screen.getByTitle('Revoke')
+        fireEvent.click(revokeBtn)
+        await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Failed to revoke device'))
+
+        // Test delete fallback
+        const deleteBtn = screen.getAllByTitle('Delete')[0]
+        fireEvent.click(deleteBtn)
+        const confirmBtns = screen.getAllByRole('button', { name: /^Delete$/ })
+        const confirmBtn = confirmBtns[confirmBtns.length - 1]
+        fireEvent.click(confirmBtn)
+        await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Failed to delete device'))
     })
 
     it('covers browser/OS unknown and lastUsedAt Never fallbacks (lines 148, 151, 166)', async () => {

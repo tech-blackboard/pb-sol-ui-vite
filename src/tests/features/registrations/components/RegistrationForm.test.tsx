@@ -644,4 +644,31 @@ it('pre-fills website_id when provided', async () => {
             expect(screen.getByText('Registration price is required')).toBeInTheDocument()
         })
     })
+
+    it('covers presentation validation (line 208)', async () => {
+        renderForm()
+        await screen.findByText('Add New Registration')
+
+        // Clear presentation
+        const presentationSelect = screen.getByLabelText(/Interested In \(Presentation\)\*/i)
+        fireEvent.change(presentationSelect, { target: { value: '' } })
+
+        fireEvent.click(screen.getByText('Create Registration'))
+
+        await waitFor(() => {
+            expect(screen.getByText('Presentation is required')).toBeInTheDocument()
+        })
+    })
+})
+
+import { SelectField } from '../../../../features/registrations/components/RegistrationForm'
+
+describe('SelectField component', () => {
+    it('handles object options (lines 567-568)', () => {
+        const options = [{ value: 1, label: 'One' }, { value: 2, label: 'Two' }]
+        const onChange = jest.fn()
+        render(<SelectField name="test" options={options} onChange={onChange} />)
+        expect(screen.getByText('One')).toBeInTheDocument()
+        expect(screen.getByText('Two')).toBeInTheDocument()
+    })
 })

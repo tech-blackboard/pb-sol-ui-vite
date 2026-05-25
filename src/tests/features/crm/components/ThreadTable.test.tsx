@@ -230,6 +230,14 @@ describe('ThreadTable', () => {
 
   // ── Coverage Tests (Error cases) ──
 
+  it('handles successful delete draft', async () => {
+    const drafts = [{ id: 'd1', subject: 'Delete Me', direction: 'outbound', status: 'draft', contactId: 1, eventId: 1 } as Message];
+    renderTable({ drafts, activeFolder: 'Drafts' });
+    window.confirm = jest.fn().mockReturnValue(true);
+    fireEvent.click(screen.getByTitle('Move to Trash'));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Draft moved to Trash'));
+  });
+
   it('handles delete draft error (coverage line 45-47)', async () => {
     const drafts = [{ id: 'd1', subject: 'Delete Me', direction: 'outbound', status: 'draft', contactId: 1, eventId: 1 } as Message];
     (crmThunks.deleteDraftThunk as unknown as jest.Mock).mockReturnValueOnce(() => ({ unwrap: () => Promise.reject('Delete Error') }));
@@ -332,5 +340,72 @@ describe('ThreadTable', () => {
     renderTable({ threads });
     expect(screen.getByText('Urgent')).toBeInTheDocument();
     expect(screen.getByText('Support')).toBeInTheDocument();
+  });
+
+  it('renders high and low importance indicators', () => {
+    const threads = [
+      makeThread({ id: 't-high', subject: 'High Priority', importance: 'high' }),
+      makeThread({ id: 't-low', subject: 'Low Priority', importance: 'low' })
+    ];
+    renderTable({ threads });
+    expect(screen.getByTitle('High Importance')).toBeInTheDocument();
+    expect(screen.getByTitle('Low Importance')).toBeInTheDocument();
+  });
+
+  describe('select all functionality', () => {
+    it('dispatches selectAllThreads with all draft IDs when in Drafts view', () => {
+      const { store } = renderTableWithSpy({
+        activeFolder: 'Drafts',
+        drafts: [{ id: 'd-1', threadId: 't1' }, { id: 'd-2', threadId: 't2' }],
+      });
+      const selectAllCb = screen.getAllByRole('checkbox')[0]; // The header checkbox
+      fireEvent.click(selectAllCb);
+      const state = store.getState() as RootState;
+      expect(state.crm.selectedThreadIds).toEqual(['d-1', 'd-2']);
+    });
+  });
+
+  describe('empty states', () => {
+    it('shows empty state for Drafts view', () => {
+      renderTable({ activeFolder: 'Drafts', drafts: [] });
+      expect(screen.getByText('No drafts found.')).toBeInTheDocument();
+    });
+
+    it('shows empty state for Sent view', () => {
+      renderTable({ activeFolder: 'Sent', sent: [] });
+      expect(screen.getByText('No sent messages found.')).toBeInTheDocument();
+    });
+
+    it('shows empty state for Starred view', () => {
+      renderTable({ activeFolder: 'Starred', threads: [] });
+      expect(screen.getByText('No starred threads found.')).toBeInTheDocument();
+    });
+
+    it('shows empty state for default Inbox view', () => {
+      renderTable({ activeFolder: 'Inbox', threads: [] });
+      expect(screen.getByText('No threads found for this mailbox.')).toBeInTheDocument();
+    });
+  });
+
+  describe('Sent view styling', () => {
+    it('renders Sent badge and "To" instead of "From"', () => {
+      renderTable({
+        activeFolder: 'Sent',
+        threads: [{ ...makeThread({ id: 's1' }), subject: 'Sent Msg' }],
+      });
+      expect(screen.getByText('To')).toBeInTheDocument();
+      expect(screen.getByText('Sent')).toBeInTheDocument();
+    });
+  });
+
+  describe('star toggle', () => {
+    it('renders unstar icon for already starred threads and toggles', () => {
+      renderTable({
+        threads: [makeThread({ id: 't1', isStarred: true })],
+      });
+      const starBtn = screen.getByTitle('Unstar');
+      fireEvent.click(starBtn);
+      expect(crmThunks.toggleThreadStarThunk).toHaveBeenCalled();
+    });
   });
 });
