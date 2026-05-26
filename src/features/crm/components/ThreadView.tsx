@@ -1,6 +1,6 @@
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import type { RootState } from '../../../store';
-import { setSelectedThread } from '../../../store/slices/crm/crm.slice';
+import { setSelectedThread, clearError } from '../../../store/slices/crm/crm.slice';
 import { updateLabelsThunk, fetchMessagesThunk, toggleThreadReadThunk, trashThreadsThunk, restoreThreadsThunk, deleteThreadsPermanentlyThunk, junkThreadsThunk, restoreThreadsFromJunkThunk } from '../../../store/slices/crm/crm.thunks';
 import * as crmService from '../services/crmService';
 import ReplyForm, { type ReplyFormHandle } from './ReplyForm';
@@ -13,7 +13,7 @@ import type { Thread, Contact, Message, Attachment, CrmEvent } from '../types';
 
 export default function ThreadView() {
     const dispatch = useAppDispatch();
-    const { messages, threads, events, selectedThreadId, loading, activeFolder } = useAppSelector((state: RootState) => state.crm);
+    const { messages, threads, events, selectedThreadId, loading, activeFolder, error } = useAppSelector((state: RootState) => state.crm);
     const [isUnsubscribing, setIsUnsubscribing] = useState(false);
     const [expandedDetailsId, setExpandedDetailsId] = useState<string | null>(null);
     const [downloadingIds, setDownloadingIds] = useState<Set<number>>(new Set());
@@ -133,6 +133,7 @@ export default function ThreadView() {
 
     const handleBack = () => {
         dispatch(setSelectedThread(null));
+        dispatch(clearError());
     };
 
     const toggleDetails = (messageId: string) => {
@@ -254,6 +255,28 @@ export default function ThreadView() {
             });
         }
     };
+
+    if (error && !loading.messages) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center bg-white dark:bg-gray-900 p-6">
+                <div className="text-red-500 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-12 h-12">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0-10.03L3.07 19.5a1.5 1.5 0 001.27 2.25h15.32a1.5 1.5 0 001.27-2.25L12 2.72z" />
+                    </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Access Denied</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center max-w-sm">
+                    {error || "You do not have permission to view this conversation."}
+                </p>
+                <button
+                    onClick={handleBack}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors"
+                >
+                    Back to Inbox
+                </button>
+            </div>
+        );
+    }
 
     if (loading.messages && messages.length === 0) {
         return (
