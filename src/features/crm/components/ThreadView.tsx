@@ -1,7 +1,7 @@
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import type { RootState } from '../../../store';
 import { setSelectedThread, clearError } from '../../../store/slices/crm/crm.slice';
-import { updateLabelsThunk, fetchMessagesThunk, toggleThreadReadThunk, trashThreadsThunk, restoreThreadsThunk, deleteThreadsPermanentlyThunk, junkThreadsThunk, restoreThreadsFromJunkThunk } from '../../../store/slices/crm/crm.thunks';
+import { updateLabelsThunk, fetchMessagesThunk, toggleThreadReadThunk, trashThreadsThunk, restoreThreadsThunk, deleteThreadsPermanentlyThunk, junkThreadsThunk, restoreThreadsFromJunkThunk, fetchDraftsThunk } from '../../../store/slices/crm/crm.thunks';
 import * as crmService from '../services/crmService';
 import ReplyForm, { type ReplyFormHandle } from './ReplyForm';
 import EmailBody from './EmailBody';
@@ -13,7 +13,7 @@ import type { Thread, Contact, Message, Attachment, CrmEvent } from '../types';
 
 export default function ThreadView() {
     const dispatch = useAppDispatch();
-    const { messages, threads, events, selectedThreadId, loading, activeFolder, error } = useAppSelector((state: RootState) => state.crm);
+    const { messages, threads, events, selectedThreadId, loading, activeFolder, error, currentPage, activeEventId } = useAppSelector((state: RootState) => state.crm);
     const [isUnsubscribing, setIsUnsubscribing] = useState(false);
     const [expandedDetailsId, setExpandedDetailsId] = useState<string | null>(null);
     const [downloadingIds, setDownloadingIds] = useState<Set<number>>(new Set());
@@ -157,7 +157,10 @@ export default function ThreadView() {
 
 
     const handleReplySuccess = () => {
-        if (selectedThreadId) {
+        if (activeFolder === 'Drafts') {
+            dispatch(setSelectedThread(null));
+            dispatch(fetchDraftsThunk({ page: currentPage, limit: 50, eventId: activeEventId || undefined }));
+        } else if (selectedThreadId) {
             dispatch(fetchMessagesThunk(selectedThreadId));
         }
         setForwardData(prev => ({ ...prev, isExpanded: false }));
