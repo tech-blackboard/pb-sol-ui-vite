@@ -47,3 +47,8 @@ coverage/
 coverage-final.json
 clover.xml
 lcov.info
+
+# Playwright
+playwright-report/
+test-results/
+

@@ -3,6 +3,7 @@ import type { Config } from 'jest'
 const config: Config = {
   preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'jsdom',
+  testPathIgnorePatterns: ['<rootDir>/e2e/'],
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
 
