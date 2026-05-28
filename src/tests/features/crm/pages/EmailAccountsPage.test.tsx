@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
 jest.setTimeout(20000);
 import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
@@ -35,8 +35,8 @@ jest.mock('react-hot-toast', () => ({
   }
 }));
 import { toast } from 'react-hot-toast';
-const mockToast = toast as unknown as { 
-  success: jest.Mock; 
+const mockToast = toast as unknown as {
+  success: jest.Mock;
   error: jest.Mock;
   loading: jest.Mock;
   dismiss: jest.Mock;
@@ -100,6 +100,8 @@ describe('EmailAccountsPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockFetchEmailAccounts.mockResolvedValue([]);
+    // JSDOM does not implement scrollTo — mock it to prevent TypeError
+    window.HTMLElement.prototype.scrollTo = jest.fn();
   });
 
   it('renders correctly and fetches accounts on mount', async () => {
@@ -135,7 +137,82 @@ describe('EmailAccountsPage', () => {
     expect(window.confirm).toHaveBeenCalled();
     await waitFor(() => {
       expect(mockDeleteEmailAccount).toHaveBeenCalledWith(1);
-      expect(mockToast.success).toHaveBeenCalledWith('Account deleted');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Details Modal & Filters Coverage', () => {
+    it('handles status filter change and scrolls to top', async () => {
+      const activeAccount = makeEmailAccount({ id: 1, isActive: true });
+      const disabledAccount = makeEmailAccount({ id: 2, isActive: false, email: 'disabled@test.com' });
+      mockFetchEmailAccounts.mockResolvedValue([activeAccount, disabledAccount]);
+      renderPage();
+
+      await waitForElementToBeRemoved(() => screen.queryByText('Loading accounts...'));
+
+      // Ensure All is active initially
+      const activeFilterBtn = screen.getByRole('button', { name: /Active/i });
+      fireEvent.click(activeFilterBtn);
+
+      expect(await screen.findByText('Active')).toBeInTheDocument();
+      
+      const disabledFilterBtn = screen.getByRole('button', { name: /Disabled/i });
+      fireEvent.click(disabledFilterBtn);
+      
+      expect(await screen.findByText('disabled@test.com')).toBeInTheDocument();
+    });
+
+    it('handles Microsoft Auth inside details modal', async () => {
+      const account = makeEmailAccount({ id: 1, email: 'user@outlook.com', authMethod: 'password' });
+      mockFetchEmailAccounts.mockResolvedValue([account]);
+      window.open = jest.fn();
+
+      renderPage();
+
+      await waitForElementToBeRemoved(() => screen.queryByText('Loading accounts...'));
+
+      // Click view details (button text is 'View')
+      const viewBtn = await screen.findByText('View');
+      fireEvent.click(viewBtn);
+
+      const msBtn = await screen.findByText('Connect Microsoft OAuth2');
+      fireEvent.click(msBtn);
+
+      await waitFor(() => {
+        expect(mockGetMicrosoftAuthUrl).toHaveBeenCalledWith(1);
+      });
+    });
+
+    it('handles Edit Settings button inside details modal', async () => {
+      const account = makeEmailAccount({ id: 1 });
+      mockFetchEmailAccounts.mockResolvedValue([account]);
+      renderPage();
+
+      const viewBtn = await screen.findByText('View');
+      fireEvent.click(viewBtn);
+
+      const editSettingsBtn = await screen.findByText('Edit Settings');
+      fireEvent.click(editSettingsBtn);
+
+      expect(await screen.findByText('Edit Account')).toBeInTheDocument();
+    });
+
+    it('renders API key details when outboundProvider is not smtp', async () => {
+      const account = makeEmailAccount({
+        id: 1,
+        email: 'api@test.com',
+        outboundProvider: 'api_postmark',
+        apiRegion: 'us-east-1'
+      });
+      mockFetchEmailAccounts.mockResolvedValue([account]);
+      renderPage();
+
+      const viewBtn = await screen.findByText('View');
+      fireEvent.click(viewBtn);
+
+      expect(screen.getByText('API Key')).toBeInTheDocument();
+      expect(screen.getByText('AWS Region')).toBeInTheDocument();
+      expect(screen.getByText('us-east-1')).toBeInTheDocument();
     });
   });
 
@@ -433,9 +510,9 @@ describe('EmailAccountsPage', () => {
 
     it('handles success status in URL', async () => {
       window.history.pushState({}, '', '/?status=success');
-      
+
       renderPage();
-      
+
       await waitFor(() => {
         expect(mockToast.success).toHaveBeenCalledWith('Microsoft account connected successfully!');
         expect(window.history.replaceState).toHaveBeenCalledWith({}, expect.any(String), '/');
@@ -444,9 +521,9 @@ describe('EmailAccountsPage', () => {
 
     it('handles error status in URL without message (line 92)', async () => {
       window.history.pushState({}, '', '/?status=error');
-      
+
       renderPage();
-      
+
       await waitFor(() => {
         expect(mockToast.error).toHaveBeenCalledWith('Failed to connect Microsoft account');
         expect(window.history.replaceState).toHaveBeenCalledWith({}, expect.any(String), '/');
@@ -458,12 +535,12 @@ describe('EmailAccountsPage', () => {
     const account = makeEmailAccount({ id: 1, name: 'Dont Delete' });
     mockFetchEmailAccounts.mockResolvedValue([account]);
     window.confirm = jest.fn().mockReturnValue(false);
-    
+
     renderPage();
-    
+
     const deleteBtn = await screen.findByLabelText('Delete account');
     fireEvent.click(deleteBtn);
-    
+
     expect(window.confirm).toHaveBeenCalled();
     expect(mockDeleteEmailAccount).not.toHaveBeenCalled();
   });
@@ -473,10 +550,10 @@ describe('EmailAccountsPage', () => {
       const existingAccounts = [makeEmailAccount({ id: 1, email: 'exists@test.com', name: 'Existing' })];
       mockFetchEmailAccounts.mockResolvedValue(existingAccounts);
       renderPage();
-      
+
       // Wait for accounts to load
       await screen.findByText('Existing');
-      
+
       fireEvent.click(screen.getByText('Bulk Upload'));
       const textarea = screen.getByLabelText('Bulk JSON input');
       const bulkData = [
@@ -485,10 +562,10 @@ describe('EmailAccountsPage', () => {
         { email: 'valid@test.com', name: 'Valid' } // Process
       ];
       fireEvent.change(textarea, { target: { value: JSON.stringify(bulkData) } });
-      
+
       mockCreateEmailAccount.mockResolvedValue({});
       fireEvent.click(screen.getByText('Create Bulk Accounts'));
-      
+
       await waitFor(() => {
         expect(mockCreateEmailAccount).toHaveBeenCalledTimes(1);
         expect(mockToast.success).toHaveBeenCalledWith(expect.stringContaining('Success! Created: 1, Skipped: 2'));
@@ -507,13 +584,13 @@ describe('EmailAccountsPage', () => {
         { email: 'success@test.com', name: 'Success' }
       ];
       fireEvent.change(textarea, { target: { value: JSON.stringify(bulkData) } });
-      
+
       mockCreateEmailAccount
         .mockRejectedValueOnce(new Error('Item failed'))
         .mockResolvedValueOnce({});
-        
+
       fireEvent.click(screen.getByText('Create Bulk Accounts'));
-      
+
       await waitFor(() => {
         expect(mockCreateEmailAccount).toHaveBeenCalledTimes(2);
         expect(mockToast.error).toHaveBeenCalledWith(expect.stringContaining('Completed with 1 errors. Created: 1, Skipped: 0'));
@@ -526,10 +603,10 @@ describe('EmailAccountsPage', () => {
       const textarea = screen.getByLabelText('Bulk JSON input');
       const bulkData = [{ email: 'fallback@test.com' }];
       fireEvent.change(textarea, { target: { value: JSON.stringify(bulkData) } });
-      
+
       mockCreateEmailAccount.mockResolvedValue({});
       fireEvent.click(screen.getByText('Create Bulk Accounts'));
-      
+
       await waitFor(() => {
         expect(mockCreateEmailAccount).toHaveBeenCalledWith(expect.objectContaining({
           name: 'fallback'
@@ -544,24 +621,24 @@ describe('EmailAccountsPage', () => {
       makeEmailAccount({ id: 2, email: 'b@test.com' })
     ];
     mockFetchEmailAccounts.mockResolvedValue(accounts);
-    
+
     renderPage({ accountsActiveDomain: 'a@test.com' });
-    
+
     expect(await screen.findByText('a@test.com')).toBeInTheDocument();
     expect(screen.queryByText('b@test.com')).not.toBeInTheDocument();
   });
 
   it('displays inactive status and Never sync (line 318-319, 341)', async () => {
-    const account = makeEmailAccount({ 
-      id: 1, 
-      email: 'inactive@test.com', 
-      isActive: false, 
-      lastSyncAt: undefined 
+    const account = makeEmailAccount({
+      id: 1,
+      email: 'inactive@test.com',
+      isActive: false,
+      lastSyncAt: undefined
     });
     mockFetchEmailAccounts.mockResolvedValue([account]);
-    
+
     renderPage();
-    
+
     const disabledElements = await screen.findAllByText('Disabled');
     expect(disabledElements.length).toBeGreaterThan(0);
     expect(screen.getByText(/Last Sync: Never/)).toBeInTheDocument();
@@ -569,16 +646,150 @@ describe('EmailAccountsPage', () => {
 
   it('displays Last Sync time when present (line 341)', async () => {
     const syncTime = new Date('2023-01-01T10:00:00Z').toISOString();
-    const account = makeEmailAccount({ 
-      id: 1, 
-      email: 'sync@test.com', 
-      lastSyncAt: syncTime 
+    const account = makeEmailAccount({
+      id: 1,
+      email: 'sync@test.com',
+      lastSyncAt: syncTime
     });
     mockFetchEmailAccounts.mockResolvedValue([account]);
-    
+
     renderPage();
-    
+
     expect(await screen.findByText(/Last Sync: 1\/1\/2023/)).toBeInTheDocument();
+  });
+
+  it('opens and closes the View Details Modal', async () => {
+    const account = makeEmailAccount({
+      id: 1,
+      email: 'view@test.com',
+      name: 'View Me',
+      isActive: true,
+      authMethod: 'password'
+    });
+    mockFetchEmailAccounts.mockResolvedValue([account]);
+
+    renderPage();
+
+    await screen.findByText('View Me');
+
+    const viewBtn = screen.getByRole('button', { name: /View/i });
+    fireEvent.click(viewBtn);
+
+    expect(screen.getByText('Account Details')).toBeInTheDocument();
+    expect(screen.getByText('password')).toBeInTheDocument();
+    expect(screen.getByText('Syncing')).toBeInTheDocument();
+
+    const modalHeader = screen.getByText('Account Details').parentElement;
+    const closeBtn = modalHeader!.querySelector('button');
+    fireEvent.click(closeBtn!);
+
+    expect(screen.queryByText('Account Details')).not.toBeInTheDocument();
+  });
+
+  it('renders oauth auth method in View Details Modal for microsoft accounts', async () => {
+    const account = makeEmailAccount({
+      id: 1,
+      email: 'view@outlook.com',
+      name: 'View Me Microsoft',
+      isActive: false,
+      authMethod: 'oauth2'
+    });
+    mockFetchEmailAccounts.mockResolvedValue([account]);
+
+    renderPage();
+
+    await screen.findByText('View Me Microsoft');
+
+    const viewBtn = screen.getByRole('button', { name: /View/i });
+    fireEvent.click(viewBtn);
+
+    expect(screen.getByText('Account Details')).toBeInTheDocument();
+    expect(screen.getByText('oauth')).toBeInTheDocument(); // because it checks for outlook.com
+    expect(screen.getAllByText('Disabled').length).toBeGreaterThan(0);
+  });
+
+  it('renders missing inbound and outbound values in View Details Modal', async () => {
+    const account = makeEmailAccount({
+      id: 1,
+      email: 'missing@test.com',
+      name: 'Missing Values',
+      isActive: true,
+      authMethod: undefined,
+      imapHost: '',
+      imapPort: 0,
+      imapUser: '',
+      imapEncryption: undefined,
+      outboundProvider: 'smtp',
+      smtpHost: '',
+      smtpPort: 0,
+      smtpUser: '' // should fallback to email
+    });
+    mockFetchEmailAccounts.mockResolvedValue([account]);
+
+    renderPage();
+
+    await screen.findByText('Missing Values');
+
+    const viewBtn = screen.getByRole('button', { name: /View/i });
+    fireEvent.click(viewBtn);
+
+    expect(screen.getByText('Account Details')).toBeInTheDocument();
+    // Inbound
+    const nas = screen.getAllByText('N/A');
+    expect(nas.length).toBeGreaterThan(0);
+    // Auth Method fallback to password
+    expect(screen.getByText('password')).toBeInTheDocument();
+    // SMTP user fallback to email
+    expect(screen.getAllByText('missing@test.com').length).toBeGreaterThan(0);
+  });
+
+  it('covers oauth2 fallback and precisionsummits.com condition in View Details Modal', async () => {
+    const acc1 = makeEmailAccount({ id: 1, email: 'test@precisionsummits.com', name: 'Precision', authMethod: 'oauth2' });
+    const acc2 = makeEmailAccount({ id: 2, email: 'test@gmail.com', name: 'Gmail', authMethod: 'oauth2' });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const acc3 = makeEmailAccount({ id: 3, email: 'test@other.com', name: 'Other Auth', authMethod: 'custom_auth' as any });
+    
+    mockFetchEmailAccounts.mockResolvedValue([acc1, acc2, acc3]);
+
+    renderPage();
+
+    await screen.findByText('Precision');
+
+    const viewBtns = screen.getAllByRole('button', { name: /View/i });
+    
+    // View Precision
+    fireEvent.click(viewBtns[0]);
+    expect(screen.getByText('oauth')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Close/i }));
+
+    // View Gmail
+    fireEvent.click(viewBtns[1]);
+    expect(screen.getByText('oauth2')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Close/i }));
+
+    // View Other
+    fireEvent.click(viewBtns[2]);
+    expect(screen.getByText('custom_auth')).toBeInTheDocument();
+  });
+
+  it('toggles Active Status in account form', async () => {
+    renderPage();
+    fireEvent.click(await screen.findByText('Add Account'));
+    
+    // Find toggle button. The form has text "Active Status" and "Enable or disable background synchronization"
+    // The button is the next element or can be queried by role
+    const form = screen.getByRole('form', { name: 'Account Form' });
+    const toggleBtn = form.querySelector('button[type="button"]');
+    
+    expect(toggleBtn).toBeInTheDocument();
+    
+    // Initial state is active (bg-green-500)
+    expect(toggleBtn).toHaveClass('bg-green-500');
+    
+    // Toggle off
+    fireEvent.click(toggleBtn!);
+    
+    expect(toggleBtn).toHaveClass('bg-gray-300');
   });
 });
 

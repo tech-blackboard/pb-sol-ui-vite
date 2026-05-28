@@ -45,6 +45,7 @@ jest.mock('../../../../store/slices/crm/crm.thunks', () => {
     emptyTrashThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.emptyTrashThunk),
     fetchThreadsThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.fetchThreadsThunk),
     fetchDraftsThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.fetchDraftsThunk),
+    deleteDraftThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.deleteDraftThunk),
   };
 });
 
@@ -85,6 +86,10 @@ const makeStore = (overrides: Partial<CrmState> = {}) => {
 // ── Tests ──
 
 describe('MailboxPage', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('renders EmailAccountsPage when activeFolder is Accounts', () => {
     const store = makeStore({ activeFolder: 'Accounts' });
     render(<Provider store={store}><MailboxPage /></Provider>);
@@ -262,9 +267,25 @@ describe('MailboxPage', () => {
       await waitFor(() => expect(toast.success).toHaveBeenCalledWith('1 conversations moved to Trash'));
 
       // Error
+      act(() => {
+        store.dispatch({ type: 'crm/selectAllThreads', payload: ['t2'] });
+      });
       (crmThunks.trashThreadsThunk as unknown as jest.Mock).mockReturnValueOnce(() => ({ unwrap: () => Promise.reject('Trash Error') }));
       fireEvent.click(screen.getByTitle('Move Selected to Trash'));
       await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Trash Error'));
+    });
+
+    it('handles bulk trash drafts (coverage 77)', async () => {
+      window.confirm = jest.fn().mockReturnValue(true);
+      const store = makeStore({ selectedThreadIds: ['d1', 'd2'], activeFolder: 'Drafts' });
+      render(<Provider store={store}><MailboxPage /></Provider>);
+
+      fireEvent.click(screen.getByTitle('Move Selected to Trash'));
+      
+      await waitFor(() => {
+        // Should dispatch deleteDraftThunk instead of trashThreadsThunk
+        expect(toast.success).toHaveBeenCalledWith('2 drafts moved to Trash');
+      });
     });
 
     it('handles bulk restore success and error (coverage 84-87)', async () => {

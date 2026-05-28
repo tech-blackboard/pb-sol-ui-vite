@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react';
+import type { Editor } from '@tiptap/react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import type { RootState } from '../../../store';
 import { sendReplyThunk, saveDraftThunk } from '../../../store/slices/crm/crm.thunks';
@@ -49,8 +50,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
     const signatureInitializedRef = useRef(false);
     const containerRef = useRef<HTMLDivElement>(null);
     // TipTap Editor States
-    // TipTap Editor States
-    const [editorInstance, setEditorInstance] = useState<any>(null);
+    const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
     const [showToolbar, setShowToolbar] = useState(true);
 
     // State
@@ -548,6 +548,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                                     type="button"
                                     onClick={handleCollapse}
                                     className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 ml-1"
+                                    aria-label="Collapse"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -736,6 +737,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                         <select
                             value={emailAccountId ? `acc_${emailAccountId}` : fromEmail}
                             onChange={(e) => handleAccountChange(e.target.value)}
+                            aria-label="From"
                             className="bg-transparent border-none rounded text-xs outline-none focus:ring-0 text-blue-600 font-medium cursor-pointer"
                         >
                             {accountOptions.map((opt: { label: string; value: string }) => (

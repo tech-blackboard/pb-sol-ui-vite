@@ -31,6 +31,7 @@ describe('ContactBucketFormModal', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (sourcedbService.listWebsites as jest.Mock).mockResolvedValue([{ id: 101, name: 'Test Website' }]);
+    (contactBucketService.getContactBucketLabels as jest.Mock).mockResolvedValue([{ id: 1, name: 'test-label' }]);
     // Mock scrollTo
     Element.prototype.scrollTo = jest.fn();
   });
@@ -41,6 +42,7 @@ describe('ContactBucketFormModal', () => {
     expect(screen.getByText('Contact Details')).toBeInTheDocument();
     expect(screen.getByDisplayValue('john@example.com')).toBeDisabled();
     expect(screen.getByDisplayValue('John Doe')).toBeDisabled();
+    expect(screen.getByText('Full Name')).toBeInTheDocument();
     expect(screen.getByText('test-label')).toBeInTheDocument();
     expect(screen.getByText('Last Interaction')).toBeInTheDocument();
   });
@@ -50,7 +52,7 @@ describe('ContactBucketFormModal', () => {
     
     expect(screen.getByText('Add New Contact')).toBeInTheDocument();
     expect(screen.getByLabelText('Email*')).toHaveValue('');
-    expect(screen.getByLabelText('Full Name*')).toHaveValue('');
+    expect(screen.getByLabelText('Full Name')).toHaveValue('');
   });
 
   it('shows validation errors for required fields on submit', async () => {
@@ -60,7 +62,7 @@ describe('ContactBucketFormModal', () => {
     
     await waitFor(() => {
       expect(screen.getByText('Email is required')).toBeInTheDocument();
-      expect(screen.getByText('Full Name is required')).toBeInTheDocument();
+      expect(screen.getByText('Conference is required')).toBeInTheDocument();
       expect(toast.error).toHaveBeenCalledWith('Please fill all required fields');
     });
   });
@@ -68,16 +70,18 @@ describe('ContactBucketFormModal', () => {
   it('handles field changes and clears errors', async () => {
     render(<ContactBucketFormModal mode="add" onClose={jest.fn()} onSuccess={jest.fn()} />);
     
+    await waitFor(() => expect(screen.getByText('Test Website')).toBeInTheDocument());
+
     // Fill other required fields first to isolate email validation
-    fireEvent.change(screen.getByLabelText('Full Name*'), { target: { value: 'Name' } });
-    fireEvent.change(screen.getByLabelText('Organization*'), { target: { value: 'Org' } });
-    fireEvent.change(screen.getByLabelText('Phone*'), { target: { value: '123' } });
-    fireEvent.change(screen.getByLabelText('WhatsApp Phone*'), { target: { value: '123' } });
-    fireEvent.change(screen.getByLabelText('Country*'), { target: { value: 'India' } });
+    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Name' } });
+    fireEvent.change(screen.getByLabelText('Organization'), { target: { value: 'Org' } });
+    fireEvent.change(screen.getByLabelText('Phone'), { target: { value: '123' } });
+    fireEvent.change(screen.getByLabelText('WhatsApp Phone'), { target: { value: '123' } });
+    fireEvent.change(screen.getByLabelText('Country'), { target: { value: 'India' } });
     fireEvent.change(screen.getByLabelText('Conference*'), { target: { value: '101' } });
 
     const emailInput = screen.getByLabelText('Email*');
-    fireEvent.change(emailInput, { target: { value: 'invalid-email' } });
+    fireEvent.change(emailInput, { target: { value: 'invalid@com' } });
     fireEvent.click(screen.getByText('Create'));
     
     await waitFor(() => expect(screen.getByText('Invalid email format')).toBeInTheDocument());
@@ -93,12 +97,14 @@ describe('ContactBucketFormModal', () => {
     
     render(<ContactBucketFormModal mode="add" onClose={onClose} onSuccess={onSuccess} />);
     
+    await waitFor(() => expect(screen.getByText('Test Website')).toBeInTheDocument());
+
     fireEvent.change(screen.getByLabelText('Email*'), { target: { value: 'test@test.com' } });
-    fireEvent.change(screen.getByLabelText('Full Name*'), { target: { value: 'New User' } });
-    fireEvent.change(screen.getByLabelText('Organization*'), { target: { value: 'New Org' } });
-    fireEvent.change(screen.getByLabelText('Phone*'), { target: { value: '1112223333' } });
-    fireEvent.change(screen.getByLabelText('WhatsApp Phone*'), { target: { value: '4445556666' } });
-    fireEvent.change(screen.getByLabelText('Country*'), { target: { value: 'India' } });
+    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'New User' } });
+    fireEvent.change(screen.getByLabelText('Organization'), { target: { value: 'New Org' } });
+    fireEvent.change(screen.getByLabelText('Phone'), { target: { value: '1112223333' } });
+    fireEvent.change(screen.getByLabelText('WhatsApp Phone'), { target: { value: '4445556666' } });
+    fireEvent.change(screen.getByLabelText('Country'), { target: { value: 'India' } });
     fireEvent.change(screen.getByLabelText('Conference*'), { target: { value: '101' } });
     
     fireEvent.click(screen.getByText('Create'));
@@ -119,7 +125,9 @@ describe('ContactBucketFormModal', () => {
     (contactBucketService.updateContactBucket as jest.Mock).mockResolvedValue({ id: 1 });
     render(<ContactBucketFormModal mode="edit" item={mockItem} onClose={jest.fn()} onSuccess={jest.fn()} />);
     
-    fireEvent.change(screen.getByLabelText('Full Name*'), { target: { value: 'Updated Name' } });
+    await waitFor(() => expect(screen.getByText('Test Website')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Updated Name' } });
     fireEvent.click(screen.getByText('Update'));
     
     await waitFor(() => {
@@ -137,13 +145,15 @@ describe('ContactBucketFormModal', () => {
     
     render(<ContactBucketFormModal mode="add" onClose={jest.fn()} onSuccess={jest.fn()} />);
     
+    await waitFor(() => expect(screen.getByText('Test Website')).toBeInTheDocument());
+
     // Fill required fields
     fireEvent.change(screen.getByLabelText('Email*'), { target: { value: 'test@test.com' } });
-    fireEvent.change(screen.getByLabelText('Full Name*'), { target: { value: 'Name' } });
-    fireEvent.change(screen.getByLabelText('Organization*'), { target: { value: 'Org' } });
-    fireEvent.change(screen.getByLabelText('Phone*'), { target: { value: '123' } });
-    fireEvent.change(screen.getByLabelText('WhatsApp Phone*'), { target: { value: '123' } });
-    fireEvent.change(screen.getByLabelText('Country*'), { target: { value: 'India' } });
+    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Name' } });
+    fireEvent.change(screen.getByLabelText('Organization'), { target: { value: 'Org' } });
+    fireEvent.change(screen.getByLabelText('Phone'), { target: { value: '123' } });
+    fireEvent.change(screen.getByLabelText('WhatsApp Phone'), { target: { value: '123' } });
+    fireEvent.change(screen.getByLabelText('Country'), { target: { value: 'India' } });
     fireEvent.change(screen.getByLabelText('Conference*'), { target: { value: '101' } });
     
     fireEvent.click(screen.getByText('Create'));
@@ -160,7 +170,91 @@ describe('ContactBucketFormModal', () => {
     render(<ContactBucketFormModal mode="add" onClose={jest.fn()} onSuccess={jest.fn()} />);
     
     await waitFor(() => {
-      expect(console.error).toHaveBeenCalledWith('Failed to load websites:', expect.any(Error));
+      expect(console.error).toHaveBeenCalledWith('Failed to load data:', expect.any(Error));
+    });
+  });
+
+  describe('Label interactions', () => {
+    it('allows selecting and unselecting labels', async () => {
+      render(<ContactBucketFormModal mode="add" onClose={jest.fn()} onSuccess={jest.fn()} />);
+      await waitFor(() => expect(screen.getByText('Select labels...')).toBeInTheDocument());
+
+      // Open dropdown
+      fireEvent.click(screen.getByText('Select labels...'));
+      expect(screen.getByText('Clear All')).toBeInTheDocument();
+
+      // Select test-label
+      const labelBtn = screen.getByRole('button', { name: /test-label/i });
+      fireEvent.click(labelBtn);
+
+      // Verify it updates text
+      expect(screen.getByText('1 label(s) selected')).toBeInTheDocument();
+
+      // Unselect test-label
+      fireEvent.click(labelBtn);
+      expect(screen.getByText('Select labels...')).toBeInTheDocument();
+    });
+
+    it('allows clearing all labels', async () => {
+      render(<ContactBucketFormModal mode="edit" item={mockItem} onClose={jest.fn()} onSuccess={jest.fn()} />);
+      await waitFor(() => expect(screen.getByText('1 label(s) selected')).toBeInTheDocument());
+
+      // Open dropdown
+      fireEvent.click(screen.getByText('1 label(s) selected'));
+      
+      // Click Clear All
+      fireEvent.click(screen.getByText('Clear All'));
+
+      // Verify cleared
+      expect(screen.getByText('Select labels...')).toBeInTheDocument();
+    });
+
+    it('closes dropdown when clicking outside', async () => {
+      render(<ContactBucketFormModal mode="add" onClose={jest.fn()} onSuccess={jest.fn()} />);
+      await waitFor(() => expect(screen.getByText('Select labels...')).toBeInTheDocument());
+
+      // Open dropdown
+      fireEvent.click(screen.getByText('Select labels...'));
+      expect(screen.getByText('Clear All')).toBeInTheDocument();
+
+      // Click outside
+      fireEvent.mouseDown(document.body);
+      expect(screen.queryByText('Clear All')).not.toBeInTheDocument();
+    });
+
+    it('renders empty label state in view mode', () => {
+      render(<ContactBucketFormModal mode="view" item={{ ...mockItem, labels: [] }} onClose={jest.fn()} onSuccess={jest.fn()} />);
+      expect(screen.getByText('No interaction labels assigned.')).toBeInTheDocument();
+    });
+
+    it('allows removing labels via the displayed tag button', async () => {
+      render(<ContactBucketFormModal mode="edit" item={mockItem} onClose={jest.fn()} onSuccess={jest.fn()} />);
+      await waitFor(() => expect(screen.getByText('1 label(s) selected')).toBeInTheDocument());
+
+      // Find the cross button on the tag
+      // The tag is rendered with test-label text and an X button
+      const removeBtn = screen.getAllByRole('button').find(btn => btn.className.includes('p-0.5 hover:bg-blue-100'));
+      if (removeBtn) {
+        fireEvent.click(removeBtn);
+      }
+
+      expect(screen.getByText('Select labels...')).toBeInTheDocument();
+    });
+
+    it('shows No labels found when no labels are available', async () => {
+      (contactBucketService.getContactBucketLabels as jest.Mock).mockResolvedValue([]);
+      render(<ContactBucketFormModal mode="add" onClose={jest.fn()} onSuccess={jest.fn()} />);
+      
+      // Wait for the async load to complete so state updates are flushed
+      await waitFor(() => {
+        expect(screen.getByText('Select labels...')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText('Select labels...'));
+
+      await waitFor(() => {
+        expect(screen.getByText('No labels found')).toBeInTheDocument();
+      });
     });
   });
 });

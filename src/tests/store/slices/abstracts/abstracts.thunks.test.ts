@@ -285,4 +285,34 @@ describe('abstracts thunks', () => {
     expect(result.payload).toBe('Failed to update record')
     isAxiosErrorSpy.mockRestore()
   })
+
+  it('covers err.message fallback when response.data.message is missing for all thunks (lines 37, 52, 65, 80, 92, 118, 131)', async () => {
+    const isAxiosErrorSpy = jest.spyOn(axios, 'isAxiosError').mockReturnValue(true)
+    const errObj = { isAxiosError: true, message: 'Axios Fallback Message', response: { data: {} } }
+    
+    ;(searchAbstracts as jest.Mock).mockRejectedValue(errObj)
+    ;(updateAbstract as jest.Mock).mockRejectedValue(errObj)
+    ;(updateAbstractStatus as jest.Mock).mockRejectedValue(errObj)
+    ;(sendInvoice as jest.Mock).mockRejectedValue(errObj)
+    ;(sendPaymentReminder as jest.Mock).mockRejectedValue(errObj)
+    ;(sendPaymentReceipt as jest.Mock).mockRejectedValue(errObj)
+    ;(sendConfirmationEmail as jest.Mock).mockRejectedValue(errObj)
+
+    const thunks = [
+      fetchAbstracts({ page: 1, limit: 10, filters: { search: '', sortBy: 'now', sortOrder: 'DESC' } }),
+      updateAbstractThunk({ id: '1', body: {} }),
+      updateStatusThunk({ id: '1', statusId: 1 }),
+      sendInvoiceThunk({ abstractId: '1', invoiceData: {} as InvoiceData }),
+      sendPaymentReminderThunk({ abstractId: '1', paymentReminderData: {} as PaymentReminderData }),
+      sendPaymentReceiptThunk({ abstractId: '1', receiptData: {} as PaymentReceiptData }),
+      sendConfirmationEmailThunk('1')
+    ]
+
+    for (const t of thunks) {
+      const res = await t(dispatch, getState, undefined)
+      expect(res.payload).toBe('Axios Fallback Message')
+    }
+
+    isAxiosErrorSpy.mockRestore()
+  })
 })

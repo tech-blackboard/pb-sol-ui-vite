@@ -14,7 +14,10 @@ import {
     restoreThreadsThunk,
     deleteThreadsPermanentlyThunk,
     emptyTrashThunk,
-    fetchEmailAccountsThunk
+    fetchEmailAccountsThunk,
+    composeEmailThunk,
+    junkThreadsThunk,
+    restoreThreadsFromJunkThunk
 } from '../../../../store/slices/crm/crm.thunks';
 import * as crmService from '../../../../features/crm/services/crmService';
 
@@ -269,5 +272,164 @@ describe('crm thunks catch blocks', () => {
         (crmService.fetchEmailAccounts as jest.Mock).mockRejectedValue(new Error('Fail'));
         const result = await fetchEmailAccountsThunk(1)(dispatch, getState, undefined);
         expect(result.payload).toBe('Failed to fetch email accounts');
+    });
+
+    it('composeEmailThunk should reject with axios error message', async () => {
+        (crmService.composeEmail as jest.Mock).mockRejectedValue({
+            isAxiosError: true,
+            response: { data: { message: 'Compose Error' } }
+        });
+        const result = await composeEmailThunk({ eventId: 1, toEmail: 'a@b.com', subject: 'A', htmlBody: 'B' })(dispatch, getState, undefined);
+        expect(result.payload).toBe('Compose Error');
+    });
+
+    it('composeEmailThunk should reject with fallback message', async () => {
+        (crmService.composeEmail as jest.Mock).mockRejectedValue(new Error('Fail'));
+        const result = await composeEmailThunk({ eventId: 1, toEmail: 'a@b.com', subject: 'A', htmlBody: 'B' })(dispatch, getState, undefined);
+        expect(result.payload).toBe('Failed to send email');
+    });
+
+    it('composeEmailThunk should succeed', async () => {
+        (crmService.composeEmail as jest.Mock).mockResolvedValue({ id: 'msg1' });
+        const result = await composeEmailThunk({ eventId: 1, toEmail: 'a@b.com', subject: 'A', htmlBody: 'B' })(dispatch, getState, undefined);
+        expect(result.payload).toEqual({ id: 'msg1' });
+    });
+
+    it('junkThreadsThunk should reject with axios error message', async () => {
+        (crmService.junkThreads as jest.Mock).mockRejectedValue({
+            isAxiosError: true,
+            response: { data: { message: 'Junk Error' } }
+        });
+        const result = await junkThreadsThunk(['t1'])(dispatch, getState, undefined);
+        expect(result.payload).toBe('Junk Error');
+    });
+
+    it('junkThreadsThunk should succeed', async () => {
+        (crmService.junkThreads as jest.Mock).mockResolvedValue(undefined);
+        const result = await junkThreadsThunk(['t1'])(dispatch, getState, undefined);
+        expect(result.payload).toEqual(['t1']);
+    });
+
+    it('restoreThreadsFromJunkThunk should reject with axios error message', async () => {
+        (crmService.restoreThreadsFromJunk as jest.Mock).mockRejectedValue({
+            isAxiosError: true,
+            response: { data: { message: 'Restore Error' } }
+        });
+        const result = await restoreThreadsFromJunkThunk(['t1'])(dispatch, getState, undefined);
+        expect(result.payload).toBe('Restore Error');
+    });
+
+    it('restoreThreadsFromJunkThunk should succeed', async () => {
+        (crmService.restoreThreadsFromJunk as jest.Mock).mockResolvedValue(undefined);
+        const result = await restoreThreadsFromJunkThunk(['t1'])(dispatch, getState, undefined);
+        expect(result.payload).toEqual(['t1']);
+    });
+
+    it('trashThreadsThunk should handle generic error', async () => {
+        (crmService.trashThreads as jest.Mock).mockRejectedValue(new Error('Fail'));
+        const result = await trashThreadsThunk(['t1'])(dispatch, getState, undefined);
+        expect(result.payload).toBe('Failed to move threads to trash');
+    });
+
+    it('restoreThreadsThunk should handle generic error', async () => {
+        (crmService.restoreThreads as jest.Mock).mockRejectedValue(new Error('Fail'));
+        const result = await restoreThreadsThunk(['t1'])(dispatch, getState, undefined);
+        expect(result.payload).toBe('Failed to restore threads from trash');
+    });
+
+    it('deleteThreadsPermanentlyThunk should handle generic error', async () => {
+        (crmService.deleteThreadsPermanently as jest.Mock).mockRejectedValue(new Error('Fail'));
+        const result = await deleteThreadsPermanentlyThunk(['t1'])(dispatch, getState, undefined);
+        expect(result.payload).toBe('Failed to delete threads permanently');
+    });
+
+    it('junkThreadsThunk should handle generic error', async () => {
+        (crmService.junkThreads as jest.Mock).mockRejectedValue(new Error('Fail'));
+        const result = await junkThreadsThunk(['t1'])(dispatch, getState, undefined);
+        expect(result.payload).toBe('Failed to report threads as spam');
+    });
+
+    it('restoreThreadsFromJunkThunk should handle generic error', async () => {
+        (crmService.restoreThreadsFromJunk as jest.Mock).mockRejectedValue(new Error('Fail'));
+        const result = await restoreThreadsFromJunkThunk(['t1'])(dispatch, getState, undefined);
+        expect(result.payload).toBe('Failed to restore threads from junk');
+    });
+
+    it('should join array error messages', async () => {
+        (crmService.deleteDraft as jest.Mock).mockRejectedValue({
+            isAxiosError: true,
+            response: { data: { message: ['Error 1', 'Error 2'] } }
+        });
+        const result = await deleteDraftThunk('d1')(dispatch, getState, undefined);
+        expect(result.payload).toBe('Error 1, Error 2');
+    });
+
+    it('covers err.message fallback when response.data.message is missing (lines 245-246, 258-259, 271-272, 284-285)', async () => {
+        const errObj = { isAxiosError: true, message: 'Axios Fallback Message', response: { data: {} } };
+        
+        (crmService.deleteThreadsPermanently as jest.Mock).mockRejectedValue(errObj);
+        (crmService.emptyTrash as jest.Mock).mockRejectedValue(errObj);
+        (crmService.junkThreads as jest.Mock).mockRejectedValue(errObj);
+        (crmService.restoreThreadsFromJunk as jest.Mock).mockRejectedValue(errObj);
+
+        const thunks = [
+            deleteThreadsPermanentlyThunk(['1']),
+            emptyTrashThunk(1),
+            junkThreadsThunk(['1']),
+            restoreThreadsFromJunkThunk(['1'])
+        ];
+
+        for (const t of thunks) {
+            const res = await t(dispatch, getState, undefined);
+            expect(res.payload).toBe('Axios Fallback Message');
+        }
+    });
+
+    it('covers all error branches for all crm thunks', async () => {
+        const testCases = [
+            { thunk: fetchEventsThunk(), mockFn: crmService.fetchCrmEvents, fallback: 'Failed to fetch events' },
+            { thunk: fetchThreadsThunk({}), mockFn: crmService.fetchThreads, fallback: 'Failed to fetch threads' },
+            { thunk: fetchEmailAccountsThunk(1), mockFn: crmService.fetchEmailAccounts, fallback: 'Failed to fetch email accounts' },
+            { thunk: fetchMessagesThunk('1'), mockFn: crmService.fetchThreadMessages, fallback: 'Failed to fetch messages' },
+            { thunk: toggleThreadStarThunk({ threadId: '1', isStarred: true }), mockFn: crmService.toggleThreadStar, fallback: 'Failed to update star status' },
+            { thunk: toggleThreadReadThunk({ threadId: '1', isRead: true }), mockFn: crmService.updateThreadReadStatus, fallback: 'Failed to update read status' },
+            { thunk: sendReplyThunk({ contactId: 1, eventId: 1, subject: '', textBody: '', htmlBody: '' }), mockFn: crmService.sendReply, fallback: 'Failed to send reply' },
+            { thunk: deleteDraftThunk('1'), mockFn: crmService.deleteDraft, fallback: 'Failed to delete draft', isArray: true },
+            { thunk: fetchLabelDefinitionsThunk(), mockFn: crmService.fetchLabelDefinitions, fallback: 'Failed to fetch label definitions' },
+            { thunk: trashThreadsThunk(['1']), mockFn: crmService.trashThreads, fallback: 'Failed to move threads to trash', isArray: true },
+            { thunk: restoreThreadsThunk(['1']), mockFn: crmService.restoreThreads, fallback: 'Failed to restore threads from trash', isArray: true },
+            { thunk: deleteThreadsPermanentlyThunk(['1']), mockFn: crmService.deleteThreadsPermanently, fallback: 'Failed to delete threads permanently', isArray: true },
+            { thunk: emptyTrashThunk(1), mockFn: crmService.emptyTrash, fallback: 'Failed to empty trash', isArray: true },
+            { thunk: junkThreadsThunk(['1']), mockFn: crmService.junkThreads, fallback: 'Failed to report threads as spam', isArray: true },
+            { thunk: restoreThreadsFromJunkThunk(['1']), mockFn: crmService.restoreThreadsFromJunk, fallback: 'Failed to restore threads from junk', isArray: true },
+        ];
+
+        for (const tc of testCases) {
+            // Test 1: Non-Axios Error (fallback message)
+            (tc.mockFn as jest.Mock).mockRejectedValue(new Error('Normal Error'));
+            let res = await tc.thunk(dispatch, getState, undefined);
+            expect(res.payload).toBe(tc.fallback);
+
+            // Test 2: Axios Error missing response data message (fallback to err.message)
+            (tc.mockFn as jest.Mock).mockRejectedValue({
+                isAxiosError: true,
+                message: 'Fallback Axios Message',
+                response: { data: {} }
+            });
+            res = await tc.thunk(dispatch, getState, undefined);
+            expect(res.payload).toBe('Fallback Axios Message');
+
+            // Test 3: Array message join
+            (tc.mockFn as jest.Mock).mockRejectedValue({
+                isAxiosError: true,
+                response: { data: { message: ['Arr1', 'Arr2'] } }
+            });
+            res = await tc.thunk(dispatch, getState, undefined);
+            if (tc.isArray) {
+                expect(res.payload).toBe('Arr1, Arr2');
+            } else {
+                expect(res.payload).toEqual(['Arr1', 'Arr2']);
+            }
+        }
     });
 });

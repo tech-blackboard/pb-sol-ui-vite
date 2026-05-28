@@ -116,6 +116,17 @@ describe('crmService', () => {
     });
   });
 
+  describe('composeEmail', () => {
+    it('calls api.post with payload', async () => {
+      const payload = { eventId: 1, toEmail: 'test@example.com', subject: 'S', htmlBody: 'H' };
+      mockApi.post.mockResolvedValueOnce({ data: { status: 'ok', messageId: 'm2' } });
+      
+      const result = await crmService.composeEmail(payload);
+      expect(mockApi.post).toHaveBeenCalledWith(expect.stringContaining('/compose'), payload, expect.anything());
+      expect(result.status).toBe('ok');
+    });
+  });
+
   describe('saveDraft', () => {
     it('calls api.post and returns message', async () => {
       const payload = { contactId: 1, eventId: 1, subject: 'S' };
@@ -272,6 +283,20 @@ describe('crmService', () => {
       mockApi.delete.mockResolvedValueOnce({});
       await crmService.emptyTrash(1);
       expect(mockApi.delete).toHaveBeenCalledWith(expect.stringContaining('/threads/empty-trash/1'), expect.anything());
+    });
+  });
+
+  describe('Junk Management', () => {
+    it('junkThreads calls api.post', async () => {
+      mockApi.post.mockResolvedValueOnce({});
+      await crmService.junkThreads(['t1']);
+      expect(mockApi.post).toHaveBeenCalledWith(expect.stringContaining('/threads/junk'), { threadIds: ['t1'] }, expect.anything());
+    });
+
+    it('restoreThreadsFromJunk calls api.post', async () => {
+      mockApi.post.mockResolvedValueOnce({});
+      await crmService.restoreThreadsFromJunk(['t1']);
+      expect(mockApi.post).toHaveBeenCalledWith(expect.stringContaining('/threads/unjunk'), { threadIds: ['t1'] }, expect.anything());
     });
   });
 });

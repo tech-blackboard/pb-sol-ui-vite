@@ -195,18 +195,23 @@ describe('RegistrationDetailsModal', () => {
       id: 1,
       name: 'Test',
       email: 'test@test.com',
-      institution: 'Test Inst',
-      website: { id: 1, name: 'Web' },
-      phone: '',
-      country: '',
-      presentation: '',
-      participants: '0',
-      dietary: '',
-      requirements: '',
-      regtype: 'delegate',
-      accomm: 'none'
+      institution: undefined,
+      website: undefined,
+      phone: undefined,
+      wphone: undefined,
+      country: undefined,
+      presentation: undefined,
+      participants: undefined,
+      regtype: undefined,
+      accomm: undefined,
+      checkin: undefined,
+      checkout: undefined,
+      nights: undefined,
+      accmvalue: undefined,
+      acmpng: undefined
     }
-    render(<RegistrationDetailsModal item={minimalItem} onClose={mockOnClose} />)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    render(<RegistrationDetailsModal item={minimalItem as any} onClose={mockOnClose} />)
     expect(screen.getAllByText('—').length).toBeGreaterThan(5)
   })
 })

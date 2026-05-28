@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { useEditor, EditorContent, Extension } from '@tiptap/react';
-import { Node } from '@tiptap/core';
+import { useEditor, EditorContent, Extension, Editor } from '@tiptap/react';
+import { Node, type CommandProps } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
@@ -21,14 +21,14 @@ const CustomParagraph = Paragraph.extend({
       class: {
         default: 'gmail-paragraph',
         parseHTML: (element: HTMLElement) => element.getAttribute('class') || 'gmail-paragraph',
-        renderHTML: (attributes: Record<string, any>) => {
+        renderHTML: (attributes: Record<string, string>) => {
           return { class: attributes.class };
         },
       },
       style: {
         default: null,
         parseHTML: (element: HTMLElement) => element.getAttribute('style') || null,
-        renderHTML: (attributes: Record<string, any>) => {
+        renderHTML: (attributes: Record<string, string>) => {
           if (!attributes.style) return {};
           return { style: attributes.style };
         },
@@ -48,12 +48,12 @@ const SpanExtension = Node.create({
       style: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute('style') || null,
-        renderHTML: (attrs: Record<string, any>) => attrs.style ? { style: attrs.style } : {},
+        renderHTML: (attrs: Record<string, string>) => attrs.style ? { style: attrs.style } : {},
       },
       class: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute('class') || null,
-        renderHTML: (attrs: Record<string, any>) => attrs.class ? { class: attrs.class } : {},
+        renderHTML: (attrs: Record<string, string>) => attrs.class ? { class: attrs.class } : {},
       },
     };
   },
@@ -73,7 +73,7 @@ const CustomLink = Link.extend({
       class: {
         default: null,
         parseHTML: (element: HTMLElement) => element.getAttribute('class') || null,
-        renderHTML: (attributes: Record<string, any>) => {
+        renderHTML: (attributes: Record<string, string>) => {
           if (!attributes.class) return {};
           return { class: attributes.class };
         },
@@ -81,7 +81,7 @@ const CustomLink = Link.extend({
       style: {
         default: null,
         parseHTML: (element: HTMLElement) => element.getAttribute('style') || null,
-        renderHTML: (attributes: Record<string, any>) => {
+        renderHTML: (attributes: Record<string, string>) => {
           if (!attributes.style) return {};
           return { style: attributes.style };
         },
@@ -98,7 +98,7 @@ const CustomImage = Image.extend({
       class: {
         default: null,
         parseHTML: (element: HTMLElement) => element.getAttribute('class') || null,
-        renderHTML: (attributes: Record<string, any>) => {
+        renderHTML: (attributes: Record<string, string>) => {
           if (!attributes.class) return {};
           return { class: attributes.class };
         },
@@ -106,7 +106,7 @@ const CustomImage = Image.extend({
       style: {
         default: null,
         parseHTML: (element: HTMLElement) => element.getAttribute('style') || null,
-        renderHTML: (attributes: Record<string, any>) => {
+        renderHTML: (attributes: Record<string, string>) => {
           if (!attributes.style) return {};
           return { style: attributes.style };
         },
@@ -114,7 +114,7 @@ const CustomImage = Image.extend({
       width: {
         default: null,
         parseHTML: (element: HTMLElement) => element.getAttribute('width') || null,
-        renderHTML: (attributes: Record<string, any>) => {
+        renderHTML: (attributes: Record<string, string>) => {
           if (!attributes.width) return {};
           return { width: attributes.width };
         },
@@ -122,7 +122,7 @@ const CustomImage = Image.extend({
       height: {
         default: null,
         parseHTML: (element: HTMLElement) => element.getAttribute('height') || null,
-        renderHTML: (attributes: Record<string, any>) => {
+        renderHTML: (attributes: Record<string, string>) => {
           if (!attributes.height) return {};
           return { height: attributes.height };
         },
@@ -185,7 +185,7 @@ const DivExtension = Node.create({
       class: {
         default: null,
         parseHTML: (element: HTMLElement) => element.getAttribute('class') || null,
-        renderHTML: (attributes: Record<string, any>) => {
+        renderHTML: (attributes: Record<string, string>) => {
           if (!attributes.class) return {};
           return { class: attributes.class };
         },
@@ -193,7 +193,7 @@ const DivExtension = Node.create({
       style: {
         default: null,
         parseHTML: (element: HTMLElement) => element.getAttribute('style') || null,
-        renderHTML: (attributes: Record<string, any>) => {
+        renderHTML: (attributes: Record<string, string>) => {
           if (!attributes.style) return {};
           return { style: attributes.style };
         },
@@ -227,27 +227,27 @@ const TableExtension = Node.create({
       style: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute('style') || null,
-        renderHTML: (attrs: Record<string, any>) => attrs.style ? { style: attrs.style } : {},
+        renderHTML: (attrs: Record<string, string>) => attrs.style ? { style: attrs.style } : {},
       },
       class: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute('class') || null,
-        renderHTML: (attrs: Record<string, any>) => attrs.class ? { class: attrs.class } : {},
+        renderHTML: (attrs: Record<string, string>) => attrs.class ? { class: attrs.class } : {},
       },
       cellpadding: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute('cellpadding') || null,
-        renderHTML: (attrs: Record<string, any>) => attrs.cellpadding ? { cellpadding: attrs.cellpadding } : {},
+        renderHTML: (attrs: Record<string, string>) => attrs.cellpadding ? { cellpadding: attrs.cellpadding } : {},
       },
       cellspacing: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute('cellspacing') || null,
-        renderHTML: (attrs: Record<string, any>) => attrs.cellspacing ? { cellspacing: attrs.cellspacing } : {},
+        renderHTML: (attrs: Record<string, string>) => attrs.cellspacing ? { cellspacing: attrs.cellspacing } : {},
       },
       width: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute('width') || null,
-        renderHTML: (attrs: Record<string, any>) => attrs.width ? { width: attrs.width } : {},
+        renderHTML: (attrs: Record<string, string>) => attrs.width ? { width: attrs.width } : {},
       },
     };
   },
@@ -268,12 +268,12 @@ const TableRowExtension = Node.create({
       style: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute('style') || null,
-        renderHTML: (attrs: Record<string, any>) => attrs.style ? { style: attrs.style } : {},
+        renderHTML: (attrs: Record<string, string>) => attrs.style ? { style: attrs.style } : {},
       },
       class: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute('class') || null,
-        renderHTML: (attrs: Record<string, any>) => attrs.class ? { class: attrs.class } : {},
+        renderHTML: (attrs: Record<string, string>) => attrs.class ? { class: attrs.class } : {},
       },
     };
   },
@@ -294,22 +294,22 @@ const TableCellExtension = Node.create({
       style: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute('style') || null,
-        renderHTML: (attrs: Record<string, any>) => attrs.style ? { style: attrs.style } : {},
+        renderHTML: (attrs: Record<string, string>) => attrs.style ? { style: attrs.style } : {},
       },
       class: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute('class') || null,
-        renderHTML: (attrs: Record<string, any>) => attrs.class ? { class: attrs.class } : {},
+        renderHTML: (attrs: Record<string, string>) => attrs.class ? { class: attrs.class } : {},
       },
       width: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute('width') || null,
-        renderHTML: (attrs: Record<string, any>) => attrs.width ? { width: attrs.width } : {},
+        renderHTML: (attrs: Record<string, string>) => attrs.width ? { width: attrs.width } : {},
       },
       height: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute('height') || null,
-        renderHTML: (attrs: Record<string, any>) => attrs.height ? { height: attrs.height } : {},
+        renderHTML: (attrs: Record<string, string>) => attrs.height ? { height: attrs.height } : {},
       },
     };
   },
@@ -330,22 +330,22 @@ const TableHeaderExtension = Node.create({
       style: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute('style') || null,
-        renderHTML: (attrs: Record<string, any>) => attrs.style ? { style: attrs.style } : {},
+        renderHTML: (attrs: Record<string, string>) => attrs.style ? { style: attrs.style } : {},
       },
       class: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute('class') || null,
-        renderHTML: (attrs: Record<string, any>) => attrs.class ? { class: attrs.class } : {},
+        renderHTML: (attrs: Record<string, string>) => attrs.class ? { class: attrs.class } : {},
       },
       width: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute('width') || null,
-        renderHTML: (attrs: Record<string, any>) => attrs.width ? { width: attrs.width } : {},
+        renderHTML: (attrs: Record<string, string>) => attrs.width ? { width: attrs.width } : {},
       },
       height: {
         default: null,
         parseHTML: (el: HTMLElement) => el.getAttribute('height') || null,
-        renderHTML: (attrs: Record<string, any>) => attrs.height ? { height: attrs.height } : {},
+        renderHTML: (attrs: Record<string, string>) => attrs.height ? { height: attrs.height } : {},
       },
     };
   },
@@ -373,7 +373,7 @@ const FontSize = Extension.create({
           fontSize: {
             default: null,
             parseHTML: (element: HTMLElement) => element.style.fontSize || null,
-            renderHTML: (attributes: Record<string, any>) => {
+            renderHTML: (attributes: Record<string, string>) => {
               if (!attributes.fontSize) {
                 return {};
               }
@@ -388,13 +388,13 @@ const FontSize = Extension.create({
   },
   addCommands() {
     return {
-      setFontSize: (fontSize: string) => ({ chain }: any) => {
+      setFontSize: (fontSize: string) => ({ chain }: CommandProps) => {
         return chain().setMark('textStyle', { fontSize }).run();
       },
-      unsetFontSize: () => ({ chain }: any) => {
+      unsetFontSize: () => ({ chain }: CommandProps) => {
         return chain().setMark('textStyle', { fontSize: null }).run();
       },
-    } as any;
+    };
   },
 });
 
@@ -414,7 +414,7 @@ const FontFamily = Extension.create({
           fontFamily: {
             default: null,
             parseHTML: (element: HTMLElement) => element.style.fontFamily || null,
-            renderHTML: (attributes: Record<string, any>) => {
+            renderHTML: (attributes: Record<string, string>) => {
               if (!attributes.fontFamily) {
                 return {};
               }
@@ -429,13 +429,13 @@ const FontFamily = Extension.create({
   },
   addCommands() {
     return {
-      setFontFamily: (fontFamily: string) => ({ chain }: any) => {
+      setFontFamily: (fontFamily: string) => ({ chain }: CommandProps) => {
         return chain().setMark('textStyle', { fontFamily }).run();
       },
-      unsetFontFamily: () => ({ chain }: any) => {
+      unsetFontFamily: () => ({ chain }: CommandProps) => {
         return chain().setMark('textStyle', { fontFamily: null }).run();
       },
-    } as any;
+    };
   },
 });
 
@@ -451,7 +451,7 @@ interface GmailReplyEditorProps {
   onChange: (html: string) => void;
   placeholder?: string;
   disabled?: boolean;
-  onEditorReady?: (editor: any) => void;
+  onEditorReady?: (editor: Editor) => void;
 }
 
 

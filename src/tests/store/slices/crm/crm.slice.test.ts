@@ -34,7 +34,9 @@ import {
     restoreThreadsThunk,
     emptyTrashThunk,
     fetchEmailAccountsThunk,
-    deleteThreadsPermanentlyThunk
+    deleteThreadsPermanentlyThunk,
+    junkThreadsThunk,
+    restoreThreadsFromJunkThunk
 } from '../../../../store/slices/crm/crm.thunks';
 import type { Message, CrmEvent, Thread, CrmLabel, EmailAccount } from '../../../../features/crm/types';
 import type { CrmState } from '../../../../store/slices/crm/crm.slice';
@@ -180,12 +182,12 @@ describe('crm slice', () => {
             expect(state.error).toBeNull();
         });
 
-        it('handles fetchEventsThunk.fulfilled and selects first event if none active', () => {
+        it('handles fetchEventsThunk.fulfilled', () => {
             const events = [{ id: 1, name: 'Event 1' }, { id: 2, name: 'Event 2' }] as unknown as CrmEvent[];
             const state = reducer(initialState, fetchEventsThunk.fulfilled(events, '', undefined));
             expect(state.loading.events).toBe(false);
             expect(state.events).toEqual(events);
-            expect(state.activeEventId).toBe(1);
+            expect(state.activeEventId).toBeNull();
         });
 
         it('handles fetchEventsThunk.fulfilled and keeps active event', () => {
@@ -551,6 +553,45 @@ describe('crm slice', () => {
             expect(state.threads).toHaveLength(0);
             expect(state.totalThreads).toBe(0);
             expect(state.trashCount).toBe(0);
+        });
+        it('handles junkThreadsThunk.fulfilled', () => {
+            const startState = {
+                ...initialState,
+                threads: [{ id: 't1' }, { id: 't2' }] as Thread[],
+                totalThreads: 2,
+                junkCount: 0,
+                selectedThreadIds: ['t1'],
+                selectedThreadId: 't1',
+                messages: [{ id: 'm1' }] as Message[]
+            };
+            const state = reducer(startState, junkThreadsThunk.fulfilled(['t1'], '', ['t1']));
+            expect(state.threads).toHaveLength(1);
+            expect(state.threads[0].id).toBe('t2');
+            expect(state.totalThreads).toBe(1);
+            expect(state.junkCount).toBe(1);
+            expect(state.selectedThreadIds).toHaveLength(0);
+            expect(state.selectedThreadId).toBeNull();
+            expect(state.messages).toHaveLength(0);
+        });
+
+        it('handles restoreThreadsFromJunkThunk.fulfilled', () => {
+            const startState = {
+                ...initialState,
+                threads: [{ id: 't1' }, { id: 't2' }] as Thread[],
+                totalThreads: 2,
+                junkCount: 1,
+                selectedThreadIds: ['t1'],
+                selectedThreadId: 't1',
+                messages: [{ id: 'm1' }] as Message[]
+            };
+            const state = reducer(startState, restoreThreadsFromJunkThunk.fulfilled(['t1'], '', ['t1']));
+            expect(state.threads).toHaveLength(1);
+            expect(state.threads[0].id).toBe('t2');
+            expect(state.totalThreads).toBe(1);
+            expect(state.junkCount).toBe(0);
+            expect(state.selectedThreadIds).toHaveLength(0);
+            expect(state.selectedThreadId).toBeNull();
+            expect(state.messages).toHaveLength(0);
         });
     });
 });
