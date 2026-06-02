@@ -96,8 +96,10 @@ function App() {
     },
     ...(isAdmin ? [{ id: 'deviceManagment', label: 'Device Management' }] : []),
     { id: 'crm', label: 'Mailbox' },
-    { id: 'contactBucket', label: 'Contact Bucket' },
-    { id: 'globalContacts', label: 'Global Contacts' }
+    ...(isAdmin ? [
+      { id: 'contactBucket', label: 'Contact Bucket' },
+      { id: 'globalContacts', label: 'Global Contacts' }
+    ] : [])
   ];
 
   const user: User | null = (authUser as unknown as User) ?? null
@@ -205,11 +207,11 @@ function App() {
                 <SponsorshipsPage />
               ) : activeId === 'contacts' ? (
                 <ContactsPage />
-              ) : activeId === 'crm' || activeId === 'contactBucket' ? (
+              ) : activeId === 'crm' || (activeId === 'contactBucket' && isAdmin) ? (
                 <MailboxPage />
-              ) : activeId === 'globalContacts' ? (
+              ) : activeId === 'globalContacts' && isAdmin ? (
                 <GlobalContactsPage />
-              ) : activeId === 'deviceManagment' ? (
+              ) : activeId === 'deviceManagment' && isAdmin ? (
 
                 <DeviceManagement />
               ) : (
