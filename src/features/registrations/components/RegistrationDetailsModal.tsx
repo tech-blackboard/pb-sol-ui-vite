@@ -4,9 +4,11 @@ import type { RegistrationItem } from '../../../services/registrations'
 interface Props {
     item: RegistrationItem | null
     onClose: () => void
+    onEdit?: (item: RegistrationItem) => void
+    onDelete?: (item: RegistrationItem) => void
 }
 
-export default function RegistrationDetailsModal({ item, onClose }: Props) {
+export default function RegistrationDetailsModal({ item, onClose, onEdit, onDelete }: Props) {
     if (!item) return null
 
     return (
@@ -15,15 +17,37 @@ export default function RegistrationDetailsModal({ item, onClose }: Props) {
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
                     <h2 className="text-xl font-bold text-gray-800">Registration Details</h2>
-                    <button
-                        onClick={onClose}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-200 transition-colors text-gray-500"
-                        aria-label="Close"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-6 h-6">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {onEdit && (
+                            <button
+                                onClick={() => onEdit(item)}
+                                className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                            >
+                                ✎ Edit
+                            </button>
+                        )}
+                        {onDelete && (
+                            <button
+                                onClick={() => {
+                                    if (confirm('Are you sure you want to delete this record?')) {
+                                        onDelete(item)
+                                    }
+                                }}
+                                className="inline-flex items-center gap-1 rounded-md border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors"
+                            >
+                                🗑 Delete
+                            </button>
+                        )}
+                        <button
+                            onClick={onClose}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-200 transition-colors text-gray-500"
+                            aria-label="Close"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-6 h-6">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Body */}

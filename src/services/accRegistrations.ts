@@ -79,3 +79,11 @@ export async function createAccRegistration(data: Partial<AccRegistrationItem>):
     });
     return responseData;
 }
+
+export async function updateAccRegistration(id: number | string, data: Partial<AccRegistrationItem>): Promise<AccRegistrationItem> {
+    const { data: responseData } = await api.patch(`${ACC_REGISTRATION_BASE}/${id}`, data, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return responseData;
+}

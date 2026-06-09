@@ -87,3 +87,11 @@ export async function createRegistration(data: Partial<RegistrationItem>): Promi
     });
     return result;
 }
+
+export async function updateRegistration(id: number | string, data: Partial<RegistrationItem>): Promise<RegistrationItem> {
+    const { data: result } = await api.put(`${REGISTRATION_BASE}/${id}`, data, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return result;
+}

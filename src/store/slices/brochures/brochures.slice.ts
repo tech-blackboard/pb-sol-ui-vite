@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
-import { searchBrochures, createBrochure, type BrochureItem } from '../../../services/brochures';
+import { searchBrochures, createBrochure, updateBrochure, deleteBrochure, type BrochureItem } from '../../../services/brochures';
 
 export interface BrochureFilters {
     search?: string;
@@ -16,6 +16,7 @@ export interface BrochureFilters {
 export interface BrochuresState {
     items: BrochureItem[];
     loading: boolean;
+    editLoading: boolean;
     error: string | null;
     page: number;
     pageSize: number;
@@ -52,9 +53,34 @@ export const createBrochureThunk = createAsyncThunk(
     }
 );
 
+export const updateBrochureThunk = createAsyncThunk(
+    'brochures/update',
+    async ({ id, data }: { id: string | number; data: Partial<BrochureItem> }, { rejectWithValue }) => {
+        try {
+            return await updateBrochure(id, data);
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to update brochure';
+            return rejectWithValue(message);
+        }
+    }
+);
+
+export const deleteBrochureThunk = createAsyncThunk(
+    'brochures/delete',
+    async (id: string | number, { rejectWithValue }) => {
+        try {
+            await deleteBrochure(id);
+            return id;
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to delete brochure request');
+        }
+    }
+);
+
 const initialState: BrochuresState = {
     items: [],
     loading: false,
+    editLoading: false,
     error: null,
     page: 1,
     pageSize: 10,
@@ -129,6 +155,32 @@ const brochuresSlice = createSlice({
             .addCase(createBrochureThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = (action.payload as string) || action.error.message || 'Failed to create brochure request';
+            })
+            .addCase(updateBrochureThunk.pending, (state) => {
+                state.editLoading = true;
+            })
+            .addCase(updateBrochureThunk.fulfilled, (state, { payload }) => {
+                state.editLoading = false;
+                state.items = state.items.map(i => i.id === payload.id ? payload : i);
+                if (state.selected?.id === payload.id) state.selected = payload;
+            })
+            .addCase(updateBrochureThunk.rejected, (state, action) => {
+                state.editLoading = false;
+                state.error = (action.payload as string) || action.error.message || 'Failed to update brochure';
+            })
+            .addCase(deleteBrochureThunk.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(deleteBrochureThunk.fulfilled, (state, action) => {
+                state.loading = false;
+                state.items = state.items.filter((item) => item.id !== action.payload);
+                if (state.selected?.id === action.payload) {
+                    state.selected = null;
+                }
+            })
+            .addCase(deleteBrochureThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = (action.payload as string) || action.error.message || 'Failed to delete brochure request';
             });
     },
 });

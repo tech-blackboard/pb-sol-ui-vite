@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
-import { fetchContacts, setPage, setPageSize, setSelected, clearSelected, clearError } from '../../../store/slices/contacts/contacts.slice'
+import { fetchContacts, deleteContactThunk, setPage, setPageSize, setSelected, clearSelected, clearError } from '../../../store/slices/contacts/contacts.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import ContactTable from '../components/ContactTable'
 import ContactDetailsModal from '../components/ContactDetailsModal'
@@ -66,6 +66,10 @@ export default function ContactsPage() {
                 <ContactDetailsModal
                     item={selected}
                     onClose={() => dispatch(clearSelected())}
+                    onDelete={(item) => {
+                        dispatch(deleteContactThunk(item.id))
+                        dispatch(clearSelected())
+                    }}
                 />
             )}
         </div>

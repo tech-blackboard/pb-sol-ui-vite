@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
-import { searchContacts, createContact, type ContactItem } from '../../../services/contacts';
+import { searchContacts, createContact, updateContact, deleteContact, type ContactItem } from '../../../services/contacts';
 
 
 export interface ContactFilters {
@@ -17,6 +17,7 @@ export interface ContactFilters {
 export interface ContactsState {
     items: ContactItem[];
     loading: boolean;
+    editLoading: boolean;
     error: string | null;
     page: number;
     pageSize: number;
@@ -53,9 +54,34 @@ export const createContactThunk = createAsyncThunk(
     }
 );
 
+export const updateContactThunk = createAsyncThunk(
+    'contacts/update',
+    async ({ id, data }: { id: string | number; data: Partial<ContactItem> }, { rejectWithValue }) => {
+        try {
+            return await updateContact(id, data);
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to update contact';
+            return rejectWithValue(message);
+        }
+    }
+);
+
+export const deleteContactThunk = createAsyncThunk(
+    'contacts/delete',
+    async (id: string | number, { rejectWithValue }) => {
+        try {
+            await deleteContact(id);
+            return id;
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to delete contact');
+        }
+    }
+);
+
 const initialState: ContactsState = {
     items: [],
     loading: false,
+    editLoading: false,
     error: null,
     page: 1,
     pageSize: 10,
@@ -132,6 +158,32 @@ const contactsSlice = createSlice({
             .addCase(createContactThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = (action.payload as string) || action.error.message || 'Failed to create contact';
+            })
+            .addCase(updateContactThunk.pending, (state) => {
+                state.editLoading = true;
+            })
+            .addCase(updateContactThunk.fulfilled, (state, { payload }) => {
+                state.editLoading = false;
+                state.items = state.items.map(i => i.id === payload.id ? payload : i);
+                if (state.selected?.id === payload.id) state.selected = payload;
+            })
+            .addCase(updateContactThunk.rejected, (state, action) => {
+                state.editLoading = false;
+                state.error = (action.payload as string) || action.error.message || 'Failed to update contact';
+            })
+            .addCase(deleteContactThunk.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(deleteContactThunk.fulfilled, (state, action) => {
+                state.loading = false;
+                state.items = state.items.filter((item) => item.id !== action.payload);
+                if (state.selected?.id === action.payload) {
+                    state.selected = null;
+                }
+            })
+            .addCase(deleteContactThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = (action.payload as string) || action.error.message || 'Failed to delete contact';
             });
     },
 });

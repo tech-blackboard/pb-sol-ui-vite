@@ -1,17 +1,21 @@
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { setSelected, clearSelected, setPage, setPageSize, clearError } from '../../../store/slices/registrations/registrations.slice'
-import { fetchRegistrations } from '../../../store/slices/registrations/registrations.thunks'
+import { fetchRegistrations, deleteRegistrationThunk } from '../../../store/slices/registrations/registrations.thunks'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import RegistrationTable from '../components/RegistrationTable'
 import RegistrationDetailsModal from '../components/RegistrationDetailsModal'
 import RegistrationHeader from '../components/RegistrationHeader'
+import RegistrationForm from '../components/RegistrationForm'
+import type { RegistrationItem } from '../../../services/registrations'
 
 export default function RegistrationsPage() {
     const dispatch = useAppDispatch()
 
     const { items, loading, page, pageSize, total, error, appliedFilters, selected } =
         useAppSelector((s) => s.registrations)
+
+    const [editItem, setEditItem] = useState<RegistrationItem | null>(null)
 
     useEffect(() => {
         dispatch(fetchRegistrations({ filters: appliedFilters, page, limit: pageSize }))
@@ -44,6 +48,25 @@ export default function RegistrationsPage() {
                 <RegistrationDetailsModal
                     item={selected}
                     onClose={() => dispatch(clearSelected())}
+                    onEdit={(item) => {
+                        setEditItem(item)
+                        dispatch(clearSelected())
+                    }}
+                    onDelete={(item) => {
+                        dispatch(deleteRegistrationThunk(item.id))
+                        dispatch(clearSelected())
+                    }}
+                />
+            )}
+
+            {editItem && (
+                <RegistrationForm
+                    editData={editItem}
+                    onClose={() => setEditItem(null)}
+                    onSuccess={() => {
+                        setEditItem(null)
+                        dispatch(fetchRegistrations({ filters: appliedFilters, page, limit: pageSize }))
+                    }}
                 />
             )}
         </div>
