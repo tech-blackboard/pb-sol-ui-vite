@@ -18,7 +18,7 @@ export interface SponsorshipFilters {
 export interface SponsorshipsState {
     items: SponsorshipItem[];
     loading: boolean;
-    editLoading: boolean;
+    editLoading?: boolean;
     error: string | null;
     page: number;
     pageSize: number;

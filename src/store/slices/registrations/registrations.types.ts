@@ -20,7 +20,7 @@ export interface RegistrationsState {
     rawItems: RegistrationItem[];
     selected: RegistrationItem | null;
     loading: boolean;
-    editLoading: boolean;
+    editLoading?: boolean;
     error: string | null;
     page: number;
     pageSize: number;
