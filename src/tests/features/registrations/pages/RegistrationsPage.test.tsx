@@ -74,6 +74,7 @@ jest.mock('../../../../store/slices/registrations/registrations.thunks', () => {
     fetchRegistrations: makeThunk('registrations/fetchRegistrations'),
     deleteRegistrationThunk: makeThunk('registrations/deleteRegistration'),
     createRegistrationThunk: makeThunk('registrations/createRegistration'),
+    updateRegistrationThunk: makeThunk('registrations/updateRegistration'),
   }
 })
 

@@ -4,6 +4,7 @@ import { ACC_REGISTRATION_BASE } from '../config/env';
 export type AccRegistrationItem = {
     id: number;
     user_id?: number;
+    deletedAt?: string | null;
     caption?: string;
     name?: string;
     email?: string;

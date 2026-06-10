@@ -41,6 +41,15 @@ jest.mock('../../../../store/slices/registrations/registrations.thunks', () => (
             typePrefix: 'registrations/delete'
         }
     ),
+    updateRegistrationThunk: Object.assign(
+        jest.fn(() => ({ type: 'registrations/update/pending' })),
+        {
+            pending: { type: 'registrations/update/pending', match: (action: { type?: string }) => action?.type === 'registrations/update/pending' },
+            fulfilled: { type: 'registrations/update/fulfilled', match: (action: { type?: string }) => action?.type === 'registrations/update/fulfilled' },
+            rejected: { type: 'registrations/update/rejected', match: (action: { type?: string }) => action?.type === 'registrations/update/rejected' },
+            typePrefix: 'registrations/update'
+        }
+    ),
 }))
 
 jest.mock('react-hot-toast', () => ({

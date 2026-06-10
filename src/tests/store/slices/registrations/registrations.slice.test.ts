@@ -133,17 +133,51 @@ describe('registrations slice', () => {
             expect(state.error).toBe('Create Error');
         });
 
+        it('handles deleteRegistrationThunk.pending', () => {
+            const startState = { ...initialState, loading: false, error: 'some-stale-error' };
+            const state = reducer(startState, deleteRegistrationThunk.pending('', 1));
+            expect(state.loading).toBe(true);
+            expect(state.error).toBeNull();
+        });
+
         it('handles deleteRegistrationThunk.fulfilled', () => {
             const startState = {
                 ...initialState,
+                loading: true,
                 rawItems: [{ id: 1 }, { id: 2 }] as RegistrationItem[],
                 items: [{ id: 1 }, { id: 2 }] as RegistrationItem[],
                 total: 2
             };
             const state = reducer(startState, deleteRegistrationThunk.fulfilled(1, '', 1));
+            expect(state.loading).toBe(false);
             expect(state.items.length).toBe(1);
             expect(state.items[0].id).toBe(2);
             expect(state.total).toBe(1);
+        });
+
+        it('handles deleteRegistrationThunk.rejected with custom payload', () => {
+            const startState = { ...initialState, loading: true };
+            const state = reducer(startState, deleteRegistrationThunk.rejected(null, '', 1, 'Delete Failed'));
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Delete Failed');
+        });
+
+        it('handles deleteRegistrationThunk.rejected with generic message', () => {
+            const rejectedAction = {
+                type: deleteRegistrationThunk.rejected.type,
+                payload: null,
+                error: { message: 'Network Error' }
+            };
+            const startState = { ...initialState, loading: true };
+            const state = reducer(startState, rejectedAction as UnknownAction);
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Network Error');
+        });
+
+        it('handles deleteRegistrationThunk.rejected fallback', () => {
+            const action = { type: deleteRegistrationThunk.rejected.type, payload: null, error: {} };
+            const state = reducer(initialState, action as UnknownAction);
+            expect(state.error).toBe('Failed to delete registration');
         });
 
         it('handles createRegistrationThunk.pending', () => {

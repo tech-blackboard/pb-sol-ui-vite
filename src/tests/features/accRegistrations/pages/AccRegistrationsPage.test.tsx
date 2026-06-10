@@ -84,6 +84,7 @@ const createMockStore = (initial: Partial<AccRegistrationsState> = {}) => {
   const defaultState: AccRegistrationsState = {
     items: [],
     loading: false,
+    editLoading: false,
     error: null,
     page: 1,
     pageSize: 10,

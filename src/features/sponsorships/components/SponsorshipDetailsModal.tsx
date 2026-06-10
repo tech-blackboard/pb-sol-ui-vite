@@ -85,12 +85,14 @@ export default function SponsorshipDetailsModal({ item, onClose, onDelete }: Pro
                     <div className="flex items-center gap-2">
                         {!isEditing && (
                             <>
-                                <button
-                                    onClick={() => setIsEditing(true)}
-                                    className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                                >
-                                    ✎ Edit
-                                </button>
+                                {!item.deletedAt && (
+                                    <button
+                                        onClick={() => setIsEditing(true)}
+                                        className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                    >
+                                        ✎ Edit
+                                    </button>
+                                )}
                                 {onDelete && (
                                     <button
                                         onClick={() => {

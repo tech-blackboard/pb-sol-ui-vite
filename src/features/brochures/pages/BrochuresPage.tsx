@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
-import { fetchBrochures, deleteBrochureThunk, setPage, setPageSize, setSelected, clearSelected, clearError } from '../../../store/slices/brochures/brochures.slice'
+import { fetchBrochures, deleteBrochureThunk, setPage, setPageSize, setSelected, clearSelected, clearError, updateDraftFilter, applyFilters } from '../../../store/slices/brochures/brochures.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import BrochureTable from '../components/BrochureTable'
 import BrochureDetailsModal from '../components/BrochureDetailsModal'
@@ -31,6 +31,12 @@ export default function BrochuresPage() {
                 addButtonText="Add Brochure"
                 error={error}
                 onClearError={() => dispatch(clearError())}
+                onlyDeleted={appliedFilters.onlyDeleted === 'true'}
+                onToggleDeleted={() => {
+                    const isTrash = appliedFilters.onlyDeleted === 'true';
+                    dispatch(updateDraftFilter({ key: 'onlyDeleted', value: isTrash ? 'false' : 'true' }));
+                    dispatch(applyFilters());
+                }}
             />
 
             {filtersOpen && (
@@ -67,7 +73,7 @@ export default function BrochuresPage() {
                 <BrochureDetailsModal
                     item={selected}
                     onClose={() => dispatch(clearSelected())}
-                    onDelete={(item) => {
+                    onDelete={selected.deletedAt ? undefined : (item) => {
                         dispatch(deleteBrochureThunk(item.id))
                         dispatch(clearSelected())
                     }}

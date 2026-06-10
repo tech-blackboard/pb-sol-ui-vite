@@ -3,6 +3,7 @@ import { getAuthHeaders } from './abstracts';
 import { SPONSORSHIP_BASE } from '../config/env';
 export type SponsorshipItem = {
     id?: number;
+    deletedAt?: string | null;
     name?: string;
     email?: string;
     phone?: string;
