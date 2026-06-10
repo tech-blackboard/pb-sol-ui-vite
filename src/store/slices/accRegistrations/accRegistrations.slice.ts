@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
-import { searchAccRegistrations, createAccRegistration, type AccRegistrationItem } from '../../../services/accRegistrations';
+import { searchAccRegistrations, createAccRegistration, updateAccRegistration, deleteAccRegistration, type AccRegistrationItem } from '../../../services/accRegistrations';
 
 export interface AccRegistrationFilters {
     search?: string;
@@ -18,6 +18,7 @@ export interface AccRegistrationFilters {
 export interface AccRegistrationsState {
     items: AccRegistrationItem[];
     loading: boolean;
+    editLoading: boolean;
     error: string | null;
     page: number;
     pageSize: number;
@@ -54,9 +55,34 @@ export const createAccRegistrationThunk = createAsyncThunk(
     }
 );
 
+export const updateAccRegistrationThunk = createAsyncThunk(
+    'accRegistrations/update',
+    async ({ id, data }: { id: string | number; data: Partial<AccRegistrationItem> }, { rejectWithValue }) => {
+        try {
+            return await updateAccRegistration(id, data);
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to update acc-registration';
+            return rejectWithValue(message);
+        }
+    }
+);
+
+export const deleteAccRegistrationThunk = createAsyncThunk(
+    'accRegistrations/delete',
+    async (id: string | number, { rejectWithValue }) => {
+        try {
+            await deleteAccRegistration(id);
+            return id;
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to delete accommodation registration');
+        }
+    }
+);
+
 const initialState: AccRegistrationsState = {
     items: [],
     loading: false,
+    editLoading: false,
     error: null,
     page: 1,
     pageSize: 10,
@@ -131,6 +157,32 @@ const accRegistrationsSlice = createSlice({
             .addCase(createAccRegistrationThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = (action.payload as string) || action.error.message || 'Failed to create';
+            })
+            .addCase(updateAccRegistrationThunk.pending, (state) => {
+                state.editLoading = true;
+            })
+            .addCase(updateAccRegistrationThunk.fulfilled, (state, { payload }) => {
+                state.editLoading = false;
+                state.items = state.items.map(i => i.id === payload.id ? payload : i);
+                if (state.selected?.id === payload.id) state.selected = payload;
+            })
+            .addCase(updateAccRegistrationThunk.rejected, (state, action) => {
+                state.editLoading = false;
+                state.error = (action.payload as string) || action.error.message || 'Failed to update acc-registration';
+            })
+            .addCase(deleteAccRegistrationThunk.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(deleteAccRegistrationThunk.fulfilled, (state, action) => {
+                state.loading = false;
+                state.items = state.items.filter((item) => item.id !== action.payload);
+                if (state.selected?.id === action.payload) {
+                    state.selected = null;
+                }
+            })
+            .addCase(deleteAccRegistrationThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = (action.payload as string) || action.error.message || 'Failed to delete accommodation registration';
             });
     },
 });

@@ -59,3 +59,11 @@ export async function deleteBrochure(id: number | string): Promise<void> {
         withCredentials: true,
     });
 }
+
+export async function updateBrochure(id: number | string, data: Partial<BrochureItem>): Promise<BrochureItem> {
+    const { data: result } = await api.patch(`${BROCHURE_BASE}/${id}`, data, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return result;
+}

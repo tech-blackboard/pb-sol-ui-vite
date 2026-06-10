@@ -59,3 +59,11 @@ export async function deleteSponsorship(id: number | string): Promise<void> {
         withCredentials: true,
     });
 }
+
+export async function updateSponsorship(id: number | string, data: Partial<SponsorshipItem>): Promise<SponsorshipItem> {
+    const { data: result } = await api.patch(`${SPONSORSHIP_BASE}/${id}`, data, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return result;
+}

@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-import { fetchRegistrations, deleteRegistrationThunk, createRegistrationThunk } from './registrations.thunks';
+import { fetchRegistrations, deleteRegistrationThunk, createRegistrationThunk, updateRegistrationThunk } from './registrations.thunks';
 import type { RegistrationFilters, RegistrationsState } from './registrations.types';
 import type { RegistrationItem } from '../../../services/registrations';
 
@@ -15,6 +15,7 @@ const initialState: RegistrationsState = {
     rawItems: [],
     selected: null,
     loading: false,
+    editLoading: false,
     error: null,
     page: 1,
     pageSize: 10,
@@ -93,6 +94,20 @@ const registrationsSlice = createSlice({
             .addCase(createRegistrationThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = (action.payload as string) || action.error.message || 'Failed to create registration';
+            })
+            .addCase(updateRegistrationThunk.pending, (state) => {
+                state.editLoading = true;
+            })
+            .addCase(updateRegistrationThunk.fulfilled, (state, { payload }) => {
+                state.editLoading = false;
+                // Update the item in-place
+                state.rawItems = state.rawItems.map(i => i.id === payload.id ? payload : i);
+                state.items = state.items.map(i => i.id === payload.id ? payload : i);
+                if (state.selected?.id === payload.id) state.selected = payload;
+            })
+            .addCase(updateRegistrationThunk.rejected, (state, action) => {
+                state.editLoading = false;
+                state.error = (action.payload as string) || action.error.message || 'Failed to update registration';
             });
     },
 });

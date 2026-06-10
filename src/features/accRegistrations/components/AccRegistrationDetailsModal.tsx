@@ -4,9 +4,11 @@ import type { AccRegistrationItem } from '../../../services/accRegistrations'
 interface Props {
     item: AccRegistrationItem | null
     onClose: () => void
+    onEdit?: (item: AccRegistrationItem) => void
+    onDelete?: (item: AccRegistrationItem) => void
 }
 
-export default function AccRegistrationDetailsModal({ item, onClose }: Props) {
+export default function AccRegistrationDetailsModal({ item, onClose, onEdit, onDelete }: Props) {
     if (!item) return null
 
     return (
@@ -14,15 +16,37 @@ export default function AccRegistrationDetailsModal({ item, onClose }: Props) {
             <div className="w-full max-w-3xl max-h-[90vh] rounded-lg bg-white shadow-2xl border border-gray-200 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
                     <h2 className="text-xl font-bold text-gray-800">Accommodation Details</h2>
-                    <button
-                        onClick={onClose}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-200 transition-colors text-gray-500"
-                        aria-label="Close"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-6 h-6">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {onEdit && (
+                            <button
+                                onClick={() => onEdit(item)}
+                                className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                            >
+                                ✎ Edit
+                            </button>
+                        )}
+                        {onDelete && (
+                            <button
+                                onClick={() => {
+                                    if (confirm('Are you sure you want to delete this record?')) {
+                                        onDelete(item)
+                                    }
+                                }}
+                                className="inline-flex items-center gap-1 rounded-md border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors"
+                            >
+                                🗑 Delete
+                            </button>
+                        )}
+                        <button
+                            onClick={onClose}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-200 transition-colors text-gray-500"
+                            aria-label="Close"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-6 h-6">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-6 py-6 scrollbar-thin">

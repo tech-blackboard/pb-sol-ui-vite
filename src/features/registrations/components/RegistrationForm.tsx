@@ -2,16 +2,18 @@ import { useState, useEffect, useRef } from 'react'
 import { X, CheckCircle, Info, AlertCircle } from 'lucide-react'
 import AlertBanner from '../../../components/AlertBanner'
 import { useAppDispatch } from '../../../store/hooks'
-import { createRegistrationThunk } from '../../../store/slices/registrations/registrations.thunks'
+import { createRegistrationThunk, updateRegistrationThunk } from '../../../store/slices/registrations/registrations.thunks'
 
 import { listWebsites, type SourceWebsite } from '../../../services/sourcedb'
 import toast from 'react-hot-toast'
 import type { RegistrationRecord } from '../../abstracts/types'
+import type { RegistrationItem } from '../../../services/registrations'
 
 interface RegistrationFormProps {
     websiteId?: number
     onClose: () => void
     onSuccess?: () => void
+    editData?: RegistrationItem | null
 }
 
 const COUNTRIES = [
@@ -68,6 +70,20 @@ const PRESENTATION_INDICES: Record<string, number> = {
 
 const PRESENTATION_OPTIONS = Object.keys(REGISTRATION_FEES)
 
+// Helper to parse stored presentation format back to display name
+// Stored format: "regtype_1_X-PresentationName" -> "PresentationName"
+function parsePresentationFromStored(stored: string): string {
+    if (!stored) return 'Oral Presenter (In-Person)'
+    const dashIndex = stored.indexOf('-')
+    if (dashIndex !== -1) {
+        const name = stored.substring(dashIndex + 1)
+        if (REGISTRATION_FEES[name] !== undefined) return name
+    }
+    // If the stored value is already a clean presentation name
+    if (REGISTRATION_FEES[stored] !== undefined) return stored
+    return 'Oral Presenter (In-Person)'
+}
+
 const CAPTIONS = ['Dr.', 'Prof.', 'Mr.', 'Mrs.', 'Ms.']
 
 const OCCUPANCY_OPTIONS = [
@@ -76,41 +92,72 @@ const OCCUPANCY_OPTIONS = [
     'Triple Occupancy',
 ]
 
-export default function RegistrationForm({ websiteId, onClose, onSuccess }: RegistrationFormProps) {
+export default function RegistrationForm({ websiteId, onClose, onSuccess, editData }: RegistrationFormProps) {
+    const isEditMode = !!editData
     const dispatch = useAppDispatch()
     const formRef = useRef<HTMLFormElement>(null)
     const [submitting, setSubmitting] = useState(false)
     const [websites, setWebsites] = useState<SourceWebsite[]>([])
     const [webLoading, setWebLoading] = useState(false)
 
-    const [formData, setFormData] = useState({
-        // Basic Info (from Abstract)
-        caption: '',
-        name: '',
-        email: '',
-        aemail: '',
-        phone: '',
-        wphone: '',
-        institution: '',
-        country: '',
-        presentation: 'Oral Presenter (In-Person)',
+    const getInitialFormData = () => {
+        if (editData) {
+            const parsedPresentation = parsePresentationFromStored(editData.presentation)
+            const hasAccommodation = editData.accomm && Number(editData.accomm) > 0
+            return {
+                caption: '',
+                name: editData.name || '',
+                email: editData.email || '',
+                aemail: editData.aemail || '',
+                phone: editData.phone || '',
+                wphone: editData.wphone || '',
+                institution: editData.institution || '',
+                country: editData.country || '',
+                presentation: parsedPresentation,
+                website_id: editData.website_id || editData.website?.id || websiteId || undefined,
+                participants: editData.participants || '1',
+                reg_price: editData.regtype || String(REGISTRATION_FEES[parsedPresentation] || 699),
+                accomm: hasAccommodation ? 'Yes' : 'No',
+                checkin: editData.checkin || '',
+                checkout: editData.checkout || '',
+                nights: editData.nights || '0',
+                accmvalue: hasAccommodation ? (editData.accmvalue || '') : '',
+                acmpng: String(editData.acmpng ?? '0'),
+                acc_price: hasAccommodation ? String(editData.accomm || '0') : '0',
+                tot_price: editData.tot_price || '0',
+                transaction_id: editData.transaction_id || '',
+                status_id: editData.status_id || 1,
+                regtype: editData.regtype || String(REGISTRATION_FEES[parsedPresentation] || 699),
+            }
+        }
+        return {
+            caption: '',
+            name: '',
+            email: '',
+            aemail: '',
+            phone: '',
+            wphone: '',
+            institution: '',
+            country: '',
+            presentation: 'Oral Presenter (In-Person)',
+            website_id: websiteId || undefined,
+            participants: '1',
+            reg_price: String(REGISTRATION_FEES['Oral Presenter (In-Person)']),
+            accomm: 'No',
+            checkin: '',
+            checkout: '',
+            nights: '0',
+            accmvalue: '',
+            acmpng: '0',
+            acc_price: '0',
+            tot_price: '0',
+            transaction_id: '',
+            status_id: 1,
+            regtype: String(REGISTRATION_FEES['Oral Presenter (In-Person)']),
+        }
+    }
 
-        // Registration Info (from Invoice)
-        website_id: websiteId || undefined,
-        participants: '1',
-        reg_price: String(REGISTRATION_FEES['Oral Presenter (In-Person)']),
-        accomm: 'No',
-        checkin: '',
-        checkout: '',
-        nights: '0',
-        accmvalue: '',
-        acmpng: '0',
-        acc_price: '0',
-        tot_price: '0',
-        transaction_id: '',
-        status_id: 1, // Default status
-        regtype: String(REGISTRATION_FEES['Oral Presenter (In-Person)']),
-    })
+    const [formData, setFormData] = useState(getInitialFormData)
 
     useEffect(() => {
         let mounted = true
@@ -199,14 +246,14 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
         const newErrors: Record<string, string> = {}
         const newAccErrors: typeof accommodationErrors = {}
 
-        if (!formData.caption) newErrors.caption = 'Caption is required'
+        if (!isEditMode && !formData.caption) newErrors.caption = 'Caption is required'
         if (!formData.name.trim()) newErrors.name = 'Name is required'
         if (!formData.email.trim()) newErrors.email = 'Email is required'
         if (!formData.phone.trim()) newErrors.phone = 'Phone is required'
         if (!formData.country) newErrors.country = 'Country is required'
         if (!formData.institution.trim()) newErrors.institution = 'Institution is required'
         if (!formData.presentation) newErrors.presentation = 'Presentation is required'
-        if (!formData.website_id) newErrors.website_id = 'Website is required'
+        if (!isEditMode && !formData.website_id) newErrors.website_id = 'Website is required'
         if (formData.reg_price === '' || Number(formData.reg_price) < 0) newErrors.reg_price = 'Registration price is required'
         if (!formData.participants || Number(formData.participants) < 1) newErrors.participants = 'Number of participants is required'
 
@@ -248,7 +295,7 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
                 ...formData,
                 website_id: Number(formData.website_id),
                 user_id: 1, // Assuming admin/logged-in user id
-                status_id: 1,
+                status_id: formData.status_id || 1,
                 status_flag: 1,
                 nights: String(currentNights),
                 tot_price: String(totalPrice),
@@ -266,16 +313,32 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
                 accpng: 0,
                 transaction_id: ""
             }
-            const result = await dispatch(createRegistrationThunk(payload))
-            if (createRegistrationThunk.fulfilled.match(result)) {
-                toast.success('Registration created successfully')
-                onSuccess?.()
-                onClose()
+
+            let result;
+            if (isEditMode && editData) {
+                result = await dispatch(updateRegistrationThunk({ id: editData.id, data: payload }))
+                if (updateRegistrationThunk.fulfilled.match(result)) {
+                    toast.success('Registration updated successfully')
+                    onSuccess?.()
+                    onClose()
+                } else {
+                    const errorMsg = (result.payload as string) || 'Failed to update registration';
+                    setSubmitError(errorMsg);
+                    toast.error(errorMsg);
+                    formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+                }
             } else {
-                const errorMsg = (result.payload as string) || 'Failed to create registration';
-                setSubmitError(errorMsg);
-                toast.error(errorMsg);
-                formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+                result = await dispatch(createRegistrationThunk(payload))
+                if (createRegistrationThunk.fulfilled.match(result)) {
+                    toast.success('Registration created successfully')
+                    onSuccess?.()
+                    onClose()
+                } else {
+                    const errorMsg = (result.payload as string) || 'Failed to create registration';
+                    setSubmitError(errorMsg);
+                    toast.error(errorMsg);
+                    formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+                }
             }
         } catch (err) {
             console.log("Error from registration form: ", err)
@@ -291,7 +354,7 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        Add New Registration
+                        {isEditMode ? 'Edit Registration' : 'Add New Registration'}
                     </h2>
                     <button type="button" onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                         <X className="w-5 h-5 pointer-events-none" />
@@ -309,7 +372,20 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
                             <Info className="w-4 h-4" />
                             Personal & Professional Information
                         </div>
+                        {isEditMode && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700 mb-4">
+                                <div>
+                                    <span className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Registration ID</span>
+                                    <span className="text-gray-900 dark:text-white font-semibold text-base">{editData?.id}</span>
+                                </div>
+                                <div>
+                                    <span className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Website/Conference</span>
+                                    <span className="text-gray-900 dark:text-white font-semibold text-base">{editData?.website?.name ?? '—'}</span>
+                                </div>
+                            </div>
+                        )}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {!isEditMode && (
                             <div>
                                 <label htmlFor="caption-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Caption*
@@ -337,6 +413,7 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
                                     </p>
                                 )}
                             </div>
+                            )}
                             <InputField label="Full Name*" name="name" value={formData.name} onChange={handleChange} error={errors.name} />
                             <InputField label="Email*" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} />
                             <InputField label="Alternate Email" name="aemail" type="email" value={formData.aemail} onChange={handleChange} />
@@ -346,36 +423,38 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
 
                             <SelectField label="Country*" name="country" value={formData.country} options={COUNTRIES} onChange={handleChange} error={errors.country} />
                             <SelectField label="Interested In (Presentation)*" name="presentation" value={formData.presentation} options={PRESENTATION_OPTIONS} onChange={handleChange} error={errors.presentation} />
-                            <div className="md:col-span-2">
-                                <label htmlFor="website-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Website/Conference*
-                                </label>
-                                <select
-                                    id="website-select"
-                                    value={formData.website_id || ''}
-                                    onChange={(e) => handleChange('website_id', e.target.value)}
-                                    disabled={webLoading}
-                                    className={`w-full px-4 py-2.5 rounded-lg border ${errors.website_id
-                                        ? 'border-red-500 focus:ring-red-500'
-                                        : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
-                                        } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed`}
-                                >
-                                    <option value="">
-                                        {webLoading ? 'Loading websites...' : 'Select Website/Conference*'}
-                                    </option>
-                                    {websites.map((w) => (
-                                        <option key={w.id} value={Number(w.id)}>
-                                            {w.name}
+                            {!isEditMode && (
+                                <div className="md:col-span-2">
+                                    <label htmlFor="website-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Website/Conference*
+                                    </label>
+                                    <select
+                                        id="website-select"
+                                        value={formData.website_id || ''}
+                                        onChange={(e) => handleChange('website_id', e.target.value)}
+                                        disabled={webLoading}
+                                        className={`w-full px-4 py-2.5 rounded-lg border ${errors.website_id
+                                            ? 'border-red-500 focus:ring-red-500'
+                                            : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
+                                            } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    >
+                                        <option value="">
+                                            {webLoading ? 'Loading websites...' : 'Select Website/Conference*'}
                                         </option>
-                                    ))}
-                                </select>
-                                {errors.website_id && (
-                                    <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                                        <AlertCircle className="w-4 h-4" />
-                                        {errors.website_id}
-                                    </p>
-                                )}
-                            </div>
+                                        {websites.map((w) => (
+                                            <option key={w.id} value={Number(w.id)}>
+                                                {w.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.website_id && (
+                                        <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                                            <AlertCircle className="w-4 h-4" />
+                                            {errors.website_id}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -502,7 +581,7 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess }: Regi
                         </button>
                         <button type="submit" disabled={submitting}
                             className="px-8 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow-lg shadow-purple-600/20 transition-all flex items-center gap-2 disabled:opacity-50">
-                            {submitting ? 'Creating...' : 'Create Registration'}
+                            {submitting ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Registration' : 'Create Registration')}
                         </button>
                     </div>
                 </form>

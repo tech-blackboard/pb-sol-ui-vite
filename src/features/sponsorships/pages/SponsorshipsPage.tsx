@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
-import { fetchSponsorships, setPage, setPageSize, setSelected, clearSelected, clearError } from '../../../store/slices/sponsorships/sponsorships.slice'
+import { fetchSponsorships, deleteSponsorshipThunk, setPage, setPageSize, setSelected, clearSelected, clearError } from '../../../store/slices/sponsorships/sponsorships.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import SponsorshipTable from '../components/SponsorshipTable'
 import SponsorshipDetailsModal from '../components/SponsorshipDetailsModal'
@@ -58,6 +58,10 @@ export default function SponsorshipsPage() {
                 <SponsorshipDetailsModal
                     item={selected}
                     onClose={() => dispatch(clearSelected())}
+                    onDelete={(item) => {
+                        dispatch(deleteSponsorshipThunk(item.id!))
+                        dispatch(clearSelected())
+                    }}
                 />
             )}
 
