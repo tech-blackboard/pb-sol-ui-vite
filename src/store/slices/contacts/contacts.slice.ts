@@ -18,7 +18,7 @@ export interface ContactFilters {
 export interface ContactsState {
     items: ContactItem[];
     loading: boolean;
-    editLoading: boolean;
+    editLoading?: boolean;
     error: string | null;
     page: number;
     pageSize: number;

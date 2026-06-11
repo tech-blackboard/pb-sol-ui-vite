@@ -19,7 +19,7 @@ export interface AccRegistrationFilters {
 export interface AccRegistrationsState {
     items: AccRegistrationItem[];
     loading: boolean;
-    editLoading: boolean;
+    editLoading?: boolean;
     error: string | null;
     page: number;
     pageSize: number;

@@ -17,7 +17,7 @@ export interface BrochureFilters {
 export interface BrochuresState {
     items: BrochureItem[];
     loading: boolean;
-    editLoading: boolean;
+    editLoading?: boolean;
     error: string | null;
     page: number;
     pageSize: number;
