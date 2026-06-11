@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { fetchContacts, deleteContactThunk, setPage, setPageSize, setSelected, clearSelected, clearError, updateDraftFilter, applyFilters } from '../../../store/slices/contacts/contacts.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
@@ -72,9 +73,15 @@ export default function ContactsPage() {
                 <ContactDetailsModal
                     item={selected}
                     onClose={() => dispatch(clearSelected())}
-                    onDelete={selected.deletedAt ? undefined : (item) => {
-                        dispatch(deleteContactThunk(item.id))
-                        dispatch(clearSelected())
+                    onDelete={selected.deletedAt ? undefined : async (item) => {
+                        try {
+                            await dispatch(deleteContactThunk(item.id)).unwrap()
+                            toast.success('Contact deleted successfully')
+                            dispatch(clearSelected())
+                        } catch (err: unknown) {
+                            const errorMessage = typeof err === 'string' ? err : 'Failed to delete contact'
+                            toast.error(errorMessage)
+                        }
                     }}
                 />
             )}

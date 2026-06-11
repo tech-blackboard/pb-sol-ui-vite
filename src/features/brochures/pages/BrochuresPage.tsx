@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { fetchBrochures, deleteBrochureThunk, setPage, setPageSize, setSelected, clearSelected, clearError, updateDraftFilter, applyFilters } from '../../../store/slices/brochures/brochures.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
@@ -73,9 +74,15 @@ export default function BrochuresPage() {
                 <BrochureDetailsModal
                     item={selected}
                     onClose={() => dispatch(clearSelected())}
-                    onDelete={selected.deletedAt ? undefined : (item) => {
-                        dispatch(deleteBrochureThunk(item.id))
-                        dispatch(clearSelected())
+                    onDelete={selected.deletedAt ? undefined : async (item) => {
+                        try {
+                            await dispatch(deleteBrochureThunk(item.id)).unwrap()
+                            toast.success('Brochure deleted successfully')
+                            dispatch(clearSelected())
+                        } catch (err: unknown) {
+                            const errorMessage = typeof err === 'string' ? err : 'Failed to delete brochure'
+                            toast.error(errorMessage)
+                        }
                     }}
                 />
             )}

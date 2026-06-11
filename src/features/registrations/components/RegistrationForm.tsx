@@ -92,6 +92,39 @@ const OCCUPANCY_OPTIONS = [
     'Triple Occupancy',
 ]
 
+// Helper to parse date string (like MM/DD/YYYY) for input[type=date]
+function formatDateForInput(dateStr?: string): string {
+    if (!dateStr) return '';
+    // If it already starts with YYYY-MM-DD, return that part
+    const isoMatch = dateStr.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (isoMatch) return isoMatch[1];
+
+    // The CRM uses MM/DD/YYYY or MM-DD-YYYY format
+    const mmddyyyyMatch = dateStr.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+    if (mmddyyyyMatch) {
+        const month = mmddyyyyMatch[1].padStart(2, '0');
+        const day = mmddyyyyMatch[2].padStart(2, '0');
+        const year = mmddyyyyMatch[3];
+        return `${year}-${month}-${day}`;
+    }
+
+    try {
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+            // Check if it's an ISO timestamp
+            if (dateStr.includes('T')) return dateStr.split('T')[0];
+            
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+    } catch {
+        // ignore
+    }
+    return dateStr;
+}
+
 export default function RegistrationForm({ websiteId, onClose, onSuccess, editData }: RegistrationFormProps) {
     const isEditMode = !!editData
     const dispatch = useAppDispatch()
@@ -118,8 +151,8 @@ export default function RegistrationForm({ websiteId, onClose, onSuccess, editDa
                 participants: editData.participants || '1',
                 reg_price: editData.regtype || String(REGISTRATION_FEES[parsedPresentation] || 699),
                 accomm: hasAccommodation ? 'Yes' : 'No',
-                checkin: editData.checkin || '',
-                checkout: editData.checkout || '',
+                checkin: formatDateForInput(editData.checkin),
+                checkout: formatDateForInput(editData.checkout),
                 nights: editData.nights || '0',
                 accmvalue: hasAccommodation ? (editData.accmvalue || '') : '',
                 acmpng: String(editData.acmpng ?? '0'),

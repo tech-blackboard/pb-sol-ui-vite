@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { setSelected, clearSelected, setPage, setPageSize, clearError, updateDraftFilter, applyFilters } from '../../../store/slices/registrations/registrations.slice'
 import { fetchRegistrations, deleteRegistrationThunk } from '../../../store/slices/registrations/registrations.thunks'
@@ -61,9 +62,15 @@ export default function RegistrationsPage() {
                         setEditItem(item)
                         dispatch(clearSelected())
                     }}
-                    onDelete={selected.deletedAt ? undefined : (item) => {
-                        dispatch(deleteRegistrationThunk(item.id))
-                        dispatch(clearSelected())
+                    onDelete={selected.deletedAt ? undefined : async (item) => {
+                        try {
+                            await dispatch(deleteRegistrationThunk(item.id)).unwrap()
+                            toast.success('Registration deleted successfully')
+                            dispatch(clearSelected())
+                        } catch (err: unknown) {
+                            const errorMessage = typeof err === 'string' ? err : 'Failed to delete registration'
+                            toast.error(errorMessage)
+                        }
                     }}
                 />
             )}

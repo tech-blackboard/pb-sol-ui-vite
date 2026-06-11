@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { fetchAccRegistrations, deleteAccRegistrationThunk, setPage, setPageSize, setSelected, clearSelected, clearError, updateDraftFilter, applyFilters } from '../../../store/slices/accRegistrations/accRegistrations.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
@@ -68,9 +69,15 @@ export default function AccRegistrationsPage() {
                         setEditItem(item)
                         dispatch(clearSelected())
                     }}
-                    onDelete={selected.deletedAt ? undefined : (item) => {
-                        dispatch(deleteAccRegistrationThunk(item.id))
-                        dispatch(clearSelected())
+                    onDelete={selected.deletedAt ? undefined : async (item) => {
+                        try {
+                            await dispatch(deleteAccRegistrationThunk(item.id)).unwrap()
+                            toast.success('Accommodation Registration deleted successfully')
+                            dispatch(clearSelected())
+                        } catch (err: unknown) {
+                            const errorMessage = typeof err === 'string' ? err : 'Failed to delete accommodation registration'
+                            toast.error(errorMessage)
+                        }
                     }}
                 />
             )}
