@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
-import { setSelected, clearSelected, setPage, setPageSize, clearError } from '../../../store/slices/registrations/registrations.slice'
+import { setSelected, clearSelected, setPage, setPageSize, clearError, updateDraftFilter, applyFilters } from '../../../store/slices/registrations/registrations.slice'
 import { fetchRegistrations, deleteRegistrationThunk } from '../../../store/slices/registrations/registrations.thunks'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import RegistrationTable from '../components/RegistrationTable'
@@ -23,7 +24,16 @@ export default function RegistrationsPage() {
 
     return (
         <div className="h-full flex flex-col">
-            <RegistrationHeader error={error} onClearError={() => dispatch(clearError())} />
+            <RegistrationHeader
+                error={error}
+                onClearError={() => dispatch(clearError())}
+                onlyDeleted={appliedFilters.onlyDeleted === 'true'}
+                onToggleDeleted={() => {
+                    const isTrash = appliedFilters.onlyDeleted === 'true';
+                    dispatch(updateDraftFilter({ key: 'onlyDeleted', value: isTrash ? 'false' : 'true' }));
+                    dispatch(applyFilters());
+                }}
+            />
 
 
             <RegistrationTable
@@ -48,13 +58,19 @@ export default function RegistrationsPage() {
                 <RegistrationDetailsModal
                     item={selected}
                     onClose={() => dispatch(clearSelected())}
-                    onEdit={(item) => {
+                    onEdit={selected.deletedAt ? undefined : (item) => {
                         setEditItem(item)
                         dispatch(clearSelected())
                     }}
-                    onDelete={(item) => {
-                        dispatch(deleteRegistrationThunk(item.id))
-                        dispatch(clearSelected())
+                    onDelete={selected.deletedAt ? undefined : async (item) => {
+                        try {
+                            await dispatch(deleteRegistrationThunk(item.id)).unwrap()
+                            toast.success('Registration deleted successfully')
+                            dispatch(clearSelected())
+                        } catch (err: unknown) {
+                            const errorMessage = typeof err === 'string' ? err : 'Failed to delete registration'
+                            toast.error(errorMessage)
+                        }
                     }}
                 />
             )}

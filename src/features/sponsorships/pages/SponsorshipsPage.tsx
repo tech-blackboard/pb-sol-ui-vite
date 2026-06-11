@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
-import { fetchSponsorships, deleteSponsorshipThunk, setPage, setPageSize, setSelected, clearSelected, clearError } from '../../../store/slices/sponsorships/sponsorships.slice'
+import { fetchSponsorships, deleteSponsorshipThunk, setPage, setPageSize, setSelected, clearSelected, clearError, updateDraftFilter, applyFilters } from '../../../store/slices/sponsorships/sponsorships.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import SponsorshipTable from '../components/SponsorshipTable'
 import SponsorshipDetailsModal from '../components/SponsorshipDetailsModal'
@@ -27,6 +28,12 @@ export default function SponsorshipsPage() {
                 addButtonText="Add Sponsorship"
                 error={error}
                 onClearError={() => dispatch(clearError())}
+                onlyDeleted={appliedFilters.onlyDeleted === 'true'}
+                onToggleDeleted={() => {
+                    const isTrash = appliedFilters.onlyDeleted === 'true';
+                    dispatch(updateDraftFilter({ key: 'onlyDeleted', value: isTrash ? 'false' : 'true' }));
+                    dispatch(applyFilters());
+                }}
             />
 
             {filtersOpen && (
@@ -58,9 +65,15 @@ export default function SponsorshipsPage() {
                 <SponsorshipDetailsModal
                     item={selected}
                     onClose={() => dispatch(clearSelected())}
-                    onDelete={(item) => {
-                        dispatch(deleteSponsorshipThunk(item.id!))
-                        dispatch(clearSelected())
+                    onDelete={selected.deletedAt ? undefined : async (item) => {
+                        try {
+                            await dispatch(deleteSponsorshipThunk(item.id!)).unwrap()
+                            toast.success('Sponsorship deleted successfully')
+                            dispatch(clearSelected())
+                        } catch (err: unknown) {
+                            const errorMessage = typeof err === 'string' ? err : 'Failed to delete sponsorship'
+                            toast.error(errorMessage)
+                        }
                     }}
                 />
             )}

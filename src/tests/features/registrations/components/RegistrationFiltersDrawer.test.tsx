@@ -22,6 +22,7 @@ const createMockStore = (draftFilters = {}) => {
                 items: [],
                 rawItems: [],
                 loading: false,
+                editLoading: false,
                 error: null,
                 page: 1,
                 pageSize: 10,

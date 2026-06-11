@@ -11,6 +11,7 @@ export interface BrochureFilters {
     website_id?: number | string;
     sortBy?: string;
     sortOrder?: 'ASC' | 'DESC';
+    onlyDeleted?: string;
 }
 
 export interface BrochuresState {
@@ -85,8 +86,8 @@ const initialState: BrochuresState = {
     page: 1,
     pageSize: 10,
     total: 0,
-    draftFilters: { search: '', sortBy: 'now', sortOrder: 'DESC' },
-    appliedFilters: { search: '', sortBy: 'now', sortOrder: 'DESC' },
+    draftFilters: { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'false' },
+    appliedFilters: { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'false' },
     selected: null,
 };
 
@@ -117,7 +118,7 @@ const brochuresSlice = createSlice({
             state.page = 1;
         },
         resetFilters(state) {
-            const initialFilters: BrochureFilters = { search: '', sortBy: 'now', sortOrder: 'DESC' };
+            const initialFilters: BrochureFilters = { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'false' };
             state.draftFilters = initialFilters;
             state.appliedFilters = initialFilters;
             state.page = 1;

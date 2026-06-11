@@ -12,6 +12,7 @@ export interface RegistrationFilters {
     status_flag?: string;
     sortBy?: string;
     sortOrder?: 'ASC' | 'DESC';
+    onlyDeleted?: string;
     [key: string]: string | number | boolean | undefined;
 }
 

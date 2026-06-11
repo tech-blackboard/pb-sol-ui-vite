@@ -3,6 +3,7 @@ import { getAuthHeaders } from './abstracts';
 import { BROCHURE_BASE } from '../config/env';
 export type BrochureItem = {
     id: number;
+    deletedAt?: string | null;
     name?: string;
     email?: string;
     phone?: string;

@@ -2,6 +2,27 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import BrochureDetailsModal from '../../../../features/brochures/components/BrochureDetailsModal'
 import '@testing-library/jest-dom'
 import type { BrochureItem } from '../../../../services/brochures'
+import { Provider } from 'react-redux'
+import { configureStore } from '@reduxjs/toolkit'
+import brochuresReducer from '../../../../store/slices/brochures/brochures.slice'
+
+const store = configureStore({
+    reducer: { brochures: brochuresReducer },
+    preloadedState: {
+        brochures: {
+            editLoading: false,
+            items: [],
+            loading: false,
+            error: null,
+            page: 1,
+            pageSize: 10,
+            total: 0,
+            appliedFilters: {},
+            draftFilters: {},
+            selected: null,
+        }
+    }
+})
 
 jest.mock('../../../../utils/utils', () => ({
     formatDate: jest.fn(() => '2024-01-01 12:00 PM'),
@@ -25,30 +46,50 @@ describe('BrochureDetailsModal', () => {
     })
 
     it('returns null when item is null', () => {
-        const { container } = render(<BrochureDetailsModal item={null} onClose={mockOnClose} />)
+        const { container } = render(
+            <Provider store={store}>
+                <BrochureDetailsModal item={null} onClose={mockOnClose} />
+            </Provider>
+        )
         expect(container.firstChild).toBeNull()
     })
 
     it('renders modal with data', () => {
-        render(<BrochureDetailsModal item={mockItem} onClose={mockOnClose} />)
+        render(
+            <Provider store={store}>
+                <BrochureDetailsModal item={mockItem} onClose={mockOnClose} />
+            </Provider>
+        )
         expect(screen.getByText('Brochure Request Details')).toBeInTheDocument()
         expect(screen.getByText('John Doe')).toBeInTheDocument()
     })
 
     it('calls onClose', () => {
-        render(<BrochureDetailsModal item={mockItem} onClose={mockOnClose} />)
+        render(
+            <Provider store={store}>
+                <BrochureDetailsModal item={mockItem} onClose={mockOnClose} />
+            </Provider>
+        )
         fireEvent.click(screen.getByLabelText('Close'))
         expect(mockOnClose).toHaveBeenCalled()
     })
 
     it('renders email as mailto link', () => {
-        render(<BrochureDetailsModal item={mockItem} onClose={mockOnClose} />)
+        render(
+            <Provider store={store}>
+                <BrochureDetailsModal item={mockItem} onClose={mockOnClose} />
+            </Provider>
+        )
         const emailLink = screen.getByText('john@test.com')
         expect(emailLink).toHaveAttribute('href', 'mailto:john@test.com')
     })
 
     it('displays message', () => {
-        render(<BrochureDetailsModal item={mockItem} onClose={mockOnClose} />)
+        render(
+            <Provider store={store}>
+                <BrochureDetailsModal item={mockItem} onClose={mockOnClose} />
+            </Provider>
+        )
         expect(screen.getByText('Please send brochure')).toBeInTheDocument()
     })
 
@@ -63,7 +104,11 @@ describe('BrochureDetailsModal', () => {
             now: null,
             website: null,
         } as unknown as BrochureItem
-        render(<BrochureDetailsModal item={minimalItem} onClose={mockOnClose} />)
+        render(
+            <Provider store={store}>
+                <BrochureDetailsModal item={minimalItem} onClose={mockOnClose} />
+            </Provider>
+        )
         
         const placeholders = screen.getAllByText('—')
         expect(placeholders.length).toBeGreaterThanOrEqual(4)

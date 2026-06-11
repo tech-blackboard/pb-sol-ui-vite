@@ -48,6 +48,7 @@ const createMockStore = (initialStatePartial: Partial<ContactsState> = {}) => co
         contacts: {
             items: [],
             loading: false,
+            editLoading: false,
             error: 'Initial Error',
             page: 1,
             pageSize: 10,

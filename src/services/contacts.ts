@@ -3,6 +3,7 @@ import { getAuthHeaders } from './abstracts';
 import { CONTACT_BASE } from '../config/env';
 export type ContactItem = {
     id: number;
+    deletedAt?: string | null;
     name?: string;
     email?: string;
     phone?: string;

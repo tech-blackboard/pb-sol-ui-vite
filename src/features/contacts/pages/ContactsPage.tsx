@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
-import { fetchContacts, deleteContactThunk, setPage, setPageSize, setSelected, clearSelected, clearError } from '../../../store/slices/contacts/contacts.slice'
+import { fetchContacts, deleteContactThunk, setPage, setPageSize, setSelected, clearSelected, clearError, updateDraftFilter, applyFilters } from '../../../store/slices/contacts/contacts.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import ContactTable from '../components/ContactTable'
 import ContactDetailsModal from '../components/ContactDetailsModal'
@@ -28,6 +29,12 @@ export default function ContactsPage() {
                 addButtonText="Add Contact"
                 error={error}
                 onClearError={() => dispatch(clearError())}
+                onlyDeleted={appliedFilters.onlyDeleted === 'true'}
+                onToggleDeleted={() => {
+                    const isTrash = appliedFilters.onlyDeleted === 'true';
+                    dispatch(updateDraftFilter({ key: 'onlyDeleted', value: isTrash ? 'false' : 'true' }));
+                    dispatch(applyFilters());
+                }}
             />
 
             {filtersOpen && (
@@ -66,9 +73,15 @@ export default function ContactsPage() {
                 <ContactDetailsModal
                     item={selected}
                     onClose={() => dispatch(clearSelected())}
-                    onDelete={(item) => {
-                        dispatch(deleteContactThunk(item.id))
-                        dispatch(clearSelected())
+                    onDelete={selected.deletedAt ? undefined : async (item) => {
+                        try {
+                            await dispatch(deleteContactThunk(item.id)).unwrap()
+                            toast.success('Contact deleted successfully')
+                            dispatch(clearSelected())
+                        } catch (err: unknown) {
+                            const errorMessage = typeof err === 'string' ? err : 'Failed to delete contact'
+                            toast.error(errorMessage)
+                        }
                     }}
                 />
             )}

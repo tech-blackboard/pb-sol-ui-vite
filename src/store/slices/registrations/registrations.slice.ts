@@ -8,6 +8,7 @@ const initialFilters: RegistrationFilters = {
     search: '',
     sortBy: 'now',
     sortOrder: 'DESC',
+    onlyDeleted: 'false',
 };
 
 const initialState: RegistrationsState = {
@@ -76,10 +77,19 @@ const registrationsSlice = createSlice({
                 state.loading = false;
                 state.error = (action.payload as string) || action.error.message || 'Failed to load';
             })
+            .addCase(deleteRegistrationThunk.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
             .addCase(deleteRegistrationThunk.fulfilled, (state, action) => {
+                state.loading = false;
                 state.rawItems = state.rawItems.filter(i => i.id !== action.payload);
                 state.items = state.items.filter(i => i.id !== action.payload);
                 state.total -= 1;
+            })
+            .addCase(deleteRegistrationThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = (action.payload as string) || action.error.message || 'Failed to delete registration';
             })
             .addCase(createRegistrationThunk.pending, (state) => {
                 state.loading = true;

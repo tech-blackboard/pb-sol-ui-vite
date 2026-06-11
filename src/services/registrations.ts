@@ -4,6 +4,7 @@ import { REGISTRATION_BASE } from '../config/env';
 export type RegistrationItem = {
     id: number;
     user_id?: number;
+    deletedAt?: string | null;
     name: string;
     email: string;
     aemail?: string;

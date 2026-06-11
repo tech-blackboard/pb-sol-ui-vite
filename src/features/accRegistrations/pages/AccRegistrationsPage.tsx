@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
-import { fetchAccRegistrations, deleteAccRegistrationThunk, setPage, setPageSize, setSelected, clearSelected, clearError } from '../../../store/slices/accRegistrations/accRegistrations.slice'
+import { fetchAccRegistrations, deleteAccRegistrationThunk, setPage, setPageSize, setSelected, clearSelected, clearError, updateDraftFilter, applyFilters } from '../../../store/slices/accRegistrations/accRegistrations.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import AccRegistrationTable from '../components/AccRegistrationTable'
 import AccRegistrationDetailsModal from '../components/AccRegistrationDetailsModal'
@@ -29,6 +30,12 @@ export default function AccRegistrationsPage() {
                 onFilterClick={() => setFiltersOpen(true)}
                 error={error}
                 onClearError={() => dispatch(clearError())}
+                onlyDeleted={appliedFilters.onlyDeleted === 'true'}
+                onToggleDeleted={() => {
+                    const isTrash = appliedFilters.onlyDeleted === 'true';
+                    dispatch(updateDraftFilter({ key: 'onlyDeleted', value: isTrash ? 'false' : 'true' }));
+                    dispatch(applyFilters());
+                }}
             />
 
             {filtersOpen && (
@@ -58,13 +65,19 @@ export default function AccRegistrationsPage() {
                 <AccRegistrationDetailsModal
                     item={selected}
                     onClose={() => dispatch(clearSelected())}
-                    onEdit={(item) => {
+                    onEdit={selected.deletedAt ? undefined : (item) => {
                         setEditItem(item)
                         dispatch(clearSelected())
                     }}
-                    onDelete={(item) => {
-                        dispatch(deleteAccRegistrationThunk(item.id))
-                        dispatch(clearSelected())
+                    onDelete={selected.deletedAt ? undefined : async (item) => {
+                        try {
+                            await dispatch(deleteAccRegistrationThunk(item.id)).unwrap()
+                            toast.success('Accommodation Registration deleted successfully')
+                            dispatch(clearSelected())
+                        } catch (err: unknown) {
+                            const errorMessage = typeof err === 'string' ? err : 'Failed to delete accommodation registration'
+                            toast.error(errorMessage)
+                        }
                     }}
                 />
             )}

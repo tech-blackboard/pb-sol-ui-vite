@@ -2,6 +2,27 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import SponsorshipDetailsModal from '../../../../features/sponsorships/components/SponsorshipDetailsModal'
 import '@testing-library/jest-dom'
 import type { SponsorshipItem } from '../../../../services/sponsorships'
+import { Provider } from 'react-redux'
+import { configureStore } from '@reduxjs/toolkit'
+import sponsorshipsReducer from '../../../../store/slices/sponsorships/sponsorships.slice'
+
+const store = configureStore({
+    reducer: { sponsorships: sponsorshipsReducer },
+    preloadedState: {
+        sponsorships: {
+            editLoading: false,
+            items: [],
+            loading: false,
+            error: null,
+            page: 1,
+            pageSize: 10,
+            total: 0,
+            appliedFilters: {},
+            draftFilters: {},
+            selected: null,
+        }
+    }
+})
 
 jest.mock('../../../../utils/utils', () => ({ formatDate: jest.fn(() => '2024-01-01 12:00 PM') }))
 
@@ -12,12 +33,20 @@ describe('SponsorshipDetailsModal', () => {
     beforeEach(() => jest.clearAllMocks())
 
     it('returns null when item is null', () => {
-        const { container } = render(<SponsorshipDetailsModal item={null} onClose={mockOnClose} />)
+        const { container } = render(
+            <Provider store={store}>
+                <SponsorshipDetailsModal item={null} onClose={mockOnClose} />
+            </Provider>
+        )
         expect(container.firstChild).toBeNull()
     })
 
     it('renders modal with all fields', () => {
-        render(<SponsorshipDetailsModal item={mockItem} onClose={mockOnClose} />)
+        render(
+            <Provider store={store}>
+                <SponsorshipDetailsModal item={mockItem} onClose={mockOnClose} />
+            </Provider>
+        )
 
         expect(screen.getByText('John')).toBeInTheDocument()
         expect(screen.getByText('john@test.com')).toBeInTheDocument()
@@ -30,7 +59,11 @@ describe('SponsorshipDetailsModal', () => {
 
     it('renders fallback values for missing fields', () => {
         const minimalItem = { id: 1, name: 'John' }
-        render(<SponsorshipDetailsModal item={minimalItem as unknown as SponsorshipItem} onClose={mockOnClose} />)
+        render(
+            <Provider store={store}>
+                <SponsorshipDetailsModal item={minimalItem as unknown as SponsorshipItem} onClose={mockOnClose} />
+            </Provider>
+        )
 
         const fallbacks = screen.getAllByText('—')
         expect(fallbacks.length).toBeGreaterThan(0)
@@ -38,13 +71,21 @@ describe('SponsorshipDetailsModal', () => {
     })
 
     it('calls onClose when close icon clicked', () => {
-        render(<SponsorshipDetailsModal item={mockItem} onClose={mockOnClose} />)
+        render(
+            <Provider store={store}>
+                <SponsorshipDetailsModal item={mockItem} onClose={mockOnClose} />
+            </Provider>
+        )
         fireEvent.click(screen.getByLabelText('Close'))
         expect(mockOnClose).toHaveBeenCalled()
     })
 
     it('calls onClose when close button clicked', () => {
-        render(<SponsorshipDetailsModal item={mockItem} onClose={mockOnClose} />)
+        render(
+            <Provider store={store}>
+                <SponsorshipDetailsModal item={mockItem} onClose={mockOnClose} />
+            </Provider>
+        )
         fireEvent.click(screen.getByText('Close'))
         expect(mockOnClose).toHaveBeenCalled()
     })
