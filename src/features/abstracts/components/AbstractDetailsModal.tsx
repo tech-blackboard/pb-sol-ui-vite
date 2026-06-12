@@ -164,7 +164,7 @@ export default function AbstractDetailsModal({
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
           <h2 className="text-lg font-semibold">Abstract Details</h2>
           <div className="flex items-center gap-2">
-            {!isEditing && (
+            {!isEditing && currentStatus !== 'Deleted' && (
               <button
                 onClick={() => setIsEditing(true)}
                 className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
@@ -409,8 +409,8 @@ export default function AbstractDetailsModal({
                         toast.error((result.payload as string) || 'Failed to send confirmation email')
                       }
                     }}
-                    disabled={actionLoading.confirmation}
-                    className="rounded-md border border-blue-600 bg-blue-600 text-white px-2.5 py-1.5 text-xs hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"              >
+                    disabled={actionLoading.confirmation || currentStatus === 'Deleted'}
+                    className="rounded-md border border-blue-600 bg-blue-600 text-white px-2.5 py-1.5 text-xs hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-blue-400"              >
                     {actionLoading.confirmation ? 'Sending...' : 'Send Confirmation Email'}
                   </button>
                 )}
