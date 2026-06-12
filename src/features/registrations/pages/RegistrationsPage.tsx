@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
+import { selectAuth } from '../../../store/slices/authSlice'
 import { setSelected, clearSelected, setPage, setPageSize, clearError, updateDraftFilter, applyFilters } from '../../../store/slices/registrations/registrations.slice'
 import { fetchRegistrations, deleteRegistrationThunk } from '../../../store/slices/registrations/registrations.thunks'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
@@ -20,6 +21,8 @@ export default function RegistrationsPage() {
         useAppSelector((s) => s.registrations)
 
     const [editItem, setEditItem] = useState<RegistrationItem | null>(null)
+    const { user } = useAppSelector(selectAuth)
+    const canExport = user?.permissions?.includes('export:excel')
     const [isExporting, setIsExporting] = useState(false)
 
     useEffect(() => {
@@ -90,7 +93,7 @@ export default function RegistrationsPage() {
                     dispatch(updateDraftFilter({ key: 'onlyDeleted', value: isTrash ? 'false' : 'true' }));
                     dispatch(applyFilters());
                 }}
-                onExportClick={handleExport}
+                onExportClick={canExport ? handleExport : undefined}
                 isExporting={isExporting}
             />
 
