@@ -106,6 +106,23 @@ export default function SponsorshipFiltersDrawer({ open, onClose }: Props) {
                     />
 
                     <div className="flex gap-2">
+                        <input
+                            type="date"
+                            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value={filters.fromDate ?? ''}
+                            onChange={(e) => dispatch(updateDraftFilter({ key: 'fromDate', value: e.target.value }))}
+                            title="From Date"
+                        />
+                        <input
+                            type="date"
+                            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value={filters.toDate ?? ''}
+                            onChange={(e) => dispatch(updateDraftFilter({ key: 'toDate', value: e.target.value }))}
+                            title="To Date"
+                        />
+                    </div>
+
+                    <div className="flex gap-2">
                         <select
                             className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             disabled={loadingWebsites}

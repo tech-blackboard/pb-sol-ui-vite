@@ -10,9 +10,11 @@ interface RegistrationHeaderProps {
     onClearError?: () => void
     onlyDeleted?: boolean
     onToggleDeleted?: () => void
+    onExportClick?: () => void
+    isExporting?: boolean
 }
 
-export default function RegistrationHeader({ error, onClearError, onlyDeleted, onToggleDeleted }: RegistrationHeaderProps) {
+export default function RegistrationHeader({ error, onClearError, onlyDeleted, onToggleDeleted, onExportClick, isExporting }: RegistrationHeaderProps) {
     const [showForm, setShowForm] = useState(false)
     const [filtersOpen, setFiltersOpen] = useState(false)
 
@@ -31,6 +33,8 @@ export default function RegistrationHeader({ error, onClearError, onlyDeleted, o
                 onClearError={onClearError}
                 onlyDeleted={onlyDeleted}
                 onToggleDeleted={onToggleDeleted}
+                onExportClick={onExportClick}
+                isExporting={isExporting}
             />
 
             {/* Filters Drawer */}

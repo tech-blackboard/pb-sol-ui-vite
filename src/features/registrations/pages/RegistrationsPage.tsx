@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import * as XLSX from 'xlsx'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { setSelected, clearSelected, setPage, setPageSize, clearError, updateDraftFilter, applyFilters } from '../../../store/slices/registrations/registrations.slice'
 import { fetchRegistrations, deleteRegistrationThunk } from '../../../store/slices/registrations/registrations.thunks'
@@ -9,6 +10,8 @@ import RegistrationDetailsModal from '../components/RegistrationDetailsModal'
 import RegistrationHeader from '../components/RegistrationHeader'
 import RegistrationForm from '../components/RegistrationForm'
 import type { RegistrationItem } from '../../../services/registrations'
+import { searchRegistrations } from '../../../services/registrations'
+import { formatDate } from '../../../utils/utils'
 
 export default function RegistrationsPage() {
     const dispatch = useAppDispatch()
@@ -17,10 +20,64 @@ export default function RegistrationsPage() {
         useAppSelector((s) => s.registrations)
 
     const [editItem, setEditItem] = useState<RegistrationItem | null>(null)
+    const [isExporting, setIsExporting] = useState(false)
 
     useEffect(() => {
         dispatch(fetchRegistrations({ filters: appliedFilters, page, limit: pageSize }))
     }, [page, pageSize, appliedFilters, dispatch])
+
+    const handleExport = async () => {
+        try {
+            setIsExporting(true)
+            const toastId = toast.loading('Exporting data to Excel...')
+            
+            const result = await searchRegistrations({ ...appliedFilters, limit: 10000, page: 1 })
+            
+            if (!result.items || result.items.length === 0) {
+                toast.error('No records found to export', { id: toastId })
+                setIsExporting(false)
+                return
+            }
+
+            const formattedData = result.items.map(item => ({
+                'Website Name': item.website?.name || '',
+                'Name': item.name || '',
+                'Email': item.email || '',
+                'Alternate Email': item.aemail || '',
+                'Phone': item.phone || '',
+                'WhatsApp': item.wphone || '',
+                'Institution': item.institution || '',
+                'Country': item.country || '',
+                'Presentation': item.presentation || '',
+                'Participants': item.participants || '',
+                'Regtype': item.regtype || '',
+                'Accomm': item.accomm || '',
+                'Checkin': item.checkin || '',
+                'Checkout': item.checkout || '',
+                'Nights': item.nights || '',
+                'Accmvalue': item.accmvalue || '',
+                'Acmpng': item.acmpng || '',
+                'Acc_price': item.acc_price || '',
+                'Tot_price': item.tot_price || '',
+                'Transaction_id': item.transaction_id || '',
+                'Status_flag': item.status_flag || 0,
+                'Submitted On': item.now ? formatDate(item.now) : ''
+            }))
+
+            const worksheet = XLSX.utils.json_to_sheet(formattedData)
+            const workbook = XLSX.utils.book_new()
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Registrations')
+
+            XLSX.writeFile(workbook, 'Registrations_Export.xlsx')
+            
+            toast.success('Export successful!', { id: toastId })
+        } catch (error) {
+            console.error('Export failed:', error)
+            toast.error('Failed to export data')
+        } finally {
+            setIsExporting(false)
+        }
+    }
 
     return (
         <div className="h-full flex flex-col">
@@ -33,6 +90,8 @@ export default function RegistrationsPage() {
                     dispatch(updateDraftFilter({ key: 'onlyDeleted', value: isTrash ? 'false' : 'true' }));
                     dispatch(applyFilters());
                 }}
+                onExportClick={handleExport}
+                isExporting={isExporting}
             />
 
 
