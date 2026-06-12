@@ -8,9 +8,13 @@ import SectionHeader from '../../../components/SectionHeader'
 interface AbstractHeaderProps {
   error?: string | null
   onClearError?: () => void
+  onlyDeleted?: boolean
+  onToggleDeleted?: () => void
+  onExportClick?: () => void
+  isExporting?: boolean
 }
 
-export default function AbstractHeader({ error, onClearError }: AbstractHeaderProps) {
+export default function AbstractHeader({ error, onClearError, onlyDeleted, onToggleDeleted, onExportClick, isExporting }: AbstractHeaderProps) {
   const [showForm, setShowForm] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
 
@@ -28,6 +32,10 @@ export default function AbstractHeader({ error, onClearError }: AbstractHeaderPr
         addButtonText="Add Abstract"
         error={error}
         onClearError={onClearError}
+        onlyDeleted={onlyDeleted}
+        onToggleDeleted={onToggleDeleted}
+        onExportClick={onExportClick}
+        isExporting={isExporting}
       />
 
       {/* Filters Drawer */}

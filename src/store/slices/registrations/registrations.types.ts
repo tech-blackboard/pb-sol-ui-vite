@@ -13,6 +13,8 @@ export interface RegistrationFilters {
     sortBy?: string;
     sortOrder?: 'ASC' | 'DESC';
     onlyDeleted?: string;
+    fromDate?: string;
+    toDate?: string;
     [key: string]: string | number | boolean | undefined;
 }
 

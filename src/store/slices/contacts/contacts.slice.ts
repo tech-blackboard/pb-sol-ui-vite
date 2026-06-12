@@ -13,6 +13,8 @@ export interface ContactFilters {
     sortBy?: string;
     sortOrder?: 'ASC' | 'DESC';
     onlyDeleted?: string;
+    fromDate?: string;
+    toDate?: string;
 }
 
 export interface ContactsState {

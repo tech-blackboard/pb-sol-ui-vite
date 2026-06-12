@@ -12,6 +12,9 @@ interface SectionHeaderProps {
     onClearError?: () => void
     onlyDeleted?: boolean
     onToggleDeleted?: () => void
+    onExportClick?: () => void
+    exportButtonText?: string
+    isExporting?: boolean
 }
 
 export default function SectionHeader({
@@ -25,6 +28,9 @@ export default function SectionHeader({
     onClearError,
     onlyDeleted = false,
     onToggleDeleted,
+    onExportClick,
+    exportButtonText = 'Export',
+    isExporting = false,
 }: SectionHeaderProps) {
     return (
         <div className="flex flex-col gap-2 my-1.5">
@@ -96,6 +102,31 @@ export default function SectionHeader({
                             </svg>
                             <span className="hidden sm:inline">{onlyDeleted ? 'Viewing Trash' : 'View Trash'}</span>
                             <span className="sm:hidden">Trash</span>
+                        </button>
+                    )}
+
+                    {/* Export Action */}
+                    {onExportClick && (
+                        <button
+                            onClick={onExportClick}
+                            disabled={isExporting}
+                            className={`
+                                inline-flex flex-1 sm:flex-none
+                                items-center justify-center gap-2
+                                rounded-md border border-green-600
+                                bg-green-50 text-green-700
+                                px-3 py-1 text-sm font-medium
+                                transition-colors
+                                dark:bg-green-900/20 dark:text-green-400 dark:border-green-700
+                                ${isExporting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-100 dark:hover:bg-green-900/40'}
+                            `}
+                            title="Export to Excel"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                            </svg>
+                            <span className="hidden sm:inline">{isExporting ? 'Exporting...' : exportButtonText}</span>
+                            <span className="sm:hidden">{isExporting ? '...' : 'Export'}</span>
                         </button>
                     )}
 

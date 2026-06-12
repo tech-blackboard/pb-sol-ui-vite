@@ -100,7 +100,7 @@ function formatDateForInput(dateStr?: string): string {
     if (isoMatch) return isoMatch[1];
 
     // The CRM uses MM/DD/YYYY or MM-DD-YYYY format
-    const mmddyyyyMatch = dateStr.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+    const mmddyyyyMatch = dateStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
     if (mmddyyyyMatch) {
         const month = mmddyyyyMatch[1].padStart(2, '0');
         const day = mmddyyyyMatch[2].padStart(2, '0');
