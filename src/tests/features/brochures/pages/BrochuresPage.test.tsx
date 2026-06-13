@@ -1,10 +1,28 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import BrochuresPage from '../../../../features/brochures/pages/BrochuresPage'
 import '@testing-library/jest-dom'
 import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
 import brochuresReducer from '../../../../store/slices/brochures/brochures.slice'
+import authReducer from '../../../../store/slices/authSlice'
 import type { BrochureItem } from '../../../../services/brochures'
+import { searchBrochures } from '../../../../services/brochures'
+import * as XLSX from 'xlsx'
+
+/* ---------------- MOCK SERVICES ---------------- */
+
+jest.mock('xlsx', () => ({
+  utils: {
+    json_to_sheet: jest.fn(() => ({})),
+    book_new: jest.fn(() => ({})),
+    book_append_sheet: jest.fn(),
+  },
+  writeFile: jest.fn(),
+}))
+
+jest.mock('../../../../services/brochures', () => ({
+  searchBrochures: jest.fn(),
+}))
 
 /* ---------------- MOCK UI ---------------- */
 
@@ -21,10 +39,11 @@ jest.mock('../../../../features/brochures/components/BrochureTable', () => ({
 
 jest.mock('../../../../features/brochures/components/BrochureDetailsModal', () => ({
   __esModule: true,
-  default: ({ item, onClose }: { item: BrochureItem | null, onClose: () => void }) => (
+  default: ({ item, onClose, onDelete }: { item: BrochureItem | null, onClose: () => void, onDelete?: (item: BrochureItem) => void }) => (
     <div data-testid="details-modal">
         {item?.name}
         <button onClick={onClose}>Close Details</button>
+        {onDelete && <button onClick={() => onDelete(item!)}>Delete Details</button>}
     </div>
   ),
 }))
@@ -58,11 +77,12 @@ jest.mock('../../../../features/brochures/components/BrochureForm', () => ({
 
 jest.mock('../../../../components/SectionHeader', () => ({
     __esModule: true,
-    default: ({ onFilterClick, onAddClick, error, onClearError }: { onFilterClick: () => void, onAddClick: () => void, error: string | null, onClearError: () => void }) => (
+    default: ({ onFilterClick, onAddClick, error, onClearError, onExportClick }: { onFilterClick: () => void, onAddClick: () => void, error: string | null, onClearError: () => void, onExportClick?: () => void }) => (
         <div data-testid="section-header">
             <button onClick={onFilterClick}>Open Filters</button>
             <button onClick={onAddClick}>Open Form</button>
             {error && <div onClick={onClearError}>{error}</div>}
+            {onExportClick && <button onClick={onExportClick}>Export Excel</button>}
         </div>
     )
 }))
@@ -71,7 +91,10 @@ jest.mock('../../../../components/SectionHeader', () => ({
 
 const createMockStore = (initialState = {}) =>
   configureStore({
-    reducer: { brochures: brochuresReducer },
+    reducer: {
+      brochures: brochuresReducer,
+      auth: authReducer,
+    },
     preloadedState: {
       brochures: {
         items: [],
@@ -86,10 +109,22 @@ const createMockStore = (initialState = {}) =>
         selected: null,
         ...initialState,
       },
+      auth: {
+        user: { name: 'Test User', role: 'User', permissions: ['export:excel'] },
+        token: 'fake-token',
+        loading: false,
+        error: null,
+      },
     },
   })
 
 describe('BrochuresPage', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    // Default mock so the initial fetchBrochures dispatch on mount doesn't crash
+    ;(searchBrochures as jest.Mock).mockResolvedValue({ items: [], total: 0 })
+  })
+
   it('renders child components and triggers layout effects', () => {
     const store = createMockStore()
     const dispatchSpy = jest.spyOn(store, 'dispatch')
@@ -149,5 +184,52 @@ describe('BrochuresPage', () => {
     
     fireEvent.click(screen.getByText('Some Error'))
     expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'brochures/clearError' }))
+  })
+
+  it('triggers onDelete callback and handles success', async () => {
+    const item = { id: 1, name: 'Item 1', deletedAt: null } as BrochureItem
+    const store = createMockStore({ selected: item })
+    const dispatchSpy = jest.spyOn(store, 'dispatch')
+    render(<Provider store={store}><BrochuresPage /></Provider>)
+    
+    expect(screen.getByTestId('details-modal')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Delete Details'))
+    
+    expect(dispatchSpy).toHaveBeenCalledWith(expect.any(Function)) // delete thunk called
+  })
+
+  it('handles Excel export successfully', async () => {
+    const store = createMockStore()
+    ;(searchBrochures as jest.Mock).mockResolvedValue({
+      items: [{ id: 1, name: 'Item 1', email: 'a@b.com', website: { name: 'Site' } }],
+    })
+    
+    render(<Provider store={store}><BrochuresPage /></Provider>)
+    
+    const exportBtn = screen.getByText('Export Excel')
+    fireEvent.click(exportBtn)
+    
+    await waitFor(() => {
+      expect(searchBrochures).toHaveBeenCalled()
+      expect(XLSX.utils.json_to_sheet).toHaveBeenCalled()
+      expect(XLSX.writeFile).toHaveBeenCalled()
+    })
+  })
+
+  it('handles Excel export failure when search returns empty', async () => {
+    const store = createMockStore()
+    ;(searchBrochures as jest.Mock).mockResolvedValue({
+      items: [],
+    })
+    
+    render(<Provider store={store}><BrochuresPage /></Provider>)
+    
+    const exportBtn = screen.getByText('Export Excel')
+    fireEvent.click(exportBtn)
+    
+    await waitFor(() => {
+      expect(searchBrochures).toHaveBeenCalled()
+      expect(XLSX.writeFile).not.toHaveBeenCalled()
+    })
   })
 })

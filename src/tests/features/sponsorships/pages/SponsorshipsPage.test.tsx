@@ -4,6 +4,21 @@ import '@testing-library/jest-dom'
 import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
 import sponsorshipsReducer, { fetchSponsorships } from '../../../../store/slices/sponsorships/sponsorships.slice'
+import authReducer from '../../../../store/slices/authSlice'
+import type { SponsorshipItem } from '../../../../services/sponsorships'
+
+jest.mock('xlsx', () => ({
+  utils: {
+    json_to_sheet: jest.fn(() => ({})),
+    book_new: jest.fn(() => ({})),
+    book_append_sheet: jest.fn(),
+  },
+  writeFile: jest.fn(),
+}))
+
+jest.mock('../../../../services/sponsorships', () => ({
+  searchSponsorships: jest.fn(),
+}))
 
 jest.mock('../../../../features/sponsorships/components/SponsorshipTable', () => ({
     __esModule: true,
@@ -15,9 +30,11 @@ jest.mock('../../../../features/sponsorships/components/SponsorshipTable', () =>
 }))
 jest.mock('../../../../features/sponsorships/components/SponsorshipDetailsModal', () => ({
     __esModule: true,
-    default: ({ onClose }: { onClose: () => void }) => (
+    default: ({ item, onClose, onDelete }: { item: SponsorshipItem, onClose: () => void, onDelete?: (item: SponsorshipItem) => void }) => (
         <div data-testid="details-modal">
+            {item?.name}
             <button aria-label="Close modal" onClick={onClose}>Close</button>
+            {onDelete && <button onClick={() => onDelete(item)}>Delete Details</button>}
         </div>
     ),
 }))
@@ -39,19 +56,20 @@ jest.mock('../../../../features/sponsorships/components/SponsorshipForm', () => 
     ),
 }))
 
-interface SectionHeaderProps {
-    onFilterClick: () => void;
-    onAddClick: () => void;
-    error: string | null;
-    onClearError: () => void;
-}
 jest.mock('../../../../components/SectionHeader', () => ({
     __esModule: true,
-    default: ({ onFilterClick, onAddClick, error, onClearError }: SectionHeaderProps) => (
+    default: ({ onFilterClick, onAddClick, error, onClearError, onExportClick }: {
+        onFilterClick: () => void
+        onAddClick?: () => void
+        error?: string | null
+        onClearError?: () => void
+        onExportClick?: () => void
+    }) => (
         <div data-testid="section-header">
             <button aria-label="Open filters" onClick={onFilterClick}>Filters</button>
             <button aria-label="Add sponsorship" onClick={onAddClick}>Add</button>
             {error && <><span>{error}</span><button aria-label="Clear error" onClick={onClearError}>Clear</button></>}
+            {onExportClick && <button onClick={onExportClick}>Export Excel</button>}
         </div>
     ),
 }))
@@ -68,12 +86,29 @@ jest.mock('../../../../store/slices/sponsorships/sponsorships.slice', () => {
             jest.fn(() => ({ type: 'sponsorships/fetch/pending' })),
             actual.fetchSponsorships
         ),
+        // Return a real thunk function so dispatchSpy sees expect.any(Function)
+        deleteSponsorshipThunk: Object.assign(
+            jest.fn(() => () => Promise.resolve({ unwrap: () => Promise.resolve({}) })),
+            {
+                pending: { type: 'sponsorships/delete/pending' },
+                fulfilled: { type: 'sponsorships/delete/fulfilled', match: () => true },
+                rejected: { type: 'sponsorships/delete/rejected' },
+            }
+        ),
+        // Use the real setSelected so that dispatching it actually updates the store
+        setSelected: actual.setSelected,
     }
 })
 
+import { searchSponsorships } from '../../../../services/sponsorships'
+import * as XLSX from 'xlsx'
+
 
 const createMockStore = (initialState = {}) => configureStore({
-    reducer: { sponsorships: sponsorshipsReducer },
+    reducer: {
+        sponsorships: sponsorshipsReducer,
+        auth: authReducer,
+    },
     preloadedState: {
         sponsorships: {
             items: [],
@@ -87,6 +122,12 @@ const createMockStore = (initialState = {}) => configureStore({
             draftFilters: { search: '', sortBy: 'now', sortOrder: 'DESC' as const },
             selected: null,
             ...initialState,
+        },
+        auth: {
+            user: { name: 'Test User', role: 'User', permissions: ['export:excel'] },
+            token: 'fake-token',
+            loading: false,
+            error: null,
         },
     },
 })
@@ -180,6 +221,53 @@ describe('SponsorshipsPage', () => {
         
         await waitFor(() => {
             expect(fetchSponsorships).toHaveBeenCalledTimes(2) // mount + success
+        })
+    })
+
+    it('triggers onDelete callback and handles success', async () => {
+        const item = { id: 1, name: 'Item 1', deletedAt: null }
+        const store = createMockStore({ selected: item })
+        const dispatchSpy = jest.spyOn(store, 'dispatch')
+        render(<Provider store={store}><SponsorshipsPage /></Provider>)
+        
+        expect(screen.getByTestId('details-modal')).toBeInTheDocument()
+        fireEvent.click(screen.getByText('Delete Details'))
+        
+        expect(dispatchSpy).toHaveBeenCalledWith(expect.any(Function)) // delete thunk called
+    })
+
+    it('handles Excel export successfully', async () => {
+        const store = createMockStore()
+        ;(searchSponsorships as jest.Mock).mockResolvedValue({
+            items: [{ id: 1, name: 'Item 1', email: 'a@b.com', website: { name: 'Site' } }],
+        })
+        
+        render(<Provider store={store}><SponsorshipsPage /></Provider>)
+        
+        const exportBtn = screen.getByText('Export Excel')
+        fireEvent.click(exportBtn)
+        
+        await waitFor(() => {
+            expect(searchSponsorships).toHaveBeenCalled()
+            expect(XLSX.utils.json_to_sheet).toHaveBeenCalled()
+            expect(XLSX.writeFile).toHaveBeenCalled()
+        })
+    })
+
+    it('handles Excel export failure when search returns empty', async () => {
+        const store = createMockStore()
+        ;(searchSponsorships as jest.Mock).mockResolvedValue({
+            items: [],
+        })
+        
+        render(<Provider store={store}><SponsorshipsPage /></Provider>)
+        
+        const exportBtn = screen.getByText('Export Excel')
+        fireEvent.click(exportBtn)
+        
+        await waitFor(() => {
+            expect(searchSponsorships).toHaveBeenCalled()
+            expect(XLSX.writeFile).not.toHaveBeenCalled()
         })
     })
 })

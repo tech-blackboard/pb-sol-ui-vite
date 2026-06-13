@@ -83,4 +83,34 @@ describe('AccRegistrationDetailsModal', () => {
         fireEvent.click(screen.getByText('Close'))
         expect(mockOnClose).toHaveBeenCalled()
     })
+
+    it('calls onEdit when edit button is clicked', () => {
+        const onEdit = jest.fn()
+        render(<AccRegistrationDetailsModal item={mockItem as AccRegistrationItem} onClose={mockOnClose} onEdit={onEdit} />)
+
+        fireEvent.click(screen.getByText('Edit'))
+        expect(onEdit).toHaveBeenCalledWith(mockItem)
+    })
+
+    it('calls onDelete when delete button is clicked and confirmed', () => {
+        const onDelete = jest.fn()
+        const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true)
+        render(<AccRegistrationDetailsModal item={mockItem as AccRegistrationItem} onClose={mockOnClose} onDelete={onDelete} />)
+
+        fireEvent.click(screen.getByText('Delete'))
+        expect(confirmSpy).toHaveBeenCalled()
+        expect(onDelete).toHaveBeenCalledWith(mockItem)
+        confirmSpy.mockRestore()
+    })
+
+    it('does not call onDelete when delete button is clicked and cancelled', () => {
+        const onDelete = jest.fn()
+        const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false)
+        render(<AccRegistrationDetailsModal item={mockItem as AccRegistrationItem} onClose={mockOnClose} onDelete={onDelete} />)
+
+        fireEvent.click(screen.getByText('Delete'))
+        expect(confirmSpy).toHaveBeenCalled()
+        expect(onDelete).not.toHaveBeenCalled()
+        confirmSpy.mockRestore()
+    })
 })

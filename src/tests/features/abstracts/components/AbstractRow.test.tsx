@@ -417,6 +417,46 @@ describe('AbstractRow – full branch & function coverage', () => {
     )
     fireEvent.click(screen.getByText('test.pdf'))
     expect(uploadService.getSignedUrl).not.toHaveBeenCalled()
+  });
+
+  test('handleViewFile returns early if fileS3Url becomes undefined before click', () => {
+    const record = { ...baseRecord, file: 'test.pdf', fileS3Url: 's3://bucket/test.pdf' };
+    render(
+      <table>
+        <tbody>
+          <AbstractRow
+            record={record}
+            raw={baseRaw}
+            onView={onView}
+          />
+        </tbody>
+      </table>
+    )
+    
+    // Mutate the prop reference directly to make it undefined before firing the click event
+    ;(record as AbstractRecord & { fileS3Url: string | undefined }).fileS3Url = undefined
+    
+    fireEvent.click(screen.getByText('test.pdf'))
+    
+    expect(uploadService.getSignedUrl).not.toHaveBeenCalled()
+  })
+
+  test('renders relative file name fallback when split returns empty string', () => {
+    render(
+      <table>
+        <tbody>
+          <AbstractRow
+            record={{
+              ...baseRecord,
+              file: '/',
+            }}
+            raw={baseRaw}
+            onView={onView}
+          />
+        </tbody>
+      </table>
+    )
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
   })
 })
 

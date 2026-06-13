@@ -264,4 +264,26 @@ describe('PaymentReminderModal', () => {
     // if we call the function.
     fireEvent.change(input, { target: { value: 'http://new.link' } })
   })
+
+  it('covers the errors branch when error exists', async () => {
+    let callCount = 0
+    const realUseState = jest.requireActual('react').useState
+    jest.spyOn(jest.requireActual('react'), 'useState').mockImplementation((initVal) => {
+      callCount++
+      if (callCount === 3) {
+        return realUseState({ paymentLink: 'Invalid URL' })
+      }
+      return realUseState(initVal)
+    })
+
+    mockGetAbstractById.mockResolvedValue({ paymentLink: null } as unknown as AbstractItem)
+    render(<PaymentReminderModal {...defaultProps} />)
+    
+    // Check that error is in the document
+    expect(await screen.findByText('Invalid URL')).toBeInTheDocument()
+
+    // Trigger change to clear error
+    const input = screen.getByPlaceholderText(/Optional/i)
+    fireEvent.change(input, { target: { value: 'https://new.link' } })
+  })
 })

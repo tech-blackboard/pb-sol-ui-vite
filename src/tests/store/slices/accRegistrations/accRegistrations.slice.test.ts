@@ -10,7 +10,12 @@ import reducer, {
     clearError,
     type AccRegistrationFilters
 } from '../../../../store/slices/accRegistrations/accRegistrations.slice';
-import { fetchAccRegistrations, createAccRegistrationThunk } from '../../../../store/slices/accRegistrations/accRegistrations.slice';
+import {
+    fetchAccRegistrations,
+    createAccRegistrationThunk,
+    updateAccRegistrationThunk,
+    deleteAccRegistrationThunk
+} from '../../../../store/slices/accRegistrations/accRegistrations.slice';
 import * as accRegistrationsService from '../../../../services/accRegistrations';
 import type { AccRegistrationItem } from '../../../../services/accRegistrations';
 import type { UnknownAction } from '@reduxjs/toolkit';
@@ -181,6 +186,183 @@ describe('accRegistrations slice', () => {
             const result = await createAccRegistrationThunk({})(dispatch, jest.fn(), undefined);
             expect(result.payload).toBe('Failed to create registration');
             spy.mockRestore();
+        });
+
+        // updateAccRegistrationThunk extraReducers
+        it('handles updateAccRegistrationThunk.pending', () => {
+            const state = reducer(initialState, updateAccRegistrationThunk.pending('', { id: 1, data: {} }));
+            expect(state.editLoading).toBe(true);
+        });
+
+        it('handles updateAccRegistrationThunk.fulfilled', () => {
+            const startState = {
+                ...initialState,
+                editLoading: true,
+                items: [
+                    { id: 1, name: 'Old Name' } as AccRegistrationItem,
+                    { id: 2, name: 'Other Name' } as AccRegistrationItem
+                ],
+                selected: { id: 1, name: 'Old Name' } as AccRegistrationItem
+            };
+            const updatedItem = { id: 1, name: 'New Name' } as AccRegistrationItem;
+            const state = reducer(startState, updateAccRegistrationThunk.fulfilled(updatedItem, '', { id: 1, data: {} }));
+            expect(state.editLoading).toBe(false);
+            expect(state.items[0]).toEqual(updatedItem);
+            expect(state.items[1].name).toBe('Other Name');
+            expect(state.selected).toEqual(updatedItem);
+        });
+
+        it('handles updateAccRegistrationThunk.rejected', () => {
+            const startState = { ...initialState, editLoading: true };
+            const state = reducer(startState, updateAccRegistrationThunk.rejected(null, '', { id: 1, data: {} }, 'Update Failed'));
+            expect(state.editLoading).toBe(false);
+            expect(state.error).toBe('Update Failed');
+        });
+
+        // deleteAccRegistrationThunk extraReducers
+        it('handles deleteAccRegistrationThunk.pending', () => {
+            const state = reducer(initialState, deleteAccRegistrationThunk.pending('', 1));
+            expect(state.loading).toBe(true);
+        });
+
+        it('handles deleteAccRegistrationThunk.fulfilled', () => {
+            const startState = {
+                ...initialState,
+                loading: true,
+                items: [{ id: 1, name: 'Item 1' } as AccRegistrationItem],
+                selected: { id: 1, name: 'Item 1' } as AccRegistrationItem
+            };
+            const state = reducer(startState, deleteAccRegistrationThunk.fulfilled(1, '', 1));
+            expect(state.loading).toBe(false);
+            expect(state.items).toEqual([]);
+            expect(state.selected).toBeNull();
+        });
+
+        it('handles deleteAccRegistrationThunk.rejected', () => {
+            const startState = { ...initialState, loading: true };
+            const state = reducer(startState, deleteAccRegistrationThunk.rejected(null, '', 1, 'Delete Failed'));
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Delete Failed');
+        });
+
+        // updateAccRegistrationThunk thunk tests
+        it('updateAccRegistrationThunk thunk should resolve successfully', async () => {
+            const updatedItem = { id: 1, name: 'Updated' } as AccRegistrationItem;
+            const spy = jest.spyOn(accRegistrationsService, 'updateAccRegistration').mockResolvedValue(updatedItem);
+            const dispatch = jest.fn();
+            const result = await updateAccRegistrationThunk({ id: 1, data: { name: 'Updated' } })(dispatch, jest.fn(), undefined);
+            expect(result.payload).toEqual(updatedItem);
+            spy.mockRestore();
+        });
+
+        it('updateAccRegistrationThunk thunk should reject with axios error', async () => {
+            const spy = jest.spyOn(accRegistrationsService, 'updateAccRegistration').mockRejectedValue({
+                isAxiosError: true,
+                response: { data: { message: 'Axios Update Error' } }
+            });
+            const dispatch = jest.fn();
+            const result = await updateAccRegistrationThunk({ id: 1, data: {} })(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios Update Error');
+            spy.mockRestore();
+        });
+
+        it('updateAccRegistrationThunk thunk should reject with fallback message', async () => {
+            const spy = jest.spyOn(accRegistrationsService, 'updateAccRegistration').mockRejectedValue(new Error('Generic Error'));
+            const dispatch = jest.fn();
+            const result = await updateAccRegistrationThunk({ id: 1, data: {} })(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Failed to update acc-registration');
+            spy.mockRestore();
+        });
+
+        // deleteAccRegistrationThunk thunk tests
+        it('deleteAccRegistrationThunk thunk should resolve successfully', async () => {
+            const spy = jest.spyOn(accRegistrationsService, 'deleteAccRegistration').mockResolvedValue(undefined);
+            const dispatch = jest.fn();
+            const result = await deleteAccRegistrationThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe(1);
+            spy.mockRestore();
+        });
+
+        it('deleteAccRegistrationThunk thunk should reject with axios error', async () => {
+            const spy = jest.spyOn(accRegistrationsService, 'deleteAccRegistration').mockRejectedValue({
+                isAxiosError: true,
+                response: { data: { message: 'Axios Delete Error' } }
+            });
+            const dispatch = jest.fn();
+            const result = await deleteAccRegistrationThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios Delete Error');
+            spy.mockRestore();
+        });
+
+        it('deleteAccRegistrationThunk thunk should reject with fallback message', async () => {
+            const spy = jest.spyOn(accRegistrationsService, 'deleteAccRegistration').mockRejectedValue(new Error('Generic Error'));
+            const dispatch = jest.fn();
+            const result = await deleteAccRegistrationThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Failed to delete accommodation registration');
+            spy.mockRestore();
+        });
+
+        // branch specific tests
+        it('updateAccRegistrationThunk thunk should reject with axios error using fallback err.message', async () => {
+            const spy = jest.spyOn(accRegistrationsService, 'updateAccRegistration').mockRejectedValue({
+                isAxiosError: true,
+                message: 'Axios fallback message'
+            });
+            const dispatch = jest.fn();
+            const result = await updateAccRegistrationThunk({ id: 1, data: {} })(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios fallback message');
+            spy.mockRestore();
+        });
+
+        it('deleteAccRegistrationThunk thunk should reject with axios error using fallback err.message', async () => {
+            const spy = jest.spyOn(accRegistrationsService, 'deleteAccRegistration').mockRejectedValue({
+                isAxiosError: true,
+                message: 'Axios fallback message'
+            });
+            const dispatch = jest.fn();
+            const result = await deleteAccRegistrationThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios fallback message');
+            spy.mockRestore();
+        });
+
+        it('handles fetchAccRegistrations.rejected fallback to Failed to load', () => {
+            const rejectedAction = {
+                type: fetchAccRegistrations.rejected.type,
+                payload: null,
+                error: {}
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.error).toBe('Failed to load');
+        });
+
+        it('handles createAccRegistrationThunk.rejected fallback to Failed to create', () => {
+            const rejectedAction = {
+                type: createAccRegistrationThunk.rejected.type,
+                payload: null,
+                error: {}
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.error).toBe('Failed to create');
+        });
+
+        it('handles updateAccRegistrationThunk.rejected fallback to Failed to update acc-registration', () => {
+            const rejectedAction = {
+                type: updateAccRegistrationThunk.rejected.type,
+                payload: null,
+                error: {}
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.error).toBe('Failed to update acc-registration');
+        });
+
+        it('handles deleteAccRegistrationThunk.rejected fallback to Failed to delete accommodation registration', () => {
+            const rejectedAction = {
+                type: deleteAccRegistrationThunk.rejected.type,
+                payload: null,
+                error: {}
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.error).toBe('Failed to delete accommodation registration');
         });
     });
 });

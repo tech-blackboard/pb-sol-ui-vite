@@ -10,7 +10,12 @@ import reducer, {
     clearError,
     type ContactFilters
 } from '../../../../store/slices/contacts/contacts.slice';
-import { fetchContacts, createContactThunk } from '../../../../store/slices/contacts/contacts.slice';
+import {
+    fetchContacts,
+    createContactThunk,
+    updateContactThunk,
+    deleteContactThunk
+} from '../../../../store/slices/contacts/contacts.slice';
 import * as contactsService from '../../../../services/contacts';
 import type { ContactItem } from '../../../../services/contacts';
 import type { UnknownAction } from '@reduxjs/toolkit';
@@ -178,6 +183,183 @@ describe('contacts slice', () => {
             const result = await createContactThunk({})(dispatch, jest.fn(), undefined);
             expect(result.type).toBe('contacts/create/rejected');
             spy.mockRestore();
+        });
+
+        // updateContactThunk extraReducers
+        it('handles updateContactThunk.pending', () => {
+            const state = reducer(initialState, updateContactThunk.pending('', { id: 1, data: {} }));
+            expect(state.editLoading).toBe(true);
+        });
+
+        it('handles updateContactThunk.fulfilled', () => {
+            const startState = {
+                ...initialState,
+                editLoading: true,
+                items: [
+                    { id: 1, name: 'Old Contact' } as ContactItem,
+                    { id: 2, name: 'Other Contact' } as ContactItem
+                ],
+                selected: { id: 1, name: 'Old Contact' } as ContactItem
+            };
+            const updatedItem = { id: 1, name: 'New Contact' } as ContactItem;
+            const state = reducer(startState, updateContactThunk.fulfilled(updatedItem, '', { id: 1, data: {} }));
+            expect(state.editLoading).toBe(false);
+            expect(state.items[0]).toEqual(updatedItem);
+            expect(state.items[1].name).toBe('Other Contact');
+            expect(state.selected).toEqual(updatedItem);
+        });
+
+        it('handles updateContactThunk.rejected', () => {
+            const startState = { ...initialState, editLoading: true };
+            const state = reducer(startState, updateContactThunk.rejected(null, '', { id: 1, data: {} }, 'Update Failed'));
+            expect(state.editLoading).toBe(false);
+            expect(state.error).toBe('Update Failed');
+        });
+
+        // deleteContactThunk extraReducers
+        it('handles deleteContactThunk.pending', () => {
+            const state = reducer(initialState, deleteContactThunk.pending('', 1));
+            expect(state.loading).toBe(true);
+        });
+
+        it('handles deleteContactThunk.fulfilled', () => {
+            const startState = {
+                ...initialState,
+                loading: true,
+                items: [{ id: 1, name: 'Contact 1' } as ContactItem],
+                selected: { id: 1, name: 'Contact 1' } as ContactItem
+            };
+            const state = reducer(startState, deleteContactThunk.fulfilled(1, '', 1));
+            expect(state.loading).toBe(false);
+            expect(state.items).toEqual([]);
+            expect(state.selected).toBeNull();
+        });
+
+        it('handles deleteContactThunk.rejected', () => {
+            const startState = { ...initialState, loading: true };
+            const state = reducer(startState, deleteContactThunk.rejected(null, '', 1, 'Delete Failed'));
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Delete Failed');
+        });
+
+        // updateContactThunk thunk tests
+        it('updateContactThunk thunk should resolve successfully', async () => {
+            const updatedItem = { id: 1, name: 'Updated' } as ContactItem;
+            const spy = jest.spyOn(contactsService, 'updateContact').mockResolvedValue(updatedItem);
+            const dispatch = jest.fn();
+            const result = await updateContactThunk({ id: 1, data: { name: 'Updated' } })(dispatch, jest.fn(), undefined);
+            expect(result.payload).toEqual(updatedItem);
+            spy.mockRestore();
+        });
+
+        it('updateContactThunk thunk should reject with axios error', async () => {
+            const spy = jest.spyOn(contactsService, 'updateContact').mockRejectedValue({
+                isAxiosError: true,
+                response: { data: { message: 'Axios Update Error' } }
+            });
+            const dispatch = jest.fn();
+            const result = await updateContactThunk({ id: 1, data: {} })(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios Update Error');
+            spy.mockRestore();
+        });
+
+        it('updateContactThunk thunk should reject with fallback message', async () => {
+            const spy = jest.spyOn(contactsService, 'updateContact').mockRejectedValue(new Error('Generic Error'));
+            const dispatch = jest.fn();
+            const result = await updateContactThunk({ id: 1, data: {} })(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Failed to update contact');
+            spy.mockRestore();
+        });
+
+        // deleteContactThunk thunk tests
+        it('deleteContactThunk thunk should resolve successfully', async () => {
+            const spy = jest.spyOn(contactsService, 'deleteContact').mockResolvedValue(undefined);
+            const dispatch = jest.fn();
+            const result = await deleteContactThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe(1);
+            spy.mockRestore();
+        });
+
+        it('deleteContactThunk thunk should reject with axios error', async () => {
+            const spy = jest.spyOn(contactsService, 'deleteContact').mockRejectedValue({
+                isAxiosError: true,
+                response: { data: { message: 'Axios Delete Error' } }
+            });
+            const dispatch = jest.fn();
+            const result = await deleteContactThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios Delete Error');
+            spy.mockRestore();
+        });
+
+        it('deleteContactThunk thunk should reject with fallback message', async () => {
+            const spy = jest.spyOn(contactsService, 'deleteContact').mockRejectedValue(new Error('Generic Error'));
+            const dispatch = jest.fn();
+            const result = await deleteContactThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Failed to delete contact');
+            spy.mockRestore();
+        });
+
+        // branch specific tests
+        it('updateContactThunk thunk should reject with axios error using fallback err.message', async () => {
+            const spy = jest.spyOn(contactsService, 'updateContact').mockRejectedValue({
+                isAxiosError: true,
+                message: 'Axios fallback message'
+            });
+            const dispatch = jest.fn();
+            const result = await updateContactThunk({ id: 1, data: {} })(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios fallback message');
+            spy.mockRestore();
+        });
+
+        it('deleteContactThunk thunk should reject with axios error using fallback err.message', async () => {
+            const spy = jest.spyOn(contactsService, 'deleteContact').mockRejectedValue({
+                isAxiosError: true,
+                message: 'Axios fallback message'
+            });
+            const dispatch = jest.fn();
+            const result = await deleteContactThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios fallback message');
+            spy.mockRestore();
+        });
+
+        it('handles fetchContacts.rejected fallback to Failed to load', () => {
+            const rejectedAction = {
+                type: fetchContacts.rejected.type,
+                payload: null,
+                error: {}
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.error).toBe('Failed to load');
+        });
+
+        it('handles createContactThunk.rejected fallback to Failed to create contact', () => {
+            const rejectedAction = {
+                type: createContactThunk.rejected.type,
+                payload: null,
+                error: {}
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.error).toBe('Failed to create contact');
+        });
+
+        it('handles updateContactThunk.rejected fallback to Failed to update contact', () => {
+            const rejectedAction = {
+                type: updateContactThunk.rejected.type,
+                payload: null,
+                error: {}
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.error).toBe('Failed to update contact');
+        });
+
+        it('handles deleteContactThunk.rejected fallback to Failed to delete contact', () => {
+            const rejectedAction = {
+                type: deleteContactThunk.rejected.type,
+                payload: null,
+                error: {}
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.error).toBe('Failed to delete contact');
         });
     });
 });

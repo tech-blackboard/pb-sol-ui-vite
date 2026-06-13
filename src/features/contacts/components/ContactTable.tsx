@@ -14,8 +14,8 @@ function ContactRow({ item, onView }: ContactRowProps) {
                     <button
                         onClick={onView}
                         className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-2 py-1 text-xs hover:bg-gray-50"
-                        title="Edit"
-                        aria-label="Edit"
+                        title="View Details"
+                        aria-label="View Details"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor" className="h-4 w-4">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 3.487a2.25 2.25 0 0 1 3.182 3.182L7.125 19.588l-3.682.409.409-3.682L16.862 3.487z" />

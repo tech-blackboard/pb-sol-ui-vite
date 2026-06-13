@@ -298,7 +298,7 @@ describe('AbstractDetailsModal', () => {
             meta: { requestStatus: 'fulfilled' },
         })
         useAppDispatch.mockReturnValue(dispatch)
-        
+
         render(
             <AbstractDetailsModal
                 item={mockItem}
@@ -309,25 +309,25 @@ describe('AbstractDetailsModal', () => {
                 onStatusChange={onStatusChange}
             />
         )
-        
+
         fireEvent.click(screen.getByText('✎ Edit'))
         expect(screen.getByText('Save Changes')).toBeInTheDocument()
 
         // Update all textboxes
         const textboxes = screen.getAllByRole('textbox')
         textboxes.forEach(tb => fireEvent.change(tb, { target: { value: 'New text' } }))
-        
+
         // Update combobox (Interested)
         const select = screen.getByRole('combobox')
         fireEvent.change(select, { target: { value: 'Others' } })
-        
+
         // Update file
         const fileInput = document.querySelector('input[type="file"]')
         if (fileInput) {
             const file = new File(['dummy'], 'test.pdf', { type: 'application/pdf' })
             fireEvent.change(fileInput, { target: { files: [file] } })
         }
-        
+
         fireEvent.click(screen.getByText('Save Changes'))
         await waitFor(() => {
             expect(dispatch).toHaveBeenCalled()
@@ -343,7 +343,7 @@ describe('AbstractDetailsModal', () => {
             payload: 'Server error'
         })
         useAppDispatch.mockReturnValue(dispatch)
-        
+
         render(
             <AbstractDetailsModal
                 item={mockItem}
@@ -354,10 +354,10 @@ describe('AbstractDetailsModal', () => {
                 onStatusChange={onStatusChange}
             />
         )
-        
+
         fireEvent.click(screen.getByText('✎ Edit'))
         fireEvent.click(screen.getByText('Save Changes'))
-        
+
         await waitFor(() => {
             expect(toast.error).toHaveBeenCalledWith('Server error')
         })
@@ -367,7 +367,7 @@ describe('AbstractDetailsModal', () => {
         const { useAppDispatch } = jest.requireMock('../../../../store/hooks')
         const dispatch = jest.fn().mockRejectedValue(new Error('Network error'))
         useAppDispatch.mockReturnValue(dispatch)
-        
+
         render(
             <AbstractDetailsModal
                 item={mockItem}
@@ -378,10 +378,10 @@ describe('AbstractDetailsModal', () => {
                 onStatusChange={onStatusChange}
             />
         )
-        
+
         fireEvent.click(screen.getByText('✎ Edit'))
         fireEvent.click(screen.getByText('Save Changes'))
-        
+
         await waitFor(() => {
             expect(toast.error).toHaveBeenCalledWith('An error occurred while updating')
         })
@@ -398,7 +398,7 @@ describe('AbstractDetailsModal', () => {
                 onStatusChange={onStatusChange}
             />
         )
-        
+
         fireEvent.click(screen.getByText('✎ Edit'))
         fireEvent.click(screen.getByText('Cancel'))
         expect(screen.queryByText('Save Changes')).not.toBeInTheDocument()
@@ -409,10 +409,10 @@ describe('AbstractDetailsModal', () => {
         const { uploadService } = jest.requireMock('../../../../services/upload')
         uploadService.getSignedUrl.mockResolvedValue('https://secure-url.com/file.pdf')
         const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null)
-        
+
         const recordWithS3 = { ...mockRecord, fileS3Url: 'https://s3.amazonaws.com/uploads/file.pdf' }
         const itemWithFile = { ...mockItem, file: 'uploads/file.pdf' }
-        
+
         render(
             <AbstractDetailsModal
                 item={itemWithFile}
@@ -423,9 +423,9 @@ describe('AbstractDetailsModal', () => {
                 onStatusChange={onStatusChange}
             />
         )
-        
+
         fireEvent.click(screen.getByText('file.pdf'))
-        
+
         await waitFor(() => {
             expect(uploadService.getSignedUrl).toHaveBeenCalled()
             expect(openSpy).toHaveBeenCalledWith('https://secure-url.com/file.pdf', '_blank', 'noopener,noreferrer')
@@ -443,11 +443,11 @@ describe('AbstractDetailsModal', () => {
             receipt: true,
         })
 
-        const loadingItem = { 
-            ...mockItem, 
-            status: { id: 5, actionType: 'Sent Invoice' } 
+        const loadingItem = {
+            ...mockItem,
+            status: { id: 5, actionType: 'Sent Invoice' }
         }
-        
+
         render(
             <AbstractDetailsModal
                 item={loadingItem}
@@ -467,10 +467,10 @@ describe('AbstractDetailsModal', () => {
     it('handles view file error', async () => {
         const { uploadService } = jest.requireMock('../../../../services/upload')
         uploadService.getSignedUrl.mockRejectedValue(new Error('API fail'))
-        
+
         const recordWithS3 = { ...mockRecord, fileS3Url: 'https://s3.amazonaws.com/uploads/error.pdf' }
         const itemWithFile = { ...mockItem, file: 'uploads/error.pdf' }
-        
+
         render(
             <AbstractDetailsModal
                 item={itemWithFile}
@@ -481,9 +481,9 @@ describe('AbstractDetailsModal', () => {
                 onStatusChange={onStatusChange}
             />
         )
-        
+
         fireEvent.click(screen.getByText('error.pdf'))
-        
+
         await waitFor(() => {
             expect(toast.error).toHaveBeenCalledWith('Failed to get secure access to the file', expect.anything())
         })
@@ -560,10 +560,10 @@ describe('AbstractDetailsModal', () => {
     })
 
     it('handles file IIFE fallbacks', () => {
-        const itemNested = { 
-            ...mockItem, 
-            file: 'nested/file.pdf', 
-            website: { id: 1, name: 'Site', link: '' } 
+        const itemNested = {
+            ...mockItem,
+            file: 'nested/file.pdf',
+            website: { id: 1, name: 'Site', link: '' }
         }
         render(
             <AbstractDetailsModal
@@ -620,7 +620,7 @@ describe('AbstractDetailsModal', () => {
         const dispatch = jest.fn().mockResolvedValue({
             type: 'abstracts/sendConfirmationEmail/fulfilled',
             meta: { requestStatus: 'fulfilled' },
-            payload: {} 
+            payload: {}
         })
         useAppDispatch.mockReturnValue(dispatch)
 
@@ -652,17 +652,157 @@ describe('AbstractDetailsModal', () => {
                 onStatusChange={onStatusChange}
             />
         )
-        
+
         fireEvent.click(screen.getByText('✎ Edit'))
         await screen.findByLabelText('Name')
 
         const select = screen.getByLabelText('Interested')
         fireEvent.change(select, { target: { value: 'Others' } })
-        
+
         const fileInput = screen.getByLabelText('Upload New File')
         const file = new File(['dummy'], 'test.pdf', { type: 'application/pdf' })
         fireEvent.change(fileInput, { target: { files: [file] } })
-        
+
         expect(screen.getByDisplayValue('Others')).toBeInTheDocument()
+    })
+
+    it('handles edit save failure fallback with null/undefined payload', async () => {
+        const { useAppDispatch } = jest.requireMock('../../../../store/hooks')
+        const dispatch = jest.fn().mockResolvedValue({
+            type: 'abstracts/updateAbstract/rejected',
+            meta: { requestStatus: 'rejected' },
+            payload: undefined
+        })
+        useAppDispatch.mockReturnValue(dispatch)
+
+        render(
+            <AbstractDetailsModal
+                item={mockItem}
+                record={mockRecord}
+                modalStatus="Under Review"
+                onClose={onClose}
+                onUpdate={onUpdate}
+                onStatusChange={onStatusChange}
+            />
+        )
+
+        fireEvent.click(screen.getByText('✎ Edit'))
+        fireEvent.click(screen.getByText('Save Changes'))
+
+        await waitFor(() => {
+            expect(toast.error).toHaveBeenCalledWith('Failed to update abstract')
+        })
+    })
+
+    it('handles missing status actionType in item.status object', () => {
+        const itemMock = { ...mockItem, status: { id: 1 } as unknown as AbstractItem['status'] }
+        render(
+            <AbstractDetailsModal
+                item={itemMock}
+                record={mockRecord}
+                modalStatus="Under Review"
+                onClose={onClose}
+                onUpdate={onUpdate}
+                onStatusChange={onStatusChange}
+            />
+        )
+        expect(screen.getAllByText('Under Review')[0]).toBeInTheDocument()
+    })
+
+    it('handles file IIFE fallbacks for split pop empty and absolute urls', () => {
+        // split pop pop() is empty for "/"
+        const itemNested1 = {
+            ...mockItem,
+            file: '/',
+            website: { id: 1, name: 'Site', link: '' }
+        }
+        render(
+            <AbstractDetailsModal
+                item={itemNested1}
+                record={mockRecord}
+                modalStatus="Under Review"
+                onClose={onClose}
+                onUpdate={onUpdate}
+                onStatusChange={onStatusChange}
+            />
+        )
+
+        // absolute URL
+        const itemNested2 = {
+            ...mockItem,
+            file: 'https://external.com/file.pdf',
+            website: { id: 1, name: 'Site', link: '' }
+        }
+        render(
+            <AbstractDetailsModal
+                item={itemNested2}
+                record={mockRecord}
+                modalStatus="Under Review"
+                onClose={onClose}
+                onUpdate={onUpdate}
+                onStatusChange={onStatusChange}
+            />
+        )
+    })
+
+    it('renders saving state when actionLoading.edit is true', () => {
+        const { useAppSelector } = jest.requireMock('../../../../store/hooks')
+        useAppSelector.mockReturnValue({
+            edit: true,
+            status: false,
+            confirmation: false,
+            invoice: false,
+            reminder: false,
+            receipt: false,
+        })
+        render(
+            <AbstractDetailsModal
+                item={mockItem}
+                record={mockRecord}
+                modalStatus="Under Review"
+                onClose={onClose}
+                onUpdate={onUpdate}
+                onStatusChange={onStatusChange}
+            />
+        )
+        fireEvent.click(screen.getByText('✎ Edit'))
+        expect(screen.getByText('Saving...')).toBeInTheDocument()
+    })
+
+    it('triggers onChange for FileField with empty/null files array', async () => {
+        render(
+            <AbstractDetailsModal
+                item={mockItem}
+                record={mockRecord}
+                modalStatus="Under Review"
+                onClose={onClose}
+                onUpdate={onUpdate}
+                onStatusChange={onStatusChange}
+            />
+        )
+
+        fireEvent.click(screen.getByText('✎ Edit'))
+        await screen.findByLabelText('Name')
+
+        const fileInput = screen.getByLabelText('Upload New File')
+        fireEvent.change(fileInput, { target: { files: [] } })
+    })
+
+    it('handles record property undefined fallbacks in edit state and early return check', () => {
+        const record = { ...mockRecord, name: undefined as unknown as string, email: undefined as unknown as string, fileS3Url: 's3://bucket/file.pdf' }
+        render(
+            <AbstractDetailsModal
+                item={{ ...mockItem, file: 'file.pdf' }}
+                record={record}
+                modalStatus="Under Review"
+                onClose={onClose}
+                onUpdate={onUpdate}
+                onStatusChange={onStatusChange}
+            />
+        )
+
+            // Mutate prop to test handleViewFile early return
+            ; (record as { fileS3Url: string | undefined }).fileS3Url = undefined
+        fireEvent.click(screen.getByText('file.pdf'))
     })
 })

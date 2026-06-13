@@ -500,4 +500,50 @@ describe('PaymentReceiptForm – Final Clean Suite v2', () => {
     
     expect(await screen.findByText('Check-out must be after check-in date')).toBeInTheDocument()
   })
+
+  test('interest selection falls back to default fee when not in map', () => {
+    setup()
+
+    fireEvent.change(screen.getByLabelText(/Interested in/i), {
+      target: { value: 'Custom Presentation' }, // not in mapping, falls back to 699
+    })
+
+    expect(screen.getAllByText('$699').length).toBeGreaterThan(0)
+  })
+
+  test('submits receipt without accommodation checked, checkIn and checkOut are undefined', async () => {
+    setup()
+
+    fireEvent.change(screen.getByLabelText(/Interested in/i), {
+      target: { value: 'Oral Presenter (Virtual)' },
+    })
+    fireEvent.change(screen.getByLabelText(/Registration Fee/i), {
+      target: { value: '399' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /Preview Payment Receipt/i }))
+    fireEvent.click(await screen.findByRole('button', { name: /Send Payment Receipt/i }))
+    fireEvent.click(screen.getByText(/Confirm & Send/i))
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+      const payload = onSubmit.mock.calls[0][0]
+      expect(payload.checkIn).toBeUndefined()
+      expect(payload.checkOut).toBeUndefined()
+      expect(payload.numberOfNights).toBeUndefined()
+    })
+  })
+
+  test('verifies validation error border styling is applied when errors exist', async () => {
+    const { container } = setup()
+
+    // Trigger validation error
+    fireEvent.click(screen.getByRole('button', { name: /Preview Payment Receipt/i }))
+
+    await screen.findByText('Please select an option')
+    
+    // Verify border-red-500 class is applied to container
+    const formDiv = container.firstChild?.firstChild as HTMLElement
+    expect(formDiv.className).toContain('border-red-500')
+  })
 })

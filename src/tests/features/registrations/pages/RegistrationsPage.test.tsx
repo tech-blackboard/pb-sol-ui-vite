@@ -6,11 +6,29 @@ import { configureStore } from '@reduxjs/toolkit'
 import registrationsReducer from '../../../../store/slices/registrations/registrations.slice'
 import type { RegistrationsState } from '../../../../store/slices/registrations/registrations.types'
 import type { RegistrationItem } from '../../../../services/registrations'
+import authReducer from '../../../../store/slices/authSlice'
+
+jest.mock('xlsx', () => ({
+  utils: {
+    json_to_sheet: jest.fn(() => ({})),
+    book_new: jest.fn(() => ({})),
+    book_append_sheet: jest.fn(),
+  },
+  writeFile: jest.fn(),
+}))
+
+jest.mock('../../../../services/registrations', () => ({
+  searchRegistrations: jest.fn(),
+}))
 
 // Header
-jest.mock('../../../../components/SectionHeader', () => ({
+jest.mock('../../../../features/registrations/components/RegistrationHeader', () => ({
   __esModule: true,
-    default: ({ error, onClearError }: { error: string | null, onClearError: () => void }) => (
+  default: ({ error, onClearError, onExportClick }: {
+    error?: string | null
+    onClearError?: () => void
+    onExportClick?: () => void
+  }) => (
     <div data-testid="header">
       {error && (
         <>
@@ -20,6 +38,7 @@ jest.mock('../../../../components/SectionHeader', () => ({
           </button>
         </>
       )}
+      {onExportClick && <button onClick={onExportClick}>Export Excel</button>}
     </div>
   ),
 }))
@@ -27,7 +46,7 @@ jest.mock('../../../../components/SectionHeader', () => ({
 // Table (match REAL props)
 jest.mock('../../../../features/registrations/components/RegistrationTable', () => ({
   __esModule: true,
-    default: ({ rows, loading, onView }: { rows: RegistrationItem[], loading: boolean, error: string | null, onView: (item: RegistrationItem) => void }) => (
+  default: ({ rows, loading, onView }: { rows: RegistrationItem[], loading: boolean, error: string | null, onView: (item: RegistrationItem) => void }) => (
     <div data-testid="table">
       {loading && <div>Loading...</div>}
       {rows.map((r) => (
@@ -42,10 +61,12 @@ jest.mock('../../../../features/registrations/components/RegistrationTable', () 
 // Modal
 jest.mock('../../../../features/registrations/components/RegistrationDetailsModal', () => ({
   __esModule: true,
-    default: ({ item, onClose }: { item: RegistrationItem | null, onClose: () => void }) => (
+  default: ({ item, onClose, onEdit, onDelete }: { item: RegistrationItem | null, onClose: () => void, onEdit?: (item: RegistrationItem) => void, onDelete?: (item: RegistrationItem) => void }) => (
     <div data-testid="modal">
       {item?.name}
       <button aria-label="Close modal" onClick={onClose}>Close</button>
+      {onEdit && <button onClick={() => onEdit(item!)}>Edit Details</button>}
+      {onDelete && <button onClick={() => onDelete(item!)}>Delete Details</button>}
     </div>
   ),
 }))
@@ -68,21 +89,35 @@ jest.mock('../../../../store/slices/registrations/registrations.thunks', () => {
       fulfilled: { type: `${type}/fulfilled` },
       rejected: { type: `${type}/rejected` },
       typePrefix: type,
+      unwrap: () => jest.fn().mockResolvedValue({})
     })
 
   return {
     fetchRegistrations: makeThunk('registrations/fetchRegistrations'),
-    deleteRegistrationThunk: makeThunk('registrations/deleteRegistration'),
+    deleteRegistrationThunk: Object.assign(
+      // Return a real thunk function so dispatchSpy sees expect.any(Function)
+      jest.fn(() => () => Promise.resolve({ unwrap: () => Promise.resolve({}) })),
+      {
+        pending: { type: 'registrations/delete/pending' },
+        fulfilled: { type: 'registrations/delete/fulfilled', match: () => true },
+        rejected: { type: 'registrations/delete/rejected' },
+      }
+    ),
     createRegistrationThunk: makeThunk('registrations/createRegistration'),
     updateRegistrationThunk: makeThunk('registrations/updateRegistration'),
   }
 })
 
 import { fetchRegistrations } from '../../../../store/slices/registrations/registrations.thunks'
+import { searchRegistrations } from '../../../../services/registrations'
+import * as XLSX from 'xlsx'
 
 const makeStore = (initial: Partial<RegistrationsState> = {}) =>
   configureStore({
-    reducer: { registrations: registrationsReducer },
+    reducer: {
+      registrations: registrationsReducer,
+      auth: authReducer,
+    },
     preloadedState: {
       registrations: {
         items: [],
@@ -97,6 +132,12 @@ const makeStore = (initial: Partial<RegistrationsState> = {}) =>
         selected: null,
         ...initial,
       } as RegistrationsState,
+      auth: {
+        user: { name: 'Test User', role: 'User', permissions: ['export:excel'] },
+        token: 'fake-token',
+        loading: false,
+        error: null,
+      },
     },
   })
 
@@ -253,5 +294,52 @@ describe('RegistrationsPage', () => {
     dispatchSpy.mockClear()
     fireEvent.click(screen.getByText('Size 25'))
     expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'registrations/setPageSize' }))
+  })
+
+  it('triggers onDelete callback and handles success', async () => {
+    const item = { id: 1, name: 'Item 1', deletedAt: null } as RegistrationItem
+    const store = makeStore({ selected: item })
+    const dispatchSpy = jest.spyOn(store, 'dispatch') as jest.SpyInstance
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+    
+    expect(screen.getByTestId('modal')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Delete Details'))
+    
+    expect(dispatchSpy).toHaveBeenCalledWith(expect.any(Function)) // delete thunk called
+  })
+
+  it('handles Excel export successfully', async () => {
+    const store = makeStore()
+    ;(searchRegistrations as jest.Mock).mockResolvedValue({
+      items: [{ id: 1, name: 'Item 1', email: 'a@b.com', website: { name: 'Site' } }],
+    })
+    
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+    
+    const exportBtn = screen.getByText('Export Excel')
+    fireEvent.click(exportBtn)
+    
+    await waitFor(() => {
+      expect(searchRegistrations).toHaveBeenCalled()
+      expect(XLSX.utils.json_to_sheet).toHaveBeenCalled()
+      expect(XLSX.writeFile).toHaveBeenCalled()
+    })
+  })
+
+  it('handles Excel export failure when search returns empty', async () => {
+    const store = makeStore()
+    ;(searchRegistrations as jest.Mock).mockResolvedValue({
+      items: [],
+    })
+    
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+    
+    const exportBtn = screen.getByText('Export Excel')
+    fireEvent.click(exportBtn)
+    
+    await waitFor(() => {
+      expect(searchRegistrations).toHaveBeenCalled()
+      expect(XLSX.writeFile).not.toHaveBeenCalled()
+    })
   })
 })

@@ -192,6 +192,14 @@ const mockState = {
         paymentReceiptModal: { open: false, abstractId: null, abstractName: '' },
         paymentReminderModal: { open: false, abstractId: null, abstractName: '' },
         actionLoading: { status: false, invoice: false, receipt: false, reminder: false, confirmation: false },
+        appliedFilters: { onlyDeleted: 'false' },
+        draftFilters: { onlyDeleted: 'false' },
+    },
+    auth: {
+        user: { name: 'Test User', role: 'User', permissions: ['export:excel'] },
+        token: 'fake-token',
+        loading: false,
+        error: null,
     }
 }
 
