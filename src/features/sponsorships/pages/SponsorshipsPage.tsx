@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
+import { selectAuth } from '../../../store/slices/authSlice'
 import { fetchSponsorships, deleteSponsorshipThunk, setPage, setPageSize, setSelected, clearSelected, clearError, updateDraftFilter, applyFilters } from '../../../store/slices/sponsorships/sponsorships.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import SponsorshipTable from '../components/SponsorshipTable'
@@ -17,6 +18,8 @@ export default function SponsorshipsPage() {
     const { items, loading, page, pageSize, total, error, appliedFilters, selected } = useAppSelector((s) => s.sponsorships)
     const [filtersOpen, setFiltersOpen] = useState(false)
     const [addOpen, setAddOpen] = useState(false)
+    const { user } = useAppSelector(selectAuth)
+    const canExport = user?.permissions?.includes('export:excel')
     const [isExporting, setIsExporting] = useState(false)
 
     useEffect(() => {
@@ -77,7 +80,7 @@ export default function SponsorshipsPage() {
                     dispatch(updateDraftFilter({ key: 'onlyDeleted', value: isTrash ? 'false' : 'true' }));
                     dispatch(applyFilters());
                 }}
-                onExportClick={handleExport}
+                onExportClick={canExport ? handleExport : undefined}
                 isExporting={isExporting}
             />
 

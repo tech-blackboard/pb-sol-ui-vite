@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
+import { selectAuth } from '../../../store/slices/authSlice'
 import { fetchAccRegistrations, deleteAccRegistrationThunk, setPage, setPageSize, setSelected, clearSelected, clearError, updateDraftFilter, applyFilters } from '../../../store/slices/accRegistrations/accRegistrations.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import AccRegistrationTable from '../components/AccRegistrationTable'
@@ -19,6 +20,8 @@ export default function AccRegistrationsPage() {
     const [filtersOpen, setFiltersOpen] = useState(false)
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
     const [editItem, setEditItem] = useState<AccRegistrationItem | null>(null)
+    const { user } = useAppSelector(selectAuth)
+    const canExport = user?.permissions?.includes('export:excel')
     const [isExporting, setIsExporting] = useState(false)
 
     useEffect(() => {
@@ -94,7 +97,7 @@ export default function AccRegistrationsPage() {
                     dispatch(updateDraftFilter({ key: 'onlyDeleted', value: isTrash ? 'false' : 'true' }));
                     dispatch(applyFilters());
                 }}
-                onExportClick={handleExport}
+                onExportClick={canExport ? handleExport : undefined}
                 isExporting={isExporting}
             />
 

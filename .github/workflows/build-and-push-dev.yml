@@ -78,3 +78,47 @@ jobs:
           echo "docker-compose -f docker-compose.prod.yml pull" >> $GITHUB_STEP_SUMMARY
           echo "docker-compose -f docker-compose.prod.yml up -d" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  deploy-to-ec2:
+    name: Deploy to EC2
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: PB-SOL-DEV
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_PORT || 22 }}
+          envs: ECR_REGISTRY,ECR_PASSWORD
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_PASSWORD: ${{ steps.login-ecr.outputs.password }}
+        script: |
+          # Log in to ECR on the EC2 instance using the token passed from runner
+          echo "$ECR_PASSWORD" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+          
+          # Navigate to the UI folder on EC2
+          cd app
+          
+          # Restart services using docker-compose
+          docker-compose -f docker-compose.prod.yml down
+          docker-compose -f docker-compose.prod.yml pull
+          docker-compose -f docker-compose.prod.yml up -d
+          
+          # Clean up unused docker images to prevent disk space issues
+          docker image prune -f

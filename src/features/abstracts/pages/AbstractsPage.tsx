@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
+import { selectAuth } from '../../../store/slices/authSlice'
 import {
   setPage,
   setPageSize,
@@ -54,6 +55,8 @@ export default function AbstractsPage() {
   const paymentReceiptModal = useAppSelector((s) => s.abstracts.paymentReceiptModal)
   const paymentReminderModal = useAppSelector((s) => s.abstracts.paymentReminderModal)
 
+  const { user } = useAppSelector(selectAuth)
+  const canExport = user?.permissions?.includes('export:excel')
   const [isExporting, setIsExporting] = useState(false)
 
   useEffect(() => {
@@ -274,7 +277,7 @@ export default function AbstractsPage() {
             dispatch(updateDraftFilter({ key: 'onlyDeleted', value: isTrash ? 'false' : 'true' }));
             dispatch(applyFilters());
         }}
-        onExportClick={handleExport}
+        onExportClick={canExport ? handleExport : undefined}
         isExporting={isExporting}
       />
 

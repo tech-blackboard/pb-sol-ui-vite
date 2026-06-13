@@ -3,7 +3,7 @@ import type { PayloadAction } from '@reduxjs/toolkit'
 import type { RootState } from '..'
 import { login as apiLogin, logout as apiLogout } from '../../services/auth'
 
-export type AuthUser = { name: string; role: string; isAdmin?: boolean }
+export type AuthUser = { name: string; role: string; isAdmin?: boolean; permissions?: string[] }
 
 export type LoginPayload = {
 	useremail: string
@@ -52,6 +52,7 @@ export const loginThunk = createAsyncThunk<
 				name: resp.user.email.split('@')[0] || 'User',
 				role: isAdmin ? 'Administrator' : 'User',
 				isAdmin,
+				permissions: resp.user.permissions || [],
 			}
 
 			const storage = remember ? localStorage : sessionStorage
