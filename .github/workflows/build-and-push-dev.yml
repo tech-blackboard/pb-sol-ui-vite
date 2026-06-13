@@ -99,26 +99,26 @@ jobs:
 
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_PASSWORD: ${{ steps.login-ecr.outputs.password }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: ${{ secrets.EC2_PORT || 22 }}
           envs: ECR_REGISTRY,ECR_PASSWORD
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_PASSWORD: ${{ steps.login-ecr.outputs.password }}
-        script: |
-          # Log in to ECR on the EC2 instance using the token passed from runner
-          echo "$ECR_PASSWORD" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
-          
-          # Navigate to the UI folder on EC2
-          cd app
-          
-          # Restart services using docker-compose
-          docker-compose -f docker-compose.prod.yml down
-          docker-compose -f docker-compose.prod.yml pull
-          docker-compose -f docker-compose.prod.yml up -d
-          
-          # Clean up unused docker images to prevent disk space issues
-          docker image prune -f
+          script: |
+            # Log in to ECR on the EC2 instance using the token passed from runner
+            echo "$ECR_PASSWORD" | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+            
+            # Navigate to the UI folder on EC2
+            cd app
+            
+            # Restart services using docker-compose
+            docker-compose -f docker-compose.prod.yml down
+            docker-compose -f docker-compose.prod.yml pull
+            docker-compose -f docker-compose.prod.yml up -d
+            
+            # Clean up unused docker images to prevent disk space issues
+            docker image prune -f
