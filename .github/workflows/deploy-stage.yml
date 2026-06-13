@@ -55,16 +55,16 @@ jobs:
             cd app
             
             echo "Stopping existing containers..."
-            docker-compose -f docker-compose.stage.yml down
+            docker compose -f docker-compose.stage.yml down
             
             echo "Pulling latest ECR images..."
-            if ! docker-compose -f docker-compose.stage.yml pull; then
+            if ! docker compose -f docker-compose.stage.yml pull; then
               echo "❌ Failed to pull new images from ECR!" >&2
               exit 1
             fi
             
             echo "Starting containers..."
-            if ! docker-compose -f docker-compose.stage.yml up -d; then
+            if ! docker compose -f docker-compose.stage.yml up -d; then
               echo "❌ Failed to start containers!" >&2
               exit 1
             fi
