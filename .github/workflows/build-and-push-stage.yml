@@ -78,9 +78,3 @@ jobs:
           echo "docker-compose -f docker-compose.stage.yml pull" >> $GITHUB_STEP_SUMMARY
           echo "docker-compose -f docker-compose.stage.yml up -d" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-
-  deploy-to-ec2:
-    name: Deploy to EC2
-    needs: build-and-push
-    uses: ./.github/workflows/deploy-stage.yml
-    secrets: inherit
