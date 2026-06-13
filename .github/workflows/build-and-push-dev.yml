@@ -19,7 +19,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Create .env.production file
         env:
@@ -28,7 +28,7 @@ jobs:
           echo "$ENV_PRODUCTION_CONTENT" > .env.production
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -82,67 +82,5 @@ jobs:
   deploy-to-ec2:
     name: Deploy to EC2
     needs: build-and-push
-    runs-on: ubuntu-latest
-    environment: PB-SOL-DEV
-
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Get ECR Password
-        id: ecr-password
-        run: |
-          echo "password=$(aws ecr get-login-password --region ${{ env.AWS_REGION }})" >> "$GITHUB_OUTPUT"
-
-      - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_PASSWORD: ${{ steps.ecr-password.outputs.password }}
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: ${{ secrets.EC2_PORT || 22 }}
-          envs: ECR_REGISTRY,ECR_PASSWORD
-          script: |
-            set -e
-            
-            echo "Logging into Amazon ECR on EC2..."
-            if ! echo "$ECR_PASSWORD" | docker login --username AWS --password-stdin "$ECR_REGISTRY"; then
-              echo "❌ ECR Login failed!" >&2
-              exit 1
-            fi
-            
-            # Navigate to the UI folder on EC2
-            cd app
-            
-            echo "Stopping existing containers..."
-            docker-compose -f docker-compose.prod.yml down
-            
-            echo "Pulling latest ECR images..."
-            if ! docker-compose -f docker-compose.prod.yml pull; then
-              echo "❌ Failed to pull new images from ECR!" >&2
-              exit 1
-            fi
-            
-            echo "Starting containers..."
-            if ! docker-compose -f docker-compose.prod.yml up -d; then
-              echo "❌ Failed to start containers!" >&2
-              exit 1
-            fi
-            
-            echo "Cleaning up unused docker images..."
-            docker image prune -f
-            
-            echo "✅ Deployment completed successfully!"
-
-
+    uses: ./.github/workflows/deploy-dev.yml
+    secrets: inherit
