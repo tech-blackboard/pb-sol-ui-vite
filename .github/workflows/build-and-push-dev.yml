@@ -101,45 +101,43 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_PASSWORD: ${{ steps.login-ecr.outputs.password }}
+          ECR_PASSWORD: ${{ steps.login-ecr.outputs.docker_password }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: ${{ secrets.EC2_PORT || 22 }}
           envs: ECR_REGISTRY,ECR_PASSWORD
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_PASSWORD: ${{ steps.login-ecr.outputs.docker_password }}
-        script: |
-          set -e
-          
-          echo "Logging into Amazon ECR on EC2..."
-          if ! echo "$ECR_PASSWORD" | docker login --username AWS --password-stdin "$ECR_REGISTRY"; then
-            echo "❌ ECR Login failed!" >&2
-            exit 1
-          fi
-          
-          # Navigate to the UI folder on EC2
-          cd app
-          
-          echo "Stopping existing containers..."
-          docker-compose -f docker-compose.prod.yml down
-          
-          echo "Pulling latest ECR images..."
-          if ! docker-compose -f docker-compose.prod.yml pull; then
-            echo "❌ Failed to pull new images from ECR!" >&2
-            exit 1
-          fi
-          
-          echo "Starting containers..."
-          if ! docker-compose -f docker-compose.prod.yml up -d; then
-            echo "❌ Failed to start containers!" >&2
-            exit 1
-          fi
-          
-          echo "Cleaning up unused docker images..."
-          docker image prune -f
-          
-          echo "✅ Deployment completed successfully!"
+          script: |
+            set -e
+            
+            echo "Logging into Amazon ECR on EC2..."
+            if ! echo "$ECR_PASSWORD" | docker login --username AWS --password-stdin "$ECR_REGISTRY"; then
+              echo "❌ ECR Login failed!" >&2
+              exit 1
+            fi
+            
+            # Navigate to the UI folder on EC2
+            cd app
+            
+            echo "Stopping existing containers..."
+            docker-compose -f docker-compose.prod.yml down
+            
+            echo "Pulling latest ECR images..."
+            if ! docker-compose -f docker-compose.prod.yml pull; then
+              echo "❌ Failed to pull new images from ECR!" >&2
+              exit 1
+            fi
+            
+            echo "Starting containers..."
+            if ! docker-compose -f docker-compose.prod.yml up -d; then
+              echo "❌ Failed to start containers!" >&2
+              exit 1
+            fi
+            
+            echo "Cleaning up unused docker images..."
+            docker image prune -f
+            
+            echo "✅ Deployment completed successfully!"
+
 
