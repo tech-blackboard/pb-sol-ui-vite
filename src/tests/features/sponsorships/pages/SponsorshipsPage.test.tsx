@@ -58,20 +58,22 @@ jest.mock('../../../../features/sponsorships/components/SponsorshipForm', () => 
 
 jest.mock('../../../../components/SectionHeader', () => ({
     __esModule: true,
-    default: ({ onFilterClick, onAddClick, error, onClearError, onExportClick }: {
+    default: ({ onFilterClick, onAddClick, error, onClearError, onExportClick, onToggleDeleted }: {
         onFilterClick: () => void
         onAddClick?: () => void
         error?: string | null
         onClearError?: () => void
         onExportClick?: () => void
+        onToggleDeleted?: () => void
     }) => (
         <div data-testid="section-header">
             <button aria-label="Open filters" onClick={onFilterClick}>Filters</button>
-            <button aria-label="Add sponsorship" onClick={onAddClick}>Add</button>
+            {onAddClick && <button aria-label="Add sponsorship" onClick={onAddClick}>Add</button>}
             {error && <><span>{error}</span><button aria-label="Clear error" onClick={onClearError}>Clear</button></>}
             {onExportClick && <button onClick={onExportClick}>Export Excel</button>}
+            {onToggleDeleted && <button onClick={onToggleDeleted}>Toggle Deleted</button>}
         </div>
-    ),
+    )
 }))
 jest.mock('../../../../features/abstracts/components/AbstractPagination', () => ({
     __esModule: true,
@@ -239,7 +241,10 @@ describe('SponsorshipsPage', () => {
     it('handles Excel export successfully', async () => {
         const store = createMockStore()
         ;(searchSponsorships as jest.Mock).mockResolvedValue({
-            items: [{ id: 1, name: 'Item 1', email: 'a@b.com', website: { name: 'Site' } }],
+            items: [
+                { id: 1, name: 'Item 1', email: 'a@b.com', website: { name: 'Site' }, now: '2023-01-01' },
+                { id: 2 }
+            ],
         })
         
         render(<Provider store={store}><SponsorshipsPage /></Provider>)
@@ -269,5 +274,112 @@ describe('SponsorshipsPage', () => {
             expect(searchSponsorships).toHaveBeenCalled()
             expect(XLSX.writeFile).not.toHaveBeenCalled()
         })
+    })
+
+    it('handles Excel export exception (catch block) (lines 61-62)', async () => {
+        const store = createMockStore()
+        ;(searchSponsorships as jest.Mock).mockRejectedValue(new Error('Network Error'))
+
+        render(<Provider store={store}><SponsorshipsPage /></Provider>)
+
+        const exportBtn = screen.getByText('Export Excel')
+        fireEvent.click(exportBtn)
+
+        await waitFor(() => {
+            expect(searchSponsorships).toHaveBeenCalled()
+        })
+    })
+
+    it('triggers onToggleDeleted properly (lines 79-81)', async () => {
+        const store = createMockStore({
+            appliedFilters: { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'false' },
+            draftFilters: { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'false' },
+        })
+        const spy = jest.spyOn(store, 'dispatch')
+
+        render(
+            <Provider store={store}>
+                <SponsorshipsPage />
+            </Provider>
+        )
+
+        spy.mockClear()
+        fireEvent.click(screen.getByText('Toggle Deleted'))
+
+        expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'sponsorships/updateDraftFilter' }))
+        expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'sponsorships/applyFilters' }))
+    })
+
+    it('handles delete error with error object (line 120)', async () => {
+        const { deleteSponsorshipThunk } = jest.requireMock('../../../../store/slices/sponsorships/sponsorships.slice')
+        deleteSponsorshipThunk.mockImplementation(() => () => ({
+            unwrap: jest.fn().mockRejectedValue(new Error('Generic Error')),
+        }))
+
+        const item = { id: 1, name: 'DeleteFail', deletedAt: null } as SponsorshipItem
+        const store = createMockStore({ selected: item })
+
+        render(<Provider store={store}><SponsorshipsPage /></Provider>)
+        fireEvent.click(screen.getByText('Delete Details'))
+
+        await waitFor(() => {
+            expect(screen.getByTestId('details-modal')).toBeInTheDocument()
+        })
+    })
+
+    it('handles successful delete properly (lines 119-120)', async () => {
+        const { deleteSponsorshipThunk } = jest.requireMock('../../../../store/slices/sponsorships/sponsorships.slice')
+        deleteSponsorshipThunk.mockImplementation(() => () => ({
+            unwrap: jest.fn().mockResolvedValue({}),
+        }))
+
+        const item = { id: 1, name: 'DeleteSuccess', deletedAt: null } as SponsorshipItem
+        const store = createMockStore({ selected: item })
+
+        render(<Provider store={store}><SponsorshipsPage /></Provider>)
+        fireEvent.click(screen.getByText('Delete Details'))
+
+        await waitFor(() => {
+            expect(store.getState().sponsorships.selected).toBeNull()
+        })
+    })
+
+    it('triggers onToggleDeleted properly to false', async () => {
+        const store = createMockStore({
+            appliedFilters: { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'true' },
+            draftFilters: { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'true' },
+        })
+        const spy = jest.spyOn(store, 'dispatch')
+
+        render(<Provider store={store}><SponsorshipsPage /></Provider>)
+
+        spy.mockClear()
+        fireEvent.click(screen.getByText('Toggle Deleted'))
+
+        expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'sponsorships/updateDraftFilter', payload: { key: 'onlyDeleted', value: 'false' } }))
+    })
+
+    it('handles delete error with string error', async () => {
+        const { deleteSponsorshipThunk } = jest.requireMock('../../../../store/slices/sponsorships/sponsorships.slice')
+        deleteSponsorshipThunk.mockImplementation(() => () => ({
+            unwrap: jest.fn().mockRejectedValue('String Error Message'),
+        }))
+
+        const item = { id: 1, name: 'DeleteFailStr', deletedAt: null } as SponsorshipItem
+        const store = createMockStore({ selected: item })
+
+        render(<Provider store={store}><SponsorshipsPage /></Provider>)
+        fireEvent.click(screen.getByText('Delete Details'))
+
+        await waitFor(() => {
+            expect(screen.getByTestId('details-modal')).toBeInTheDocument()
+        })
+    })
+
+    it('renders with selected.deletedAt to cover onDelete undefined', () => {
+        const item = { id: 1, name: 'DeletedItem', deletedAt: '2023-01-01' } as SponsorshipItem
+        const store = createMockStore({ selected: item })
+        render(<Provider store={store}><SponsorshipsPage /></Provider>)
+        expect(screen.getByTestId('details-modal')).toBeInTheDocument()
     })
 })

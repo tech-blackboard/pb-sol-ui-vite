@@ -801,8 +801,69 @@ describe('AbstractDetailsModal', () => {
             />
         )
 
-            // Mutate prop to test handleViewFile early return
             ; (record as { fileS3Url: string | undefined }).fileS3Url = undefined
         fireEvent.click(screen.getByText('file.pdf'))
+    })
+
+    it('handles undefined item.now and falsy isEmailSent (lines 285-299)', () => {
+        render(
+            <AbstractDetailsModal
+                item={{ ...mockItem, now: undefined, isEmailSent: false }}
+                record={mockRecord}
+                modalStatus="Under Review"
+                onClose={onClose}
+                onUpdate={onUpdate}
+                onStatusChange={onStatusChange}
+            />
+        )
+        expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+        expect(screen.getByText('No')).toBeInTheDocument()
+    })
+
+    it('covers missing name/email fallbacks in edit mode (lines 54-55)', () => {
+        render(
+            <AbstractDetailsModal
+                item={{ ...mockItem, aemail: '', phone: '', wphone: '', city: '', country: '' }}
+                record={({} as AbstractRecord)}
+                modalStatus="Under Review"
+                onClose={onClose}
+                onUpdate={onUpdate}
+                onStatusChange={onStatusChange}
+            />
+        )
+        const editBtn = screen.getByText(/Edit/i)
+        fireEvent.click(editBtn)
+        // Since record is undefined, it falls back to empty strings for name/email
+        const inputs = screen.getAllByRole('textbox')
+        expect(inputs.length).toBeGreaterThan(0)
+    })
+
+    it('covers status class fallbacks and missing item.status (lines 102-107, 549)', () => {
+        // Missing status
+        const { rerender } = render(
+            <AbstractDetailsModal
+                item={{ ...mockItem, status: undefined }}
+                record={mockRecord}
+                modalStatus="Under Review"
+                onClose={onClose}
+                onUpdate={onUpdate}
+                onStatusChange={onStatusChange}
+            />
+        )
+        expect(screen.getAllByText('Under Review').length).toBeGreaterThan(0)
+
+        // Status "Rejected"
+        rerender(
+            <AbstractDetailsModal
+                item={{ ...mockItem, status: { id: 5, actionType: 'Rejected' } } as unknown as AbstractItem}
+                record={mockRecord}
+                modalStatus="Rejected"
+                onClose={onClose}
+                onUpdate={onUpdate}
+                onStatusChange={onStatusChange}
+            />
+        )
+        // class bg-red-50 text-red-700
+        expect(screen.getAllByText('Rejected')[0]).toHaveClass('bg-red-50 text-red-700')
     })
 })

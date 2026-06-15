@@ -24,6 +24,20 @@ jest.mock('../../../../services/brochures', () => ({
   searchBrochures: jest.fn(),
 }))
 
+jest.mock('../../../../store/slices/brochures/brochures.slice', () => {
+  const actual = jest.requireActual('../../../../store/slices/brochures/brochures.slice')
+  return {
+    __esModule: true,
+    ...actual,
+    deleteBrochureThunk: Object.assign(
+      jest.fn(),
+      {
+        fulfilled: { match: () => true }
+      }
+    ),
+  }
+})
+
 /* ---------------- MOCK UI ---------------- */
 
 jest.mock('../../../../features/brochures/components/BrochureTable', () => ({
@@ -39,11 +53,12 @@ jest.mock('../../../../features/brochures/components/BrochureTable', () => ({
 
 jest.mock('../../../../features/brochures/components/BrochureDetailsModal', () => ({
   __esModule: true,
-  default: ({ item, onClose, onDelete }: { item: BrochureItem | null, onClose: () => void, onDelete?: (item: BrochureItem) => void }) => (
+  default: ({ item, onClose, onDelete, onEdit }: { item: BrochureItem | null, onClose: () => void, onDelete?: (item: BrochureItem) => void, onEdit?: (item: BrochureItem) => void }) => (
     <div data-testid="details-modal">
         {item?.name}
         <button onClick={onClose}>Close Details</button>
         {onDelete && <button onClick={() => onDelete(item!)}>Delete Details</button>}
+        {onEdit && <button onClick={() => onEdit(item!)}>Edit Details</button>}
     </div>
   ),
 }))
@@ -77,12 +92,13 @@ jest.mock('../../../../features/brochures/components/BrochureForm', () => ({
 
 jest.mock('../../../../components/SectionHeader', () => ({
     __esModule: true,
-    default: ({ onFilterClick, onAddClick, error, onClearError, onExportClick }: { onFilterClick: () => void, onAddClick: () => void, error: string | null, onClearError: () => void, onExportClick?: () => void }) => (
+    default: ({ onFilterClick, onAddClick, error, onClearError, onExportClick, onToggleDeleted }: { onFilterClick: () => void, onAddClick: () => void, error: string | null, onClearError: () => void, onExportClick?: () => void, onToggleDeleted?: () => void }) => (
         <div data-testid="section-header">
             <button onClick={onFilterClick}>Open Filters</button>
             <button onClick={onAddClick}>Open Form</button>
             {error && <div onClick={onClearError}>{error}</div>}
             {onExportClick && <button onClick={onExportClick}>Export Excel</button>}
+            {onToggleDeleted && <button onClick={onToggleDeleted}>Toggle Deleted</button>}
         </div>
     )
 }))
@@ -198,11 +214,14 @@ describe('BrochuresPage', () => {
     expect(dispatchSpy).toHaveBeenCalledWith(expect.any(Function)) // delete thunk called
   })
 
-  it('handles Excel export successfully', async () => {
-    const store = createMockStore()
-    ;(searchBrochures as jest.Mock).mockResolvedValue({
-      items: [{ id: 1, name: 'Item 1', email: 'a@b.com', website: { name: 'Site' } }],
-    })
+    it('handles Excel export successfully', async () => {
+      const store = createMockStore()
+      ;(searchBrochures as jest.Mock).mockResolvedValue({
+        items: [
+            { id: 1, name: 'Item 1', email: 'a@b.com', website: { name: 'Site' }, now: '2023-01-01' },
+            { id: 2 } // empty item to trigger fallback branches (lines 43-49)
+        ],
+      })
     
     render(<Provider store={store}><BrochuresPage /></Provider>)
     
@@ -231,5 +250,97 @@ describe('BrochuresPage', () => {
       expect(searchBrochures).toHaveBeenCalled()
       expect(XLSX.writeFile).not.toHaveBeenCalled()
     })
+  })
+
+  it('handles delete error with error object (line 128)', async () => {
+    const { deleteBrochureThunk } = jest.requireMock('../../../../store/slices/brochures/brochures.slice')
+    deleteBrochureThunk.mockImplementation(() => () => ({
+      unwrap: jest.fn().mockRejectedValue(new Error('Generic Error')),
+    }))
+
+    const item = { id: 1, name: 'DeleteFail', deletedAt: null } as BrochureItem
+    const store = createMockStore({ selected: item })
+
+    render(<Provider store={store}><BrochuresPage /></Provider>)
+    fireEvent.click(screen.getByText('Delete Details'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('details-modal')).toBeInTheDocument()
+    })
+  })
+
+    it('handles delete error with string error (line 130)', async () => {
+      const { deleteBrochureThunk } = jest.requireMock('../../../../store/slices/brochures/brochures.slice')
+      deleteBrochureThunk.mockImplementation(() => () => ({
+        unwrap: jest.fn().mockRejectedValue('String Error Message'),
+      }))
+
+      const item = { id: 1, name: 'DeleteFailStr', deletedAt: null } as BrochureItem
+      const store = createMockStore({ selected: item })
+
+      render(<Provider store={store}><BrochuresPage /></Provider>)
+      fireEvent.click(screen.getByText('Delete Details'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('details-modal')).toBeInTheDocument()
+      })
+    })
+
+    it('renders with selected.deletedAt to cover onDelete undefined (line 124)', () => {
+      const item = { id: 1, name: 'DeletedItem', deletedAt: '2023-01-01' } as BrochureItem
+      const store = createMockStore({ selected: item })
+      render(<Provider store={store}><BrochuresPage /></Provider>)
+      expect(screen.getByTestId('details-modal')).toBeInTheDocument()
+    })
+
+    it('handles successful delete (lines 127-128)', async () => {
+    const { deleteBrochureThunk } = jest.requireMock('../../../../store/slices/brochures/brochures.slice')
+    deleteBrochureThunk.mockImplementation(() => () => ({
+      unwrap: jest.fn().mockResolvedValue({}),
+    }))
+
+    const item = { id: 1, name: 'DeleteSuccess', deletedAt: null } as BrochureItem
+    const store = createMockStore({ selected: item })
+
+    render(<Provider store={store}><BrochuresPage /></Provider>)
+    fireEvent.click(screen.getByText('Delete Details'))
+
+    await waitFor(() => {
+      expect(store.getState().brochures.selected).toBeNull()
+    })
+  })
+
+  it('handles Excel export exception (catch block) (lines 60-61)', async () => {
+    const store = createMockStore()
+    ;(searchBrochures as jest.Mock).mockRejectedValue(new Error('Network Error'))
+
+    render(<Provider store={store}><BrochuresPage /></Provider>)
+
+    const exportBtn = screen.getByText('Export Excel')
+    fireEvent.click(exportBtn)
+
+    await waitFor(() => {
+      expect(searchBrochures).toHaveBeenCalled()
+    })
+  })
+
+  it('triggers onToggleDeleted properly (lines 82-84)', async () => {
+    const store = createMockStore({
+      appliedFilters: { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'false' },
+      draftFilters: { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'false' },
+    })
+    const spy = jest.spyOn(store, 'dispatch')
+
+    render(
+      <Provider store={store}>
+        <BrochuresPage />
+      </Provider>
+    )
+
+    spy.mockClear()
+    fireEvent.click(screen.getByText('Toggle Deleted'))
+
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'brochures/updateDraftFilter' }))
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'brochures/applyFilters' }))
   })
 })

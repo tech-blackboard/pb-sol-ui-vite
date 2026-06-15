@@ -286,4 +286,27 @@ describe('PaymentReminderModal', () => {
     const input = screen.getByPlaceholderText(/Optional/i)
     fireEvent.change(input, { target: { value: 'https://new.link' } })
   })
+
+  it('covers early return in handleCopyLink', async () => {
+    mockGetAbstractById.mockResolvedValue({
+      paymentLink: 'https://pay.test/link',
+    } as unknown as AbstractItem)
+
+    const { rerender } = render(<PaymentReminderModal {...defaultProps} />)
+
+    const copyBtn = await screen.findByText('Copy link')
+    
+    // Change abstractId to trigger fetch and set existingPaymentLink to null
+    mockGetAbstractById.mockResolvedValue({ paymentLink: null } as unknown as AbstractItem)
+    rerender(<PaymentReminderModal {...defaultProps} abstractId="456" />)
+    
+    // Wait for the UI to update to the "no payment link" state
+    await screen.findByPlaceholderText(/Optional/i)
+
+    // Call the cached copyBtn's onClick (it's unmounted, but we can still fire the event on the DOM node we kept)
+    fireEvent.click(copyBtn)
+    
+    // Should not call writeText because existingPaymentLink is now null
+    expect(navigator.clipboard.writeText).not.toHaveBeenCalled()
+  })
 })

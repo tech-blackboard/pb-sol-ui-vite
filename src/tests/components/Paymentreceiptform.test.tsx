@@ -546,4 +546,63 @@ describe('PaymentReceiptForm – Final Clean Suite v2', () => {
     const formDiv = container.firstChild?.firstChild as HTMLElement
     expect(formDiv.className).toContain('border-red-500')
   })
+
+  test('covers branch fallbacks for missing fields (quantity, fees, occupancy)', async () => {
+    let callCount = 0;
+    const realUseState = jest.requireActual('react').useState
+    const useStateSpy = jest.spyOn(jest.requireActual('react'), 'useState').mockImplementation((initVal) => {
+      const hookIndex = callCount % 12;
+      callCount++;
+      
+      if (hookIndex === 0) {
+        return realUseState({
+          ...(initVal as object),
+          interestedIn: 'Unknown', 
+          quantity: undefined,    
+          registrationFee: 0,     
+          accommodationFee: 0,    
+        })
+      }
+      if (hookIndex === 11) return realUseState(true) // showConfirmModal: true
+      return realUseState(initVal)
+    })
+
+    const { getByRole } = setup()
+
+    const confirmBtn = getByRole('button', { name: /Confirm & Send/i })
+    fireEvent.click(confirmBtn)
+
+    expect(onSubmit).toHaveBeenCalled()
+    useStateSpy.mockRestore()
+  })
+
+  test('covers branch fallbacks for accommodation item calculation', async () => {
+    let callCount = 0;
+    const realUseState = jest.requireActual('react').useState
+    const useStateSpy = jest.spyOn(jest.requireActual('react'), 'useState').mockImplementation((initVal) => {
+      const hookIndex = callCount % 12;
+      callCount++;
+      
+      if (hookIndex === 0) {
+        return realUseState({
+          ...(initVal as object),
+          interestedIn: 'Unknown', 
+          quantity: undefined,    
+          registrationFee: 0,     
+          accommodationFee: 0,    
+        })
+      }
+      if (hookIndex === 5) return realUseState('Single') // occupancyType
+      if (hookIndex === 8) return realUseState(2) // numberOfNights
+      if (hookIndex === 11) return realUseState(true) // showConfirmModal: true
+      return realUseState(initVal)
+    })
+
+    const { getByRole } = setup()
+    const confirmBtn = getByRole('button', { name: /Confirm & Send/i })
+    fireEvent.click(confirmBtn)
+
+    expect(onSubmit).toHaveBeenCalled()
+    useStateSpy.mockRestore()
+  })
 })

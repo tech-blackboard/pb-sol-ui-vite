@@ -743,6 +743,23 @@ describe('EmailAccountsPage', () => {
     expect(screen.getAllByText('missing@test.com').length).toBeGreaterThan(0);
   });
 
+  it('covers Microsoft connection button when not oauth2 (line 664)', async () => {
+    const account = makeEmailAccount({
+      id: 1,
+      email: 'test@outlook.com',
+      name: 'Outlook password',
+      isActive: true,
+      authMethod: 'password'
+    });
+    mockFetchEmailAccounts.mockResolvedValue([account]);
+    renderPage();
+    
+    const viewBtns = await screen.findAllByText('View');
+    fireEvent.click(viewBtns[0]);
+    
+    expect(screen.getByRole('button', { name: /^Connect Microsoft OAuth2$/i })).toBeInTheDocument();
+  });
+
   it('covers oauth2 fallback and precisionsummits.com condition in View Details Modal', async () => {
     const acc1 = makeEmailAccount({ id: 1, email: 'test@precisionsummits.com', name: 'Precision', authMethod: 'oauth2' });
     const acc2 = makeEmailAccount({ id: 2, email: 'test@gmail.com', name: 'Gmail', authMethod: 'oauth2' });

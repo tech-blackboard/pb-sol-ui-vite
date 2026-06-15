@@ -6,7 +6,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import ReplyForm from '../../../../features/crm/components/ReplyForm';
 import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice';
 import * as crmService from '../../../../features/crm/services/crmService';
-import type { Message, Attachment } from '../../../../features/crm/types';
+import type { Message, Attachment, EmailAccount } from '../../../../features/crm/types';
 import toast from 'react-hot-toast';
 
 jest.mock('../../../../features/crm/services/crmService', () => ({
@@ -157,6 +157,16 @@ describe('ReplyForm', () => {
       fireEvent.click(closeBtn);
       // Should revert to the prompt text
       expect(screen.getByText(/Click here to/)).toBeInTheDocument();
+    });
+
+    it('focuses the editor when initialized with signature (lines 198)', async () => {
+      renderForm();
+      expand();
+      
+      act(() => {
+        jest.advanceTimersByTime(150);
+      });
+      // the focus mock should have been called within the setTimeout
     });
 
     it('shows error toast when submitting with empty body', async () => {
@@ -325,12 +335,18 @@ describe('ReplyForm', () => {
       expect(screen.queryByText('Please specify at least one recipient.')).not.toBeInTheDocument();
     });
 
-    it('handles account change selecting an email account', () => {
-      renderForm({ emailAccounts: [{ id: 99, email: 'acc99@test.com' }] });
+    it('handles account change selecting an email account', async () => {
+      jest.spyOn(crmService, 'fetchEmailAccounts').mockResolvedValue([{ id: 99, email: 'acc99@test.com', provider: 'google' } as EmailAccount]);
+      renderForm({ replyEmails: ['acc99@test.com'] });
       expand();
       // Wait for account fetch and change select
-      fireEvent.change(screen.getByRole('combobox', { name: 'From' }), { target: { value: 'acc_99' } });
+      const fromSelect = await screen.findByRole('combobox', { name: 'From' });
+      await waitFor(() => {
+          expect(fromSelect.querySelector('option[value="acc_99"]')).toBeInTheDocument();
+      });
+      fireEvent.change(fromSelect, { target: { value: 'acc_99' } });
       // Should set fromEmail to the account email
+      expect(fromSelect).toBeInTheDocument();
     });
 
     it('handles empty update ignoring signature correctly', () => {

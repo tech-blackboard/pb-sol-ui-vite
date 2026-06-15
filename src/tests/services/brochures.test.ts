@@ -11,6 +11,7 @@ jest.mock('../../lib/api', () => ({
         get: jest.fn(),
         post: jest.fn(),
         delete: jest.fn(),
+        patch: jest.fn(),
     },
 }))
 
@@ -158,6 +159,24 @@ describe('brochures service', () => {
                 expect.stringContaining('/brochure-456'),
                 expect.any(Object)
             )
+        })
+    })
+
+    describe('updateBrochure', () => {
+        it('updates brochure by ID', async () => {
+            (api.patch as jest.Mock).mockResolvedValue({ data: mockBrochure })
+
+            const result = await import('../../services/brochures').then(m => m.updateBrochure(1, { name: 'Updated Name' }))
+
+            expect(api.patch).toHaveBeenCalledWith(
+                expect.stringContaining('/1'),
+                { name: 'Updated Name' },
+                expect.objectContaining({
+                    headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
+                    withCredentials: true,
+                })
+            )
+            expect(result).toEqual(mockBrochure)
         })
     })
 })

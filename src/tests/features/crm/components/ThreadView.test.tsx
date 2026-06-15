@@ -33,6 +33,7 @@ jest.mock('../../../../store/slices/crm/crm.thunks', () => {
     deleteThreadsPermanentlyThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.deleteThreadsPermanentlyThunk),
     junkThreadsThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.junkThreadsThunk),
     restoreThreadsFromJunkThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.restoreThreadsFromJunkThunk),
+    fetchDraftsThunk: Object.assign(jest.fn(() => () => ({ unwrap: () => Promise.resolve() })), actual.fetchDraftsThunk),
   };
 });
 
@@ -796,6 +797,29 @@ describe('ThreadView', () => {
         selectedThreadId: 't1',
       });
       expect(screen.getByText('High importance')).toBeInTheDocument();
+    });
+
+    it('shows Access Denied when there is an error and no messages are loading', () => {
+      renderView({
+        error: 'Test error message',
+        loading: { messages: false },
+      });
+      expect(screen.getByText('Access Denied')).toBeInTheDocument();
+      expect(screen.getByText('Test error message')).toBeInTheDocument();
+    });
+
+    it('dispatches fetchDraftsThunk when ReplyForm triggers onSuccess in Drafts folder', async () => {
+      renderView({
+        threads: [makeThread()],
+        messages: [makeMessage()],
+        selectedThreadId: 'thread-1',
+        activeFolder: 'Drafts',
+        currentPage: 2,
+        activeEventId: 5,
+      });
+
+      fireEvent.click(screen.getByText('Trigger Reply Success'));
+      await waitFor(() => expect(crmThunks.fetchDraftsThunk).toHaveBeenCalledWith({ page: 2, limit: 50, eventId: 5 }));
     });
 
     it('renders low importance indicator', () => {

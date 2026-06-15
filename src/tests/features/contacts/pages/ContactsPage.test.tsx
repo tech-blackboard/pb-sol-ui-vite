@@ -206,7 +206,10 @@ describe('ContactsPage', () => {
     it('handles Excel export successfully', async () => {
         const store = createMockStore()
         ;(searchContacts as jest.Mock).mockResolvedValue({
-            items: [{ id: 1, name: 'Item 1', email: 'a@b.com', website: { name: 'Site' } }],
+            items: [
+                { id: 1, name: 'Item 1', email: 'a@b.com', website: { name: 'Site' }, now: '2023-01-01' },
+                { id: 2 }
+            ],
         })
         
         render(<Provider store={store}><ContactsPage /></Provider>)
@@ -239,6 +242,85 @@ describe('ContactsPage', () => {
         await waitFor(() => {
             expect(searchContacts).toHaveBeenCalled()
             expect(XLSX.writeFile).not.toHaveBeenCalled()
+        })
+    })
+
+    it('triggers onToggleDeleted properly to false', async () => {
+        const store = createMockStore({
+            appliedFilters: { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'true' },
+            draftFilters: { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'true' },
+        })
+        const spy = jest.spyOn(store, 'dispatch')
+
+        render(<Provider store={store}><ContactsPage /></Provider>)
+        spy.mockClear()
+        fireEvent.click(screen.getByText('Viewing Trash'))
+
+        expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'contacts/updateDraftFilter', payload: { key: 'onlyDeleted', value: 'false' } }))
+    })
+
+    it('triggers onToggleDeleted properly to true', async () => {
+        const store = createMockStore({
+            appliedFilters: { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'false' },
+            draftFilters: { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'false' },
+        })
+        const spy = jest.spyOn(store, 'dispatch')
+
+        render(<Provider store={store}><ContactsPage /></Provider>)
+        spy.mockClear()
+        fireEvent.click(screen.getByText('View Trash'))
+
+        expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'contacts/updateDraftFilter', payload: { key: 'onlyDeleted', value: 'true' } }))
+    })
+
+    it('handles delete error with string error', async () => {
+        const { deleteContactThunk } = jest.requireMock('../../../../store/slices/contacts/contacts.slice')
+        deleteContactThunk.mockImplementation(() => () => ({
+            unwrap: jest.fn().mockRejectedValue('String Error Message'),
+        }))
+        const item = { id: 1, name: 'DeleteFailStr', deletedAt: null } as ContactItem
+        const store = createMockStore({ selected: item })
+
+        render(<Provider store={store}><ContactsPage /></Provider>)
+        fireEvent.click(screen.getByText('Delete Details'))
+        await waitFor(() => expect(screen.getByTestId('details-modal')).toBeInTheDocument())
+    })
+
+    it('renders with selected.deletedAt to cover onDelete undefined', () => {
+        const item = { id: 1, name: 'DeletedItem', deletedAt: '2023-01-01' } as ContactItem
+        const store = createMockStore({ selected: item })
+        render(<Provider store={store}><ContactsPage /></Provider>)
+        expect(screen.getByTestId('details-modal')).toBeInTheDocument()
+    })
+
+    it('handles successful delete properly (lines 125-126)', async () => {
+        const { deleteContactThunk } = jest.requireMock('../../../../store/slices/contacts/contacts.slice')
+        deleteContactThunk.mockImplementation(() => () => ({
+            unwrap: jest.fn().mockResolvedValue({}),
+        }))
+
+        const item = { id: 1, name: 'DeleteSuccess', deletedAt: null } as ContactItem
+        const store = createMockStore({ selected: item })
+
+        render(<Provider store={store}><ContactsPage /></Provider>)
+        fireEvent.click(screen.getByText('Delete Details'))
+
+        await waitFor(() => {
+            expect(store.getState().contacts.selected).toBeNull()
+        })
+    })
+
+    it('handles Excel export exception (catch block) (lines 60-61)', async () => {
+        const store = createMockStore()
+        ;(searchContacts as jest.Mock).mockRejectedValue(new Error('Network Error'))
+
+        render(<Provider store={store}><ContactsPage /></Provider>)
+
+        const exportBtn = screen.getByTitle('Export to Excel')
+        fireEvent.click(exportBtn)
+
+        await waitFor(() => {
+            expect(searchContacts).toHaveBeenCalled()
         })
     })
 })

@@ -58,13 +58,14 @@ jest.mock('../../../../features/abstracts/components/AbstractPagination', () => 
 
 jest.mock('../../../../components/SectionHeader', () => ({
   __esModule: true,
-  default: ({ title, onAddClick, onFilterClick, error, onClearError, onExportClick }: {
+  default: ({ title, onAddClick, onFilterClick, error, onClearError, onExportClick, onToggleDeleted }: {
     title: string
     onAddClick?: () => void
     onFilterClick: () => void
     error?: string | null
     onClearError?: () => void
     onExportClick?: () => void
+    onToggleDeleted?: () => void
   }) => (
     <div data-testid="section-header">
       {title}
@@ -77,6 +78,7 @@ jest.mock('../../../../components/SectionHeader', () => ({
         </div>
       )}
       {onExportClick && <button onClick={onExportClick}>Export Excel</button>}
+      {onToggleDeleted && <button onClick={onToggleDeleted}>Toggle Deleted</button>}
     </div>
   ),
 }))
@@ -342,11 +344,14 @@ describe('AccRegistrationsPage', () => {
     expect(dispatchSpy).toHaveBeenCalledWith(expect.any(Function)) // delete thunk called
   })
 
-  it('handles Excel export successfully', async () => {
-    const store = createMockStore()
-    ;(searchAccRegistrations as jest.Mock).mockResolvedValue({
-      items: [{ id: 1, name: 'Item 1', email: 'a@b.com', website: { name: 'Site' } }],
-    })
+    it('handles Excel export successfully', async () => {
+      const store = createMockStore()
+      ;(searchAccRegistrations as jest.Mock).mockResolvedValue({
+        items: [
+          { id: 1, name: 'Item 1', email: 'a@b.com', website: { name: 'Site' }, now: '2023-01-01' },
+          { id: 2 } // empty item to trigger fallback branches (lines 45-67)
+        ],
+      })
     
     render(<Provider store={store}><AccRegistrationsPage /></Provider>)
     
@@ -374,6 +379,157 @@ describe('AccRegistrationsPage', () => {
     await waitFor(() => {
       expect(searchAccRegistrations).toHaveBeenCalled()
       expect(XLSX.writeFile).not.toHaveBeenCalled()
+    })
+  })
+
+  it('handles Excel export exception (catch block)', async () => {
+    const store = createMockStore()
+    ;(searchAccRegistrations as jest.Mock).mockRejectedValue(new Error('Network Error'))
+
+    render(<Provider store={store}><AccRegistrationsPage /></Provider>)
+
+    const exportBtn = screen.getByText('Export Excel')
+    fireEvent.click(exportBtn)
+
+    await waitFor(() => {
+      expect(searchAccRegistrations).toHaveBeenCalled()
+    })
+  })
+
+  it('triggers onToggleDeleted properly to false', async () => {
+    const store = createMockStore({
+      appliedFilters: { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'true' },
+      draftFilters: { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'true' },
+    })
+    const spy = jest.spyOn(store, 'dispatch')
+
+    render(
+      <Provider store={store}>
+        <AccRegistrationsPage />
+      </Provider>
+    )
+
+    spy.mockClear()
+    fireEvent.click(screen.getByText('Toggle Deleted'))
+
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'accRegistrations/updateDraftFilter', payload: { key: 'onlyDeleted', value: 'false' } }))
+  })
+
+  it('triggers onToggleDeleted properly to true', async () => {
+    const store = createMockStore({
+      appliedFilters: { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'false' },
+      draftFilters: { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'false' },
+    })
+    const spy = jest.spyOn(store, 'dispatch')
+
+    render(
+      <Provider store={store}>
+        <AccRegistrationsPage />
+      </Provider>
+    )
+
+    spy.mockClear()
+    fireEvent.click(screen.getByText('Toggle Deleted'))
+
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'accRegistrations/updateDraftFilter', payload: { key: 'onlyDeleted', value: 'true' } }))
+  })
+
+  it('handles delete error with error object (line 141)', async () => {
+    const { deleteAccRegistrationThunk } = jest.requireMock('../../../../store/slices/accRegistrations/accRegistrations.slice')
+    deleteAccRegistrationThunk.mockImplementation(() => () => ({
+      unwrap: jest.fn().mockRejectedValue(new Error('Generic Error')),
+    }))
+
+    const item = { id: 1, name: 'DeleteFail', deletedAt: null } as AccRegistrationItem
+    const store = createMockStore({ selected: item })
+
+    render(<Provider store={store}><AccRegistrationsPage /></Provider>)
+    fireEvent.click(screen.getByText('Delete Details'))
+
+    await waitFor(() => {
+      // The toast.error will show 'Failed to delete accommodation registration'
+      expect(screen.getByTestId('acc-table')).toBeInTheDocument()
+    })
+  })
+
+    it('handles delete error with string error', async () => {
+      const { deleteAccRegistrationThunk } = jest.requireMock('../../../../store/slices/accRegistrations/accRegistrations.slice')
+      deleteAccRegistrationThunk.mockImplementation(() => () => ({
+        unwrap: jest.fn().mockRejectedValue('String Error Message'),
+      }))
+
+      const item = { id: 1, name: 'DeleteFailStr', deletedAt: null } as AccRegistrationItem
+      const store = createMockStore({ selected: item })
+
+      render(<Provider store={store}><AccRegistrationsPage /></Provider>)
+      fireEvent.click(screen.getByText('Delete Details'))
+
+      await waitFor(() => {
+        expect(screen.getByTestId('acc-table')).toBeInTheDocument()
+      })
+    })
+
+    it('renders with selected.deletedAt to cover onDelete undefined', () => {
+      const item = { id: 1, name: 'DeletedItem', deletedAt: '2023-01-01' } as AccRegistrationItem
+      const store = createMockStore({ selected: item })
+      render(<Provider store={store}><AccRegistrationsPage /></Provider>)
+      expect(screen.getByTestId('acc-table')).toBeInTheDocument() // just checking render
+    })
+
+  it('handles successful delete (lines 138-139)', async () => {
+    const { deleteAccRegistrationThunk } = jest.requireMock('../../../../store/slices/accRegistrations/accRegistrations.slice')
+    deleteAccRegistrationThunk.mockImplementation(() => () => ({
+      unwrap: jest.fn().mockResolvedValue({}),
+    }))
+
+    const item = { id: 1, name: 'DeleteSuccess', deletedAt: null } as AccRegistrationItem
+    const store = createMockStore({ selected: item })
+
+    render(<Provider store={store}><AccRegistrationsPage /></Provider>)
+    fireEvent.click(screen.getByText('Delete Details'))
+
+    await waitFor(() => {
+      expect(store.getState().accRegistrations.selected).toBeNull()
+    })
+  })
+
+  it('handles edit and form success/close (lines 132-133, 158-165)', async () => {
+    const item = { id: 1, name: 'EditItem', deletedAt: null } as AccRegistrationItem
+    const store = createMockStore({ selected: item })
+    render(<Provider store={store}><AccRegistrationsPage /></Provider>)
+    
+    fireEvent.click(screen.getByText('Edit Details'))
+    
+    // Details modal is closed and edit item is selected, opening add-form
+    await waitFor(() => {
+      expect(store.getState().accRegistrations.selected).toBeNull()
+      expect(screen.getByTestId('add-form')).toBeInTheDocument()
+    })
+    
+    // Trigger Success
+    fireEvent.click(screen.getByText('Trigger Success'))
+    
+    // Form should close after success
+    await waitFor(() => {
+      expect(screen.queryByTestId('add-form')).not.toBeInTheDocument()
+    })
+  })
+
+  it('handles form close during edit', async () => {
+    const item = { id: 1, name: 'EditItem2', deletedAt: null } as AccRegistrationItem
+    const store = createMockStore({ selected: item })
+    render(<Provider store={store}><AccRegistrationsPage /></Provider>)
+    
+    fireEvent.click(screen.getByText('Edit Details'))
+    
+    await waitFor(() => {
+      expect(screen.getByTestId('add-form')).toBeInTheDocument()
+    })
+    
+    fireEvent.click(screen.getByText('Close Form'))
+    
+    await waitFor(() => {
+      expect(screen.queryByTestId('add-form')).not.toBeInTheDocument()
     })
   })
 })

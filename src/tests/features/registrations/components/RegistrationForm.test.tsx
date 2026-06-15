@@ -5,7 +5,8 @@ import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
 import registrationsReducer from '../../../../store/slices/registrations/registrations.slice'
 import { listWebsites, type SourceWebsite } from '../../../../services/sourcedb'
-import { createRegistrationThunk } from '../../../../store/slices/registrations/registrations.thunks'
+import { createRegistrationThunk, updateRegistrationThunk } from '../../../../store/slices/registrations/registrations.thunks'
+import type { RegistrationItem } from '../../../../services/registrations'
 import toast from 'react-hot-toast'
 
 // Mock services and thunks
@@ -144,17 +145,17 @@ describe('RegistrationForm', () => {
         fireEvent.click(xButton)
         expect(mockOnClose).toHaveBeenCalledTimes(1)
     })
-it('pre-fills website_id when provided', async () => {
-  renderForm({ websiteId: 1 })
+    it('pre-fills website_id when provided', async () => {
+        renderForm({ websiteId: 1 })
 
-  // wait until website loads
-  const option = await screen.findByText('Test Conference')
-  expect(option).toBeInTheDocument()
+        // wait until website loads
+        const option = await screen.findByText('Test Conference')
+        expect(option).toBeInTheDocument()
 
-  // now assert select value
-  const select = screen.getByRole('combobox', { name: /Website\/Conference/i })
-  expect(select).toHaveValue('1')
-})
+        // now assert select value
+        const select = screen.getByRole('combobox', { name: /Website\/Conference/i })
+        expect(select).toHaveValue('1')
+    })
 
 
     it('updates registration price when presentation type changes', async () => {
@@ -248,6 +249,65 @@ it('pre-fills website_id when provided', async () => {
         expect(screen.getByText('Registration Summary')).toBeInTheDocument()
         expect(screen.getByText('Registration Price')).toBeInTheDocument()
         expect(screen.getByText('Total Price')).toBeInTheDocument()
+    })
+
+    it('handles parseDateForInput exception (lines 123-124)', async () => {
+        let calls = 0
+        const weirdDate = {
+            match: () => null,
+            toString: () => {
+                if (calls++ === 0) throw new Error('Test Error')
+                return '2024-01-01'
+            }
+        }
+        const editData = {
+            id: 1,
+            website_id: 1,
+            presentation: 'Oral Presenter (In-Person)',
+            accomm: '1',
+            accmvalue: 'Some Hotel', // Needed to render the checkin fields
+            checkin: weirdDate as unknown as string, // hits the catch block
+            checkout: '2024-01-05',
+        }
+        renderForm({ websiteId: 1, editData: editData as unknown as RegistrationItem })
+
+        // Render should not crash, and Check-in Date input will be present
+        const checkinInput = screen.getByLabelText('Check-in Date')
+        expect(checkinInput).toBeInTheDocument()
+    })
+
+    it('covers getInitialFormData fallbacks and ISO date parsing (lines 115, 150, 152, 157, 159, 163)', async () => {
+        const editData = {
+            id: 2,
+            website: { id: 2 }, // hits editData.website?.id fallback
+            presentation: 'Unknown Presentation Type', // triggers REGISTRATION_FEES fallback to 699
+            accomm: '0', // hasAccommodation is false, but checkin/checkout still parsed
+            // accmvalue is missing to hit falsy branch in accmvalue fallback
+            checkin: '2024-05-10T12:00:00Z', // hits dateStr.includes('T') line 115
+            checkout: '2024-05-15T12:00:00Z',
+            phone: '1234567890',
+            country: 'US',
+            institution: 'Test University',
+            name: 'Test Name',
+            email: 'test@example.com'
+        }
+        renderForm({ websiteId: undefined, editData: editData as unknown as RegistrationItem })
+
+        // Verify ISO date was correctly split (internal state covers this)
+
+        // Form submits using fallback status_id (line 331)
+        const nameInput = screen.getByLabelText(/Name/i)
+        fireEvent.change(nameInput, { target: { value: 'Test' } })
+        const emailInput = screen.getByLabelText('Email*')
+        fireEvent.change(emailInput, { target: { value: 'test@example.com' } })
+
+        const submitBtn = screen.getByRole('button', { name: /Update Registration/i })
+        fireEvent.click(submitBtn)
+        
+
+        await waitFor(() => {
+            expect(updateRegistrationThunk).toHaveBeenCalled()
+        })
     })
 
     it('calculates total price with internet handling fees', async () => {
@@ -517,7 +577,7 @@ it('pre-fills website_id when provided', async () => {
 
         // Edit the field
         fireEvent.change(screen.getByLabelText(/Full Name/i), { target: { value: 'A' } })
-        
+
         // Error should be cleared
         await waitFor(() => {
             expect(screen.queryByText('Name is required')).not.toBeInTheDocument()
@@ -531,7 +591,7 @@ it('pre-fills website_id when provided', async () => {
         // Set name but leave email empty
         fireEvent.change(screen.getByLabelText(/Full Name/i), { target: { value: 'John' } })
         fireEvent.change(screen.getByLabelText(/Number of Participants/i), { target: { value: '' } })
-        
+
         fireEvent.click(screen.getByText('Create Registration'))
 
         await waitFor(() => {
@@ -546,7 +606,7 @@ it('pre-fills website_id when provided', async () => {
 
         fireEvent.click(screen.getByRole('checkbox', { name: /Looking for Accommodation/i }))
         fireEvent.click(screen.getByText('Single Occupancy'))
-        
+
         // Leave dates empty and submit
         fireEvent.click(screen.getByText('Create Registration'))
 
@@ -558,10 +618,10 @@ it('pre-fills website_id when provided', async () => {
 
     it('verifies accommodation payload mapping (lines 259-260)', async () => {
         const store = createMockStore()
-        ;(createRegistrationThunk as unknown as jest.Mock).mockReturnValue({
-            type: 'registrations/create/fulfilled',
-            payload: {}
-        })
+            ; (createRegistrationThunk as unknown as jest.Mock).mockReturnValue({
+                type: 'registrations/create/fulfilled',
+                payload: {}
+            })
 
         render(
             <Provider store={store}>
@@ -600,7 +660,7 @@ it('pre-fills website_id when provided', async () => {
     })
 
     it('handles form submission failure with fallback message (line 275)', async () => {
-        ;(createRegistrationThunk as unknown as jest.Mock).mockReturnValue({
+        ; (createRegistrationThunk as unknown as jest.Mock).mockReturnValue({
             type: 'registrations/create/rejected',
             payload: null, // Test fallback to 'Failed to create registration'
             error: { message: 'Some Error' }
@@ -629,7 +689,7 @@ it('pre-fills website_id when provided', async () => {
     it('covers race condition on unmount (line 121)', async () => {
         let resolveWebsites: (value: SourceWebsite[]) => void = () => { }
         const webPromise = new Promise((res) => { resolveWebsites = res })
-        ;(listWebsites as jest.Mock).mockReturnValue(webPromise)
+            ; (listWebsites as jest.Mock).mockReturnValue(webPromise)
 
         const { unmount } = renderForm()
         unmount()
@@ -679,5 +739,355 @@ describe('SelectField component', () => {
         render(<SelectField name="test" options={options} onChange={onChange} />)
         expect(screen.getByText('One')).toBeInTheDocument()
         expect(screen.getByText('Two')).toBeInTheDocument()
+    })
+})
+
+// =============================================
+// Edit mode tests (covers lines 96-165, 352-362)
+// =============================================
+describe('RegistrationForm – edit mode', () => {
+    jest.setTimeout(30000)
+    const mockOnClose = jest.fn()
+    const mockOnSuccess = jest.fn()
+
+    beforeAll(() => {
+        Element.prototype.scrollTo = jest.fn()
+    })
+
+    beforeEach(() => {
+        jest.clearAllMocks()
+        const { listWebsites } = jest.requireMock('../../../../services/sourcedb')
+            ; (listWebsites as jest.Mock).mockResolvedValue([{ id: 1, name: 'Test Conference' }])
+    })
+
+    const baseEditData = {
+        id: 42,
+        name: 'Jane Doe',
+        email: 'jane@test.com',
+        aemail: 'j@alt.com',
+        phone: '9876543210',
+        wphone: '9876543210',
+        institution: 'MIT',
+        country: 'India',
+        presentation: 'regtype_1_1-Oral Presenter (In-Person)',
+        website_id: 1,
+        website: { id: 1, name: 'Test Conference' },
+        participants: '2',
+        regtype: '699',
+        accomm: '0',
+        checkin: '',
+        checkout: '',
+        nights: '0',
+        accmvalue: '',
+        acmpng: '0',
+        acc_price: '0',
+        tot_price: '0',
+        transaction_id: '',
+        status_id: 1,
+    }
+
+    const createStore = () => {
+        const { configureStore } = jest.requireActual('@reduxjs/toolkit')
+        const registrationsReducer = jest.requireActual('../../../../store/slices/registrations/registrations.slice').default
+        return configureStore({ reducer: { registrations: registrationsReducer } })
+    }
+
+    it('pre-fills form fields from editData and hides caption (lines 136-165)', async () => {
+        const store = createStore()
+        render(
+            <Provider store={store}>
+                <RegistrationForm
+                    onClose={mockOnClose}
+                    onSuccess={mockOnSuccess}
+                    editData={baseEditData as unknown as RegistrationItem}
+                />
+            </Provider>
+        )
+
+        expect(await screen.findByText('Edit Registration')).toBeInTheDocument()
+        expect(screen.getByDisplayValue('Jane Doe')).toBeInTheDocument()
+        // Caption select should not appear in edit mode
+        expect(screen.queryByText('--Caption*--')).not.toBeInTheDocument()
+    })
+
+    it('handles successful update submission (lines 352-356)', async () => {
+        const store = createStore()
+        const { updateRegistrationThunk } = jest.requireMock('../../../../store/slices/registrations/registrations.thunks')
+            ; (updateRegistrationThunk as unknown as jest.Mock).mockReturnValue({
+                type: 'registrations/update/fulfilled',
+                payload: { id: 42 },
+            })
+
+        render(
+            <Provider store={store}>
+                <RegistrationForm
+                    onClose={mockOnClose}
+                    onSuccess={mockOnSuccess}
+                    editData={baseEditData as unknown as RegistrationItem}
+                />
+            </Provider>
+        )
+
+        await screen.findByText('Edit Registration')
+        fireEvent.click(screen.getByText('Update Registration'))
+
+        const toast = jest.requireMock('react-hot-toast').default
+        await waitFor(() => {
+            expect(toast.success).toHaveBeenCalledWith('Registration updated successfully')
+            expect(mockOnSuccess).toHaveBeenCalled()
+            expect(mockOnClose).toHaveBeenCalled()
+        })
+    })
+
+    it('handles update failure with payload message (lines 357-362)', async () => {
+        const store = createStore()
+        const { updateRegistrationThunk } = jest.requireMock('../../../../store/slices/registrations/registrations.thunks')
+            ; (updateRegistrationThunk as unknown as jest.Mock).mockReturnValue({
+                type: 'registrations/update/rejected',
+                payload: 'Update failed',
+            })
+
+        render(
+            <Provider store={store}>
+                <RegistrationForm
+                    onClose={mockOnClose}
+                    onSuccess={mockOnSuccess}
+                    editData={baseEditData as unknown as RegistrationItem}
+                />
+            </Provider>
+        )
+
+        await screen.findByText('Edit Registration')
+        fireEvent.click(screen.getByText('Update Registration'))
+
+        const toast = jest.requireMock('react-hot-toast').default
+        await waitFor(() => {
+            expect(toast.error).toHaveBeenCalledWith('Update failed')
+        })
+    })
+
+    it('handles update failure with fallback message (undefined payload)', async () => {
+        const { updateRegistrationThunk } = jest.requireMock('../../../../store/slices/registrations/registrations.thunks')
+
+            // Mock the thunk to return a function (thunk pattern) that resolves to rejected action
+            ; (updateRegistrationThunk as unknown as jest.Mock).mockReturnValue(
+                () => Promise.resolve({ type: 'registrations/update/rejected', payload: undefined })
+            )
+
+        const localToast = jest.requireMock('react-hot-toast').default
+        localToast.error.mockClear()
+        localToast.success.mockClear()
+
+        const store = createStore()
+        render(
+            <Provider store={store}>
+                <RegistrationForm
+                    onClose={mockOnClose}
+                    onSuccess={mockOnSuccess}
+                    editData={baseEditData as unknown as RegistrationItem}
+                />
+            </Provider>
+        )
+
+        await screen.findByText('Edit Registration')
+        fireEvent.click(screen.getByText('Update Registration'))
+
+        await waitFor(() => {
+            expect(localToast.error).toHaveBeenCalledWith('Failed to update registration')
+        })
+    })
+
+    it('parsePresentationFromStored: falls back for unknown format (line 84)', async () => {
+        const store = createStore()
+        const editDataUnknown = {
+            ...baseEditData,
+            presentation: 'unknown_format',
+            regtype: '699',
+        }
+
+        render(
+            <Provider store={store}>
+                <RegistrationForm
+                    onClose={mockOnClose}
+                    onSuccess={mockOnSuccess}
+                    editData={editDataUnknown as unknown as RegistrationItem}
+                />
+            </Provider>
+        )
+
+        await screen.findByText('Edit Registration')
+        // Falls back to Oral Presenter (In-Person) = 699
+        expect(screen.getByDisplayValue('699')).toBeInTheDocument()
+    })
+
+    it('parsePresentationFromStored: handles clean presentation name (line 83)', async () => {
+        const store = createStore()
+        const editDataClean = {
+            ...baseEditData,
+            presentation: 'Oral Presenter (Virtual)',
+            regtype: '399',
+        }
+
+        render(
+            <Provider store={store}>
+                <RegistrationForm
+                    onClose={mockOnClose}
+                    onSuccess={mockOnSuccess}
+                    editData={editDataClean as unknown as RegistrationItem}
+                />
+            </Provider>
+        )
+
+        await screen.findByText('Edit Registration')
+        expect(screen.getByDisplayValue('399')).toBeInTheDocument()
+    })
+
+    it('formatDateForInput: parses MM/DD/YYYY format (lines 103-108)', async () => {
+        const store = createStore()
+        const editDataWithAccomm = {
+            ...baseEditData,
+            accomm: '100',
+            checkin: '01/15/2024',
+            checkout: '01/20/2024',
+            accmvalue: 'Single Occupancy',
+            nights: '5',
+        }
+
+        render(
+            <Provider store={store}>
+                <RegistrationForm
+                    onClose={mockOnClose}
+                    onSuccess={mockOnSuccess}
+                    editData={editDataWithAccomm as unknown as RegistrationItem}
+                />
+            </Provider>
+        )
+
+        await screen.findByText('Edit Registration')
+        const checkinInput = screen.getByLabelText('Check-in Date') as HTMLInputElement
+        expect(checkinInput.value).toBe('2024-01-15')
+    })
+
+    it('formatDateForInput: parses ISO timestamp with T (line 115)', async () => {
+        const store = createStore()
+        const editDataISO = {
+            ...baseEditData,
+            accomm: '100',
+            checkin: '2024-01-15T12:00:00Z',
+            checkout: '2024-01-20T12:00:00Z',
+            accmvalue: 'Single Occupancy',
+            nights: '5',
+        }
+
+        render(
+            <Provider store={store}>
+                <RegistrationForm
+                    onClose={mockOnClose}
+                    onSuccess={mockOnSuccess}
+                    editData={editDataISO as unknown as RegistrationItem}
+                />
+            </Provider>
+        )
+
+        await screen.findByText('Edit Registration')
+        const checkinInput = screen.getByLabelText('Check-in Date') as HTMLInputElement
+        expect(checkinInput.value).toBe('2024-01-15')
+    })
+
+    it('formatDateForInput: parses standard JS date string (lines 117-121)', async () => {
+        const store = createStore()
+        const editDataJSDate = {
+            ...baseEditData,
+            accomm: '100',
+            checkin: 'Jan 15 2024',
+            checkout: 'Feb 20 2024',
+            accmvalue: 'Single Occupancy',
+            nights: '5',
+        }
+
+        render(
+            <Provider store={store}>
+                <RegistrationForm
+                    onClose={mockOnClose}
+                    onSuccess={mockOnSuccess}
+                    editData={editDataJSDate as unknown as RegistrationItem}
+                />
+            </Provider>
+        )
+
+        await screen.findByText('Edit Registration')
+        const checkinInput = screen.getByLabelText('Check-in Date') as HTMLInputElement
+        expect(checkinInput.value).toBe('2024-01-15')
+    })
+
+    it('formatDateForInput: returns original string on invalid date (lines 123-126)', async () => {
+        const store = createStore()
+        const editDataInvalid = {
+            ...baseEditData,
+            accomm: '100',
+            checkin: 'not-a-date',
+            checkout: 'also-not-a-date',
+            accmvalue: 'Single Occupancy',
+            nights: '5',
+        }
+
+        render(
+            <Provider store={store}>
+                <RegistrationForm
+                    onClose={mockOnClose}
+                    onSuccess={mockOnSuccess}
+                    editData={editDataInvalid as unknown as RegistrationItem}
+                />
+            </Provider>
+        )
+
+        await screen.findByText('Edit Registration')
+        const checkinInput = screen.getByLabelText('Check-in Date') as HTMLInputElement
+        expect(checkinInput.value).toBe('')
+    })
+
+    it('edit mode with accommodation: shows accomm fields (lines 154-159)', async () => {
+        const store = createStore()
+        const editDataWithAccomm = {
+            ...baseEditData,
+            accomm: '150',
+            checkin: '2024-03-01',
+            checkout: '2024-03-05',
+            accmvalue: 'Double Occupancy',
+            nights: '4',
+        }
+
+        render(
+            <Provider store={store}>
+                <RegistrationForm
+                    onClose={mockOnClose}
+                    onSuccess={mockOnSuccess}
+                    editData={editDataWithAccomm as unknown as RegistrationItem}
+                />
+            </Provider>
+        )
+
+        await screen.findByText('Edit Registration')
+        // Should show accommodation checkbox as checked
+        const accCheckbox = screen.getByRole('checkbox', { name: /Looking for Accommodation/i })
+        expect(accCheckbox).toBeChecked()
+    })
+
+    it('covers parseDateForInput catch block', async () => {
+        const timeSpy = jest.spyOn(Date.prototype, 'getTime').mockImplementation(() => { throw new Error('mock date error') })
+        const store = createStore()
+        render(
+            <Provider store={store}>
+                <RegistrationForm
+                    onClose={mockOnClose}
+                    onSuccess={mockOnSuccess}
+                    editData={{ date: '2024-01-01' } as unknown as RegistrationItem}
+                />
+            </Provider>
+        )
+
+        await screen.findByText('Edit Registration')
+
+        timeSpy.mockRestore()
     })
 })

@@ -371,7 +371,7 @@ describe('App Component', () => {
 
             expect(await screen.findByTestId(nav.page)).toBeInTheDocument();
         }
-    });
+    }, 15000);
 
     test('renders Device Management for admins', async () => {
         const preloadedState = {

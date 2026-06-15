@@ -18,6 +18,7 @@ jest.mock('react-hot-toast', () => ({
 }))
 
 import { listWebsites, type SourceWebsite } from '../../../../services/sourcedb'
+import type { AccRegistrationItem } from '../../../../services/accRegistrations'
 import toast from 'react-hot-toast'
 
 const createMockStore = () => configureStore({
@@ -313,5 +314,131 @@ describe('AccommodationForm', () => {
         fireEvent.change(wphoneInput, { target: { value: '9876543210' } })
 
         expect(wphoneInput).toHaveValue('9876543210')
+    })
+
+    describe('Edit Mode', () => {
+        const mockEditData = {
+            id: 'A123',
+            caption: 'Dr.',
+            name: 'Jane Doe',
+            email: 'jane@test.com',
+            aemail: '',
+            phone: '1112223333',
+            wphone: '',
+            institution: 'Test Univ',
+            country: 'USA',
+            website: { id: 1, name: 'Test Conf' },
+            website_id: 1,
+            accomm: '150',
+            accm: 'Single Occupancy',
+            checkin: '2024-01-15',
+            checkout: '2024-01-20',
+            acc_pr: 150,
+            tot_price: 750,
+        }
+
+        it('pre-fills data and shows ID/Website in edit mode (lines 97-114, 304-313)', async () => {
+            renderForm({ editData: mockEditData })
+            await screen.findByText('Edit Accommodation')
+
+            // Verify read-only sections
+            expect(screen.getByText('A123')).toBeInTheDocument()
+            expect(screen.getByText('Test Conf')).toBeInTheDocument()
+
+            // Verify pre-filled inputs
+            expect(screen.getByLabelText('Full Name*')).toHaveValue('Jane Doe')
+            expect(screen.getByLabelText('Price per Night ($)*')).toHaveValue(150)
+            
+            // Checkin parsed to YYYY-MM-DD
+            expect(screen.getByLabelText('Check-in Date')).toHaveValue('2024-01-15')
+            // Checkout parsed from ISO
+            expect(screen.getByLabelText('Check-out Date')).toHaveValue('2024-01-20')
+        })
+
+        it('parses various date formats defensively (MM/DD/YYYY and ISO)', async () => {
+            const { unmount } = renderForm({ 
+                editData: { 
+                    ...mockEditData, 
+                    checkin: '02/15/2024', // MM/DD/YYYY
+                    checkout: '2024-03-10T12:00:00Z', // ISO with T
+                } 
+            })
+            await screen.findByText('Edit Accommodation')
+            expect(screen.getByLabelText('Check-in Date')).toHaveValue('2024-02-15')
+            expect(screen.getByLabelText('Check-out Date')).toHaveValue('2024-03-10')
+            unmount()
+        })
+
+        it('parses various date formats defensively (fallback Date and invalid)', async () => {
+            // Test Date parsing fallback
+            renderForm({ 
+                editData: { 
+                    ...mockEditData, 
+                    checkin: 'Jan 1 2024', // Fallback Date parsing
+                    checkout: 'invalid-date', // Unparsable
+                } 
+            })
+            await screen.findByText('Edit Accommodation')
+            expect(screen.getByLabelText('Check-in Date')).toHaveValue('2024-01-01')
+            // Invalid date will fail to parse and become an empty string since input type="date"
+            expect(screen.getByLabelText('Check-out Date')).toHaveValue('')
+        })
+
+        it('successfully updates an existing registration', async () => {
+            const { updateAccRegistrationThunk } = await import('../../../../store/slices/accRegistrations/accRegistrations.slice')
+            // Mock update thunk dispatch result using actual action creator
+            const mockDispatch = jest.fn().mockResolvedValue(
+                updateAccRegistrationThunk.fulfilled({} as unknown as AccRegistrationItem, 'requestId', { id: 'A123', data: {} })
+            )
+            const hooks = await import('../../../../store/hooks')
+            jest.spyOn(hooks, 'useAppDispatch').mockReturnValue(mockDispatch)
+            
+            renderForm({ editData: mockEditData })
+            await screen.findByText('Edit Accommodation')
+
+            fireEvent.click(screen.getByText('Update Accommodation'))
+
+            await waitFor(() => {
+                expect(toast.success).toHaveBeenCalledWith('Accommodation Registration updated successfully')
+                expect(mockOnSuccess).toHaveBeenCalled()
+                expect(mockOnClose).toHaveBeenCalled()
+            })
+        })
+
+        it('handles update failure with payload message', async () => {
+            const { updateAccRegistrationThunk } = await import('../../../../store/slices/accRegistrations/accRegistrations.slice')
+            const mockDispatch = jest.fn().mockResolvedValue(
+                updateAccRegistrationThunk.rejected(null, 'requestId', { id: 'A123', data: {} }, 'Update failed from server')
+            )
+            const hooks = await import('../../../../store/hooks')
+            jest.spyOn(hooks, 'useAppDispatch').mockReturnValue(mockDispatch)
+
+            renderForm({ editData: mockEditData })
+            await screen.findByText('Edit Accommodation')
+
+            fireEvent.click(screen.getByText('Update Accommodation'))
+
+            await waitFor(() => {
+                expect(toast.error).toHaveBeenCalledWith('Update failed from server')
+            })
+        })
+
+        it('handles update failure with fallback message', async () => {
+            const { updateAccRegistrationThunk } = await import('../../../../store/slices/accRegistrations/accRegistrations.slice')
+            const mockDispatch = jest.fn().mockResolvedValue(
+                updateAccRegistrationThunk.rejected(null, 'requestId', { id: 'A123', data: {} }, undefined)
+            )
+            const hooks = await import('../../../../store/hooks')
+            jest.spyOn(hooks, 'useAppDispatch').mockReturnValue(mockDispatch)
+
+            renderForm({ editData: mockEditData })
+            await screen.findByText('Edit Accommodation')
+
+            fireEvent.click(screen.getByText('Update Accommodation'))
+
+            await waitFor(() => {
+                expect(toast.error).toHaveBeenCalledWith('Failed to update accommodation registration')
+            })
+        })
     })
 })

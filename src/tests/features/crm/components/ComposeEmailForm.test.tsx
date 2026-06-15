@@ -248,6 +248,50 @@ describe('ComposeEmailForm', () => {
         });
     });
 
+    it('covers low importance, formatting toolbar toggle, and debounce saveDraft branches', async () => {
+        (crmService.saveDraft as jest.Mock).mockResolvedValue({ id: 'draft-2' });
+        renderWithProvider({
+            ...mockCrmState,
+            // To hit fromEmail fallback, don't set it initially or select something else if needed
+        });
+        
+        // Importance low branch (lines 656, 662, 664)
+        const importanceBtn = screen.getByRole('button', { name: /Importance/i });
+        fireEvent.click(importanceBtn);
+        const lowBtn = screen.getByRole('button', { name: /Low/i });
+        fireEvent.click(lowBtn);
+        expect(screen.getByRole('button', { name: /Low/i })).toBeInTheDocument();
+
+        // Toolbar toggle (line 639/640)
+        const formatBtn = screen.getByTitle('Formatting options');
+        act(() => {
+            fireEvent.click(formatBtn); // showToolbar = true
+        });
+        expect(screen.getByTitle('Formatting options').className).not.toContain('bg-blue-50');
+
+        // Provide email and body to trigger draft saving logic
+        const toInput = screen.getByPlaceholderText('Add recipients...');
+        fireEvent.change(toInput, { target: { value: 'test@test.com' } });
+        fireEvent.blur(toInput);
+
+        const editor = screen.getByTestId('gmail-reply-editor');
+        
+        // Type first time to trigger initial timeout
+        fireEvent.change(editor, { target: { value: 'First body text' } });
+        
+        // Type again immediately to trigger clearTimeout (line 230)
+        fireEvent.change(editor, { target: { value: 'Second body text' } });
+        
+        act(() => {
+            jest.advanceTimersByTime(3500);
+        });
+
+        await waitFor(() => {
+            expect(crmService.saveDraft).toHaveBeenCalled();
+            // Verify fromEmail fallback handling (lines 203-210, 272)
+        });
+    });
+
     it('shows error modal if no recipient when submitting', async () => {
         renderWithProvider(mockCrmState);
         const submitBtn = screen.getByRole('button', { name: /Send/i });
@@ -421,6 +465,32 @@ describe('ComposeEmailForm', () => {
 
         await waitFor(() => {
             expect(editor.value).not.toContain('Jane');
+        });
+    });
+
+    it('appends signature when sigEl is missing but event has signaturePlace (lines 112-118)', async () => {
+        const { store } = renderWithProvider({
+            ...mockCrmState,
+            activeEventId: 1,
+            events: [
+                { id: 1, name: 'Event 1', replyEmails: ['reply@example.com'] }, // No sig
+                { id: 2, name: 'Event 2', replyEmails: ['reply2@example.com'], signaturePlace: 'NYC' },
+            ]
+        } as unknown as Partial<typeof crmInitialState>);
+
+        const editor = screen.getByTestId('gmail-reply-editor') as HTMLTextAreaElement;
+        
+        await waitFor(() => {
+            expect(editor.value).not.toContain('NYC');
+        });
+
+        // Event changes to 2, which has a signature. The editor HTML won't have .email-signature.
+        act(() => {
+            store.dispatch({ type: 'crm/setActiveEvent', payload: 2 });
+        });
+
+        await waitFor(() => {
+            expect(editor.value).toContain('NYC');
         });
     });
 
