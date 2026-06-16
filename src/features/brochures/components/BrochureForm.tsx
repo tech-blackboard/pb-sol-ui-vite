@@ -96,7 +96,6 @@ export default function BrochureForm({ websiteId, onClose, onSuccess }: Brochure
 
         if (!formData.name.trim()) newErrors.name = 'Name is required'
         if (!formData.email.trim()) newErrors.email = 'Email is required'
-        if (!formData.phone.trim()) newErrors.phone = 'Phone is required'
         if (!formData.country) newErrors.country = 'Country is required'
         if (!formData.website_id) newErrors.website_id = 'Website is required'
         if (!formData.message.trim()) newErrors.message = 'Message is required'

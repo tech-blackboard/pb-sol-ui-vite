@@ -97,4 +97,15 @@ describe('AbstractPagination', () => {
     )
     expect(screen.getByText('Showing 1–0 of 1')).toBeInTheDocument()
   })
+
+  test('renders with total being NaN to cover fallback', () => {
+    render(
+      <AbstractPagination 
+        {...defaultProps} 
+        page={1} 
+        total={NaN} 
+      />
+    )
+    expect(screen.getByText('Showing 0–NaN of NaN')).toBeInTheDocument()
+  })
 })

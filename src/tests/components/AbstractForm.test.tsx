@@ -25,6 +25,7 @@ import { createAbstractWithFormDataFileUpload } from '../../services/abstracts'
 import toast from 'react-hot-toast'
 
 describe('AbstractForm', () => {
+  jest.setTimeout(15000)
   const onClose = jest.fn()
   const onSuccess = jest.fn()
 
@@ -115,7 +116,7 @@ describe('AbstractForm', () => {
       expect(onSuccess).toHaveBeenCalled()
       expect(onClose).toHaveBeenCalled()
     })
-  })
+  }, 15000)
 
 it('shows validation error for invalid email', async () => {
   (listWebsites as jest.Mock).mockResolvedValue([

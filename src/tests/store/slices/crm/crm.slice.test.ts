@@ -594,4 +594,92 @@ describe('crm slice', () => {
             expect(state.messages).toHaveLength(0);
         });
     });
-});
+
+    // Tests for actions not yet covered (line 188 - openComposeModal)
+    describe('compose modal actions', () => {
+        it('openComposeModal sets isComposeModalOpen to true (line 188)', () => {
+            const { openComposeModal } = jest.requireActual('../../../../store/slices/crm/crm.slice');
+            const state = reducer(initialState, openComposeModal());
+            expect(state.isComposeModalOpen).toBe(true);
+        });
+
+        it('closeComposeModal sets isComposeModalOpen to false (line 191)', () => {
+            const { openComposeModal, closeComposeModal } = jest.requireActual('../../../../store/slices/crm/crm.slice');
+            const stateOpened = reducer(initialState, openComposeModal());
+            const closedState = reducer(stateOpened, closeComposeModal());
+            expect(closedState.isComposeModalOpen).toBe(false);
+        });
+
+    });
+
+    describe('setActiveEmailAccountId action', () => {
+        it('sets activeEmailAccountId and resets currentPage', () => {
+            const { setActiveEmailAccountId } = jest.requireActual('../../../../store/slices/crm/crm.slice');
+            const stateWithPage = { ...initialState, currentPage: 3 };
+            const state = reducer(stateWithPage, setActiveEmailAccountId(5));
+            expect(state.activeEmailAccountId).toBe(5);
+            expect(state.currentPage).toBe(1);
+        });
+    });
+
+    describe('setAccountsActiveEvent action', () => {
+        it('sets accountsActiveEventId and clears dependent state', () => {
+            const { setAccountsActiveEvent } = jest.requireActual('../../../../store/slices/crm/crm.slice');
+            const stateWithData = {
+                ...initialState,
+                accountsActiveEventId: 10,
+                accountsActiveDomain: 'example.com',
+                selectedThreadId: 't1',
+                selectedThreadIds: ['t1'],
+                messages: [{ id: 'm1' }] as Message[]
+            };
+            const state = reducer(stateWithData, setAccountsActiveEvent(99));
+            expect(state.accountsActiveEventId).toBe(99);
+            expect(state.accountsActiveDomain).toBeNull();
+            expect(state.selectedThreadId).toBeNull();
+            expect(state.selectedThreadIds).toHaveLength(0);
+            expect(state.messages).toHaveLength(0);
+        });
+    });
+
+    describe('fetchEventsThunk – non-array payload (line 231)', () => {
+        it('handles non-array payload from fetchEventsThunk.fulfilled', () => {
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const state = reducer(initialState, fetchEventsThunk.fulfilled('not-an-array' as unknown as CrmEvent[], '', undefined));
+            expect(state.events).toEqual([]);
+            expect(state.loading.events).toBe(false);
+            consoleErrorSpy.mockRestore();
+        });
+    });
+
+    describe('fetchEmailAccountsThunk – meta.arg check (line 380-388)', () => {
+        it('sets totalAccountsCount when meta.arg is falsy (undefined)', () => {
+            const accounts = [{ id: 1 }, { id: 2 }] as EmailAccount[];
+            const state = reducer(
+                { ...initialState, activeFolder: 'Inbox' },
+                fetchEmailAccountsThunk.fulfilled(accounts, '', undefined)
+            );
+            expect(state.totalAccountsCount).toBe(2);
+            expect(state.accountsCount).toBe(2); // totalAccountsCount since not 'Accounts' folder
+        });
+
+        it('does not set totalAccountsCount when meta.arg is truthy', () => {
+            const accounts = [{ id: 1 }] as EmailAccount[];
+            const state = reducer(
+                { ...initialState, totalAccountsCount: 10, activeFolder: 'Inbox' },
+                fetchEmailAccountsThunk.fulfilled(accounts, '', 5)
+            );
+            expect(state.totalAccountsCount).toBe(10); // unchanged
+            expect(state.accountsCount).toBe(10); // falls back to totalAccountsCount
+        });
+
+        it('sets accountsCount to payload length when in Accounts folder', () => {
+            const accounts = [{ id: 1 }, { id: 2 }, { id: 3 }] as EmailAccount[];
+            const state = reducer(
+                { ...initialState, activeFolder: 'Accounts' },
+                fetchEmailAccountsThunk.fulfilled(accounts, '', undefined)
+            );
+            expect(state.accountsCount).toBe(3);
+        });
+    });
+});

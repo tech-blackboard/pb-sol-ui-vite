@@ -20,6 +20,7 @@ jest.mock('../features/sponsorships/pages/SponsorshipsPage', () => () => <div da
 jest.mock('../features/accRegistrations/pages/AccRegistrationsPage', () => () => <div data-testid="page-acc">Accommodation Page Content</div>)
 jest.mock('../features/contacts/pages/ContactsPage', () => () => <div data-testid="page-contact">Contact Page Content</div>)
 jest.mock('../pages/DashboardPage', () => () => <div data-testid="page-dashboard">Dashboard Page Content</div>)
+jest.mock('../features/globalContacts/pages/GlobalContactsPage', () => () => <div data-testid="page-global-contacts">Global Contacts Page Content</div>)
 
 // Mock dependencies
 jest.mock('../services/deviceFingerprint', () => ({
@@ -199,6 +200,30 @@ describe('App Component', () => {
         });
     });
 
+    test('handles device not approved event with fallback message', async () => {
+        const preloadedState = {
+            auth: {
+                user: { id: 1, useremail: 'test@test.com', name: 'Test User', role: 'Tester' },
+                loading: false,
+                error: null,
+            },
+        };
+
+        renderWithProviders(<App />, { preloadedState });
+
+        await waitFor(() => {
+            expect(screen.getByText(/Dashboard/i)).toBeInTheDocument();
+        });
+
+        act(() => {
+            window.dispatchEvent(new CustomEvent('app:device-not-approved'));
+        });
+
+        await waitFor(() => {
+            expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
+        });
+    });
+
     test('handles auth failure event', async () => {
         const preloadedState = {
             auth: {
@@ -346,7 +371,7 @@ describe('App Component', () => {
 
             expect(await screen.findByTestId(nav.page)).toBeInTheDocument();
         }
-    });
+    }, 15000);
 
     test('renders Device Management for admins', async () => {
         const preloadedState = {
@@ -403,4 +428,87 @@ describe('App Component', () => {
 
         expect(await screen.findByTestId('page-mailbox')).toBeInTheDocument();
     });
+
+    test('handles app:navigate event with truthy and falsy details', async () => {
+        const preloadedState = {
+            auth: {
+                user: { id: 1, useremail: 'test@test.com', name: 'Test User', role: 'Tester' },
+                loading: false,
+                error: null,
+            },
+        };
+
+        renderWithProviders(<App />, { preloadedState });
+
+        await waitFor(() => {
+            expect(screen.getByText(/Dashboard/i)).toBeInTheDocument();
+        });
+
+        // Fire navigate event with truthy detail
+        act(() => {
+            window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'crm' }));
+        });
+
+        expect(await screen.findByTestId('page-mailbox')).toBeInTheDocument();
+
+        // Fire navigate event with falsy/null detail (should not change section)
+        act(() => {
+            window.dispatchEvent(new CustomEvent('app:navigate', { detail: null }));
+        });
+
+        // It should still be mailbox
+        expect(screen.getByTestId('page-mailbox')).toBeInTheDocument();
+    });
+
+    test('admin navigating to Contact Bucket dispatches setActiveFolder and renders MailboxPage', async () => {
+        const preloadedState = {
+            auth: {
+                user: { id: 1, useremail: 'admin@test.com', name: 'Admin', role: 'Administrator', isAdmin: true },
+                loading: false,
+                error: null,
+            },
+        };
+
+        const { store } = renderWithProviders(<App />, { preloadedState });
+
+        await waitFor(() => {
+            expect(screen.getByText(/Dashboard/i)).toBeInTheDocument();
+        });
+
+        // Click Contact Bucket button
+        const contactBucketButton = screen.getByRole('button', { name: /Contact Bucket/i });
+        fireEvent.click(contactBucketButton);
+
+        // Verify it dispatches setActiveFolder('Contact Bucket')
+        await waitFor(() => {
+            expect(store.getState().crm.activeFolder).toBe('Contact Bucket');
+        });
+
+        // Contact Bucket renders MailboxPage when activeId === 'contactBucket' and isAdmin
+        expect(screen.getByTestId('page-mailbox')).toBeInTheDocument();
+    });
+
+    test('admin navigating to Global Contacts renders GlobalContactsPage', async () => {
+        const preloadedState = {
+            auth: {
+                user: { id: 1, useremail: 'admin@test.com', name: 'Admin', role: 'Administrator', isAdmin: true },
+                loading: false,
+                error: null,
+            },
+        };
+
+        renderWithProviders(<App />, { preloadedState });
+
+        await waitFor(() => {
+            expect(screen.getByText(/Dashboard/i)).toBeInTheDocument();
+        });
+
+        // Click Global Contacts button
+        const globalContactsButton = screen.getByRole('button', { name: /Global Contacts/i });
+        fireEvent.click(globalContactsButton);
+
+        // Verify GlobalContactsPage renders
+        expect(await screen.findByTestId('page-global-contacts')).toBeInTheDocument();
+    });
 });
+

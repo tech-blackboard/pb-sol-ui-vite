@@ -432,4 +432,53 @@ describe('crm thunks catch blocks', () => {
             }
         }
     });
+
+    it('saveDraftThunk should reject with fallback message on generic error (line 169)', async () => {
+        (crmService.saveDraft as jest.Mock).mockRejectedValue(new Error('Generic Fail'));
+        const result = await saveDraftThunk({ eventId: 1, subject: 'S' })(dispatch, getState, undefined);
+        expect(result.payload).toBe('Failed to save draft');
+    });
+
+    it('saveDraftThunk should succeed', async () => {
+        (crmService.saveDraft as jest.Mock).mockResolvedValue({ id: 'draft1' });
+        const result = await saveDraftThunk({ eventId: 1, subject: 'S' })(dispatch, getState, undefined);
+        expect(result.payload).toEqual({ id: 'draft1' });
+    });
+
+    it('fetchDraftsThunk should reject with fallback message on generic error (line 181)', async () => {
+        (crmService.fetchDrafts as jest.Mock).mockRejectedValue(new Error('Generic Fail'));
+        const result = await fetchDraftsThunk({})(dispatch, getState, undefined);
+        expect(result.payload).toBe('Failed to fetch drafts');
+    });
+
+    it('fetchDraftsThunk should succeed', async () => {
+        (crmService.fetchDrafts as jest.Mock).mockResolvedValue({ drafts: [], total: 0 });
+        const result = await fetchDraftsThunk({})(dispatch, getState, undefined);
+        expect(result.payload).toEqual({ drafts: [], total: 0 });
+    });
+
+    it('updateLabelsThunk should reject with fallback message on generic error', async () => {
+        (crmService.updateMessageLabels as jest.Mock).mockRejectedValue(new Error('Label Fail'));
+        const result = await updateLabelsThunk({ messageId: 'm1', labels: [] })(dispatch, getState, undefined);
+        expect(result.payload).toBe('Failed to update labels');
+    });
+
+    it('sendReplyThunk should succeed', async () => {
+        (crmService.sendReply as jest.Mock).mockResolvedValue({ id: 'msg1' });
+        const result = await sendReplyThunk({ contactId: 1, eventId: 1, subject: 'S', textBody: 'B', htmlBody: 'H' })(dispatch, getState, undefined);
+        expect(result.payload).toEqual({ id: 'msg1' });
+    });
+
+    it('fetchLabelDefinitionsThunk should succeed', async () => {
+        (crmService.fetchLabelDefinitions as jest.Mock).mockResolvedValue([{ id: 'l1' }]);
+        const result = await fetchLabelDefinitionsThunk(undefined)(dispatch, getState, undefined);
+        expect(result.payload).toEqual([{ id: 'l1' }]);
+    });
+
+    it('fetchLabelDefinitionsThunk should reject with fallback on generic error', async () => {
+        (crmService.fetchLabelDefinitions as jest.Mock).mockRejectedValue(new Error('Fail'));
+        const result = await fetchLabelDefinitionsThunk(undefined)(dispatch, getState, undefined);
+        expect(result.payload).toBe('Failed to fetch label definitions');
+    });
 });
+

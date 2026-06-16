@@ -500,4 +500,109 @@ describe('PaymentReceiptForm – Final Clean Suite v2', () => {
     
     expect(await screen.findByText('Check-out must be after check-in date')).toBeInTheDocument()
   })
+
+  test('interest selection falls back to default fee when not in map', () => {
+    setup()
+
+    fireEvent.change(screen.getByLabelText(/Interested in/i), {
+      target: { value: 'Custom Presentation' }, // not in mapping, falls back to 699
+    })
+
+    expect(screen.getAllByText('$699').length).toBeGreaterThan(0)
+  })
+
+  test('submits receipt without accommodation checked, checkIn and checkOut are undefined', async () => {
+    setup()
+
+    fireEvent.change(screen.getByLabelText(/Interested in/i), {
+      target: { value: 'Oral Presenter (Virtual)' },
+    })
+    fireEvent.change(screen.getByLabelText(/Registration Fee/i), {
+      target: { value: '399' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /Preview Payment Receipt/i }))
+    fireEvent.click(await screen.findByRole('button', { name: /Send Payment Receipt/i }))
+    fireEvent.click(screen.getByText(/Confirm & Send/i))
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+      const payload = onSubmit.mock.calls[0][0]
+      expect(payload.checkIn).toBeUndefined()
+      expect(payload.checkOut).toBeUndefined()
+      expect(payload.numberOfNights).toBeUndefined()
+    })
+  })
+
+  test('verifies validation error border styling is applied when errors exist', async () => {
+    const { container } = setup()
+
+    // Trigger validation error
+    fireEvent.click(screen.getByRole('button', { name: /Preview Payment Receipt/i }))
+
+    await screen.findByText('Please select an option')
+    
+    // Verify border-red-500 class is applied to container
+    const formDiv = container.firstChild?.firstChild as HTMLElement
+    expect(formDiv.className).toContain('border-red-500')
+  })
+
+  test('covers branch fallbacks for missing fields (quantity, fees, occupancy)', async () => {
+    let callCount = 0;
+    const realUseState = jest.requireActual('react').useState
+    const useStateSpy = jest.spyOn(jest.requireActual('react'), 'useState').mockImplementation((initVal) => {
+      const hookIndex = callCount % 12;
+      callCount++;
+      
+      if (hookIndex === 0) {
+        return realUseState({
+          ...(initVal as object),
+          interestedIn: 'Unknown', 
+          quantity: undefined,    
+          registrationFee: 0,     
+          accommodationFee: 0,    
+        })
+      }
+      if (hookIndex === 11) return realUseState(true) // showConfirmModal: true
+      return realUseState(initVal)
+    })
+
+    const { getByRole } = setup()
+
+    const confirmBtn = getByRole('button', { name: /Confirm & Send/i })
+    fireEvent.click(confirmBtn)
+
+    expect(onSubmit).toHaveBeenCalled()
+    useStateSpy.mockRestore()
+  })
+
+  test('covers branch fallbacks for accommodation item calculation', async () => {
+    let callCount = 0;
+    const realUseState = jest.requireActual('react').useState
+    const useStateSpy = jest.spyOn(jest.requireActual('react'), 'useState').mockImplementation((initVal) => {
+      const hookIndex = callCount % 12;
+      callCount++;
+      
+      if (hookIndex === 0) {
+        return realUseState({
+          ...(initVal as object),
+          interestedIn: 'Unknown', 
+          quantity: undefined,    
+          registrationFee: 0,     
+          accommodationFee: 0,    
+        })
+      }
+      if (hookIndex === 5) return realUseState('Single') // occupancyType
+      if (hookIndex === 8) return realUseState(2) // numberOfNights
+      if (hookIndex === 11) return realUseState(true) // showConfirmModal: true
+      return realUseState(initVal)
+    })
+
+    const { getByRole } = setup()
+    const confirmBtn = getByRole('button', { name: /Confirm & Send/i })
+    fireEvent.click(confirmBtn)
+
+    expect(onSubmit).toHaveBeenCalled()
+    useStateSpy.mockRestore()
+  })
 })

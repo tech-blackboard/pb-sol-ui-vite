@@ -10,7 +10,12 @@ import reducer, {
     clearError,
     type BrochureFilters
 } from '../../../../store/slices/brochures/brochures.slice';
-import { fetchBrochures, createBrochureThunk } from '../../../../store/slices/brochures/brochures.slice';
+import {
+    fetchBrochures,
+    createBrochureThunk,
+    updateBrochureThunk,
+    deleteBrochureThunk
+} from '../../../../store/slices/brochures/brochures.slice';
 import * as brochuresService from '../../../../services/brochures';
 import type { BrochureItem, BrochureSearchResult } from '../../../../services/brochures';
 import type { UnknownAction } from '@reduxjs/toolkit';
@@ -192,6 +197,183 @@ describe('brochures slice', () => {
             const result = await createBrochureThunk({})(dispatch, jest.fn(), undefined);
             expect(result.payload).toBe('Failed to create brochure request');
             spy.mockRestore();
+        });
+
+        // updateBrochureThunk extraReducers
+        it('handles updateBrochureThunk.pending', () => {
+            const state = reducer(initialState, updateBrochureThunk.pending('', { id: 1, data: {} }));
+            expect(state.editLoading).toBe(true);
+        });
+
+        it('handles updateBrochureThunk.fulfilled', () => {
+            const startState = {
+                ...initialState,
+                editLoading: true,
+                items: [
+                    { id: 1, name: 'Old Brochure' } as BrochureItem,
+                    { id: 2, name: 'Other Brochure' } as BrochureItem
+                ],
+                selected: { id: 1, name: 'Old Brochure' } as BrochureItem
+            };
+            const updatedItem = { id: 1, name: 'New Brochure' } as BrochureItem;
+            const state = reducer(startState, updateBrochureThunk.fulfilled(updatedItem, '', { id: 1, data: {} }));
+            expect(state.editLoading).toBe(false);
+            expect(state.items[0]).toEqual(updatedItem);
+            expect(state.items[1].name).toBe('Other Brochure');
+            expect(state.selected).toEqual(updatedItem);
+        });
+
+        it('handles updateBrochureThunk.rejected', () => {
+            const startState = { ...initialState, editLoading: true };
+            const state = reducer(startState, updateBrochureThunk.rejected(null, '', { id: 1, data: {} }, 'Update Failed'));
+            expect(state.editLoading).toBe(false);
+            expect(state.error).toBe('Update Failed');
+        });
+
+        // deleteBrochureThunk extraReducers
+        it('handles deleteBrochureThunk.pending', () => {
+            const state = reducer(initialState, deleteBrochureThunk.pending('', 1));
+            expect(state.loading).toBe(true);
+        });
+
+        it('handles deleteBrochureThunk.fulfilled', () => {
+            const startState = {
+                ...initialState,
+                loading: true,
+                items: [{ id: 1, name: 'Brochure 1' } as BrochureItem],
+                selected: { id: 1, name: 'Brochure 1' } as BrochureItem
+            };
+            const state = reducer(startState, deleteBrochureThunk.fulfilled(1, '', 1));
+            expect(state.loading).toBe(false);
+            expect(state.items).toEqual([]);
+            expect(state.selected).toBeNull();
+        });
+
+        it('handles deleteBrochureThunk.rejected', () => {
+            const startState = { ...initialState, loading: true };
+            const state = reducer(startState, deleteBrochureThunk.rejected(null, '', 1, 'Delete Failed'));
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Delete Failed');
+        });
+
+        // updateBrochureThunk thunk tests
+        it('updateBrochureThunk thunk should resolve successfully', async () => {
+            const updatedItem = { id: 1, name: 'Updated' } as BrochureItem;
+            const spy = jest.spyOn(brochuresService, 'updateBrochure').mockResolvedValue(updatedItem);
+            const dispatch = jest.fn();
+            const result = await updateBrochureThunk({ id: 1, data: { name: 'Updated' } })(dispatch, jest.fn(), undefined);
+            expect(result.payload).toEqual(updatedItem);
+            spy.mockRestore();
+        });
+
+        it('updateBrochureThunk thunk should reject with axios error', async () => {
+            const spy = jest.spyOn(brochuresService, 'updateBrochure').mockRejectedValue({
+                isAxiosError: true,
+                response: { data: { message: 'Axios Update Error' } }
+            });
+            const dispatch = jest.fn();
+            const result = await updateBrochureThunk({ id: 1, data: {} })(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios Update Error');
+            spy.mockRestore();
+        });
+
+        it('updateBrochureThunk thunk should reject with fallback message', async () => {
+            const spy = jest.spyOn(brochuresService, 'updateBrochure').mockRejectedValue(new Error('Generic Error'));
+            const dispatch = jest.fn();
+            const result = await updateBrochureThunk({ id: 1, data: {} })(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Failed to update brochure');
+            spy.mockRestore();
+        });
+
+        // deleteBrochureThunk thunk tests
+        it('deleteBrochureThunk thunk should resolve successfully', async () => {
+            const spy = jest.spyOn(brochuresService, 'deleteBrochure').mockResolvedValue(undefined);
+            const dispatch = jest.fn();
+            const result = await deleteBrochureThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe(1);
+            spy.mockRestore();
+        });
+
+        it('deleteBrochureThunk thunk should reject with axios error', async () => {
+            const spy = jest.spyOn(brochuresService, 'deleteBrochure').mockRejectedValue({
+                isAxiosError: true,
+                response: { data: { message: 'Axios Delete Error' } }
+            });
+            const dispatch = jest.fn();
+            const result = await deleteBrochureThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios Delete Error');
+            spy.mockRestore();
+        });
+
+        it('deleteBrochureThunk thunk should reject with fallback message', async () => {
+            const spy = jest.spyOn(brochuresService, 'deleteBrochure').mockRejectedValue(new Error('Generic Error'));
+            const dispatch = jest.fn();
+            const result = await deleteBrochureThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Failed to delete brochure request');
+            spy.mockRestore();
+        });
+
+        // branch specific tests
+        it('updateBrochureThunk thunk should reject with axios error using fallback err.message', async () => {
+            const spy = jest.spyOn(brochuresService, 'updateBrochure').mockRejectedValue({
+                isAxiosError: true,
+                message: 'Axios fallback message'
+            });
+            const dispatch = jest.fn();
+            const result = await updateBrochureThunk({ id: 1, data: {} })(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios fallback message');
+            spy.mockRestore();
+        });
+
+        it('deleteBrochureThunk thunk should reject with axios error using fallback err.message', async () => {
+            const spy = jest.spyOn(brochuresService, 'deleteBrochure').mockRejectedValue({
+                isAxiosError: true,
+                message: 'Axios fallback message'
+            });
+            const dispatch = jest.fn();
+            const result = await deleteBrochureThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios fallback message');
+            spy.mockRestore();
+        });
+
+        it('handles fetchBrochures.rejected fallback to Failed to load', () => {
+            const rejectedAction = {
+                type: fetchBrochures.rejected.type,
+                payload: null,
+                error: {}
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.error).toBe('Failed to load');
+        });
+
+        it('handles createBrochureThunk.rejected fallback to Failed to create brochure request', () => {
+            const rejectedAction = {
+                type: createBrochureThunk.rejected.type,
+                payload: null,
+                error: {}
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.error).toBe('Failed to create brochure request');
+        });
+
+        it('handles updateBrochureThunk.rejected fallback to Failed to update brochure', () => {
+            const rejectedAction = {
+                type: updateBrochureThunk.rejected.type,
+                payload: null,
+                error: {}
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.error).toBe('Failed to update brochure');
+        });
+
+        it('handles deleteBrochureThunk.rejected fallback to Failed to delete brochure request', () => {
+            const rejectedAction = {
+                type: deleteBrochureThunk.rejected.type,
+                payload: null,
+                error: {}
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.error).toBe('Failed to delete brochure request');
         });
     });
 });

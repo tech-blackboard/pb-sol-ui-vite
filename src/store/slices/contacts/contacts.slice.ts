@@ -81,6 +81,18 @@ export const deleteContactThunk = createAsyncThunk(
     }
 );
 
+export const restoreContactThunk = createAsyncThunk(
+    'contacts/restore',
+    async (id: string | number, { rejectWithValue }) => {
+        try {
+            await import('../../../services/contacts').then(m => m.restoreContact(id));
+            return id;
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to restore contact');
+        }
+    }
+);
+
 const initialState: ContactsState = {
     items: [],
     loading: false,
@@ -187,6 +199,20 @@ const contactsSlice = createSlice({
             .addCase(deleteContactThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = (action.payload as string) || action.error.message || 'Failed to delete contact';
+            })
+            .addCase(restoreContactThunk.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(restoreContactThunk.fulfilled, (state, action) => {
+                state.loading = false;
+                state.items = state.items.filter((item) => item.id !== action.payload);
+                if (state.selected?.id === action.payload) {
+                    state.selected = null;
+                }
+            })
+            .addCase(restoreContactThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = (action.payload as string) || action.error.message || 'Failed to restore contact';
             });
     },
 });

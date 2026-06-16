@@ -9,9 +9,13 @@ interface Props {
   record: AbstractRecord
   raw: AbstractItem | null
   onView: () => void
+  isSelected: boolean
+  hasSelections: boolean
+  onToggleSelect: () => void
+  hideCheckboxes?: boolean
 }
 
-export default function AbstractRow({ record, raw, onView }: Props) {
+export default function AbstractRow({ record, raw, onView, isSelected, hasSelections, onToggleSelect, hideCheckboxes }: Props) {
   const f: string | undefined = record.file
   const isAbs = !!(f && /^https?:\/\//i.test(f))
   const name = f ? f.split('/').pop() || '' : ''
@@ -72,8 +76,19 @@ export default function AbstractRow({ record, raw, onView }: Props) {
   }
 
   return (
-    <tr className="border-t border-gray-100">
-
+    <tr className="group border-t border-gray-100">
+      <td className="px-3 py-1">
+        {!hideCheckboxes && (
+            <div className={`flex items-center justify-center transition-opacity ${hasSelections || isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={onToggleSelect}
+                    className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                />
+            </div>
+        )}
+      </td>
 
       {/* Actions */}
       <td className="px-3 py-1">

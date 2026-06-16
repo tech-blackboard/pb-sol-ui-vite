@@ -7,6 +7,10 @@ interface Props {
   rawRows: AbstractItem[]
   loading: boolean
   onView: (item: AbstractItem | undefined) => void
+  selectedIds?: number[]
+  onSelect?: (id: number) => void
+  onSelectAll?: (checked: boolean) => void
+  hideCheckboxes?: boolean
 }
 
 export default function AbstractTable({
@@ -14,13 +18,31 @@ export default function AbstractTable({
   rawRows,
   loading,
   onView,
+  selectedIds = [],
+  onSelect,
+  onSelectAll,
+  hideCheckboxes = false
 }: Props) {
+  const hasSelections = selectedIds.length > 0;
+  const allSelected = rows.length > 0 && selectedIds.length === rows.length;
   return (
     <div className="relative flex-1 min-h-0 rounded-lg border border-gray-200 bg-white shadow-sm">
       <div className="overflow-x-auto overflow-y-auto h-full scrollbar-thin">
         <table className="min-w-full text-left text-sm">
           <thead className="bg-gray-50 text-gray-600 sticky top-0 ">
             <tr>
+              <th className="px-3 py-2 w-10">
+                  {!hideCheckboxes && (
+                      <div className={`flex items-center justify-center transition-opacity ${hasSelections ? 'opacity-100' : 'opacity-0 hover:opacity-100'}`}>
+                          <input
+                              type="checkbox"
+                              checked={allSelected}
+                              onChange={(e) => onSelectAll?.(e.target.checked)}
+                              className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                          />
+                      </div>
+                  )}
+              </th>
               <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[5rem] ">Actions</th>
               <th className="px-3 py-2 text-gray-700 font-semibold text-sm min-w-[14rem]">Website</th>
               <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[14rem]">Name</th>
@@ -44,7 +66,7 @@ export default function AbstractTable({
           <tbody className="align-top">
             {loading && (
               <tr>
-                <td colSpan={17} className="px-4 py-6 text-gray-500">
+                <td colSpan={18} className="px-4 py-6 text-gray-500">
                   Loading...
                 </td>
               </tr>
@@ -54,7 +76,7 @@ export default function AbstractTable({
 
             {!loading && rows.length === 0 && (
               <tr>
-                <td colSpan={17} className="px-4 py-6 text-gray-500">
+                <td colSpan={18} className="px-4 py-6 text-gray-500">
                   No records found
                 </td>
               </tr>
@@ -72,6 +94,10 @@ export default function AbstractTable({
                     record={r}
                     raw={raw ?? null}
                     onView={() => onView(raw)}
+                    isSelected={selectedIds.includes(Number(r.id))}
+                    hasSelections={hasSelections}
+                    onToggleSelect={() => onSelect?.(Number(r.id))}
+                    hideCheckboxes={hideCheckboxes}
                   />
                 )
               })}

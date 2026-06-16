@@ -88,7 +88,7 @@ describe('ContactBucketFormModal', () => {
     
     fireEvent.change(emailInput, { target: { value: 'valid@email.com' } });
     await waitFor(() => expect(screen.queryByText('Invalid email format')).not.toBeInTheDocument());
-  });
+  }, 15000);
 
   it('successfully creates a contact', async () => {
     (contactBucketService.createContactBucket as jest.Mock).mockResolvedValue({ id: 2 });

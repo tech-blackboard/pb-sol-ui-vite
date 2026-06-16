@@ -58,6 +58,7 @@ export default function AbstractsPage() {
   const { user } = useAppSelector(selectAuth)
   const canExport = user?.permissions?.includes('export:excel')
   const [isExporting, setIsExporting] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
 
   useEffect(() => {
     dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }))
@@ -266,6 +267,23 @@ export default function AbstractsPage() {
     }
   }
 
+  const handleDeleteSelected = async () => {
+    if (!confirm(`Are you sure you want to delete ${selectedIds.length} selected records?`)) {
+      return;
+    }
+
+    const toastId = toast.loading(`Deleting ${selectedIds.length} records...`);
+    try {
+      await Promise.all(selectedIds.map(id => dispatch(updateStatusThunk({ id: String(id), statusId: STATUS_TO_ID['Deleted'] })).unwrap()));
+      toast.success(`Successfully deleted ${selectedIds.length} records`, { id: toastId });
+      setSelectedIds([]);
+      dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }));
+    } catch (err) {
+      toast.error('Failed to delete some records', { id: toastId });
+      dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }));
+    }
+  };
+
   return (
     <div className="h-full flex flex-col ">
       <AbstractHeader 
@@ -279,6 +297,8 @@ export default function AbstractsPage() {
         }}
         onExportClick={canExport ? handleExport : undefined}
         isExporting={isExporting}
+        selectedCount={selectedIds.length}
+        onDeleteSelected={handleDeleteSelected}
       />
 
       < AbstractTable
@@ -286,6 +306,20 @@ export default function AbstractsPage() {
         rawRows={rawItems}
         loading={loading}
         onView={(item) => item && dispatch(setSelected(item))}
+        selectedIds={selectedIds}
+        onSelect={(id) => {
+            setSelectedIds(prev =>
+                prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+            )
+        }}
+        onSelectAll={(checked) => {
+            if (checked) {
+                setSelectedIds(items.map(item => Number(item.id)))
+            } else {
+                setSelectedIds([])
+            }
+        }}
+        hideCheckboxes={appliedFilters.onlyDeleted === 'true'}
       />
       <AbstractPagination
         totalPages={Math.ceil(total / pageSize)}

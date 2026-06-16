@@ -12,9 +12,11 @@ interface AbstractHeaderProps {
   onToggleDeleted?: () => void
   onExportClick?: () => void
   isExporting?: boolean
+  selectedCount?: number
+  onDeleteSelected?: () => void
 }
 
-export default function AbstractHeader({ error, onClearError, onlyDeleted, onToggleDeleted, onExportClick, isExporting }: AbstractHeaderProps) {
+export default function AbstractHeader({ error, onClearError, onlyDeleted, onToggleDeleted, onExportClick, isExporting, selectedCount, onDeleteSelected }: AbstractHeaderProps) {
   const [showForm, setShowForm] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
 
@@ -36,6 +38,8 @@ export default function AbstractHeader({ error, onClearError, onlyDeleted, onTog
         onToggleDeleted={onToggleDeleted}
         onExportClick={onExportClick}
         isExporting={isExporting}
+        selectedCount={selectedCount}
+        onDeleteSelected={onDeleteSelected}
       />
 
       {/* Filters Drawer */}

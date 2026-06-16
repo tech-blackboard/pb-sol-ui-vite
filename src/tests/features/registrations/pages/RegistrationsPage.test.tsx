@@ -6,11 +6,30 @@ import { configureStore } from '@reduxjs/toolkit'
 import registrationsReducer from '../../../../store/slices/registrations/registrations.slice'
 import type { RegistrationsState } from '../../../../store/slices/registrations/registrations.types'
 import type { RegistrationItem } from '../../../../services/registrations'
+import authReducer from '../../../../store/slices/authSlice'
+
+jest.mock('xlsx', () => ({
+  utils: {
+    json_to_sheet: jest.fn(() => ({})),
+    book_new: jest.fn(() => ({})),
+    book_append_sheet: jest.fn(),
+  },
+  writeFile: jest.fn(),
+}))
+
+jest.mock('../../../../services/registrations', () => ({
+  searchRegistrations: jest.fn(),
+}))
 
 // Header
-jest.mock('../../../../components/SectionHeader', () => ({
+jest.mock('../../../../features/registrations/components/RegistrationHeader', () => ({
   __esModule: true,
-    default: ({ error, onClearError }: { error: string | null, onClearError: () => void }) => (
+  default: ({ error, onClearError, onExportClick, onToggleDeleted }: {
+    error?: string | null
+    onClearError?: () => void
+    onExportClick?: () => void
+    onToggleDeleted?: () => void
+  }) => (
     <div data-testid="header">
       {error && (
         <>
@@ -20,6 +39,8 @@ jest.mock('../../../../components/SectionHeader', () => ({
           </button>
         </>
       )}
+      {onExportClick && <button onClick={onExportClick}>Export Excel</button>}
+      {onToggleDeleted && <button onClick={onToggleDeleted}>Toggle Deleted</button>}
     </div>
   ),
 }))
@@ -27,7 +48,7 @@ jest.mock('../../../../components/SectionHeader', () => ({
 // Table (match REAL props)
 jest.mock('../../../../features/registrations/components/RegistrationTable', () => ({
   __esModule: true,
-    default: ({ rows, loading, onView }: { rows: RegistrationItem[], loading: boolean, error: string | null, onView: (item: RegistrationItem) => void }) => (
+  default: ({ rows, loading, onView }: { rows: RegistrationItem[], loading: boolean, error: string | null, onView: (item: RegistrationItem) => void }) => (
     <div data-testid="table">
       {loading && <div>Loading...</div>}
       {rows.map((r) => (
@@ -42,10 +63,12 @@ jest.mock('../../../../features/registrations/components/RegistrationTable', () 
 // Modal
 jest.mock('../../../../features/registrations/components/RegistrationDetailsModal', () => ({
   __esModule: true,
-    default: ({ item, onClose }: { item: RegistrationItem | null, onClose: () => void }) => (
+  default: ({ item, onClose, onEdit, onDelete }: { item: RegistrationItem | null, onClose: () => void, onEdit?: (item: RegistrationItem) => void, onDelete?: (item: RegistrationItem) => void }) => (
     <div data-testid="modal">
       {item?.name}
       <button aria-label="Close modal" onClick={onClose}>Close</button>
+      {onEdit && <button onClick={() => onEdit(item!)}>Edit Details</button>}
+      {onDelete && <button onClick={() => onDelete(item!)}>Delete Details</button>}
     </div>
   ),
 }))
@@ -61,6 +84,16 @@ jest.mock('../../../../features/abstracts/components/AbstractPagination', () => 
   ),
 }))
 
+jest.mock('../../../../features/registrations/components/RegistrationForm', () => ({
+  __esModule: true,
+  default: ({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) => (
+    <div data-testid="registration-form">
+      <button onClick={onClose}>Close Form</button>
+      <button onClick={onSuccess}>Success Form</button>
+    </div>
+  ),
+}))
+
 jest.mock('../../../../store/slices/registrations/registrations.thunks', () => {
   const makeThunk = (type: string) =>
     Object.assign(jest.fn(() => ({ type: `${type}/noop` })), {
@@ -68,21 +101,40 @@ jest.mock('../../../../store/slices/registrations/registrations.thunks', () => {
       fulfilled: { type: `${type}/fulfilled` },
       rejected: { type: `${type}/rejected` },
       typePrefix: type,
+      unwrap: () => jest.fn().mockResolvedValue({})
     })
 
   return {
     fetchRegistrations: makeThunk('registrations/fetchRegistrations'),
-    deleteRegistrationThunk: makeThunk('registrations/deleteRegistration'),
+    deleteRegistrationThunk: Object.assign(
+      // Return a real thunk function so dispatchSpy sees expect.any(Function)
+      // The thunk middleware returns what the inner function returns.
+      jest.fn(() => () => {
+        const p = Promise.resolve();
+        (p as unknown as { unwrap: () => Promise<unknown> }).unwrap = () => Promise.resolve({});
+        return p;
+      }),
+      {
+        pending: { type: 'registrations/delete/pending' },
+        fulfilled: { type: 'registrations/delete/fulfilled', match: () => true },
+        rejected: { type: 'registrations/delete/rejected' },
+      }
+    ),
     createRegistrationThunk: makeThunk('registrations/createRegistration'),
     updateRegistrationThunk: makeThunk('registrations/updateRegistration'),
   }
 })
 
 import { fetchRegistrations } from '../../../../store/slices/registrations/registrations.thunks'
+import { searchRegistrations } from '../../../../services/registrations'
+import * as XLSX from 'xlsx'
 
 const makeStore = (initial: Partial<RegistrationsState> = {}) =>
   configureStore({
-    reducer: { registrations: registrationsReducer },
+    reducer: {
+      registrations: registrationsReducer,
+      auth: authReducer,
+    },
     preloadedState: {
       registrations: {
         items: [],
@@ -97,6 +149,12 @@ const makeStore = (initial: Partial<RegistrationsState> = {}) =>
         selected: null,
         ...initial,
       } as RegistrationsState,
+      auth: {
+        user: { name: 'Test User', role: 'User', permissions: ['export:excel'] },
+        token: 'fake-token',
+        loading: false,
+        error: null,
+      },
     },
   })
 
@@ -253,5 +311,203 @@ describe('RegistrationsPage', () => {
     dispatchSpy.mockClear()
     fireEvent.click(screen.getByText('Size 25'))
     expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'registrations/setPageSize' }))
+  })
+
+  it('triggers onDelete callback and handles success', async () => {
+    const item = { id: 1, name: 'Item 1', deletedAt: null } as RegistrationItem
+    const store = makeStore({ selected: item })
+    const dispatchSpy = jest.spyOn(store, 'dispatch') as jest.SpyInstance
+    
+    // Make sure the thunk unwrap resolves successfully
+    const thunks = await import('../../../../store/slices/registrations/registrations.thunks');
+    (thunks.deleteRegistrationThunk as unknown as jest.Mock).mockReturnValueOnce(
+      () => {
+        const p = Promise.resolve();
+        (p as unknown as { unwrap: () => Promise<unknown> }).unwrap = () => Promise.resolve({});
+        return p;
+      }
+    );
+
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+    
+    expect(screen.getByTestId('modal')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Delete Details'))
+    
+    await waitFor(() => {
+      expect(dispatchSpy).toHaveBeenCalledWith(expect.any(Function))
+      expect(store.getState().registrations.selected).toBeNull()
+    })
+  })
+
+  it('handles Excel export successfully', async () => {
+    const store = makeStore()
+    ;(searchRegistrations as jest.Mock).mockResolvedValue({
+      items: [
+        { id: 1, name: 'Item 1', email: 'a@b.com', website: { name: 'Site' }, now: '2023-01-01' },
+        { id: 2 }
+      ],
+    })
+    
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+    
+    const exportBtn = screen.getByText('Export Excel')
+    fireEvent.click(exportBtn)
+    
+    await waitFor(() => {
+      expect(searchRegistrations).toHaveBeenCalled()
+      expect(XLSX.utils.json_to_sheet).toHaveBeenCalled()
+      expect(XLSX.writeFile).toHaveBeenCalled()
+    })
+  })
+
+  it('handles Excel export failure when search returns empty', async () => {
+    const store = makeStore()
+    ;(searchRegistrations as jest.Mock).mockResolvedValue({
+      items: [],
+    })
+    
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+    
+    const exportBtn = screen.getByText('Export Excel')
+    fireEvent.click(exportBtn)
+    
+    await waitFor(() => {
+      expect(searchRegistrations).toHaveBeenCalled()
+      expect(XLSX.writeFile).not.toHaveBeenCalled()
+    })
+  })
+
+  it('handles Excel export exception (catch block)', async () => {
+    const store = makeStore()
+    ;(searchRegistrations as jest.Mock).mockRejectedValue(new Error('API Error'))
+    
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+    
+    const exportBtn = screen.getByText('Export Excel')
+    fireEvent.click(exportBtn)
+    
+    await waitFor(() => {
+      expect(searchRegistrations).toHaveBeenCalled()
+    })
+  })
+
+  it('triggers onToggleDeleted properly (lines 92-94)', () => {
+    const store = makeStore({ appliedFilters: { onlyDeleted: 'true' } })
+    const dispatchSpy = jest.spyOn(store, 'dispatch')
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+    
+    fireEvent.click(screen.getByText('Toggle Deleted'))
+    expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'registrations/updateDraftFilter' }))
+  })
+
+  it('triggers onEdit properly, showing the form (lines 124-125, 141-148)', async () => {
+    const store = makeStore({
+      items: [{ id: 1, name: 'EditMe', deletedAt: null } as RegistrationItem],
+      selected: { id: 1, name: 'EditMe', deletedAt: null } as RegistrationItem
+    })
+    const dispatchSpy = jest.spyOn(store, 'dispatch')
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+    
+    fireEvent.click(screen.getByText('Edit Details'))
+    expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'registrations/clearSelected' }))
+    
+    expect(screen.getByTestId('registration-form')).toBeInTheDocument()
+    
+    fireEvent.click(screen.getByText('Success Form'))
+    await waitFor(() => {
+        expect(screen.queryByTestId('registration-form')).not.toBeInTheDocument()
+    })
+  })
+
+  it('handles onClose on RegistrationForm', () => {
+    const store = makeStore({
+      selected: { id: 1, name: 'EditMe', deletedAt: null } as RegistrationItem
+    })
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+    
+    fireEvent.click(screen.getByText('Edit Details'))
+    expect(screen.getByTestId('registration-form')).toBeInTheDocument()
+    
+    fireEvent.click(screen.getByText('Close Form'))
+    expect(screen.queryByTestId('registration-form')).not.toBeInTheDocument()
+  })
+
+  it('handles delete error gracefully (lines 132-133)', async () => {
+    const store = makeStore({
+      selected: { id: 1, name: 'DeleteMe', deletedAt: null } as RegistrationItem
+    })
+    
+    const thunks = await import('../../../../store/slices/registrations/registrations.thunks');
+    (thunks.deleteRegistrationThunk as unknown as jest.Mock).mockReturnValueOnce(
+      () => {
+        const p = Promise.resolve();
+        (p as unknown as { unwrap: () => Promise<unknown> }).unwrap = () => Promise.reject('Delete error text');
+        return p;
+      }
+    );
+    
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+    
+    fireEvent.click(screen.getByText('Delete Details'))
+    
+    await waitFor(() => {
+      expect(thunks.deleteRegistrationThunk).toHaveBeenCalled()
+    })
+  })
+
+  it('triggers onToggleDeleted properly to false', () => {
+    const store = makeStore({ appliedFilters: { onlyDeleted: 'true' }, draftFilters: { onlyDeleted: 'true' } })
+    const dispatchSpy = jest.spyOn(store, 'dispatch')
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+    
+    fireEvent.click(screen.getByText('Toggle Deleted'))
+    expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'registrations/updateDraftFilter', payload: { key: 'onlyDeleted', value: 'false' } }))
+  })
+
+  it('triggers onToggleDeleted properly to true', () => {
+    const store = makeStore({ appliedFilters: { onlyDeleted: 'false' }, draftFilters: { onlyDeleted: 'false' } })
+    const dispatchSpy = jest.spyOn(store, 'dispatch')
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+    
+    fireEvent.click(screen.getByText('Toggle Deleted'))
+    expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'registrations/updateDraftFilter', payload: { key: 'onlyDeleted', value: 'true' } }))
+  })
+
+  it('handles delete error with Error object', async () => {
+    const store = makeStore({
+      selected: { id: 1, name: 'DeleteMeObj', deletedAt: null } as RegistrationItem
+    })
+    
+    const thunks = await import('../../../../store/slices/registrations/registrations.thunks');
+    (thunks.deleteRegistrationThunk as unknown as jest.Mock).mockReturnValueOnce(
+      () => {
+        const p = Promise.resolve();
+        (p as unknown as { unwrap: () => Promise<unknown> }).unwrap = () => Promise.reject(new Error('Object Error'));
+        return p;
+      }
+    );
+    
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+    
+    fireEvent.click(screen.getByText('Delete Details'))
+    
+    await waitFor(() => {
+      expect(thunks.deleteRegistrationThunk).toHaveBeenCalled()
+    })
+  })
+
+  it('renders with selected.deletedAt to cover onDelete undefined', () => {
+    const item = { id: 1, name: 'DeletedItem', deletedAt: '2023-01-01' } as RegistrationItem
+    const store = makeStore({ selected: item })
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+    expect(screen.getByTestId('modal')).toBeInTheDocument()
+  })
+
+  it('handles Excel export with completely empty item', async () => {
+    const store = makeStore()
+    ;(searchRegistrations as jest.Mock).mockResolvedValue({ items: [{ id: 2 }] })
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+    fireEvent.click(screen.getByText('Export Excel'))
+    await waitFor(() => expect(searchRegistrations).toHaveBeenCalled())
   })
 })

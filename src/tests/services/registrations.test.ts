@@ -3,6 +3,7 @@ import {
     getRegistrationById,
     deleteRegistration,
     createRegistration,
+    updateRegistration,
     type RegistrationItem,
 } from '../../services/registrations'
 import { api } from '../../lib/api'
@@ -11,6 +12,7 @@ jest.mock('../../lib/api', () => ({
     api: {
         get: jest.fn(),
         post: jest.fn(),
+        put: jest.fn(),
         delete: jest.fn(),
     },
 }))
@@ -182,6 +184,37 @@ describe('registrations service', () => {
                 expect.objectContaining({
                     headers: expect.objectContaining({ Authorization: 'Bearer test-token' }),
                 })
+            )
+        })
+    })
+
+    describe('updateRegistration', () => {
+        it('updates existing registration', async () => {
+            const updateData = { name: 'Updated Name' }
+            ;(api.put as jest.Mock).mockResolvedValue({ data: { ...mockRegistration, ...updateData } })
+
+            const result = await updateRegistration(1, updateData)
+
+            expect(api.put).toHaveBeenCalledWith(
+                expect.stringContaining('/1'),
+                updateData,
+                expect.objectContaining({
+                    headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
+                    withCredentials: true,
+                })
+            )
+            expect(result.name).toBe('Updated Name')
+        })
+
+        it('handles string ID', async () => {
+            ;(api.put as jest.Mock).mockResolvedValue({ data: mockRegistration })
+
+            await updateRegistration('123', { name: 'Test' })
+
+            expect(api.put).toHaveBeenCalledWith(
+                expect.stringContaining('/123'),
+                expect.any(Object),
+                expect.any(Object)
             )
         })
     })

@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-import { fetchRegistrations, deleteRegistrationThunk, createRegistrationThunk, updateRegistrationThunk } from './registrations.thunks';
+import { fetchRegistrations, deleteRegistrationThunk, restoreRegistrationThunk, createRegistrationThunk, updateRegistrationThunk } from './registrations.thunks';
 import type { RegistrationFilters, RegistrationsState } from './registrations.types';
 import type { RegistrationItem } from '../../../services/registrations';
 
@@ -90,6 +90,20 @@ const registrationsSlice = createSlice({
             .addCase(deleteRegistrationThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = (action.payload as string) || action.error.message || 'Failed to delete registration';
+            })
+            .addCase(restoreRegistrationThunk.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(restoreRegistrationThunk.fulfilled, (state, action) => {
+                state.loading = false;
+                state.rawItems = state.rawItems.filter(i => i.id !== action.payload);
+                state.items = state.items.filter(i => i.id !== action.payload);
+                state.total -= 1;
+            })
+            .addCase(restoreRegistrationThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = (action.payload as string) || action.error.message || 'Failed to restore registration';
             })
             .addCase(createRegistrationThunk.pending, (state) => {
                 state.loading = true;
