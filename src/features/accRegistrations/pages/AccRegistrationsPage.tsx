@@ -3,7 +3,7 @@ import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { selectAuth } from '../../../store/slices/authSlice'
-import { fetchAccRegistrations, deleteAccRegistrationThunk, setPage, setPageSize, setSelected, clearSelected, clearError, updateDraftFilter, applyFilters } from '../../../store/slices/accRegistrations/accRegistrations.slice'
+import { fetchAccRegistrations, deleteAccRegistrationThunk, restoreAccRegistrationThunk, setPage, setPageSize, setSelected, clearSelected, clearError, updateDraftFilter, applyFilters } from '../../../store/slices/accRegistrations/accRegistrations.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import AccRegistrationTable from '../components/AccRegistrationTable'
 import AccRegistrationDetailsModal from '../components/AccRegistrationDetailsModal'
@@ -23,6 +23,7 @@ export default function AccRegistrationsPage() {
     const { user } = useAppSelector(selectAuth)
     const canExport = user?.permissions?.includes('export:excel')
     const [isExporting, setIsExporting] = useState(false)
+    const [selectedIds, setSelectedIds] = useState<number[]>([])
 
     useEffect(() => {
         dispatch(fetchAccRegistrations({ filters: appliedFilters, page, limit: pageSize }))
@@ -82,6 +83,23 @@ export default function AccRegistrationsPage() {
         }
     }
 
+    const handleDeleteSelected = async () => {
+        if (!confirm(`Are you sure you want to delete ${selectedIds.length} selected records?`)) {
+            return;
+        }
+
+        const toastId = toast.loading(`Deleting ${selectedIds.length} records...`);
+        try {
+            await Promise.all(selectedIds.map(id => dispatch(deleteAccRegistrationThunk(id)).unwrap()));
+            toast.success(`Successfully deleted ${selectedIds.length} records`, { id: toastId });
+            setSelectedIds([]);
+            dispatch(fetchAccRegistrations({ filters: appliedFilters, page, limit: pageSize }));
+        } catch (err) {
+            toast.error('Failed to delete some records', { id: toastId });
+            dispatch(fetchAccRegistrations({ filters: appliedFilters, page, limit: pageSize }));
+        }
+    };
+
     return (
         <div className="h-full flex flex-col">
             <SectionHeader
@@ -99,6 +117,8 @@ export default function AccRegistrationsPage() {
                 }}
                 onExportClick={canExport ? handleExport : undefined}
                 isExporting={isExporting}
+                selectedCount={selectedIds.length}
+                onDeleteSelected={handleDeleteSelected}
             />
 
             {filtersOpen && (
@@ -111,7 +131,32 @@ export default function AccRegistrationsPage() {
             <AccRegistrationTable
                 rows={items}
                 loading={loading}
-                onView={(item) => dispatch(setSelected(item))}
+                onView={(row) => {
+                    dispatch(setSelected(row))
+                }}
+                onRestore={appliedFilters.onlyDeleted === 'true' ? async (item) => {
+                    try {
+                        await dispatch(restoreAccRegistrationThunk(item.id!)).unwrap()
+                        toast.success('Accommodation registration restored successfully')
+                    } catch (err: unknown) {
+                        const errorMessage = typeof err === 'string' ? err : 'Failed to restore accommodation registration'
+                        toast.error(errorMessage)
+                    }
+                } : undefined}
+                selectedIds={selectedIds}
+                onSelect={(id) => {
+                    setSelectedIds(prev =>
+                        prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+                    )
+                }}
+                onSelectAll={(checked) => {
+                    if (checked) {
+                        setSelectedIds(items.map(item => Number(item.id)))
+                    } else {
+                        setSelectedIds([])
+                    }
+                }}
+                hideCheckboxes={appliedFilters.onlyDeleted === 'true'}
             />
 
             <AbstractPagination
@@ -134,8 +179,8 @@ export default function AccRegistrationsPage() {
                     }}
                     onDelete={selected.deletedAt ? undefined : async (item) => {
                         try {
-                            await dispatch(deleteAccRegistrationThunk(item.id)).unwrap()
-                            toast.success('Accommodation Registration deleted successfully')
+                            await dispatch(deleteAccRegistrationThunk(item.id!)).unwrap()
+                            toast.success('Accommodation registration deleted successfully')
                             dispatch(clearSelected())
                         } catch (err: unknown) {
                             const errorMessage = typeof err === 'string' ? err : 'Failed to delete accommodation registration'

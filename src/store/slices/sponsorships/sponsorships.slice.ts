@@ -82,6 +82,18 @@ export const deleteSponsorshipThunk = createAsyncThunk(
     }
 );
 
+export const restoreSponsorshipThunk = createAsyncThunk(
+    'sponsorships/restore',
+    async (id: string | number, { rejectWithValue }) => {
+        try {
+            await import('../../../services/sponsorships').then(m => m.restoreSponsorship(id));
+            return id;
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to restore sponsorship');
+        }
+    }
+);
+
 const initialState: SponsorshipsState = {
     items: [],
     loading: false,
@@ -186,6 +198,20 @@ const sponsorshipsSlice = createSlice({
             .addCase(deleteSponsorshipThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = (action.payload as string) || action.error.message || 'Failed to delete sponsorship';
+            })
+            .addCase(restoreSponsorshipThunk.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(restoreSponsorshipThunk.fulfilled, (state, action) => {
+                state.loading = false;
+                state.items = state.items.filter((item) => item.id !== action.payload);
+                if (state.selected?.id === action.payload) {
+                    state.selected = null;
+                }
+            })
+            .addCase(restoreSponsorshipThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = (action.payload as string) || action.error.message || 'Failed to restore sponsorship';
             });
     },
 });

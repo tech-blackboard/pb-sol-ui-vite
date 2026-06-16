@@ -34,6 +34,18 @@ export const deleteRegistrationThunk = createAsyncThunk(
     }
 );
 
+export const restoreRegistrationThunk = createAsyncThunk(
+    'registrations/restore',
+    async (id: string | number, { rejectWithValue }) => {
+        try {
+            await import('../../../services/registrations').then(m => m.restoreRegistration(id));
+            return id;
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to restore registration');
+        }
+    }
+);
+
 export const createRegistrationThunk = createAsyncThunk(
     'registrations/create',
     async (data: RegistrationRecord, { rejectWithValue }) => {
