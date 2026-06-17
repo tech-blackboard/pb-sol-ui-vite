@@ -238,7 +238,9 @@ const abstractsSlice = createSlice({
         }
 
         // 🔥 keep modal + table in sync
-        state.selected = updatedAbstract
+        if (state.selected && String(state.selected.id) === String(updatedAbstract.id)) {
+          state.selected = updatedAbstract
+        }
       })
       .addCase(updateAbstractThunk.rejected, (state) => {
         state.actionLoading.edit = false
@@ -263,8 +265,10 @@ const abstractsSlice = createSlice({
         }
 
         // 🔥 keep modal + table in sync
-        state.selected = updatedAbstract
-        state.modalStatus = (updatedAbstract.status?.actionType ?? updatedAbstract.status ?? 'Under Review') as AbstractStatus
+        if (state.selected && String(state.selected.id) === String(updatedAbstract.id)) {
+          state.selected = updatedAbstract
+          state.modalStatus = (updatedAbstract.status?.actionType ?? updatedAbstract.status ?? 'Under Review') as AbstractStatus
+        }
       })
       .addCase(updateStatusThunk.rejected, (state) => {
         state.actionLoading.status = false
@@ -329,8 +333,10 @@ const abstractsSlice = createSlice({
           state.items[idx] = normalizeAbstract(updatedAbstract)
         }
 
-        state.selected = updatedAbstract
-        state.modalStatus = 'Registered'
+        if (state.selected && String(state.selected.id) === String(updatedAbstract.id)) {
+          state.selected = updatedAbstract
+          state.modalStatus = 'Registered'
+        }
 
         state.paymentReceiptModal.open = false
         state.paymentReceiptModal.abstractId = null

@@ -23,7 +23,6 @@ export default function AbstractTable({
   onSelectAll,
   hideCheckboxes = false
 }: Props) {
-  const hasSelections = selectedIds.length > 0;
   const allSelected = rows.length > 0 && selectedIds.length === rows.length;
   return (
     <div className="relative flex-1 min-h-0 rounded-lg border border-gray-200 bg-white shadow-sm">
@@ -33,7 +32,7 @@ export default function AbstractTable({
             <tr>
               <th className="px-3 py-2 w-10">
                   {!hideCheckboxes && (
-                      <div className={`flex items-center justify-center transition-opacity ${hasSelections ? 'opacity-100' : 'opacity-0 hover:opacity-100'}`}>
+                      <div className="flex items-center justify-center">
                           <input
                               type="checkbox"
                               checked={allSelected}
@@ -95,7 +94,6 @@ export default function AbstractTable({
                     raw={raw ?? null}
                     onView={() => onView(raw)}
                     isSelected={selectedIds.includes(Number(r.id))}
-                    hasSelections={hasSelections}
                     onToggleSelect={() => onSelect?.(Number(r.id))}
                     hideCheckboxes={hideCheckboxes}
                   />

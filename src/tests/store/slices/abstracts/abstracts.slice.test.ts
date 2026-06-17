@@ -189,7 +189,7 @@ describe('abstracts slice', () => {
   });
 
   it('should handle updateStatusThunk.fulfilled when ID is not in rawItems', () => {
-    const startState = { ...initialState, rawItems: [{ id: '2' }] as AbstractItem[] }
+    const startState = { ...initialState, rawItems: [{ id: '2' }] as AbstractItem[], selected: { id: '1' } as unknown as AbstractItem }
     const payload = { updatedAbstract: { id: '1', status: 'Approved' } as unknown as AbstractItem, whatsappSent: false }
     const state = reducer(startState, updateStatusThunk.fulfilled(payload, '', { id: '1', statusId: 1 }))
     expect(state.rawItems[0].id).toBe('2')
@@ -202,7 +202,8 @@ describe('abstracts slice', () => {
       rawItems: [{ id: '1', name: 'Original' }] as AbstractItem[],
       items: [{ id: '1' }] as unknown as AbstractRecord[],
       actionLoading: { ...initialState.actionLoading, receipt: true },
-      paymentReceiptModal: { open: true, abstractId: '1', abstractName: 'Test' }
+      paymentReceiptModal: { open: true, abstractId: '1', abstractName: 'Test' },
+      selected: { id: '1', name: 'Original' } as AbstractItem
     }
     const payload = { receiptResult: {} as SendPaymentReceiptResponse, updated: { updatedAbstract: { id: '1', name: 'Updated' } as AbstractItem, whatsappSent: false } }
     const state = reducer(startState, sendPaymentReceiptThunk.fulfilled(payload, '', { abstractId: '1', receiptData: {} as PaymentReceiptData }))
@@ -241,7 +242,8 @@ describe('abstracts slice', () => {
       ...initialState,
       rawItems: [{ id: '1', name: 'Old' }] as AbstractItem[],
       items: [{ id: '1' }] as unknown as AbstractRecord[],
-      actionLoading: { ...initialState.actionLoading, edit: true }
+      actionLoading: { ...initialState.actionLoading, edit: true },
+      selected: { id: '1', name: 'Old' } as AbstractItem
     }
     const updated = { id: '1', name: 'New' } as AbstractItem
     const state = reducer(startState, updateAbstractThunk.fulfilled(updated, '', { id: '1', body: {} }))
@@ -281,6 +283,7 @@ describe('abstracts slice', () => {
       ...initialState,
       rawItems: [{ id: '1', status: { id: 1, actionType: 'Old' } }] as unknown as AbstractItem[],
       items: [{ id: '1', status: 'Old' as AbstractStatus }] as unknown as AbstractRecord[],
+      selected: { id: '1', status: { id: 1, actionType: 'Old' } } as unknown as AbstractItem
     }
 
     const payload = { updatedAbstract: { id: '1', status: { id: 1, actionType: 'Approved' } } as unknown as AbstractItem, whatsappSent: false }
@@ -349,8 +352,9 @@ describe('abstracts slice', () => {
   })
 
   it('should handle updateStatusThunk.fulfilled with payload.status as object', () => {
+    const startState = { ...initialState, selected: { id: '1', status: 'Under Review' } as unknown as AbstractItem }
     const payload = { updatedAbstract: { id: '1', status: { actionType: 'Accepted' } } as unknown as AbstractItem, whatsappSent: false }
-    const state = reducer(initialState, updateStatusThunk.fulfilled(payload, '', { id: '1', statusId: 2 }))
+    const state = reducer(startState, updateStatusThunk.fulfilled(payload, '', { id: '1', statusId: 2 }))
     expect(state.modalStatus).toBe('Accepted')
   })
 
