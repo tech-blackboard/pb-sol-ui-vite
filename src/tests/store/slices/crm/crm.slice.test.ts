@@ -447,6 +447,18 @@ describe('crm slice', () => {
             expect(state.selectedThreadIds).toEqual([]);
         });
 
+        it('handles trashThreadsThunk.fulfilled when activeFolder is Junk', () => {
+            const startState = {
+                ...initialState,
+                activeFolder: 'Junk' as const,
+                threads: [{ id: 't1' } as unknown as Thread],
+                totalThreads: 1,
+                junkCount: 5
+            };
+            const state = reducer(startState, trashThreadsThunk.fulfilled(['t1'], '', ['t1']));
+            expect(state.junkCount).toBe(4);
+        });
+
         it('handles trashThreadsThunk.fulfilled and clears selected thread (line 373-375)', () => {
             const startState = {
                 ...initialState,
@@ -482,6 +494,21 @@ describe('crm slice', () => {
             const state = reducer(startState, restoreThreadsThunk.fulfilled(['t1'], '', ['t1']));
             expect(state.selectedThreadId).toBeNull();
             expect(state.messages).toHaveLength(0);
+        });
+
+        it('handles restoreThreadsThunk.fulfilled and increments junkCount if restored threads were junk', () => {
+            const startState = {
+                ...initialState,
+                activeFolder: 'Trash' as const,
+                threads: [
+                    { id: 't1', isJunk: true } as unknown as Thread,
+                    { id: 't2', isJunk: false } as unknown as Thread
+                ],
+                totalThreads: 2,
+                junkCount: 2
+            };
+            const state = reducer(startState, restoreThreadsThunk.fulfilled(['t1', 't2'], '', ['t1', 't2']));
+            expect(state.junkCount).toBe(3);
         });
 
         it('handles deleteThreadsPermanentlyThunk.fulfilled in Trash folder (line 391-393)', () => {

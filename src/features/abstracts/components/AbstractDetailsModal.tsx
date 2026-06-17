@@ -19,6 +19,7 @@ interface Props {
   onClose: () => void
   onStatusChange: (status: StatusAction) => void
   onUpdate: () => void
+  onDelete?: (item: AbstractItem) => void
 }
 
 const INTERESTED_IN_OPTIONS = [
@@ -40,6 +41,7 @@ export default function AbstractDetailsModal({
   onClose,
   onStatusChange,
   onUpdate,
+  onDelete,
 }: Props) {
   const actionLoading = useAppSelector(selectActionLoading)
   const dispatch = useAppDispatch()
@@ -164,13 +166,30 @@ export default function AbstractDetailsModal({
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
           <h2 className="text-lg font-semibold">Abstract Details</h2>
           <div className="flex items-center gap-2">
-            {!isEditing && currentStatus !== 'Deleted' && (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-              >
-                ✎ Edit
-              </button>
+            {!isEditing && currentStatus !== 'Deleted' && !item.deletedAt && (
+              <>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  ✎ Edit
+                </button>
+                {onDelete && (
+                  <button
+                    onClick={() => {
+                      if (confirm('Are you sure you want to delete this record?')) {
+                        onDelete(item)
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 rounded-md border border-red-300 bg-red-50 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor" className="w-3.5 h-3.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    </svg>
+                    Delete
+                  </button>
+                )}
+              </>
             )}
             <button
               onClick={onClose}
@@ -346,7 +365,8 @@ export default function AbstractDetailsModal({
               {/* Status selector */}
               <div className="flex items-center gap-2">
                 <select
-                  className="w-full rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={!!item.deletedAt}
+                  className="w-full rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   value={modalStatus}
                   onChange={(e) =>
                     onStatusChange(e.target.value as StatusAction)
@@ -373,9 +393,6 @@ export default function AbstractDetailsModal({
                   <option disabled={isUnderReview || isRegistered || isTerminal}>
                     Registered
                   </option>
-                  <option>
-                    Deleted
-                  </option>
                 </select>
               </div>
 
@@ -384,8 +401,8 @@ export default function AbstractDetailsModal({
                 {showUpdateButton && (
                   <button
                     onClick={onUpdate}
-                    disabled={actionLoading.status || isSameStatus}
-                    className={`rounded-md border px-2.5 py-1.5 text-xs ${actionLoading.status || isSameStatus
+                    disabled={actionLoading.status || isSameStatus || !!item.deletedAt}
+                    className={`rounded-md border px-2.5 py-1.5 text-xs ${actionLoading.status || isSameStatus || !!item.deletedAt
                       ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                       : 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
                       }`}
@@ -409,7 +426,7 @@ export default function AbstractDetailsModal({
                         toast.error((result.payload as string) || 'Failed to send confirmation email')
                       }
                     }}
-                    disabled={actionLoading.confirmation || currentStatus === 'Deleted'}
+                    disabled={actionLoading.confirmation || currentStatus === 'Deleted' || !!item.deletedAt}
                     className="rounded-md border border-blue-600 bg-blue-600 text-white px-2.5 py-1.5 text-xs hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-blue-400"              >
                     {actionLoading.confirmation ? 'Sending...' : 'Send Confirmation Email'}
                   </button>
@@ -423,8 +440,8 @@ export default function AbstractDetailsModal({
                         id: String(item.id),
                         name: record.name,
                       }))}
-                      className={`rounded-md border px-2.5 py-1.5 text-xs ${actionLoading.invoice ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'}`}
-                      disabled={actionLoading.invoice}
+                      className={`rounded-md border px-2.5 py-1.5 text-xs ${actionLoading.invoice || !!item.deletedAt ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'}`}
+                      disabled={actionLoading.invoice || !!item.deletedAt}
                     >
                       {actionLoading.invoice ? 'Sending...' : 'Invoice'}
                     </button>
@@ -434,8 +451,8 @@ export default function AbstractDetailsModal({
                         id: String(item.id),
                         name: record.name,
                       }))}
-                      className={`rounded-md border px-2.5 py-1.5 text-xs ${actionLoading.reminder ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'text-black border-gray-300 hover:bg-gray-100'}`}
-                      disabled={actionLoading.reminder}
+                      className={`rounded-md border px-2.5 py-1.5 text-xs ${actionLoading.reminder || !!item.deletedAt ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'text-black border-gray-300 hover:bg-gray-100'}`}
+                      disabled={actionLoading.reminder || !!item.deletedAt}
                     >
                       {actionLoading.reminder ? 'Sending...' : 'Payment Reminder'}
                     </button>
@@ -453,6 +470,7 @@ export default function AbstractDetailsModal({
                         })
                       )
                     }
+                    disabled={!!item.deletedAt}
                     className="rounded-md border border-blue-600 bg-blue-600 text-white px-2.5 py-1.5 text-xs hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Payment Receipt

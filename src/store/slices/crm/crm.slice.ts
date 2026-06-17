@@ -392,6 +392,9 @@ const crmSlice = createSlice({
                 state.threads = state.threads.filter(t => !payload.includes(t.id));
                 state.totalThreads = Math.max(0, state.totalThreads - payload.length);
                 state.trashCount += payload.length;
+                if (state.activeFolder === 'Junk') {
+                    state.junkCount = Math.max(0, state.junkCount - payload.length);
+                }
                 state.selectedThreadIds = state.selectedThreadIds.filter(id => !payload.includes(id));
                 if (state.selectedThreadId && payload.includes(state.selectedThreadId)) {
                     state.selectedThreadId = null;
@@ -400,9 +403,11 @@ const crmSlice = createSlice({
             })
             // Restore Threads
             .addCase(restoreThreadsThunk.fulfilled, (state, { payload }) => {
+                const restoredJunkCount = state.threads.filter(t => payload.includes(t.id) && t.isJunk).length;
                 state.threads = state.threads.filter(t => !payload.includes(t.id));
                 state.totalThreads = Math.max(0, state.totalThreads - payload.length);
                 state.trashCount = Math.max(0, state.trashCount - payload.length);
+                state.junkCount += restoredJunkCount;
                 state.selectedThreadIds = state.selectedThreadIds.filter(id => !payload.includes(id));
                 if (state.selectedThreadId && payload.includes(state.selectedThreadId)) {
                     state.selectedThreadId = null;

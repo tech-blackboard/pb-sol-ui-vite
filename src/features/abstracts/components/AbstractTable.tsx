@@ -7,6 +7,7 @@ interface Props {
   rawRows: AbstractItem[]
   loading: boolean
   onView: (item: AbstractItem | undefined) => void
+  onRestore?: (item: AbstractItem) => void
   selectedIds?: number[]
   onSelect?: (id: number) => void
   onSelectAll?: (checked: boolean) => void
@@ -18,12 +19,12 @@ export default function AbstractTable({
   rawRows,
   loading,
   onView,
+  onRestore,
   selectedIds = [],
   onSelect,
   onSelectAll,
   hideCheckboxes = false
 }: Props) {
-  const hasSelections = selectedIds.length > 0;
   const allSelected = rows.length > 0 && selectedIds.length === rows.length;
   return (
     <div className="relative flex-1 min-h-0 rounded-lg border border-gray-200 bg-white shadow-sm">
@@ -33,7 +34,7 @@ export default function AbstractTable({
             <tr>
               <th className="px-3 py-2 w-10">
                   {!hideCheckboxes && (
-                      <div className={`flex items-center justify-center transition-opacity ${hasSelections ? 'opacity-100' : 'opacity-0 hover:opacity-100'}`}>
+                      <div className="flex items-center justify-center">
                           <input
                               type="checkbox"
                               checked={allSelected}
@@ -43,7 +44,7 @@ export default function AbstractTable({
                       </div>
                   )}
               </th>
-              <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[5rem] ">Actions</th>
+              <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[6.5rem] ">Actions</th>
               <th className="px-3 py-2 text-gray-700 font-semibold text-sm min-w-[14rem]">Website</th>
               <th className="px-3 py-2  text-gray-700 font-semibold text-sm min-w-[14rem]">Name</th>
               <th className="px-1 py-2  text-gray-700 font-semibold text-sm">Email</th>
@@ -94,8 +95,8 @@ export default function AbstractTable({
                     record={r}
                     raw={raw ?? null}
                     onView={() => onView(raw)}
+                    onRestore={onRestore && raw ? () => onRestore(raw) : undefined}
                     isSelected={selectedIds.includes(Number(r.id))}
-                    hasSelections={hasSelections}
                     onToggleSelect={() => onSelect?.(Number(r.id))}
                     hideCheckboxes={hideCheckboxes}
                   />

@@ -21,7 +21,7 @@ import reducer, {
   closePaymentReminderModal,
   clearError
 } from '../../../../store/slices/abstracts/abstracts.slice'
-import { fetchAbstracts, updateAbstractThunk, updateStatusThunk, sendInvoiceThunk, sendPaymentReminderThunk, sendPaymentReceiptThunk, sendConfirmationEmailThunk } from '../../../../store/slices/abstracts/abstracts.thunks'
+import { fetchAbstracts, updateAbstractThunk, updateStatusThunk, sendInvoiceThunk, sendPaymentReminderThunk, sendPaymentReceiptThunk, sendConfirmationEmailThunk, deleteAbstractThunk, restoreAbstractThunk } from '../../../../store/slices/abstracts/abstracts.thunks'
 import type { UnknownAction } from '@reduxjs/toolkit'
 
 describe('abstracts slice', () => {
@@ -189,7 +189,7 @@ describe('abstracts slice', () => {
   });
 
   it('should handle updateStatusThunk.fulfilled when ID is not in rawItems', () => {
-    const startState = { ...initialState, rawItems: [{ id: '2' }] as AbstractItem[] }
+    const startState = { ...initialState, rawItems: [{ id: '2' }] as AbstractItem[], selected: { id: '1' } as unknown as AbstractItem }
     const payload = { updatedAbstract: { id: '1', status: 'Approved' } as unknown as AbstractItem, whatsappSent: false }
     const state = reducer(startState, updateStatusThunk.fulfilled(payload, '', { id: '1', statusId: 1 }))
     expect(state.rawItems[0].id).toBe('2')
@@ -202,7 +202,8 @@ describe('abstracts slice', () => {
       rawItems: [{ id: '1', name: 'Original' }] as AbstractItem[],
       items: [{ id: '1' }] as unknown as AbstractRecord[],
       actionLoading: { ...initialState.actionLoading, receipt: true },
-      paymentReceiptModal: { open: true, abstractId: '1', abstractName: 'Test' }
+      paymentReceiptModal: { open: true, abstractId: '1', abstractName: 'Test' },
+      selected: { id: '1', name: 'Original' } as AbstractItem
     }
     const payload = { receiptResult: {} as SendPaymentReceiptResponse, updated: { updatedAbstract: { id: '1', name: 'Updated' } as AbstractItem, whatsappSent: false } }
     const state = reducer(startState, sendPaymentReceiptThunk.fulfilled(payload, '', { abstractId: '1', receiptData: {} as PaymentReceiptData }))
@@ -241,7 +242,8 @@ describe('abstracts slice', () => {
       ...initialState,
       rawItems: [{ id: '1', name: 'Old' }] as AbstractItem[],
       items: [{ id: '1' }] as unknown as AbstractRecord[],
-      actionLoading: { ...initialState.actionLoading, edit: true }
+      actionLoading: { ...initialState.actionLoading, edit: true },
+      selected: { id: '1', name: 'Old' } as AbstractItem
     }
     const updated = { id: '1', name: 'New' } as AbstractItem
     const state = reducer(startState, updateAbstractThunk.fulfilled(updated, '', { id: '1', body: {} }))
@@ -281,6 +283,7 @@ describe('abstracts slice', () => {
       ...initialState,
       rawItems: [{ id: '1', status: { id: 1, actionType: 'Old' } }] as unknown as AbstractItem[],
       items: [{ id: '1', status: 'Old' as AbstractStatus }] as unknown as AbstractRecord[],
+      selected: { id: '1', status: { id: 1, actionType: 'Old' } } as unknown as AbstractItem
     }
 
     const payload = { updatedAbstract: { id: '1', status: { id: 1, actionType: 'Approved' } } as unknown as AbstractItem, whatsappSent: false }
@@ -349,8 +352,9 @@ describe('abstracts slice', () => {
   })
 
   it('should handle updateStatusThunk.fulfilled with payload.status as object', () => {
+    const startState = { ...initialState, selected: { id: '1', status: 'Under Review' } as unknown as AbstractItem }
     const payload = { updatedAbstract: { id: '1', status: { actionType: 'Accepted' } } as unknown as AbstractItem, whatsappSent: false }
-    const state = reducer(initialState, updateStatusThunk.fulfilled(payload, '', { id: '1', statusId: 2 }))
+    const state = reducer(startState, updateStatusThunk.fulfilled(payload, '', { id: '1', statusId: 2 }))
     expect(state.modalStatus).toBe('Accepted')
   })
 
@@ -442,4 +446,30 @@ describe('abstracts slice', () => {
   // These are usually tested by mocking the service to throw and checking the rejected action's payload
   // However, the coverage report likely refers to the slice handler for these rejected actions which we already have. 
   // If it's about the thunk catch block itself (axios.isAxiosError part), we need to trigger it in thunk tests.
+
+  it('should handle deleteAbstractThunk.fulfilled', () => {
+    const startState = {
+      ...initialState,
+      rawItems: [{ id: '1', name: 'A' }, { id: '2', name: 'B' }] as AbstractItem[],
+      items: [{ id: '1', name: 'A' }, { id: '2', name: 'B' }] as unknown as AbstractRecord[],
+      total: 2,
+    }
+    const state = reducer(startState, deleteAbstractThunk.fulfilled('1', '', '1'))
+    expect(state.items.length).toBe(1)
+    expect(state.rawItems.length).toBe(1)
+    expect(state.total).toBe(1)
+  })
+
+  it('should handle restoreAbstractThunk.fulfilled', () => {
+    const startState = {
+      ...initialState,
+      rawItems: [{ id: '1', name: 'A' }, { id: '2', name: 'B' }] as AbstractItem[],
+      items: [{ id: '1', name: 'A' }, { id: '2', name: 'B' }] as unknown as AbstractRecord[],
+      total: 2,
+    }
+    const state = reducer(startState, restoreAbstractThunk.fulfilled('1', '', '1'))
+    expect(state.items.length).toBe(1)
+    expect(state.rawItems.length).toBe(1)
+    expect(state.total).toBe(1)
+  })
 })

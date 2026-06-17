@@ -68,7 +68,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()} record={baseRecord} raw={baseRaw} onView={onView} />
+          <AbstractRow isSelected={false} onToggleSelect={jest.fn()} record={baseRecord} raw={baseRaw} onView={onView} />
         </tbody>
       </table>
     )
@@ -89,7 +89,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()} record={baseRecord} raw={baseRaw} onView={onView} />
+          <AbstractRow isSelected={false} onToggleSelect={jest.fn()} record={baseRecord} raw={baseRaw} onView={onView} />
         </tbody>
       </table>
     )
@@ -101,7 +101,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()}
+          <AbstractRow isSelected={false} onToggleSelect={jest.fn()}
             record={{ ...baseRecord, isEmailSent: false }}
             raw={baseRaw}
             onView={onView}
@@ -124,7 +124,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()}
+          <AbstractRow isSelected={false} onToggleSelect={jest.fn()}
             record={{ ...baseRecord, status: status as AbstractRecord['status'] }}
             raw={baseRaw}
             onView={onView}
@@ -141,7 +141,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()}
+          <AbstractRow isSelected={false} onToggleSelect={jest.fn()}
             record={{
               ...baseRecord,
               file: 'https://files.com/test.pdf',
@@ -161,7 +161,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()}
+          <AbstractRow isSelected={false} onToggleSelect={jest.fn()}
             record={{ ...baseRecord, file: 'test.pdf' }}
             raw={baseRaw}
             onView={onView}
@@ -181,7 +181,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()}
+          <AbstractRow isSelected={false} onToggleSelect={jest.fn()}
             record={{ ...baseRecord, file: 'uploads/test.pdf' }}
             raw={baseRaw}
             onView={onView}
@@ -201,7 +201,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()}
+          <AbstractRow isSelected={false} onToggleSelect={jest.fn()}
             record={{
               ...baseRecord,
               file: 'test.pdf',
@@ -225,7 +225,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()} record={baseRecord} raw={baseRaw} onView={onView} />
+          <AbstractRow isSelected={false} onToggleSelect={jest.fn()} record={baseRecord} raw={baseRaw} onView={onView} />
         </tbody>
       </table>
     )
@@ -238,7 +238,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()} record={baseRecord} raw={baseRaw} onView={onView} />
+          <AbstractRow isSelected={false} onToggleSelect={jest.fn()} record={baseRecord} raw={baseRaw} onView={onView} />
         </tbody>
       </table>
     )
@@ -251,7 +251,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()}
+          <AbstractRow isSelected={false} onToggleSelect={jest.fn()}
             record={baseRecord}
             raw={{ ...baseRaw, now: undefined }}
             onView={onView}
@@ -268,7 +268,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()} record={baseRecord} raw={baseRaw} onView={onView} />
+          <AbstractRow isSelected={false} onToggleSelect={jest.fn()} record={baseRecord} raw={baseRaw} onView={onView} />
         </tbody>
       </table>
     )
@@ -282,7 +282,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()} record={baseRecord} raw={null} onView={onView} />
+          <AbstractRow isSelected={false} onToggleSelect={jest.fn()} record={baseRecord} raw={null} onView={onView} />
         </tbody>
       </table>
     )
@@ -313,7 +313,7 @@ describe('AbstractRow – full branch & function coverage', () => {
       render(
         <table>
           <tbody>
-            <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()} record={{ ...baseRecord, fileS3Url: 's3://bucket/file.pdf', file: 'file.pdf' }} raw={baseRaw} onView={onView} />
+            <AbstractRow isSelected={false} onToggleSelect={jest.fn()} record={{ ...baseRecord, fileS3Url: 's3://bucket/file.pdf', file: 'file.pdf' }} raw={baseRaw} onView={onView} />
           </tbody>
         </table>
       )
@@ -335,7 +335,7 @@ describe('AbstractRow – full branch & function coverage', () => {
       render(
         <table>
           <tbody>
-            <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()} record={{ ...baseRecord, fileS3Url: 's3://bucket/file.pdf', file: 'file.pdf' }} raw={baseRaw} onView={onView} />
+            <AbstractRow isSelected={false} onToggleSelect={jest.fn()} record={{ ...baseRecord, fileS3Url: 's3://bucket/file.pdf', file: 'file.pdf' }} raw={baseRaw} onView={onView} />
           </tbody>
         </table>
       )
@@ -352,7 +352,7 @@ describe('AbstractRow – full branch & function coverage', () => {
       render(
         <table>
           <tbody>
-            <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()} record={{ ...baseRecord, fileS3Url: 's3://bucket/file.pdf', file: 'file.pdf' }} raw={baseRaw} onView={onView} />
+            <AbstractRow isSelected={false} onToggleSelect={jest.fn()} record={{ ...baseRecord, fileS3Url: 's3://bucket/file.pdf', file: 'file.pdf' }} raw={baseRaw} onView={onView} />
           </tbody>
         </table>
       )
@@ -372,7 +372,7 @@ describe('AbstractRow – full branch & function coverage', () => {
       render(
         <table>
           <tbody>
-            <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()} record={{ ...baseRecord, fileS3Url: 's3://bucket/file.pdf', file: 'file.pdf' }} raw={baseRaw} onView={onView} />
+            <AbstractRow isSelected={false} onToggleSelect={jest.fn()} record={{ ...baseRecord, fileS3Url: 's3://bucket/file.pdf', file: 'file.pdf' }} raw={baseRaw} onView={onView} />
           </tbody>
         </table>
       )
@@ -392,7 +392,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()}
+          <AbstractRow isSelected={false} onToggleSelect={jest.fn()}
             record={{ ...baseRecord, status: 'Deleted' }}
             raw={baseRaw}
             onView={onView}
@@ -407,7 +407,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()}
+          <AbstractRow isSelected={false} onToggleSelect={jest.fn()}
             record={{ ...baseRecord, file: 'test.pdf', fileS3Url: undefined }}
             raw={baseRaw}
             onView={onView}
@@ -424,7 +424,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()}
+          <AbstractRow isSelected={false} onToggleSelect={jest.fn()}
             record={record}
             raw={baseRaw}
             onView={onView}
@@ -445,7 +445,7 @@ describe('AbstractRow – full branch & function coverage', () => {
     render(
       <table>
         <tbody>
-          <AbstractRow isSelected={false} hasSelections={false} onToggleSelect={jest.fn()}
+          <AbstractRow isSelected={false} onToggleSelect={jest.fn()}
             record={{
               ...baseRecord,
               file: '/',

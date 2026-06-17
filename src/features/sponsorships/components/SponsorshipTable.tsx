@@ -6,17 +6,16 @@ interface SponsorshipRowProps {
     onView: () => void;
     onRestore?: () => void;
     isSelected: boolean;
-    hasSelections: boolean;
     onToggleSelect: () => void;
     hideCheckboxes?: boolean;
 }
 
-function SponsorshipRow({ item, onView, onRestore, isSelected, hasSelections, onToggleSelect, hideCheckboxes }: SponsorshipRowProps) {
+function SponsorshipRow({ item, onView, onRestore, isSelected, onToggleSelect, hideCheckboxes }: SponsorshipRowProps) {
     return (
         <tr className="group border-t border-gray-100 hover:bg-gray-50 transition-colors">
             <td className="px-3 py-1">
                 {!hideCheckboxes && (
-                    <div className={`flex items-center justify-center transition-opacity ${hasSelections || isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                    <div className="flex items-center justify-center">
                         <input
                             type="checkbox"
                             checked={isSelected}
@@ -84,7 +83,6 @@ interface Props {
 }
 
 export default function SponsorshipTable({ rows, loading, onView, onRestore, selectedIds = [], onSelect, onSelectAll, hideCheckboxes = false }: Props) {
-    const hasSelections = selectedIds.length > 0;
     const allSelected = rows.length > 0 && selectedIds.length === rows.length;
 
     return (
@@ -95,7 +93,7 @@ export default function SponsorshipTable({ rows, loading, onView, onRestore, sel
                         <tr>
                             <th className="px-3 py-2 w-10">
                                 {!hideCheckboxes && (
-                                    <div className={`flex items-center justify-center transition-opacity ${hasSelections ? 'opacity-100' : 'opacity-0 hover:opacity-100'}`}>
+                                    <div className="flex items-center justify-center">
                                         <input
                                             type="checkbox"
                                             checked={allSelected}
@@ -143,7 +141,6 @@ export default function SponsorshipTable({ rows, loading, onView, onRestore, sel
                                 onView={() => onView(row)}
                                 onRestore={onRestore ? () => onRestore(row) : undefined}
                                 isSelected={selectedIds.includes(row.id!)}
-                                hasSelections={hasSelections}
                                 onToggleSelect={() => onSelect?.(row.id!)}
                                 hideCheckboxes={hideCheckboxes}
                             />
