@@ -7,6 +7,8 @@ import {
   sendPaymentReminder,
   updateAbstract,
   updateAbstractStatus,
+  deleteAbstract,
+  restoreAbstract,
 } from '../../../services/abstracts'
 import type { AbstractFilters } from './abstracts.types'
 import { sendInvoice } from '../../../services/abstracts'
@@ -133,6 +135,32 @@ export const sendConfirmationEmailThunk = createAsyncThunk(
     }
   }
 )
+
+export const deleteAbstractThunk = createAsyncThunk(
+  'abstracts/delete',
+  async (id: string | number, { rejectWithValue }) => {
+    try {
+      await deleteAbstract(id);
+      return id;
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to delete abstract';
+      return rejectWithValue(message);
+    }
+  }
+);
+
+export const restoreAbstractThunk = createAsyncThunk(
+  'abstracts/restore',
+  async (id: string | number, { rejectWithValue }) => {
+    try {
+      await restoreAbstract(id);
+      return id;
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to restore abstract';
+      return rejectWithValue(message);
+    }
+  }
+);
 
 
 

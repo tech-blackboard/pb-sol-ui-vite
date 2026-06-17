@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { AbstractFilters } from './abstracts.types'
-import { fetchAbstracts, sendConfirmationEmailThunk, sendInvoiceThunk, sendPaymentReceiptThunk, sendPaymentReminderThunk, updateAbstractThunk, updateStatusThunk } from './abstracts.thunks'
+import { fetchAbstracts, sendConfirmationEmailThunk, sendInvoiceThunk, sendPaymentReceiptThunk, sendPaymentReminderThunk, updateAbstractThunk, updateStatusThunk, deleteAbstractThunk, restoreAbstractThunk } from './abstracts.thunks'
 import { normalizeAbstract } from '../../../features/abstracts/utils/normalizeAbstract'
 import type { AbstractStatus, AbstractRecord } from '../../../features/abstracts/types'
 import type { AbstractItem } from '../../../services/abstracts'
@@ -379,6 +379,20 @@ const abstractsSlice = createSlice({
 
       .addCase(sendConfirmationEmailThunk.rejected, (state) => {
         state.actionLoading.confirmation = false
+      })
+
+      /* ---------- delete abstract ---------- */
+      .addCase(deleteAbstractThunk.fulfilled, (state, { payload }) => {
+        state.rawItems = state.rawItems.filter((x) => String(x.id) !== String(payload))
+        state.items = state.items.filter((x) => String(x.id) !== String(payload))
+        state.total = Math.max(0, state.total - 1)
+      })
+
+      /* ---------- restore abstract ---------- */
+      .addCase(restoreAbstractThunk.fulfilled, (state, { payload }) => {
+        state.rawItems = state.rawItems.filter((x) => String(x.id) !== String(payload))
+        state.items = state.items.filter((x) => String(x.id) !== String(payload))
+        state.total = Math.max(0, state.total - 1)
       })
   },
 })

@@ -31,6 +31,7 @@ export interface AbstractRecord {
   fileS3Url?: string
   status: AbstractStatus
   isEmailSent: boolean
+  deletedAt?: string
 }
 
 export interface CreateAbstractPayload {

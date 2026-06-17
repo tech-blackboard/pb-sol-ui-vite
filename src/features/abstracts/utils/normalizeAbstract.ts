@@ -50,5 +50,6 @@ export function normalizeAbstract(item: AbstractItem): AbstractRecord {
     fileS3Url: item?.fileS3Url,
     status,
     isEmailSent: Boolean(item?.isEmailSent),
+    deletedAt: item?.deletedAt,
   }
 }

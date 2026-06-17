@@ -21,7 +21,7 @@ import reducer, {
   closePaymentReminderModal,
   clearError
 } from '../../../../store/slices/abstracts/abstracts.slice'
-import { fetchAbstracts, updateAbstractThunk, updateStatusThunk, sendInvoiceThunk, sendPaymentReminderThunk, sendPaymentReceiptThunk, sendConfirmationEmailThunk } from '../../../../store/slices/abstracts/abstracts.thunks'
+import { fetchAbstracts, updateAbstractThunk, updateStatusThunk, sendInvoiceThunk, sendPaymentReminderThunk, sendPaymentReceiptThunk, sendConfirmationEmailThunk, deleteAbstractThunk, restoreAbstractThunk } from '../../../../store/slices/abstracts/abstracts.thunks'
 import type { UnknownAction } from '@reduxjs/toolkit'
 
 describe('abstracts slice', () => {
@@ -446,4 +446,30 @@ describe('abstracts slice', () => {
   // These are usually tested by mocking the service to throw and checking the rejected action's payload
   // However, the coverage report likely refers to the slice handler for these rejected actions which we already have. 
   // If it's about the thunk catch block itself (axios.isAxiosError part), we need to trigger it in thunk tests.
+
+  it('should handle deleteAbstractThunk.fulfilled', () => {
+    const startState = {
+      ...initialState,
+      rawItems: [{ id: '1', name: 'A' }, { id: '2', name: 'B' }] as AbstractItem[],
+      items: [{ id: '1', name: 'A' }, { id: '2', name: 'B' }] as unknown as AbstractRecord[],
+      total: 2,
+    }
+    const state = reducer(startState, deleteAbstractThunk.fulfilled('1', '', '1'))
+    expect(state.items.length).toBe(1)
+    expect(state.rawItems.length).toBe(1)
+    expect(state.total).toBe(1)
+  })
+
+  it('should handle restoreAbstractThunk.fulfilled', () => {
+    const startState = {
+      ...initialState,
+      rawItems: [{ id: '1', name: 'A' }, { id: '2', name: 'B' }] as AbstractItem[],
+      items: [{ id: '1', name: 'A' }, { id: '2', name: 'B' }] as unknown as AbstractRecord[],
+      total: 2,
+    }
+    const state = reducer(startState, restoreAbstractThunk.fulfilled('1', '', '1'))
+    expect(state.items.length).toBe(1)
+    expect(state.rawItems.length).toBe(1)
+    expect(state.total).toBe(1)
+  })
 })
