@@ -6,8 +6,15 @@ import { ComposeEmailForm } from '../../../../features/crm/components/ComposeEma
 import crmReducer, { initialState as crmInitialState } from '../../../../store/slices/crm/crm.slice';
 import * as crmService from '../../../../features/crm/services/crmService';
 import toast from 'react-hot-toast';
+import { uploadService } from '../../../../services/upload';
 
 jest.mock('react-hot-toast');
+jest.mock('../../../../services/upload', () => ({
+    uploadService: {
+        uploadFile: jest.fn(),
+        getSignedUrl: jest.fn(),
+    }
+}));
 jest.mock('../../../../features/crm/services/crmService', () => ({
     composeEmail: jest.fn(),
     saveDraft: jest.fn(),
@@ -571,5 +578,38 @@ describe('ComposeEmailForm', () => {
         // The send button should show spinner + 'Sending...' text
         expect(screen.getByText('Sending...')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Sending.../i })).toBeDisabled();
+    });
+
+    it('handles file attachment uploading, rendering, and removal', async () => {
+        const mockFile = new File(['dummy content'], 'testfile.pdf', { type: 'application/pdf' });
+        (uploadService.uploadFile as jest.Mock).mockResolvedValue({ url: 'http://s3/testfile.pdf', key: 's3-key-abc' });
+
+        renderWithProvider(mockCrmState);
+
+        const attachBtn = screen.getByTitle('Attach files');
+        expect(attachBtn).toBeInTheDocument();
+
+        // Get the hidden input element
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        expect(fileInput).toBeInTheDocument();
+
+        // Simulate file selection
+        await act(async () => {
+            fireEvent.change(fileInput, { target: { files: [mockFile] } });
+        });
+
+        // The file should be uploaded and rendered in the list
+        await waitFor(() => {
+            expect(uploadService.uploadFile).toHaveBeenCalledWith(mockFile);
+            expect(screen.getByText('testfile.pdf')).toBeInTheDocument();
+            // It displays the file size
+            expect(screen.getByText('(0.0 KB)')).toBeInTheDocument();
+        });
+
+        // Test removal
+        const removeBtn = screen.getByText('testfile.pdf').closest('div')!.querySelector('button') as HTMLElement;
+        fireEvent.click(removeBtn);
+
+        expect(screen.queryByText('testfile.pdf')).not.toBeInTheDocument();
     });
 });

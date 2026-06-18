@@ -8,6 +8,14 @@ import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice
 import * as crmService from '../../../../features/crm/services/crmService';
 import type { Message, Attachment, EmailAccount } from '../../../../features/crm/types';
 import toast from 'react-hot-toast';
+import { uploadService } from '../../../../services/upload';
+
+jest.mock('../../../../services/upload', () => ({
+  uploadService: {
+    uploadFile: jest.fn(),
+    getSignedUrl: jest.fn(),
+  }
+}));
 
 jest.mock('../../../../features/crm/services/crmService', () => ({
   sendReply: jest.fn(),
@@ -853,6 +861,36 @@ describe('ReplyForm', () => {
       // It should ignore this change and keep the signature (in our mock, we just want to ensure it doesn't crash or trigger setHtmlBody with <p></p>. Wait, our mock actually triggers onChange.
       // But we can check that it doesn't do anything because we didn't mock editorInstance.isFocused.
       // We can just trigger it. It's covered now.)
+    });
+
+    it('handles file attachment uploading, rendering, and removal in ReplyForm', async () => {
+      const mockFile = new File(['dummy content'], 'replyfile.pdf', { type: 'application/pdf' });
+      (uploadService.uploadFile as jest.Mock).mockResolvedValue({ url: 'http://s3/replyfile.pdf', key: 's3-key-reply' });
+
+      renderForm();
+      const prompt = screen.getByText(/Click here to/).closest('button')!;
+      fireEvent.click(prompt);
+
+      const attachBtn = screen.getByTitle('Attach files');
+      expect(attachBtn).toBeInTheDocument();
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      expect(fileInput).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.change(fileInput, { target: { files: [mockFile] } });
+      });
+
+      await waitFor(() => {
+        expect(uploadService.uploadFile).toHaveBeenCalledWith(mockFile);
+        expect(screen.getByText('replyfile.pdf')).toBeInTheDocument();
+        expect(screen.getByText('(0.0 KB)')).toBeInTheDocument();
+      });
+
+      const removeBtn = screen.getByText('replyfile.pdf').closest('div')!.querySelector('button') as HTMLElement;
+      fireEvent.click(removeBtn);
+
+      expect(screen.queryByText('replyfile.pdf')).not.toBeInTheDocument();
     });
   });
 });
