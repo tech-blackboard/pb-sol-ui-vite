@@ -1,6 +1,6 @@
 import { CRM_BASE } from "../../../config/env";
 import { api } from "../../../lib/api";
-import type { CrmEvent, LabelResponse, Message, Thread, EmailAccount, CrmLabel, MessageImportance } from "../types";
+import type { CrmEvent, LabelResponse, Message, Thread, EmailAccount, CrmLabel, MessageImportance, NewAttachment } from "../types";
 
 
 function getAuthHeaders(): Record<string, string> {
@@ -103,6 +103,7 @@ export async function sendReply(payload: {
     forwardedFromId?: string;
     attachmentIds?: number[];
     toEmail?: string;
+    attachments?: NewAttachment[];
 }): Promise<{ status: string; messageId: string }> {
     const { data } = await api.post(`${CRM_BASE}/reply`, payload, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
@@ -124,6 +125,7 @@ export async function composeEmail(payload: {
     bcc?: string;
     importance?: MessageImportance;
     attachmentIds?: number[];
+    attachments?: NewAttachment[];
 }): Promise<{ status: string; messageId: string }> {
     const { data } = await api.post(`${CRM_BASE}/compose`, payload, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
@@ -143,6 +145,7 @@ export async function saveDraft(payload: {
     textBody?: string;
     htmlBody?: string;
     fromEmail?: string;
+    emailAccountId?: number;
     threadId?: string;
     draftId?: string;
     cc?: string;
@@ -151,6 +154,7 @@ export async function saveDraft(payload: {
     isForwarded?: boolean;
     forwardedFromId?: string;
     attachmentIds?: number[];
+    attachments?: NewAttachment[];
 }): Promise<Message> {
     const { data } = await api.post<Message>(`${CRM_BASE}/drafts`, payload, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },

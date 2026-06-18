@@ -49,6 +49,7 @@ export interface Thread {
     importance?: MessageImportance;
     isForwarded?: boolean;
     forwardedFromId?: string;
+    emailAccountId?: number;
 }
 
 export interface Attachment {
@@ -60,6 +61,14 @@ export interface Attachment {
     s3Key: string;
     createdAt: string;
 }
+
+export interface NewAttachment {
+    filename: string;
+    s3Key: string;
+    contentType: string;
+    size: number;
+}
+
 
 export interface Message {
     id: string;
@@ -90,6 +99,7 @@ export interface Message {
     importance?: MessageImportance;
     isForwarded?: boolean;
     forwardedFromId?: string;
+    emailAccountId?: number;
 }
 
 export interface LabelResponse {
