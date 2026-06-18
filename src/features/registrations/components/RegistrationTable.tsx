@@ -162,7 +162,7 @@ export default function RegistrationTable({ rows, loading, onView, onRestore, se
                                 <td colSpan={24} className="px-4 py-4 text-left text-gray-400">No records found</td>
                             </tr>
                         )}
-                        {!loading && rows.map((row) => (
+                        {rows.map((row) => (
                             <RegistrationRow
                                 key={row.id}
                                 item={row}

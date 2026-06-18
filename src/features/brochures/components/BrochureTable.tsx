@@ -132,7 +132,7 @@ export default function BrochureTable({ rows, loading, onView, onRestore, select
                                 <td colSpan={9} className="px-4 py-4 text-left text-gray-400">No requests found</td>
                             </tr>
                         )}
-                        {!loading && rows.map((row) => (
+                        {rows.map((row) => (
                             <BrochureRow
                                 key={row.id}
                                 item={row}
