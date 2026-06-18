@@ -35,6 +35,12 @@ export default function ThreadView() {
         setForwardData({
             mode: 'reply',
             forwardedFromId: message?.id,
+            // Explicitly clear all forward-specific fields so they
+            // never bleed through the forwardData.x || draft?.x fallbacks
+            htmlBody: undefined,
+            subject: undefined,
+            attachmentIds: undefined,
+            attachments: undefined,
             isExpanded: true
         });
         replyFormRef.current?.expand();
@@ -653,12 +659,17 @@ export default function ThreadView() {
 
                     <div ref={replyFormContainerRef} className="mt-8 border-t border-gray-100 dark:border-gray-800 pt-8">
                         {(() => {
+                            // When in reply mode, ignore any draft that was saved as
+                            // a forward — its body/attachments must not leak into a fresh reply.
                             const draft = drafts.find((d: Message) =>
                                 d.id === selectedThreadId ||
                                 (d.contactId === contact?.id &&
                                     d.eventId === thread.eventId &&
                                     (d.threadId === thread.id || !d.threadId))
                             );
+                            const replyDraft = (forwardData.mode === 'reply' && draft?.isForwarded)
+                                ? undefined
+                                : draft;
 
                             return (
                                 <ReplyForm
@@ -668,19 +679,20 @@ export default function ThreadView() {
                                     eventId={thread.eventId}
                                     replyEmails={event?.replyEmails || []}
                                     defaultSubject={thread.subject}
-                                    recipientEmail={draft?.toEmail || contact?.email || ''}
+                                    recipientEmail={replyDraft?.toEmail || contact?.email || ''}
                                     onSuccess={handleReplySuccess}
-                                    initialDraftId={draft?.id}
-                                    initialFromEmail={draft?.fromEmail}
-                                    initialSubject={forwardData.subject || draft?.subject}
-                                    initialCc={draft?.ccEmail}
-                                    initialBcc={draft?.bccEmail}
-                                    threadId={draft?.threadId ? draft.threadId : (messages.length > 0 ? thread.id : undefined)}
+                                    initialDraftId={replyDraft?.id}
+                                    initialFromEmail={replyDraft?.fromEmail}
+                                    initialEmailAccountId={replyDraft?.emailAccountId}
+                                    initialSubject={forwardData.subject || replyDraft?.subject}
+                                    initialCc={replyDraft?.ccEmail}
+                                    initialBcc={replyDraft?.bccEmail}
+                                    threadId={replyDraft?.threadId ? replyDraft.threadId : (messages.length > 0 ? thread.id : undefined)}
                                     mode={forwardData.mode}
                                     forwardedFromId={forwardData.forwardedFromId}
-                                    initialAttachmentIds={forwardData.attachmentIds}
-                                    originalAttachments={forwardData.attachments}
-                                    initialHtmlBody={forwardData.htmlBody || draft?.htmlBody}
+                                    initialAttachmentIds={forwardData.attachmentIds || replyDraft?.attachments?.map(a => a.id) || []}
+                                    originalAttachments={forwardData.attachments || replyDraft?.attachments || []}
+                                    initialHtmlBody={forwardData.htmlBody || replyDraft?.htmlBody}
                                     expanded={forwardData.isExpanded}
                                     onCollapse={() => setForwardData(prev => ({ ...prev, isExpanded: false }))}
                                     onExpand={() => setForwardData(prev => ({ ...prev, isExpanded: true }))}

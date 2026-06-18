@@ -83,7 +83,7 @@ export default function AbstractTable({
               </tr>
             )}
 
-            {!loading &&
+            {
               rows.map((r) => {
                 const raw = rawRows.find(
                   (x) => String(x.id) === r.id

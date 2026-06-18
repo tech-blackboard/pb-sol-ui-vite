@@ -4,7 +4,8 @@ import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import type { RootState } from '../../../store';
 import { composeEmailThunk, saveDraftThunk } from '../../../store/slices/crm/crm.thunks';
 import { closeComposeModal } from '../../../store/slices/crm/crm.slice';
-import type { MessageImportance } from '../types';
+import type { MessageImportance, Attachment, NewAttachment } from '../types';
+import { uploadService } from '../../../services/upload';
 import toast from 'react-hot-toast';
 import { GmailToolbar } from './GmailToolbar';
 import { GmailReplyEditor } from './GmailReplyEditor';
@@ -43,13 +44,50 @@ export const ComposeEmailForm = () => {
     const [draftId, setDraftId] = useState<string | undefined>(undefined);
     const [lastSavedBody, setLastSavedBody] = useState('');
 
+    const [attachmentIds, setAttachmentIds] = useState<number[]>([]);
+    const [attachments, setAttachments] = useState<Attachment[]>([]);
+    const [newAttachments, setNewAttachments] = useState<NewAttachment[]>([]);
+    const [uploadingFiles, setUploadingFiles] = useState<{ id: string; name: string }[]>([]);
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const attachmentsRef = useRef(attachments);
+    const newAttachmentsRef = useRef(newAttachments);
+    const attachmentIdsRef = useRef(attachmentIds);
+
+    useEffect(() => {
+        attachmentsRef.current = attachments;
+    }, [attachments]);
+
+    useEffect(() => {
+        newAttachmentsRef.current = newAttachments;
+    }, [newAttachments]);
+
+    useEffect(() => {
+        attachmentIdsRef.current = attachmentIds;
+    }, [attachmentIds]);
+
     const importanceRef = useRef<HTMLDivElement>(null);
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const metadataSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isSavingRef = useRef(false);
+    const hasPendingSaveRef = useRef(false);
+    const pendingSaveBodyRef = useRef('');
     const lastSavedBodyRef = useRef(lastSavedBody);
     const draftIdRef = useRef(draftId);
     const lastEventIdRef = useRef<number | undefined>(undefined);
+    // Tracks whether a metadata-only change (attachment/importance) needs saving
+    const hasMetadataChangeRef = useRef(false);
     const signatureInitializedRef = useRef(false);
+
+    const toEmailRef = useRef(toEmail);
+    const fromEmailRef = useRef(fromEmail);
+    const emailAccountIdRef = useRef(emailAccountId);
+    const subjectRef = useRef(subject);
+    const ccRef = useRef(cc);
+    const bccRef = useRef(bcc);
+    const importanceValueRef = useRef(importance);
+    const activeEventIdRef = useRef(activeEventId);
+    const handleSaveDraftRef = useRef<((body: string) => Promise<void>) | null>(null);
 
     // Initialize or update signature
     useEffect(() => {
@@ -96,7 +134,7 @@ export const ComposeEmailForm = () => {
             const parser = new DOMParser();
             const doc = parser.parseFromString(currentHtml, 'text/html');
             const sigEl = doc.querySelector('.email-signature');
-            
+
             if (sigEl) {
                 if (currentEvent.signatureName || currentEvent.signaturePlace) {
                     const tempDiv = document.createElement('div');
@@ -127,6 +165,15 @@ export const ComposeEmailForm = () => {
     useEffect(() => {
         draftIdRef.current = draftId;
     }, [draftId]);
+
+    useEffect(() => { toEmailRef.current = toEmail; }, [toEmail]);
+    useEffect(() => { fromEmailRef.current = fromEmail; }, [fromEmail]);
+    useEffect(() => { emailAccountIdRef.current = emailAccountId; }, [emailAccountId]);
+    useEffect(() => { subjectRef.current = subject; }, [subject]);
+    useEffect(() => { ccRef.current = cc; }, [cc]);
+    useEffect(() => { bccRef.current = bcc; }, [bcc]);
+    useEffect(() => { importanceValueRef.current = importance; }, [importance]);
+    useEffect(() => { activeEventIdRef.current = activeEventId; }, [activeEventId]);
 
     // Prepare dropdown options for 'From'
     const accountOptions = useMemo(() => {
@@ -192,45 +239,120 @@ export const ComposeEmailForm = () => {
         };
     }, [isImportanceOpen]);
 
-    const handleSaveDraft = useCallback(async (currentBody: string) => {
-        if (!toEmail.trim() || currentBody === lastSavedBody || isSavingRef.current) return;
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
 
-        let targetEventId = activeEventId;
+        const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+
+        for (const file of files) {
+            if (file.size > MAX_FILE_SIZE) {
+                toast.error(`File size exceeds 20MB limit: ${file.name}`);
+                continue;
+            }
+
+            const tempId = Math.random().toString(36).substring(7);
+            setUploadingFiles(prev => [...prev, { id: tempId, name: file.name }]);
+
+            try {
+                const result = await uploadService.uploadFile(file);
+                setNewAttachments(prev => [...prev, {
+                    filename: file.name,
+                    s3Key: result.key,
+                    contentType: file.type || 'application/octet-stream',
+                    size: file.size
+                }]);
+            } catch (err) {
+                toast.error(`Failed to upload ${file.name}`);
+            } finally {
+                setUploadingFiles(prev => prev.filter(f => f.id !== tempId));
+            }
+        }
+
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const removeAttachment = (id: number) => {
+        setAttachmentIds(prev => prev.filter(aid => aid !== id));
+        setAttachments(prev => prev.filter(a => a.id !== id));
+    };
+
+    const removeNewAttachment = (index: number) => {
+        setNewAttachments(prev => prev.filter((_, idx) => idx !== index));
+    };
+
+    const handleSaveDraft = useCallback(async (currentBody: string, forceMetadata = false) => {
+        // Allow save if body changed OR if a metadata-only change (attachment/importance) needs persisting
+        const bodyChanged = currentBody !== lastSavedBodyRef.current;
+        if (!toEmailRef.current.trim() || (!bodyChanged && !forceMetadata)) return;
+
+        if (isSavingRef.current) {
+            hasPendingSaveRef.current = true;
+            pendingSaveBodyRef.current = currentBody;
+            return;
+        }
+
+        let targetEventId = activeEventIdRef.current;
         if (!targetEventId) {
-            const matchingEvent = events.find(e => e.replyEmails?.includes(fromEmail));
+            const matchingEvent = events.find(e => e.replyEmails?.includes(fromEmailRef.current));
             if (matchingEvent) targetEventId = matchingEvent.id;
         }
         if (!targetEventId) return;
 
         isSavingRef.current = true;
-        const result = await dispatch(saveDraftThunk({
-            draftId: draftIdRef.current,
-            eventId: targetEventId,
-            toEmail,
-            fromEmail: fromEmail || undefined,
-            subject: subject || 'No subject',
-            htmlBody: currentBody,
-            textBody: currentBody,
-            cc,
-            bcc,
-            importance,
-        }));
+        hasMetadataChangeRef.current = false;
+        try {
+            const result = await dispatch(saveDraftThunk({
+                draftId: draftIdRef.current,
+                eventId: targetEventId,
+                toEmail: toEmailRef.current,
+                fromEmail: fromEmailRef.current || undefined,
+                emailAccountId: emailAccountIdRef.current,
+                subject: subjectRef.current || 'No subject',
+                htmlBody: currentBody,
+                textBody: currentBody,
+                cc: ccRef.current,
+                bcc: bccRef.current,
+                importance: importanceValueRef.current,
+                attachmentIds: attachmentIdsRef.current,
+                attachments: newAttachmentsRef.current,
+            }));
 
-        if (saveDraftThunk.fulfilled.match(result)) {
-            setDraftId(result.payload.id);
-            setLastSavedBody(currentBody);
+            if (saveDraftThunk.fulfilled.match(result)) {
+                setDraftId(result.payload.id);
+                setLastSavedBody(currentBody);
+                if (result.payload.attachments) {
+                    setAttachments(result.payload.attachments);
+                    setAttachmentIds(result.payload.attachments.map(a => a.id));
+                }
+                setNewAttachments([]);
+            }
+        } finally {
+            isSavingRef.current = false;
+            if (hasPendingSaveRef.current) {
+                hasPendingSaveRef.current = false;
+                const nextBody = pendingSaveBodyRef.current;
+                if (handleSaveDraftRef.current) {
+                    handleSaveDraftRef.current(nextBody);
+                }
+            }
         }
-        isSavingRef.current = false;
-    }, [toEmail, fromEmail, subject, cc, bcc, importance, dispatch, activeEventId, events, lastSavedBody]);
+    }, [dispatch, events]);
 
-    // Auto-save draft effect
+    useEffect(() => {
+        handleSaveDraftRef.current = handleSaveDraft;
+    }, [handleSaveDraft]);
+
+    // Auto-save draft when body changes
     useEffect(() => {
         if (!htmlBody || htmlBody === lastSavedBody || !toEmail.trim()) return;
 
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
 
         saveTimeoutRef.current = setTimeout(() => {
-            if (htmlBody !== lastSavedBodyRef.current && !isSavingRef.current) {
+            if (htmlBody !== lastSavedBodyRef.current) {
                 handleSaveDraft(htmlBody);
             }
         }, 3000);
@@ -239,6 +361,29 @@ export const ComposeEmailForm = () => {
             if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         };
     }, [htmlBody, lastSavedBody, toEmail, handleSaveDraft]);
+
+    // Auto-save draft when attachments or importance change (even if body hasn't changed)
+    useEffect(() => {
+        // Skip on initial mount — only react to actual changes
+        hasMetadataChangeRef.current = true;
+    }, [newAttachments, importance]);
+
+    useEffect(() => {
+        if (!hasMetadataChangeRef.current) return;
+        if (!toEmail.trim()) return;
+
+        if (metadataSaveTimeoutRef.current) clearTimeout(metadataSaveTimeoutRef.current);
+
+        metadataSaveTimeoutRef.current = setTimeout(() => {
+            if (hasMetadataChangeRef.current) {
+                handleSaveDraft(lastSavedBodyRef.current, true);
+            }
+        }, 1500);
+
+        return () => {
+            if (metadataSaveTimeoutRef.current) clearTimeout(metadataSaveTimeoutRef.current);
+        };
+    }, [newAttachments, importance, toEmail, handleSaveDraft]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -278,7 +423,8 @@ export const ComposeEmailForm = () => {
             bcc,
             importance,
             draftId,
-            attachmentIds: [], // We don't support new attachments in this iteration unless implemented
+            attachmentIds: attachmentIds,
+            attachments: newAttachments,
         }));
 
         if (composeEmailThunk.fulfilled.match(result)) {
@@ -604,15 +750,66 @@ export const ComposeEmailForm = () => {
                     />
                 </div>
 
+                {/* Attachments list */}
+                {(attachments.length > 0 || newAttachments.length > 0 || uploadingFiles.length > 0) && (
+                    <div className="flex flex-wrap gap-2 px-4 pb-3 shrink-0">
+                        {attachments.map(att => (
+                            <div key={att.id} className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700 text-xs">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 text-gray-500">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32a.75.75 0 1 1-1.06-1.06l10.94-10.94" />
+                                </svg>
+                                <span className="text-gray-700 dark:text-gray-300 max-w-[150px] truncate">{att.filename}</span>
+                                <span className="text-gray-400 dark:text-gray-500 text-[10px]">({(att.size / 1024).toFixed(1)} KB)</span>
+                                <button
+                                    type="button"
+                                    onClick={() => removeAttachment(att.id)}
+                                    className="p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-gray-400 hover:text-red-500 transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        ))}
+                        {newAttachments.map((att, idx) => (
+                            <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-full border border-blue-200 dark:border-blue-800/40 text-xs">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 text-blue-500">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32a.75.75 0 1 1-1.06-1.06l10.94-10.94" />
+                                </svg>
+                                <span className="text-blue-700 dark:text-blue-300 max-w-[150px] truncate">{att.filename}</span>
+                                <span className="text-blue-400 dark:text-blue-500 text-[10px]">({(att.size / 1024).toFixed(1)} KB)</span>
+                                <button
+                                    type="button"
+                                    onClick={() => removeNewAttachment(idx)}
+                                    className="p-0.5 hover:bg-blue-100 dark:hover:bg-blue-900/45 rounded-full text-blue-400 hover:text-red-500 transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        ))}
+                        {uploadingFiles.map(file => (
+                            <div key={file.id} className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700 text-xs animate-pulse">
+                                <div className="h-3 w-3 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+                                <span className="text-gray-500 dark:text-gray-400 max-w-[150px] truncate">{file.name}</span>
+                                <span className="text-gray-400 text-[10px]">Uploading...</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 {/* Bottom Actions */}
                 <div className="flex items-center justify-between p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shrink-0">
                     <div className="flex items-center gap-2">
-                        {loading.savingDraft && (
-                            <span className="text-[11px] text-gray-400 mr-1 animate-pulse">Saving draft...</span>
-                        )}
-                        {!loading.savingDraft && draftId && (
-                            <span className="text-[11px] text-green-600 dark:text-green-500 mr-1 font-medium">Draft saved</span>
-                        )}
+                        <div className="w-24 shrink-0">
+                            {loading.savingDraft && (
+                                <span className="text-[11px] text-gray-400 animate-pulse whitespace-nowrap">Saving draft...</span>
+                            )}
+                            {!loading.savingDraft && draftId && (
+                                <span className="text-[11px] text-green-600 dark:text-green-500 font-medium whitespace-nowrap">Draft saved</span>
+                            )}
+                        </div>
 
                         <div className="flex items-center rounded-lg shadow-sm border border-transparent hover:border-blue-200 hover:shadow-blue-100 dark:hover:border-blue-800 dark:hover:shadow-none transition-all">
                             <button
@@ -631,6 +828,24 @@ export const ComposeEmailForm = () => {
                                 ) : 'Send'}
                             </button>
                         </div>
+
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
+                            title="Attach files"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32a.75.75 0 1 1-1.06-1.06l10.94-10.94" />
+                            </svg>
+                        </button>
+                        <input
+                            type="file"
+                            multiple
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            className="hidden"
+                        />
 
                         <button
                             type="button"

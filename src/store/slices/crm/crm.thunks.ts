@@ -1,7 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import * as crmService from '../../../features/crm/services/crmService';
-import type { MessageImportance } from '../../../features/crm/types';
+import type { MessageImportance, NewAttachment } from '../../../features/crm/types';
 
 export const fetchEventsThunk = createAsyncThunk(
     'crm/fetchEvents',
@@ -96,6 +96,7 @@ export const sendReplyThunk = createAsyncThunk(
         forwardedFromId?: string;
         attachmentIds?: number[];
         toEmail?: string;
+        attachments?: NewAttachment[];
     }, { rejectWithValue }) => {
         try {
             return await crmService.sendReply(payload);
@@ -121,6 +122,7 @@ export const composeEmailThunk = createAsyncThunk(
         bcc?: string;
         importance?: MessageImportance;
         attachmentIds?: number[];
+        attachments?: NewAttachment[];
     }, { rejectWithValue }) => {
         try {
             return await crmService.composeEmail(payload);
@@ -162,6 +164,7 @@ export const saveDraftThunk = createAsyncThunk(
         isForwarded?: boolean;
         forwardedFromId?: string;
         attachmentIds?: number[];
+        attachments?: NewAttachment[];
     }, { rejectWithValue }) => {
         try {
             return await crmService.saveDraft(payload);
