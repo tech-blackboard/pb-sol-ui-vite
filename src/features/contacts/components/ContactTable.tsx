@@ -132,7 +132,7 @@ export default function ContactTable({ rows, loading, onView, onRestore, selecte
                                 <td colSpan={9} className="px-4 py-4 text-left text-gray-400">No contacts found</td>
                             </tr>
                         )}
-                        {!loading && rows.map((row) => (
+                        {rows.map((row) => (
                             <ContactRow
                                 key={row.id}
                                 item={row}

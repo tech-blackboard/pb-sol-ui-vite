@@ -134,7 +134,7 @@ export default function SponsorshipTable({ rows, loading, onView, onRestore, sel
                                 <td colSpan={10} className="px-4 py-4 text-left text-gray-400">No requests found</td>
                             </tr>
                         )}
-                        {!loading && rows.map((row) => (
+                        {rows.map((row) => (
                             <SponsorshipRow
                                 key={row.id}
                                 item={row}

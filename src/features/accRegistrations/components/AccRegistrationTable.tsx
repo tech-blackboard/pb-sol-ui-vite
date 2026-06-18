@@ -167,7 +167,7 @@ export default function AccRegistrationTable({ rows, loading, onView, onRestore,
                                 <td colSpan={25} className="px-4 py-4 text-left text-gray-400">No records found</td>
                             </tr>
                         )}
-                        {!loading && rows.map((row) => (
+                        {rows.map((row) => (
                             <AccRegistrationRow
                                 key={row.id}
                                 item={row}
