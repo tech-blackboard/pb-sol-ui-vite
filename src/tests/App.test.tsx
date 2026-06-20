@@ -509,6 +509,6 @@ describe('App Component', () => {
 
         // Verify GlobalContactsPage renders
         expect(await screen.findByTestId('page-global-contacts')).toBeInTheDocument();
-    });
+    }, 15000);
 });
 

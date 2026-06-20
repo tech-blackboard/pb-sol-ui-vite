@@ -76,8 +76,9 @@ export default function ContactsPage() {
             toast.success(`Successfully deleted ${selectedIds.length} records`, { id: toastId });
             setSelectedIds([]);
             dispatch(fetchContacts({ filters: appliedFilters, page, limit: pageSize }));
-        } catch (err) {
-            toast.error('Failed to delete some records', { id: toastId });
+        } catch (err: unknown) {
+            const errorMsg = typeof err === 'string' ? err : 'Failed to delete some records';
+            toast.error(errorMsg, { id: toastId });
             dispatch(fetchContacts({ filters: appliedFilters, page, limit: pageSize }));
         }
     };

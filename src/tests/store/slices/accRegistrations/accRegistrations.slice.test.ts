@@ -14,7 +14,8 @@ import {
     fetchAccRegistrations,
     createAccRegistrationThunk,
     updateAccRegistrationThunk,
-    deleteAccRegistrationThunk
+    deleteAccRegistrationThunk,
+    restoreAccRegistrationThunk
 } from '../../../../store/slices/accRegistrations/accRegistrations.slice';
 import * as accRegistrationsService from '../../../../services/accRegistrations';
 import type { AccRegistrationItem } from '../../../../services/accRegistrations';
@@ -363,6 +364,81 @@ describe('accRegistrations slice', () => {
             };
             const state = reducer(initialState, rejectedAction as UnknownAction);
             expect(state.error).toBe('Failed to delete accommodation registration');
+        });
+
+        // restoreAccRegistrationThunk extraReducers
+        it('handles restoreAccRegistrationThunk.pending', () => {
+            const state = reducer(initialState, restoreAccRegistrationThunk.pending('', 1));
+            expect(state.loading).toBe(true);
+        });
+
+        it('handles restoreAccRegistrationThunk.fulfilled', () => {
+            const startState = {
+                ...initialState,
+                loading: true,
+                items: [{ id: 1, name: 'Item 1' } as AccRegistrationItem],
+                selected: { id: 1, name: 'Item 1' } as AccRegistrationItem
+            };
+            const state = reducer(startState, restoreAccRegistrationThunk.fulfilled(1, '', 1));
+            expect(state.loading).toBe(false);
+            expect(state.items).toEqual([]);
+            expect(state.selected).toBeNull();
+        });
+
+        it('handles restoreAccRegistrationThunk.rejected', () => {
+            const startState = { ...initialState, loading: true };
+            const state = reducer(startState, restoreAccRegistrationThunk.rejected(null, '', 1, 'Restore Failed'));
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Restore Failed');
+        });
+
+        it('handles restoreAccRegistrationThunk.rejected fallback to Failed to restore accommodation registration', () => {
+            const rejectedAction = {
+                type: restoreAccRegistrationThunk.rejected.type,
+                payload: null,
+                error: {}
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.error).toBe('Failed to restore accommodation registration');
+        });
+
+        // restoreAccRegistrationThunk thunk tests
+        it('restoreAccRegistrationThunk thunk should resolve successfully', async () => {
+            const spy = jest.spyOn(accRegistrationsService, 'restoreAccRegistration').mockResolvedValue(undefined);
+            const dispatch = jest.fn();
+            const result = await restoreAccRegistrationThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe(1);
+            spy.mockRestore();
+        });
+
+        it('restoreAccRegistrationThunk thunk should reject with axios error', async () => {
+            const spy = jest.spyOn(accRegistrationsService, 'restoreAccRegistration').mockRejectedValue({
+                isAxiosError: true,
+                response: { data: { message: 'Axios Restore Error' } }
+            });
+            const dispatch = jest.fn();
+            const result = await restoreAccRegistrationThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios Restore Error');
+            spy.mockRestore();
+        });
+
+        it('restoreAccRegistrationThunk thunk should reject with fallback message', async () => {
+            const spy = jest.spyOn(accRegistrationsService, 'restoreAccRegistration').mockRejectedValue(new Error('Generic Error'));
+            const dispatch = jest.fn();
+            const result = await restoreAccRegistrationThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Failed to restore accommodation registration');
+            spy.mockRestore();
+        });
+
+        it('restoreAccRegistrationThunk thunk should reject with axios error using fallback err.message', async () => {
+            const spy = jest.spyOn(accRegistrationsService, 'restoreAccRegistration').mockRejectedValue({
+                isAxiosError: true,
+                message: 'Axios fallback message'
+            });
+            const dispatch = jest.fn();
+            const result = await restoreAccRegistrationThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios fallback message');
+            spy.mockRestore();
         });
     });
 });

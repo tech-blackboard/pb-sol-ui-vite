@@ -7,6 +7,7 @@ import registrationsReducer from '../../../../store/slices/registrations/registr
 import type { RegistrationsState } from '../../../../store/slices/registrations/registrations.types'
 import type { RegistrationItem } from '../../../../services/registrations'
 import authReducer from '../../../../store/slices/authSlice'
+import type { AuthState } from '../../../../store/slices/authSlice'
 
 jest.mock('xlsx', () => ({
   utils: {
@@ -24,11 +25,12 @@ jest.mock('../../../../services/registrations', () => ({
 // Header
 jest.mock('../../../../features/registrations/components/RegistrationHeader', () => ({
   __esModule: true,
-  default: ({ error, onClearError, onExportClick, onToggleDeleted }: {
+  default: ({ error, onClearError, onExportClick, onToggleDeleted, onDeleteSelected }: {
     error?: string | null
     onClearError?: () => void
     onExportClick?: () => void
     onToggleDeleted?: () => void
+    onDeleteSelected?: () => void
   }) => (
     <div data-testid="header">
       {error && (
@@ -41,6 +43,7 @@ jest.mock('../../../../features/registrations/components/RegistrationHeader', ()
       )}
       {onExportClick && <button onClick={onExportClick}>Export Excel</button>}
       {onToggleDeleted && <button onClick={onToggleDeleted}>Toggle Deleted</button>}
+      {onDeleteSelected && <button onClick={onDeleteSelected}>Delete Selected</button>}
     </div>
   ),
 }))
@@ -48,12 +51,16 @@ jest.mock('../../../../features/registrations/components/RegistrationHeader', ()
 // Table (match REAL props)
 jest.mock('../../../../features/registrations/components/RegistrationTable', () => ({
   __esModule: true,
-  default: ({ rows, loading, onView }: { rows: RegistrationItem[], loading: boolean, error: string | null, onView: (item: RegistrationItem) => void }) => (
+  default: ({ rows, loading, onView, onRestore, onSelect, onSelectAll }: { rows: RegistrationItem[], loading: boolean, error: string | null, onView: (item: RegistrationItem) => void, onRestore?: (item: RegistrationItem) => void, onSelect?: (id: number) => void, onSelectAll?: (checked: boolean) => void }) => (
     <div data-testid="table">
       {loading && <div>Loading...</div>}
+      <button onClick={() => onSelect?.(1)}>Select Row</button>
+      <button onClick={() => onSelectAll?.(true)}>Select Rows</button>
+      <button onClick={() => onSelectAll?.(false)}>Unselect Rows</button>
       {rows.map((r) => (
         <div key={r.id} onClick={() => onView(r)}>
           {r.name}
+          {onRestore && <button onClick={(e) => { e.stopPropagation(); onRestore(r); }}>Restore Row</button>}
         </div>
       ))}
     </div>
@@ -122,6 +129,7 @@ jest.mock('../../../../store/slices/registrations/registrations.thunks', () => {
     ),
     createRegistrationThunk: makeThunk('registrations/createRegistration'),
     updateRegistrationThunk: makeThunk('registrations/updateRegistration'),
+    restoreRegistrationThunk: makeThunk('registrations/restoreRegistration'),
   }
 })
 
@@ -129,7 +137,7 @@ import { fetchRegistrations } from '../../../../store/slices/registrations/regis
 import { searchRegistrations } from '../../../../services/registrations'
 import * as XLSX from 'xlsx'
 
-const makeStore = (initial: Partial<RegistrationsState> = {}) =>
+const makeStore = (initial: Partial<RegistrationsState> = {}, initialAuth?: Partial<AuthState>) =>
   configureStore({
     reducer: {
       registrations: registrationsReducer,
@@ -137,7 +145,7 @@ const makeStore = (initial: Partial<RegistrationsState> = {}) =>
     },
     preloadedState: {
       registrations: {
-        items: [],
+        items: [{ id: 1, name: 'Test Registration' } as unknown as RegistrationItem],
         rawItems: [],
         loading: false,
         error: null,
@@ -149,7 +157,7 @@ const makeStore = (initial: Partial<RegistrationsState> = {}) =>
         selected: null,
         ...initial,
       } as RegistrationsState,
-      auth: {
+      auth: (initialAuth as AuthState) || {
         user: { name: 'Test User', role: 'User', permissions: ['export:excel'] },
         token: 'fake-token',
         loading: false,
@@ -509,5 +517,238 @@ describe('RegistrationsPage', () => {
     render(<Provider store={store}><RegistrationsPage /></Provider>)
     fireEvent.click(screen.getByText('Export Excel'))
     await waitFor(() => expect(searchRegistrations).toHaveBeenCalled())
+  })
+
+  it('handles bulk delete successfully', async () => {
+    const store = makeStore()
+    const thunks = await import('../../../../store/slices/registrations/registrations.thunks');
+    (thunks.deleteRegistrationThunk as unknown as jest.Mock).mockReturnValueOnce(() => {
+        const p = Promise.resolve();
+        (p as unknown as { unwrap: () => Promise<unknown> }).unwrap = () => Promise.resolve({});
+        return p;
+    });
+
+    jest.spyOn(window, 'confirm').mockReturnValue(true)
+
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+
+    fireEvent.click(screen.getByText('Select Rows'))
+    fireEvent.click(screen.getByText('Delete Selected'))
+
+    await waitFor(() => {
+        expect(fetchRegistrations).toHaveBeenCalled()
+    })
+
+    ;(window.confirm as jest.Mock).mockRestore()
+  })
+
+  it('cancels bulk delete when confirm is false', async () => {
+    const store = makeStore()
+    const thunks = await import('../../../../store/slices/registrations/registrations.thunks');
+    (thunks.deleteRegistrationThunk as unknown as jest.Mock).mockClear()
+
+    jest.spyOn(window, 'confirm').mockReturnValue(false)
+
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+
+    fireEvent.click(screen.getByText('Select Rows'))
+    fireEvent.click(screen.getByText('Delete Selected'))
+
+    expect(thunks.deleteRegistrationThunk).not.toHaveBeenCalled()
+
+    ;(window.confirm as jest.Mock).mockRestore()
+  })
+
+  it('handles bulk delete failure with string error', async () => {
+    const store = makeStore()
+    const thunks = await import('../../../../store/slices/registrations/registrations.thunks');
+    (thunks.deleteRegistrationThunk as unknown as jest.Mock).mockReturnValueOnce(() => {
+        const p = Promise.resolve();
+        (p as unknown as { unwrap: () => Promise<unknown> }).unwrap = () => Promise.reject('Bulk String Error');
+        return p;
+    });
+
+    jest.spyOn(window, 'confirm').mockReturnValue(true)
+
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+
+    fireEvent.click(screen.getByText('Select Rows'))
+    fireEvent.click(screen.getByText('Delete Selected'))
+
+    await waitFor(() => {
+        expect(fetchRegistrations).toHaveBeenCalled()
+    })
+
+    ;(window.confirm as jest.Mock).mockRestore()
+  })
+
+  it('handles bulk delete failure with generic error', async () => {
+    const store = makeStore()
+    const thunks = await import('../../../../store/slices/registrations/registrations.thunks');
+    (thunks.deleteRegistrationThunk as unknown as jest.Mock).mockReturnValueOnce(() => {
+        const p = Promise.resolve();
+        (p as unknown as { unwrap: () => Promise<unknown> }).unwrap = () => Promise.reject(new Error('Generic Error'));
+        return p;
+    });
+
+    jest.spyOn(window, 'confirm').mockReturnValue(true)
+
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+
+    fireEvent.click(screen.getByText('Select Rows'))
+    fireEvent.click(screen.getByText('Delete Selected'))
+
+    await waitFor(() => {
+        expect(fetchRegistrations).toHaveBeenCalled()
+    })
+
+    ;(window.confirm as jest.Mock).mockRestore()
+  })
+
+  it('handles restore registration successfully', async () => {
+    const store = makeStore({
+        appliedFilters: { onlyDeleted: 'true' },
+        items: [{ id: 1, name: 'Deleted Item' } as RegistrationItem]
+    })
+    const thunks = await import('../../../../store/slices/registrations/registrations.thunks');
+    (thunks.restoreRegistrationThunk as unknown as jest.Mock).mockReturnValueOnce(() => {
+        const p = Promise.resolve();
+        (p as unknown as { unwrap: () => Promise<unknown> }).unwrap = () => Promise.resolve({});
+        return p;
+    });
+
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+
+    fireEvent.click(screen.getByText('Restore Row'))
+
+    await waitFor(() => {
+        expect(thunks.restoreRegistrationThunk).toHaveBeenCalled()
+    })
+  })
+
+  it('handles restore registration error with string', async () => {
+    const store = makeStore({
+        appliedFilters: { onlyDeleted: 'true' },
+        items: [{ id: 1, name: 'Deleted Item' } as RegistrationItem]
+    })
+    const thunks = await import('../../../../store/slices/registrations/registrations.thunks');
+    (thunks.restoreRegistrationThunk as unknown as jest.Mock).mockReturnValueOnce(() => {
+        const p = Promise.resolve();
+        (p as unknown as { unwrap: () => Promise<unknown> }).unwrap = () => Promise.reject('Restore failed');
+        return p;
+    });
+
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+
+    fireEvent.click(screen.getByText('Restore Row'))
+
+    await waitFor(() => {
+        expect(thunks.restoreRegistrationThunk).toHaveBeenCalled()
+    })
+  })
+
+  it('handles restore registration error with generic error', async () => {
+    const store = makeStore({
+        appliedFilters: { onlyDeleted: 'true' },
+        items: [{ id: 1, name: 'Deleted Item' } as RegistrationItem]
+    })
+    const thunks = await import('../../../../store/slices/registrations/registrations.thunks');
+    (thunks.restoreRegistrationThunk as unknown as jest.Mock).mockReturnValueOnce(() => {
+        const p = Promise.resolve();
+        (p as unknown as { unwrap: () => Promise<unknown> }).unwrap = () => Promise.reject(new Error('Fail'));
+        return p;
+    });
+
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+
+    fireEvent.click(screen.getByText('Restore Row'))
+
+    await waitFor(() => {
+        expect(thunks.restoreRegistrationThunk).toHaveBeenCalled()
+    })
+  })
+
+  it('handles single delete success', async () => {
+    const store = makeStore({
+        items: [{ id: 1, name: 'Item 1' } as RegistrationItem],
+        selected: { id: 1, name: 'Item 1' } as RegistrationItem,
+    })
+    const thunks = await import('../../../../store/slices/registrations/registrations.thunks');
+    (thunks.deleteRegistrationThunk as unknown as jest.Mock).mockReturnValueOnce(() => {
+        const p = Promise.resolve();
+        (p as unknown as { unwrap: () => Promise<unknown> }).unwrap = () => Promise.resolve({});
+        return p;
+    });
+
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+
+    // Click delete details inside modal
+    fireEvent.click(screen.getByText('Delete Details'))
+
+    await waitFor(() => {
+        expect(thunks.deleteRegistrationThunk).toHaveBeenCalled()
+    })
+  })
+
+  it('handles single delete error with string', async () => {
+    const store = makeStore({
+        items: [{ id: 1, name: 'Item 1' } as RegistrationItem],
+        selected: { id: 1, name: 'Item 1' } as RegistrationItem,
+    })
+    const thunks = await import('../../../../store/slices/registrations/registrations.thunks');
+    (thunks.deleteRegistrationThunk as unknown as jest.Mock).mockReturnValueOnce(() => {
+        const p = Promise.resolve();
+        (p as unknown as { unwrap: () => Promise<unknown> }).unwrap = () => Promise.reject('Single Delete Error');
+        return p;
+    });
+
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+
+    fireEvent.click(screen.getByText('Delete Details'))
+
+    await waitFor(() => {
+        expect(thunks.deleteRegistrationThunk).toHaveBeenCalled()
+    })
+  })
+
+  it('handles single delete error with generic error', async () => {
+    const store = makeStore({
+        items: [{ id: 1, name: 'Item 1' } as RegistrationItem],
+        selected: { id: 1, name: 'Item 1' } as RegistrationItem,
+    })
+    const thunks = await import('../../../../store/slices/registrations/registrations.thunks');
+    (thunks.deleteRegistrationThunk as unknown as jest.Mock).mockReturnValueOnce(() => {
+        const p = Promise.resolve();
+        (p as unknown as { unwrap: () => Promise<unknown> }).unwrap = () => Promise.reject(new Error('error'));
+        return p;
+    });
+
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+
+    fireEvent.click(screen.getByText('Delete Details'))
+
+    await waitFor(() => {
+        expect(thunks.deleteRegistrationThunk).toHaveBeenCalled()
+    })
+  })
+
+  it('handles onSelectionChange toggles', async () => {
+    const store = makeStore({
+        items: [{ id: 1, name: 'Item 1' } as RegistrationItem]
+    })
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+    // Wait for RegistrationTable to be mocked
+    fireEvent.click(screen.getByText('Select Row')) 
+    fireEvent.click(screen.getByText('Select Row')) 
+    fireEvent.click(screen.getByText('Select Rows'))
+    fireEvent.click(screen.getByText('Unselect Rows'))
+  })
+  it('does not pass onExportClick if no permission', () => {
+    const store = makeStore({}, {
+        user: { name: 'Test', role: 'User', permissions: [] },
+        token: 'token', loading: false, error: null
+    })
+    render(<Provider store={store}><RegistrationsPage /></Provider>)
+    expect(screen.queryByText('Export Excel')).not.toBeInTheDocument()
   })
 })

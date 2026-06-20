@@ -7,7 +7,7 @@ import ThreadView from '../../../../features/crm/components/ThreadView';
 import crmReducer, { initialState } from '../../../../store/slices/crm/crm.slice';
 import * as crmService from '../../../../features/crm/services/crmService';
 import toast from 'react-hot-toast';
-import type { Thread, Message, Contact, Attachment } from '../../../../features/crm/types';
+import type { Thread, Message, Contact, Attachment, CrmEvent } from '../../../../features/crm/types';
 import type { RootState } from '../../../../store';
 
 jest.mock('react-hot-toast', () => ({
@@ -38,6 +38,17 @@ jest.mock('../../../../store/slices/crm/crm.thunks', () => {
 });
 
 import * as crmThunks from '../../../../store/slices/crm/crm.thunks';
+import { useAppSelector } from '../../../../store/hooks';
+
+jest.mock('../../../../store/hooks', () => {
+  const actual = jest.requireActual('../../../../store/hooks');
+  return {
+    ...actual,
+    useAppSelector: jest.fn().mockImplementation((selector) => {
+      return jest.requireActual('react-redux').useSelector(selector);
+    }),
+  };
+});
 
 jest.mock('../../../../features/crm/components/ReplyForm', () => {
   const React = jest.requireActual('react');
@@ -132,6 +143,12 @@ const renderView = (storeOverrides: object = {}) => {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('ThreadView', () => {
+  beforeEach(() => {
+    (useAppSelector as unknown as jest.Mock).mockImplementation((selector) => {
+      return jest.requireActual('react-redux').useSelector(selector);
+    });
+  });
+
   afterEach(() => jest.clearAllMocks());
 
   it('returns null when no thread is selected', () => {
@@ -850,6 +867,162 @@ describe('ThreadView', () => {
       fireEvent.click(screen.getByTitle('Add or manage labels'));
       // shouldn't throw error and shouldn't dispatch
       expect(crmThunks.updateLabelsThunk).not.toHaveBeenCalled();
+    });
+
+    it('handles forward click on message with textBody fallback (line 70)', async () => {
+      renderView({
+        selectedThreadId: 'thread-1',
+        threads: [makeThread()],
+        messages: [makeMessage({ id: 'msg-1', htmlBody: undefined, textBody: "Line 1\nLine 2" })]
+      });
+      fireEvent.click(screen.getByTitle('Forward'));
+      await waitFor(() => {
+        const replyForm = screen.getByTestId('reply-form');
+        expect(replyForm).toHaveAttribute('data-mode', 'forward');
+      });
+    });
+
+    it('dispatches fetchDraftsThunk with undefined eventId when activeEventId is undefined (line 168)', async () => {
+      renderView({
+        threads: [makeThread()],
+        messages: [makeMessage()],
+        selectedThreadId: 'thread-1',
+        activeFolder: 'Drafts',
+        currentPage: 2,
+        activeEventId: undefined,
+      });
+      fireEvent.click(screen.getByText('Trigger Reply Success'));
+      await waitFor(() => expect(crmThunks.fetchDraftsThunk).toHaveBeenCalledWith({ page: 2, limit: 50, eventId: undefined }));
+    });
+
+    it('renders Access Denied error fallback default message when error is provided (line 278)', () => {
+      renderView({
+        error: 'You do not have permission to view this conversation.',
+        loading: { messages: false },
+      });
+      expect(screen.getByText('You do not have permission to view this conversation.')).toBeInTheDocument();
+    });
+
+    it('excludes replyDraft when mode is reply and draft is forwarded (line 671)', async () => {
+      const contact = makeContact({ id: 88, email: 'alice@example.com' });
+      const thread = makeThread({ id: 't1', eventId: 5, contact: contact, contactId: 88 });
+      const draft = {
+        id: 'draft-x',
+        contactId: 88,
+        eventId: 5,
+        isForwarded: true,
+        toEmail: 'alice@x.com'
+      } as unknown as Message;
+
+      renderView({
+        selectedThreadId: 't1',
+        threads: [thread],
+        messages: [makeMessage({ threadId: 't1', contactId: 88, eventId: 5 })],
+        drafts: [draft]
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('reply-form')).not.toHaveTextContent('alice@x.com');
+      });
+    });
+
+    it('handles event and attachment fallbacks when rendering ReplyForm (lines 680, 693)', async () => {
+      renderView({
+        selectedThreadId: 'thread-1',
+        threads: [makeThread({ eventId: 999 })],
+        messages: [makeMessage({ attachments: undefined })],
+        events: [],
+        drafts: []
+      });
+      expect(screen.getByTestId('reply-form')).toBeInTheDocument();
+    });
+
+    it('handles forward click with htmlBody truthy (line 70)', async () => {
+      renderView({
+        selectedThreadId: 'thread-1',
+        threads: [makeThread()],
+        messages: [makeMessage({ id: 'msg-12', htmlBody: '<p>Forwarded HTML content</p>', textBody: 'Some text' })]
+      });
+      fireEvent.click(screen.getByTitle('Forward'));
+      await waitFor(() => {
+        expect(screen.getByTestId('reply-form')).toBeInTheDocument();
+      });
+    });
+
+    it('handles forward click with empty html/text body logic (line 70)', async () => {
+      renderView({
+        selectedThreadId: 'thread-1',
+        threads: [makeThread()],
+        messages: [makeMessage({ id: 'msg-22', htmlBody: undefined, textBody: undefined })]
+      });
+      fireEvent.click(screen.getByTitle('Forward'));
+      await waitFor(() => {
+        expect(screen.getByTestId('reply-form')).toBeInTheDocument();
+      });
+    });
+
+    it('covers downloadAttachment successful try path (line 256)', async () => {
+      const dlSpy = jest.spyOn(crmService, 'downloadAttachment').mockResolvedValue(undefined);
+      renderView({
+        threads: [makeThread()],
+        messages: [makeMessage({ attachments: [makeAttachment({ id: 99 })] })],
+        selectedThreadId: 'thread-1',
+      });
+      fireEvent.click(screen.getByTitle('Download'));
+      await waitFor(() => {
+        expect(dlSpy).toHaveBeenCalledWith(99, 'report.pdf');
+      });
+    });
+
+    it('covers error state with dynamic getter returning falsy error inside render (line 278)', () => {
+      (useAppSelector as jest.Mock).mockImplementation((selectorFn) => {
+        return selectorFn({
+          crm: {
+            ...initialState,
+            messages: [],
+            threads: [],
+            drafts: [],
+            events: [],
+            selectedThreadId: 'thread-err',
+            loading: { ...initialState.loading, messages: false },
+            activeFolder: 'Inbox',
+            error: 'You do not have permission to view this conversation.'
+          }
+        });
+      });
+
+      render(<Provider store={makeStore({})}><ThreadView /></Provider>);
+      expect(screen.getByText('You do not have permission to view this conversation.')).toBeInTheDocument();
+    });
+
+    it('covers replyEmails fallback where event.replyEmails is falsy (line 680)', () => {
+      renderView({
+        selectedThreadId: 'thread-1',
+        threads: [makeThread({ eventId: 5 })],
+        messages: [makeMessage({ threadId: 'thread-1' })],
+        events: [{ id: 5, name: 'E1', replyDomain: 'd.com', domains: [], replyEmails: undefined } as unknown as CrmEvent],
+        drafts: []
+      });
+      expect(screen.getByTestId('reply-form')).toBeInTheDocument();
+    });
+
+    it('covers forwardData.attachmentIds fallback and replyDraft attachments map fallback (line 693)', () => {
+      const draft = {
+        id: 'draft-x',
+        contactId: 10,
+        eventId: 1,
+        threadId: 'thread-1',
+        status: 'draft',
+        attachments: [{ id: 100, filename: 'f.txt' }]
+      } as unknown as Message;
+
+      renderView({
+        selectedThreadId: 'thread-1',
+        threads: [makeThread({ id: 'thread-1' })],
+        messages: [makeMessage({ threadId: 'thread-1' })],
+        drafts: [draft]
+      });
+      expect(screen.getByTestId('reply-form')).toBeInTheDocument();
     });
   });
 });

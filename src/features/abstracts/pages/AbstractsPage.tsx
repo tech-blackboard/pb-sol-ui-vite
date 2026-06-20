@@ -278,8 +278,9 @@ export default function AbstractsPage() {
       toast.success(`Successfully deleted ${selectedIds.length} records`, { id: toastId });
       setSelectedIds([]);
       dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }));
-    } catch (err) {
-      toast.error('Failed to delete some records', { id: toastId });
+    } catch (err: unknown) {
+      const errorMsg = typeof err === 'string' ? err : 'Failed to delete some records';
+      toast.error(errorMsg, { id: toastId });
       dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }));
     }
   };
@@ -290,7 +291,7 @@ export default function AbstractsPage() {
       await dispatch(restoreAbstractThunk(item.id)).unwrap();
       toast.success('Abstract restored successfully', { id: toastId });
       dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }));
-    } catch (err) {
+    } catch (err: unknown) {
       const errorMsg = typeof err === 'string' ? err : 'Failed to restore abstract';
       toast.error(errorMsg, { id: toastId });
     }
@@ -303,7 +304,7 @@ export default function AbstractsPage() {
       toast.success('Abstract deleted successfully', { id: toastId });
       dispatch(clearSelected());
       dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }));
-    } catch (err) {
+    } catch (err: unknown) {
       const errorMsg = typeof err === 'string' ? err : 'Failed to delete abstract';
       toast.error(errorMsg, { id: toastId });
     }

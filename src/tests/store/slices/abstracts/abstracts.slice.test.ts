@@ -472,4 +472,23 @@ describe('abstracts slice', () => {
     expect(state.rawItems.length).toBe(1)
     expect(state.total).toBe(1)
   })
+
+  it('should handle restoreAbstractThunk.pending', () => {
+    const state = reducer(initialState, restoreAbstractThunk.pending('', '1'))
+    expect(state.loading).toBe(true)
+  })
+
+  it('should handle restoreAbstractThunk.rejected', () => {
+    const startState = { ...initialState, loading: true }
+    const state = reducer(startState, restoreAbstractThunk.rejected(null, '', '1', 'Restore Failed'))
+    expect(state.loading).toBe(false)
+    expect(state.error).toBe('Restore Failed')
+  })
+
+  it('should handle restoreAbstractThunk.rejected with fallback message', () => {
+    const action = { type: restoreAbstractThunk.rejected.type, payload: null, error: {} }
+    const state = reducer(initialState, action as UnknownAction)
+    expect(state.loading).toBe(false)
+    expect(state.error).toBe('Failed to restore abstract')
+  })
 })

@@ -26,15 +26,26 @@ jest.mock('../../../../services/brochures', () => ({
 
 jest.mock('../../../../store/slices/brochures/brochures.slice', () => {
   const actual = jest.requireActual('../../../../store/slices/brochures/brochures.slice')
+
+  const makeThunk = (type: string) => Object.assign(
+    jest.fn(() => () => {
+      const p = Promise.resolve({ type: `${type}/fulfilled`, payload: {} })
+      ;(p as unknown as { unwrap: () => Promise<unknown> }).unwrap = () => Promise.resolve({})
+      return p
+    }),
+    {
+      pending: { type: `${type}/pending`, match: (a: unknown) => (a as { type?: string })?.type === `${type}/pending` },
+      fulfilled: { type: `${type}/fulfilled`, match: (a: unknown) => (a as { type?: string })?.type === `${type}/fulfilled` },
+      rejected: { type: `${type}/rejected`, match: (a: unknown) => (a as { type?: string })?.type === `${type}/rejected` },
+      typePrefix: type
+    }
+  )
+
   return {
     __esModule: true,
     ...actual,
-    deleteBrochureThunk: Object.assign(
-      jest.fn(),
-      {
-        fulfilled: { match: () => true }
-      }
-    ),
+    deleteBrochureThunk: makeThunk('brochures/delete'),
+    restoreBrochureThunk: makeThunk('brochures/restore'),
   }
 })
 
@@ -42,11 +53,13 @@ jest.mock('../../../../store/slices/brochures/brochures.slice', () => {
 
 jest.mock('../../../../features/brochures/components/BrochureTable', () => ({
   __esModule: true,
-  default: ({ rows, onView }: { rows: BrochureItem[], onView: (item: BrochureItem) => void }) => (
+  default: ({ rows, onView, onSelect, onRestore }: { rows: BrochureItem[], onView: (item: BrochureItem) => void, onSelect?: (id: number) => void, onRestore?: (item: { id: number }) => void }) => (
     <div data-testid="brochure-table">
-      {rows.map((r) => (
+      {rows.map((r: BrochureItem) => (
         <div key={r.id} onClick={() => onView(r)} data-testid={`row-${r.id}`}>{r.name}</div>
       ))}
+      <button onClick={() => onSelect?.(1)}>Select Rows</button>
+      {onRestore && <button onClick={() => onRestore({ id: 1 })}>Restore Row</button>}
     </div>
   ),
 }))
@@ -92,13 +105,14 @@ jest.mock('../../../../features/brochures/components/BrochureForm', () => ({
 
 jest.mock('../../../../components/SectionHeader', () => ({
     __esModule: true,
-    default: ({ onFilterClick, onAddClick, error, onClearError, onExportClick, onToggleDeleted }: { onFilterClick: () => void, onAddClick: () => void, error: string | null, onClearError: () => void, onExportClick?: () => void, onToggleDeleted?: () => void }) => (
+    default: ({ onFilterClick, onAddClick, error, onClearError, onExportClick, onToggleDeleted, onDeleteSelected }: { onFilterClick: () => void, onAddClick: () => void, error: string | null, onClearError: () => void, onExportClick?: () => void, onToggleDeleted?: () => void, onDeleteSelected?: () => void }) => (
         <div data-testid="section-header">
             <button onClick={onFilterClick}>Open Filters</button>
             <button onClick={onAddClick}>Open Form</button>
             {error && <div onClick={onClearError}>{error}</div>}
             {onExportClick && <button onClick={onExportClick}>Export Excel</button>}
             {onToggleDeleted && <button onClick={onToggleDeleted}>Toggle Deleted</button>}
+            {onDeleteSelected && <button onClick={onDeleteSelected}>Delete Selected</button>}
         </div>
     )
 }))
@@ -254,9 +268,11 @@ describe('BrochuresPage', () => {
 
   it('handles delete error with error object (line 128)', async () => {
     const { deleteBrochureThunk } = jest.requireMock('../../../../store/slices/brochures/brochures.slice')
-    deleteBrochureThunk.mockImplementation(() => () => ({
-      unwrap: jest.fn().mockRejectedValue(new Error('Generic Error')),
-    }))
+    deleteBrochureThunk.mockImplementation(() => () => {
+      const p = Promise.resolve({ type: 'brochures/delete/rejected', payload: new Error('Generic Error') })
+      ;(p as unknown as { unwrap: () => Promise<unknown> }).unwrap = () => Promise.reject(new Error('Generic Error'))
+      return p
+    })
 
     const item = { id: 1, name: 'DeleteFail', deletedAt: null } as BrochureItem
     const store = createMockStore({ selected: item })
@@ -271,9 +287,11 @@ describe('BrochuresPage', () => {
 
     it('handles delete error with string error (line 130)', async () => {
       const { deleteBrochureThunk } = jest.requireMock('../../../../store/slices/brochures/brochures.slice')
-      deleteBrochureThunk.mockImplementation(() => () => ({
-        unwrap: jest.fn().mockRejectedValue('String Error Message'),
-      }))
+      deleteBrochureThunk.mockImplementation(() => () => {
+        const p = Promise.resolve({ type: 'brochures/delete/rejected', payload: 'String Error Message' })
+        ;(p as unknown as { unwrap: () => Promise<unknown> }).unwrap = () => Promise.reject('String Error Message')
+        return p
+      })
 
       const item = { id: 1, name: 'DeleteFailStr', deletedAt: null } as BrochureItem
       const store = createMockStore({ selected: item })
@@ -295,9 +313,11 @@ describe('BrochuresPage', () => {
 
     it('handles successful delete (lines 127-128)', async () => {
     const { deleteBrochureThunk } = jest.requireMock('../../../../store/slices/brochures/brochures.slice')
-    deleteBrochureThunk.mockImplementation(() => () => ({
-      unwrap: jest.fn().mockResolvedValue({}),
-    }))
+    deleteBrochureThunk.mockImplementation(() => () => {
+      const p = Promise.resolve({ type: 'brochures/delete/fulfilled', payload: {} })
+      ;(p as unknown as { unwrap: () => Promise<unknown> }).unwrap = () => Promise.resolve({})
+      return p
+    })
 
     const item = { id: 1, name: 'DeleteSuccess', deletedAt: null } as BrochureItem
     const store = createMockStore({ selected: item })
@@ -342,5 +362,90 @@ describe('BrochuresPage', () => {
 
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'brochures/updateDraftFilter' }))
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'brochures/applyFilters' }))
+  })
+
+  it('handles bulk delete successfully', async () => {
+      const store = createMockStore()
+      const { deleteBrochureThunk } = jest.requireMock('../../../../store/slices/brochures/brochures.slice')
+      deleteBrochureThunk.mockImplementation(() => () => ({
+          unwrap: jest.fn().mockResolvedValue({}),
+      }))
+      jest.spyOn(window, 'confirm').mockReturnValue(true)
+
+      render(<Provider store={store}><BrochuresPage /></Provider>)
+      
+      fireEvent.click(screen.getByText('Select Rows'))
+      fireEvent.click(screen.getByText('Delete Selected'))
+
+      await waitFor(() => {
+          expect(searchBrochures).toHaveBeenCalled()
+      })
+      ;(window.confirm as jest.Mock).mockRestore()
+  })
+
+  it('cancels bulk delete when confirm is false', async () => {
+      const store = createMockStore()
+      const { deleteBrochureThunk } = jest.requireMock('../../../../store/slices/brochures/brochures.slice')
+      deleteBrochureThunk.mockClear()
+      jest.spyOn(window, 'confirm').mockReturnValue(false)
+
+      render(<Provider store={store}><BrochuresPage /></Provider>)
+      
+      fireEvent.click(screen.getByText('Select Rows'))
+      fireEvent.click(screen.getByText('Delete Selected'))
+
+      expect(deleteBrochureThunk).not.toHaveBeenCalled()
+      ;(window.confirm as jest.Mock).mockRestore()
+  })
+
+  it('handles bulk delete failure with string error', async () => {
+      const store = createMockStore()
+      const { deleteBrochureThunk } = jest.requireMock('../../../../store/slices/brochures/brochures.slice')
+      deleteBrochureThunk.mockImplementation(() => () => ({
+          unwrap: jest.fn().mockRejectedValue('Bulk Error'),
+      }))
+      jest.spyOn(window, 'confirm').mockReturnValue(true)
+
+      render(<Provider store={store}><BrochuresPage /></Provider>)
+      
+      fireEvent.click(screen.getByText('Select Rows'))
+      fireEvent.click(screen.getByText('Delete Selected'))
+
+      await waitFor(() => {
+          expect(searchBrochures).toHaveBeenCalled()
+      })
+      ;(window.confirm as jest.Mock).mockRestore()
+  })
+
+  it('handles restore contact successfully', async () => {
+      const store = createMockStore({ appliedFilters: { onlyDeleted: 'true' } })
+      const { restoreBrochureThunk } = jest.requireMock('../../../../store/slices/brochures/brochures.slice')
+      restoreBrochureThunk.mockImplementation(() => () => ({
+          type: 'brochures/restore/fulfilled',
+          payload: {}
+      }))
+
+      render(<Provider store={store}><BrochuresPage /></Provider>)
+      fireEvent.click(screen.getByText('Restore Row'))
+
+      await waitFor(() => {
+          expect(restoreBrochureThunk).toHaveBeenCalled()
+      })
+  })
+
+  it('handles restore contact error', async () => {
+      const store = createMockStore({ appliedFilters: { onlyDeleted: 'true' } })
+      const { restoreBrochureThunk } = jest.requireMock('../../../../store/slices/brochures/brochures.slice')
+      restoreBrochureThunk.mockImplementation(() => () => ({
+          type: 'brochures/restore/rejected',
+          payload: 'Restore Error'
+      }))
+
+      render(<Provider store={store}><BrochuresPage /></Provider>)
+      fireEvent.click(screen.getByText('Restore Row'))
+
+      await waitFor(() => {
+          expect(restoreBrochureThunk).toHaveBeenCalled()
+      })
   })
 })

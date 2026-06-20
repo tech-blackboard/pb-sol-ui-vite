@@ -8,9 +8,6 @@ import type { ContactsState } from '../../../../store/slices/contacts/contacts.s
 import type { ContactItem } from '../../../../services/contacts'
 import authReducer from '../../../../store/slices/authSlice'
 
-interface TableProps {
-    onView: (item: Partial<ContactItem>) => void
-}
 
 
 interface DrawerProps {
@@ -38,9 +35,13 @@ jest.mock('../../../../services/contacts', () => ({
 
 jest.mock('../../../../features/contacts/components/ContactTable', () => ({
     __esModule: true,
-    default: ({ onView }: TableProps) => (
+    default: ({ onView, onSelectAll, onRestore, onSelect }: { onView: (row: { id: number }) => void, onSelectAll?: (checked: boolean) => void, onRestore?: (row: { id: number }) => void, onSelect?: (id: number) => void }) => (
         <div data-testid="contact-table">
             <button onClick={() => onView({ id: 1 })}>View Row</button>
+            <button onClick={() => onSelect?.(1)}>Select Row</button>
+            <button onClick={() => onSelectAll?.(true)}>Select Rows</button>
+            <button onClick={() => onSelectAll?.(false)}>Unselect Rows</button>
+            {onRestore && <button onClick={() => onRestore({ id: 1 })}>Restore Row</button>}
         </div>
     ),
 }))
@@ -97,6 +98,14 @@ jest.mock('../../../../store/slices/contacts/contacts.slice', () => {
                 rejected: { type: 'contacts/delete/rejected' },
             }
         ),
+        restoreContactThunk: Object.assign(
+            jest.fn(() => () => Promise.resolve({ unwrap: () => Promise.resolve({}) })),
+            {
+                pending: { type: 'contacts/restore/pending' },
+                fulfilled: { type: 'contacts/restore/fulfilled', match: () => true },
+                rejected: { type: 'contacts/restore/rejected' },
+            }
+        ),
     }
 })
 
@@ -114,7 +123,7 @@ const createMockStore = (initialStatePartial: Partial<ContactsState> = {}) => co
     },
     preloadedState: {
         contacts: {
-            items: [],
+            items: [{ id: 1, name: 'Contact 1' } as unknown as ContactItem, { id: 2, name: 'Contact 2' } as unknown as ContactItem],
             loading: false,
             editLoading: false,
             error: null,
@@ -322,5 +331,136 @@ describe('ContactsPage', () => {
         await waitFor(() => {
             expect(searchContacts).toHaveBeenCalled()
         })
+    })
+
+    it('handles bulk delete successfully', async () => {
+        const store = createMockStore()
+        const { deleteContactThunk } = jest.requireMock('../../../../store/slices/contacts/contacts.slice')
+        deleteContactThunk.mockImplementation(() => () => ({
+            unwrap: jest.fn().mockResolvedValue({}),
+        }))
+        jest.spyOn(window, 'confirm').mockReturnValue(true)
+
+        render(<Provider store={store}><ContactsPage /></Provider>)
+        
+        fireEvent.click(screen.getByText('Select Rows'))
+        fireEvent.click(screen.getByText(/Delete Selected/i))
+
+        await waitFor(() => {
+            expect(fetchContacts).toHaveBeenCalled()
+        })
+        ;(window.confirm as jest.Mock).mockRestore()
+    })
+
+    it('cancels bulk delete when confirm is false', async () => {
+        const store = createMockStore()
+        const { deleteContactThunk } = jest.requireMock('../../../../store/slices/contacts/contacts.slice')
+        deleteContactThunk.mockClear()
+        jest.spyOn(window, 'confirm').mockReturnValue(false)
+
+        render(<Provider store={store}><ContactsPage /></Provider>)
+        
+        fireEvent.click(screen.getByText('Select Rows'))
+        fireEvent.click(screen.getByText(/Delete Selected/i))
+
+        expect(deleteContactThunk).not.toHaveBeenCalled()
+        ;(window.confirm as jest.Mock).mockRestore()
+    })
+
+    it('handles bulk delete failure with string error', async () => {
+        const store = createMockStore()
+        const { deleteContactThunk } = jest.requireMock('../../../../store/slices/contacts/contacts.slice')
+        deleteContactThunk.mockImplementation(() => () => ({
+            unwrap: jest.fn().mockRejectedValue('Bulk Error'),
+        }))
+        jest.spyOn(window, 'confirm').mockReturnValue(true)
+
+        render(<Provider store={store}><ContactsPage /></Provider>)
+        
+        fireEvent.click(screen.getByText('Select Rows'))
+        fireEvent.click(screen.getByText(/Delete Selected/i))
+
+        await waitFor(() => {
+            expect(fetchContacts).toHaveBeenCalled()
+        })
+        ;(window.confirm as jest.Mock).mockRestore()
+    })
+
+    it('handles bulk delete failure with generic error', async () => {
+        const store = createMockStore()
+        const { deleteContactThunk } = jest.requireMock('../../../../store/slices/contacts/contacts.slice')
+        deleteContactThunk.mockImplementation(() => () => ({
+            unwrap: jest.fn().mockRejectedValue(new Error('Generic Error')),
+        }))
+        jest.spyOn(window, 'confirm').mockReturnValue(true)
+
+        render(<Provider store={store}><ContactsPage /></Provider>)
+        
+        fireEvent.click(screen.getByText('Select Rows'))
+        fireEvent.click(screen.getByText(/Delete Selected/i))
+
+        await waitFor(() => {
+            expect(fetchContacts).toHaveBeenCalled()
+        })
+        ;(window.confirm as jest.Mock).mockRestore()
+    })
+
+    it('handles restore contact successfully', async () => {
+        const store = createMockStore({ appliedFilters: { onlyDeleted: 'true' } })
+        const { restoreContactThunk } = jest.requireMock('../../../../store/slices/contacts/contacts.slice')
+        restoreContactThunk.mockImplementation(() => () => ({
+            unwrap: jest.fn().mockResolvedValue({}),
+        }))
+
+        render(<Provider store={store}><ContactsPage /></Provider>)
+        fireEvent.click(screen.getByText('Restore Row'))
+
+        await waitFor(() => {
+            expect(restoreContactThunk).toHaveBeenCalled()
+        })
+    })
+
+    it('handles restore contact error with string', async () => {
+        const store = createMockStore({ appliedFilters: { onlyDeleted: 'true' } })
+        const { restoreContactThunk } = jest.requireMock('../../../../store/slices/contacts/contacts.slice')
+        restoreContactThunk.mockImplementation(() => () => ({
+            unwrap: jest.fn().mockRejectedValue('Restore Error'),
+        }))
+
+        render(<Provider store={store}><ContactsPage /></Provider>)
+        fireEvent.click(screen.getByText('Restore Row'))
+
+        await waitFor(() => {
+            expect(restoreContactThunk).toHaveBeenCalled()
+        })
+    })
+
+    it('handles restore contact error with generic error', async () => {
+        const store = createMockStore({ appliedFilters: { onlyDeleted: 'true' } })
+        const { restoreContactThunk } = jest.requireMock('../../../../store/slices/contacts/contacts.slice')
+        restoreContactThunk.mockImplementation(() => () => ({
+            unwrap: jest.fn().mockRejectedValue(new Error('Fail')),
+        }))
+
+        render(<Provider store={store}><ContactsPage /></Provider>)
+        fireEvent.click(screen.getByText('Restore Row'))
+
+        await waitFor(() => {
+            expect(restoreContactThunk).toHaveBeenCalled()
+        })
+    })
+
+    it('handles onSelect toggle', async () => {
+        const store = createMockStore()
+        render(<Provider store={store}><ContactsPage /></Provider>)
+        fireEvent.click(screen.getByText('Select Row'))
+        fireEvent.click(screen.getByText('Select Row')) // unselect
+    })
+
+    it('handles onSelectAll unchecks', async () => {
+        const store = createMockStore()
+        render(<Provider store={store}><ContactsPage /></Provider>)
+        fireEvent.click(screen.getByText('Select Rows'))
+        fireEvent.click(screen.getByText('Unselect Rows'))
     })
 })

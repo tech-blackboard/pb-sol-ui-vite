@@ -402,6 +402,10 @@ describe('crm thunks catch blocks', () => {
             { thunk: emptyTrashThunk(1), mockFn: crmService.emptyTrash, fallback: 'Failed to empty trash', isArray: true },
             { thunk: junkThreadsThunk(['1']), mockFn: crmService.junkThreads, fallback: 'Failed to report threads as spam', isArray: true },
             { thunk: restoreThreadsFromJunkThunk(['1']), mockFn: crmService.restoreThreadsFromJunk, fallback: 'Failed to restore threads from junk', isArray: true },
+            { thunk: composeEmailThunk({ eventId: 1, toEmail: 'a@b.com', subject: 'A', htmlBody: 'B' }), mockFn: crmService.composeEmail, fallback: 'Failed to send email' },
+            { thunk: updateLabelsThunk({ messageId: '1', labels: [] }), mockFn: crmService.updateMessageLabels, fallback: 'Failed to update labels' },
+            { thunk: saveDraftThunk({ eventId: 1, subject: 'S' }), mockFn: crmService.saveDraft, fallback: 'Failed to save draft' },
+            { thunk: fetchDraftsThunk({}), mockFn: crmService.fetchDrafts, fallback: 'Failed to fetch drafts' },
         ];
 
         for (const tc of testCases) {
