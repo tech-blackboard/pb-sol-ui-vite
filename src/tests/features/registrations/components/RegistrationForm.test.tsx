@@ -51,6 +51,15 @@ jest.mock('../../../../store/slices/registrations/registrations.thunks', () => (
             typePrefix: 'registrations/update'
         }
     ),
+    restoreRegistrationThunk: Object.assign(
+        jest.fn(() => ({ type: 'registrations/restore/pending' })),
+        {
+            pending: { type: 'registrations/restore/pending', match: (action: { type?: string }) => action?.type === 'registrations/restore/pending' },
+            fulfilled: { type: 'registrations/restore/fulfilled', match: (action: { type?: string }) => action?.type === 'registrations/restore/fulfilled' },
+            rejected: { type: 'registrations/restore/rejected', match: (action: { type?: string }) => action?.type === 'registrations/restore/rejected' },
+            typePrefix: 'registrations/restore'
+        }
+    ),
 }))
 
 jest.mock('react-hot-toast', () => ({
@@ -1089,5 +1098,97 @@ describe('RegistrationForm – edit mode', () => {
         await screen.findByText('Edit Registration')
 
         timeSpy.mockRestore()
+    })
+
+    it('formatDateForInput: parses ISO date-time string with T (line 115)', async () => {
+        const store = createStore()
+        const editDataISO = {
+            ...baseEditData,
+            accomm: '100',
+            checkin: '2024-01-15T10:00:00',
+            checkout: '2024-02-20T10:00:00',
+            accmvalue: 'Single Occupancy',
+            nights: '5',
+        }
+
+        render(
+            <Provider store={store}>
+                <RegistrationForm
+                    onClose={mockOnClose}
+                    onSuccess={mockOnSuccess}
+                    editData={editDataISO as unknown as RegistrationItem}
+                />
+            </Provider>
+        )
+
+        await screen.findByText('Edit Registration')
+        const checkinInput = screen.getByLabelText('Check-in Date') as HTMLInputElement
+        expect(checkinInput.value).toBe('2024-01-15')
+    })
+
+    it('editData fallback pricing and values (lines 152, 157, 159, 163)', async () => {
+        const store = createStore()
+        let accommCallCount = 0
+        const editDataFallback = {
+            ...baseEditData,
+            regtype: undefined,
+            get accomm() {
+                accommCallCount++
+                return accommCallCount <= 2 ? '150' : ''
+            },
+            accmvalue: undefined,
+        }
+
+        render(
+            <Provider store={store}>
+                <RegistrationForm
+                    onClose={mockOnClose}
+                    onSuccess={mockOnSuccess}
+                    editData={editDataFallback as unknown as RegistrationItem}
+                />
+            </Provider>
+        )
+
+        await screen.findByText('Edit Registration')
+        const accCheckbox = screen.getByRole('checkbox', { name: /Looking for Accommodation/i })
+        expect(accCheckbox).toBeChecked()
+    })
+
+    it('submits form with falsy status_id falling back to 1 (line 331)', async () => {
+        const store = createStore()
+        const { createRegistrationThunk } = jest.requireMock('../../../../store/slices/registrations/registrations.thunks')
+        ;(createRegistrationThunk as unknown as jest.Mock).mockClear()
+        ;(createRegistrationThunk as unknown as jest.Mock).mockImplementation((arg) => ({
+            type: 'registrations/create/pending',
+            meta: { arg }
+        }))
+
+        render(
+            <Provider store={store}>
+                <RegistrationForm
+                    onClose={mockOnClose}
+                    onSuccess={mockOnSuccess}
+                />
+            </Provider>
+        )
+
+        await screen.findByText('Test Conference')
+
+        fireEvent.change(screen.getByLabelText('Caption*'), { target: { value: 'Mr.' } })
+        fireEvent.change(screen.getByLabelText('Full Name*'), { target: { value: 'John Doe' } })
+        fireEvent.change(screen.getByLabelText('Email*'), { target: { value: 'john@example.com' } })
+        fireEvent.change(screen.getByLabelText('Phone*'), { target: { value: '1234567890' } })
+        fireEvent.change(screen.getByLabelText('Country*'), { target: { value: 'United States' } })
+        fireEvent.change(screen.getByLabelText('Institution/Organization*'), { target: { value: 'MIT' } })
+        fireEvent.change(screen.getByLabelText('Website/Conference*'), { target: { value: '1' } })
+
+        const submitBtn = screen.getByRole('button', { name: /Create Registration/i })
+        fireEvent.click(submitBtn)
+
+        await waitFor(() => {
+            expect(createRegistrationThunk).toHaveBeenCalledWith(expect.objectContaining({
+                status_id: 1
+            }))
+        })
     })
 })

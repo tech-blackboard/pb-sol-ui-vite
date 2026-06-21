@@ -14,7 +14,8 @@ import {
     fetchContacts,
     createContactThunk,
     updateContactThunk,
-    deleteContactThunk
+    deleteContactThunk,
+    restoreContactThunk
 } from '../../../../store/slices/contacts/contacts.slice';
 import * as contactsService from '../../../../services/contacts';
 import type { ContactItem } from '../../../../services/contacts';
@@ -360,6 +361,81 @@ describe('contacts slice', () => {
             };
             const state = reducer(initialState, rejectedAction as UnknownAction);
             expect(state.error).toBe('Failed to delete contact');
+        });
+
+        // restoreContactThunk extraReducers
+        it('handles restoreContactThunk.pending', () => {
+            const state = reducer(initialState, restoreContactThunk.pending('', 1));
+            expect(state.loading).toBe(true);
+        });
+
+        it('handles restoreContactThunk.fulfilled', () => {
+            const startState = {
+                ...initialState,
+                loading: true,
+                items: [{ id: 1, name: 'Contact 1' } as ContactItem],
+                selected: { id: 1, name: 'Contact 1' } as ContactItem
+            };
+            const state = reducer(startState, restoreContactThunk.fulfilled(1, '', 1));
+            expect(state.loading).toBe(false);
+            expect(state.items).toEqual([]);
+            expect(state.selected).toBeNull();
+        });
+
+        it('handles restoreContactThunk.rejected', () => {
+            const startState = { ...initialState, loading: true };
+            const state = reducer(startState, restoreContactThunk.rejected(null, '', 1, 'Restore Failed'));
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Restore Failed');
+        });
+
+        it('handles restoreContactThunk.rejected fallback to Failed to restore contact', () => {
+            const rejectedAction = {
+                type: restoreContactThunk.rejected.type,
+                payload: null,
+                error: {}
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.error).toBe('Failed to restore contact');
+        });
+
+        // restoreContactThunk thunk tests
+        it('restoreContactThunk thunk should resolve successfully', async () => {
+            const spy = jest.spyOn(contactsService, 'restoreContact').mockResolvedValue(undefined);
+            const dispatch = jest.fn();
+            const result = await restoreContactThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe(1);
+            spy.mockRestore();
+        });
+
+        it('restoreContactThunk thunk should reject with axios error', async () => {
+            const spy = jest.spyOn(contactsService, 'restoreContact').mockRejectedValue({
+                isAxiosError: true,
+                response: { data: { message: 'Axios Restore Error' } }
+            });
+            const dispatch = jest.fn();
+            const result = await restoreContactThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios Restore Error');
+            spy.mockRestore();
+        });
+
+        it('restoreContactThunk thunk should reject with fallback message', async () => {
+            const spy = jest.spyOn(contactsService, 'restoreContact').mockRejectedValue(new Error('Generic Error'));
+            const dispatch = jest.fn();
+            const result = await restoreContactThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Failed to restore contact');
+            spy.mockRestore();
+        });
+
+        it('restoreContactThunk thunk should reject with axios error using fallback err.message', async () => {
+            const spy = jest.spyOn(contactsService, 'restoreContact').mockRejectedValue({
+                isAxiosError: true,
+                message: 'Axios fallback message'
+            });
+            const dispatch = jest.fn();
+            const result = await restoreContactThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios fallback message');
+            spy.mockRestore();
         });
     });
 });

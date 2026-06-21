@@ -31,9 +31,9 @@ export default function SponsorshipsPage() {
         try {
             setIsExporting(true)
             const toastId = toast.loading('Exporting data to Excel...')
-            
+
             const result = await searchSponsorships({ ...appliedFilters, limit: 10000, page: 1 })
-            
+
             if (!result.items || result.items.length === 0) {
                 toast.error('No records found to export', { id: toastId })
                 setIsExporting(false)
@@ -56,7 +56,7 @@ export default function SponsorshipsPage() {
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Sponsorships')
 
             XLSX.writeFile(workbook, 'Sponsorships_Export.xlsx')
-            
+
             toast.success('Export successful!', { id: toastId })
         } catch (error) {
             console.error('Export failed:', error)
@@ -77,8 +77,9 @@ export default function SponsorshipsPage() {
             toast.success(`Successfully deleted ${selectedIds.length} records`, { id: toastId });
             setSelectedIds([]);
             dispatch(fetchSponsorships({ filters: appliedFilters, page, limit: pageSize }));
-        } catch (err) {
-            toast.error('Failed to delete some records', { id: toastId });
+        } catch (err: unknown) {
+            const errorMsg = typeof err === 'string' ? err : 'Failed to delete some records';
+            toast.error(errorMsg, { id: toastId });
             dispatch(fetchSponsorships({ filters: appliedFilters, page, limit: pageSize }));
         }
     };

@@ -7,6 +7,7 @@ describe('GmailReplyEditor Extensions and Pasting', () => {
     const complexHtml = `
       <p class="gmail-paragraph" style="color: red;">Paragraph</p>
       <span class="span-class" style="color: blue;">Span</span>
+      <span style="font-size: 16px; font-family: Arial;">Styled Text</span>
       <a class="link-class" style="font-weight: bold;" href="https://test.com">Link</a>
       <img class="img-class" style="margin: 0;" width="100" height="100" src="https://test.com/img.png" />
       <div class="gmail_quote">Quote Content</div>
@@ -48,17 +49,21 @@ describe('GmailReplyEditor Extensions and Pasting', () => {
     // Wait for editor to be ready
     await waitFor(() => expect(editorInstance).toBeTruthy());
 
-    // Trigger commands
+    // Insert content and apply formatting
+    editorInstance!.commands.insertContent('<p>Test Font Size and Family</p>');
+    editorInstance!.commands.selectAll();
     editorInstance!.commands.setFontSize('16px');
-    editorInstance!.commands.unsetFontSize();
     editorInstance!.commands.setFontFamily('Times New Roman');
-    editorInstance!.commands.unsetFontFamily();
 
     // Trigger renderHTML by getting HTML out
     const outputHtml = editorInstance!.getHTML();
     expect(outputHtml).toContain('gmail-paragraph');
     expect(outputHtml).toContain('color: red');
-    expect(outputHtml).toContain('gmail_quote');
+    expect(outputHtml).toContain('font-size: 16px');
+    expect(outputHtml).toContain('font-family: Times New Roman');
+
+    editorInstance!.commands.unsetFontSize();
+    editorInstance!.commands.unsetFontFamily();
 
     // Trigger transformPastedHTML
     if (editorInstance!.options.editorProps?.transformPastedHTML) {

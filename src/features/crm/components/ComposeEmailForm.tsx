@@ -262,7 +262,9 @@ export const ComposeEmailForm = () => {
                     contentType: file.type || 'application/octet-stream',
                     size: file.size
                 }]);
-            } catch (err) {
+            } catch (err: unknown) {
+                const error = err instanceof Error ? err : new Error(String(err));
+                console.error(`Failed to upload ${file.name}:`, error.message);
                 toast.error(`Failed to upload ${file.name}`);
             } finally {
                 setUploadingFiles(prev => prev.filter(f => f.id !== tempId));

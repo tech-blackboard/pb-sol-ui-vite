@@ -22,7 +22,7 @@ jest.mock('../../../../services/accRegistrations', () => ({
 
 jest.mock('../../../../features/accRegistrations/components/AccRegistrationTable', () => ({
   __esModule: true,
-  default: ({ rows, loading, onView }: { rows: AccRegistrationItem[], loading: boolean, onView?: (item: AccRegistrationItem) => void }) => (
+  default: ({ rows, loading, onView, onSelect, onRestore }: { rows: AccRegistrationItem[], loading: boolean, onView: (item: AccRegistrationItem) => void, onSelect?: (id: number) => void, onRestore?: (item: { id: number }) => void }) => (
     <div data-testid="acc-table">
       {loading && <div>Loading...</div>}
       {rows.map((r: AccRegistrationItem) => (
@@ -30,6 +30,8 @@ jest.mock('../../../../features/accRegistrations/components/AccRegistrationTable
           {r.name}
         </div>
       ))}
+      <button onClick={() => onSelect?.(1)}>Select Rows</button>
+      {onRestore && <button onClick={() => onRestore({ id: 1 })}>Restore Row</button>}
     </div>
   ),
 }))
@@ -58,15 +60,7 @@ jest.mock('../../../../features/abstracts/components/AbstractPagination', () => 
 
 jest.mock('../../../../components/SectionHeader', () => ({
   __esModule: true,
-  default: ({ title, onAddClick, onFilterClick, error, onClearError, onExportClick, onToggleDeleted }: {
-    title: string
-    onAddClick?: () => void
-    onFilterClick: () => void
-    error?: string | null
-    onClearError?: () => void
-    onExportClick?: () => void
-    onToggleDeleted?: () => void
-  }) => (
+  default: ({ title, onAddClick, onFilterClick, error, onClearError, onExportClick, onToggleDeleted, onDeleteSelected }: { title?: string, onAddClick: () => void, onFilterClick: () => void, error?: string | null, onClearError: () => void, onExportClick?: () => void, onToggleDeleted?: () => void, onDeleteSelected?: () => void }) => (
     <div data-testid="section-header">
       {title}
       <button onClick={onAddClick}>Add</button>
@@ -79,6 +73,7 @@ jest.mock('../../../../components/SectionHeader', () => ({
       )}
       {onExportClick && <button onClick={onExportClick}>Export Excel</button>}
       {onToggleDeleted && <button onClick={onToggleDeleted}>Toggle Deleted</button>}
+      {onDeleteSelected && <button onClick={onDeleteSelected}>Delete Selected</button>}
     </div>
   ),
 }))
@@ -111,6 +106,14 @@ jest.mock('../../../../store/slices/accRegistrations/accRegistrations.slice', ()
     __esModule: true,
     ...actual,
     deleteAccRegistrationThunk: Object.assign(
+      jest.fn(() => ({
+        unwrap: jest.fn().mockResolvedValue({})
+      })),
+      {
+        fulfilled: { match: () => true }
+      }
+    ),
+    restoreAccRegistrationThunk: Object.assign(
       jest.fn(() => ({
         unwrap: jest.fn().mockResolvedValue({})
       })),
@@ -531,5 +534,122 @@ describe('AccRegistrationsPage', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('add-form')).not.toBeInTheDocument()
     })
+  })
+
+  it('handles bulk delete successfully', async () => {
+      const store = createMockStore()
+      const { deleteAccRegistrationThunk } = jest.requireMock('../../../../store/slices/accRegistrations/accRegistrations.slice')
+      deleteAccRegistrationThunk.mockImplementation(() => () => ({
+          unwrap: jest.fn().mockResolvedValue({}),
+      }))
+      jest.spyOn(window, 'confirm').mockReturnValue(true)
+
+      render(<Provider store={store}><AccRegistrationsPage /></Provider>)
+      
+      fireEvent.click(screen.getByText('Select Rows'))
+      fireEvent.click(screen.getByText('Delete Selected'))
+
+      await waitFor(() => {
+          expect(searchAccRegistrations).toHaveBeenCalled()
+      })
+      ;(window.confirm as jest.Mock).mockRestore()
+  })
+
+  it('cancels bulk delete when confirm is false', async () => {
+      const store = createMockStore()
+      const { deleteAccRegistrationThunk } = jest.requireMock('../../../../store/slices/accRegistrations/accRegistrations.slice')
+      deleteAccRegistrationThunk.mockClear()
+      jest.spyOn(window, 'confirm').mockReturnValue(false)
+
+      render(<Provider store={store}><AccRegistrationsPage /></Provider>)
+      
+      fireEvent.click(screen.getByText('Select Rows'))
+      fireEvent.click(screen.getByText('Delete Selected'))
+
+      expect(deleteAccRegistrationThunk).not.toHaveBeenCalled()
+      ;(window.confirm as jest.Mock).mockRestore()
+  })
+
+  it('handles bulk delete failure with string error', async () => {
+      const store = createMockStore()
+      const { deleteAccRegistrationThunk } = jest.requireMock('../../../../store/slices/accRegistrations/accRegistrations.slice')
+      deleteAccRegistrationThunk.mockImplementation(() => () => ({
+          unwrap: jest.fn().mockRejectedValue('Bulk Error'),
+      }))
+      jest.spyOn(window, 'confirm').mockReturnValue(true)
+
+      render(<Provider store={store}><AccRegistrationsPage /></Provider>)
+      
+      fireEvent.click(screen.getByText('Select Rows'))
+      fireEvent.click(screen.getByText('Delete Selected'))
+
+      await waitFor(() => {
+          expect(searchAccRegistrations).toHaveBeenCalled()
+      })
+      ;(window.confirm as jest.Mock).mockRestore()
+  })
+
+  it('handles bulk delete failure with generic error', async () => {
+      const store = createMockStore()
+      const { deleteAccRegistrationThunk } = jest.requireMock('../../../../store/slices/accRegistrations/accRegistrations.slice')
+      deleteAccRegistrationThunk.mockImplementation(() => () => ({
+          unwrap: jest.fn().mockRejectedValue(new Error('Generic Error')),
+      }))
+      jest.spyOn(window, 'confirm').mockReturnValue(true)
+
+      render(<Provider store={store}><AccRegistrationsPage /></Provider>)
+      
+      fireEvent.click(screen.getByText('Select Rows'))
+      fireEvent.click(screen.getByText('Delete Selected'))
+
+      await waitFor(() => {
+          expect(searchAccRegistrations).toHaveBeenCalled()
+      })
+      ;(window.confirm as jest.Mock).mockRestore()
+  })
+
+  it('handles restore registration successfully', async () => {
+      const store = createMockStore({ appliedFilters: { onlyDeleted: 'true' } })
+      const { restoreAccRegistrationThunk } = jest.requireMock('../../../../store/slices/accRegistrations/accRegistrations.slice')
+      restoreAccRegistrationThunk.mockImplementation(() => () => ({
+          unwrap: jest.fn().mockResolvedValue({}),
+      }))
+
+      render(<Provider store={store}><AccRegistrationsPage /></Provider>)
+      fireEvent.click(screen.getByText('Restore Row'))
+
+      await waitFor(() => {
+          expect(restoreAccRegistrationThunk).toHaveBeenCalled()
+      })
+  })
+
+  it('handles restore registration error with string', async () => {
+      const store = createMockStore({ appliedFilters: { onlyDeleted: 'true' } })
+      const { restoreAccRegistrationThunk } = jest.requireMock('../../../../store/slices/accRegistrations/accRegistrations.slice')
+      restoreAccRegistrationThunk.mockImplementation(() => () => ({
+          unwrap: jest.fn().mockRejectedValue('Restore Error'),
+      }))
+
+      render(<Provider store={store}><AccRegistrationsPage /></Provider>)
+      fireEvent.click(screen.getByText('Restore Row'))
+
+      await waitFor(() => {
+          expect(restoreAccRegistrationThunk).toHaveBeenCalled()
+      })
+  })
+
+  it('handles restore registration error with generic error', async () => {
+      const store = createMockStore({ appliedFilters: { onlyDeleted: 'true' } })
+      const { restoreAccRegistrationThunk } = jest.requireMock('../../../../store/slices/accRegistrations/accRegistrations.slice')
+      restoreAccRegistrationThunk.mockImplementation(() => () => ({
+          unwrap: jest.fn().mockRejectedValue(new Error('Fail')),
+      }))
+
+      render(<Provider store={store}><AccRegistrationsPage /></Provider>)
+      fireEvent.click(screen.getByText('Restore Row'))
+
+      await waitFor(() => {
+          expect(restoreAccRegistrationThunk).toHaveBeenCalled()
+      })
   })
 })

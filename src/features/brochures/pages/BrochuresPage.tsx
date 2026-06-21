@@ -80,8 +80,9 @@ export default function BrochuresPage() {
             toast.success(`Successfully deleted ${selectedIds.length} records`, { id: toastId });
             setSelectedIds([]);
             dispatch(fetchBrochures({ filters: appliedFilters, page, limit: pageSize }));
-        } catch (err) {
-            toast.error('Failed to delete some records', { id: toastId });
+        } catch (err: unknown) {
+            const errorMsg = typeof err === 'string' ? err : 'Failed to delete some records';
+            toast.error(errorMsg, { id: toastId });
             dispatch(fetchBrochures({ filters: appliedFilters, page, limit: pageSize }));
         }
     };

@@ -14,7 +14,8 @@ import {
     fetchSponsorships,
     createSponsorshipThunk,
     updateSponsorshipThunk,
-    deleteSponsorshipThunk
+    deleteSponsorshipThunk,
+    restoreSponsorshipThunk
 } from '../../../../store/slices/sponsorships/sponsorships.slice';
 import * as sponsorshipsService from '../../../../services/sponsorships';
 import type { SponsorshipItem } from '../../../../services/sponsorships';
@@ -329,6 +330,78 @@ describe('sponsorships slice', () => {
             };
             const state = reducer(initialState, rejectedAction as UnknownAction);
             expect(state.error).toBe('Failed to delete sponsorship');
+        });
+
+        // restoreSponsorshipThunk extraReducers
+        it('handles restoreSponsorshipThunk.pending', () => {
+            const state = reducer(initialState, restoreSponsorshipThunk.pending('', 1));
+            expect(state.loading).toBe(true);
+        });
+
+        it('handles restoreSponsorshipThunk.fulfilled', () => {
+            const startState = {
+                ...initialState,
+                loading: true,
+                items: [{ id: 1, name: 'Sponsorship 1' } as SponsorshipItem],
+                selected: { id: 1, name: 'Sponsorship 1' } as SponsorshipItem
+            };
+            const state = reducer(startState, restoreSponsorshipThunk.fulfilled(1, '', 1));
+            expect(state.loading).toBe(false);
+            expect(state.items).toEqual([]);
+            expect(state.selected).toBeNull();
+        });
+
+        it('handles restoreSponsorshipThunk.rejected', () => {
+            const startState = { ...initialState, loading: true };
+            const state = reducer(startState, restoreSponsorshipThunk.rejected(null, '', 1, 'Restore Failed'));
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Restore Failed');
+        });
+
+        it('handles restoreSponsorshipThunk.rejected fallback to Failed to restore sponsorship', () => {
+            const rejectedAction = {
+                type: restoreSponsorshipThunk.rejected.type,
+                payload: null,
+                error: {}
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Failed to restore sponsorship');
+        });
+
+        // restoreSponsorshipThunk thunk tests
+        it('restoreSponsorshipThunk thunk should resolve successfully', async () => {
+            (sponsorshipsService.restoreSponsorship as jest.Mock) = jest.fn().mockResolvedValue(undefined);
+            const dispatch = jest.fn();
+            const result = await restoreSponsorshipThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe(1);
+        });
+
+        it('restoreSponsorshipThunk thunk should reject with axios error', async () => {
+            (sponsorshipsService.restoreSponsorship as jest.Mock) = jest.fn().mockRejectedValue({
+                isAxiosError: true,
+                response: { data: { message: 'Axios Restore Error' } }
+            });
+            const dispatch = jest.fn();
+            const result = await restoreSponsorshipThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios Restore Error');
+        });
+
+        it('restoreSponsorshipThunk thunk should reject with fallback message', async () => {
+            (sponsorshipsService.restoreSponsorship as jest.Mock) = jest.fn().mockRejectedValue(new Error('Generic Error'));
+            const dispatch = jest.fn();
+            const result = await restoreSponsorshipThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Failed to restore sponsorship');
+        });
+
+        it('restoreSponsorshipThunk thunk should reject with axios error using fallback err.message', async () => {
+            (sponsorshipsService.restoreSponsorship as jest.Mock) = jest.fn().mockRejectedValue({
+                isAxiosError: true,
+                message: 'Axios fallback message'
+            });
+            const dispatch = jest.fn();
+            const result = await restoreSponsorshipThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios fallback message');
         });
     });
 });

@@ -389,10 +389,18 @@ const abstractsSlice = createSlice({
       })
 
       /* ---------- restore abstract ---------- */
+      .addCase(restoreAbstractThunk.pending, (state) => {
+        state.loading = true
+      })
       .addCase(restoreAbstractThunk.fulfilled, (state, { payload }) => {
+        state.loading = false
         state.rawItems = state.rawItems.filter((x) => String(x.id) !== String(payload))
         state.items = state.items.filter((x) => String(x.id) !== String(payload))
         state.total = Math.max(0, state.total - 1)
+      })
+      .addCase(restoreAbstractThunk.rejected, (state, action) => {
+        state.loading = false
+        state.error = (action.payload as string) || action.error.message || 'Failed to restore abstract'
       })
   },
 })

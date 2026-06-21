@@ -212,7 +212,7 @@ describe('Contact Feature Tests', () => {
             render(<Provider store={store}><ContactFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
 
             await waitFor(() => expect(listWebsites).toHaveBeenCalled())
-            expect(screen.getByText('Website')).toBeInTheDocument()
+            await waitFor(() => expect(screen.getByText('Website')).toBeInTheDocument())
         })
     })
 })

@@ -14,7 +14,8 @@ import {
     fetchBrochures,
     createBrochureThunk,
     updateBrochureThunk,
-    deleteBrochureThunk
+    deleteBrochureThunk,
+    restoreBrochureThunk
 } from '../../../../store/slices/brochures/brochures.slice';
 import * as brochuresService from '../../../../services/brochures';
 import type { BrochureItem, BrochureSearchResult } from '../../../../services/brochures';
@@ -374,6 +375,81 @@ describe('brochures slice', () => {
             };
             const state = reducer(initialState, rejectedAction as UnknownAction);
             expect(state.error).toBe('Failed to delete brochure request');
+        });
+
+        // restoreBrochureThunk extraReducers
+        it('handles restoreBrochureThunk.pending', () => {
+            const state = reducer(initialState, restoreBrochureThunk.pending('', 1));
+            expect(state.loading).toBe(true);
+        });
+
+        it('handles restoreBrochureThunk.fulfilled', () => {
+            const startState = {
+                ...initialState,
+                loading: true,
+                items: [{ id: 1, name: 'Brochure 1' } as BrochureItem],
+                selected: { id: 1, name: 'Brochure 1' } as BrochureItem
+            };
+            const state = reducer(startState, restoreBrochureThunk.fulfilled(1, '', 1));
+            expect(state.loading).toBe(false);
+            expect(state.items).toEqual([]);
+            expect(state.selected).toBeNull();
+        });
+
+        it('handles restoreBrochureThunk.rejected', () => {
+            const startState = { ...initialState, loading: true };
+            const state = reducer(startState, restoreBrochureThunk.rejected(null, '', 1, 'Restore Failed'));
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Restore Failed');
+        });
+
+        it('handles restoreBrochureThunk.rejected fallback to Failed to restore brochure request', () => {
+            const rejectedAction = {
+                type: restoreBrochureThunk.rejected.type,
+                payload: null,
+                error: {}
+            };
+            const state = reducer(initialState, rejectedAction as UnknownAction);
+            expect(state.error).toBe('Failed to restore brochure request');
+        });
+
+        // restoreBrochureThunk thunk tests
+        it('restoreBrochureThunk thunk should resolve successfully', async () => {
+            const spy = jest.spyOn(brochuresService, 'restoreBrochure').mockResolvedValue(undefined);
+            const dispatch = jest.fn();
+            const result = await restoreBrochureThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe(1);
+            spy.mockRestore();
+        });
+
+        it('restoreBrochureThunk thunk should reject with axios error', async () => {
+            const spy = jest.spyOn(brochuresService, 'restoreBrochure').mockRejectedValue({
+                isAxiosError: true,
+                response: { data: { message: 'Axios Restore Error' } }
+            });
+            const dispatch = jest.fn();
+            const result = await restoreBrochureThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios Restore Error');
+            spy.mockRestore();
+        });
+
+        it('restoreBrochureThunk thunk should reject with fallback message', async () => {
+            const spy = jest.spyOn(brochuresService, 'restoreBrochure').mockRejectedValue(new Error('Generic Error'));
+            const dispatch = jest.fn();
+            const result = await restoreBrochureThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Failed to restore brochure request');
+            spy.mockRestore();
+        });
+
+        it('restoreBrochureThunk thunk should reject with axios error using fallback err.message', async () => {
+            const spy = jest.spyOn(brochuresService, 'restoreBrochure').mockRejectedValue({
+                isAxiosError: true,
+                message: 'Axios fallback message'
+            });
+            const dispatch = jest.fn();
+            const result = await restoreBrochureThunk(1)(dispatch, jest.fn(), undefined);
+            expect(result.payload).toBe('Axios fallback message');
+            spy.mockRestore();
         });
     });
 });

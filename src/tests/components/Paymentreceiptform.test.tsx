@@ -1,3 +1,4 @@
+import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import { PaymentReceiptForm } from '../../components/PaymentReceipt'
@@ -549,13 +550,13 @@ describe('PaymentReceiptForm – Final Clean Suite v2', () => {
 
   test('covers branch fallbacks for missing fields (quantity, fees, occupancy)', async () => {
     let callCount = 0;
-    const realUseState = jest.requireActual('react').useState
-    const useStateSpy = jest.spyOn(jest.requireActual('react'), 'useState').mockImplementation((initVal) => {
+    const originalUseState = React.useState
+    const useStateSpy = (jest.spyOn(React, 'useState') as unknown as jest.Mock).mockImplementation((initVal: unknown) => {
       const hookIndex = callCount % 12;
       callCount++;
       
       if (hookIndex === 0) {
-        return realUseState({
+        return originalUseState({
           ...(initVal as object),
           interestedIn: 'Unknown', 
           quantity: undefined,    
@@ -563,8 +564,8 @@ describe('PaymentReceiptForm – Final Clean Suite v2', () => {
           accommodationFee: 0,    
         })
       }
-      if (hookIndex === 11) return realUseState(true) // showConfirmModal: true
-      return realUseState(initVal)
+      if (hookIndex === 11) return originalUseState(true) // showConfirmModal: true
+      return originalUseState(initVal)
     })
 
     const { getByRole } = setup()
@@ -578,13 +579,13 @@ describe('PaymentReceiptForm – Final Clean Suite v2', () => {
 
   test('covers branch fallbacks for accommodation item calculation', async () => {
     let callCount = 0;
-    const realUseState = jest.requireActual('react').useState
-    const useStateSpy = jest.spyOn(jest.requireActual('react'), 'useState').mockImplementation((initVal) => {
+    const originalUseState = React.useState
+    const useStateSpy = (jest.spyOn(React, 'useState') as unknown as jest.Mock).mockImplementation((initVal: unknown) => {
       const hookIndex = callCount % 12;
       callCount++;
       
       if (hookIndex === 0) {
-        return realUseState({
+        return originalUseState({
           ...(initVal as object),
           interestedIn: 'Unknown', 
           quantity: undefined,    
@@ -592,10 +593,10 @@ describe('PaymentReceiptForm – Final Clean Suite v2', () => {
           accommodationFee: 0,    
         })
       }
-      if (hookIndex === 5) return realUseState('Single') // occupancyType
-      if (hookIndex === 8) return realUseState(2) // numberOfNights
-      if (hookIndex === 11) return realUseState(true) // showConfirmModal: true
-      return realUseState(initVal)
+      if (hookIndex === 5) return originalUseState('Single') // occupancyType
+      if (hookIndex === 8) return originalUseState(2) // numberOfNights
+      if (hookIndex === 11) return originalUseState(true) // showConfirmModal: true
+      return originalUseState(initVal)
     })
 
     const { getByRole } = setup()
@@ -603,6 +604,108 @@ describe('PaymentReceiptForm – Final Clean Suite v2', () => {
     fireEvent.click(confirmBtn)
 
     expect(onSubmit).toHaveBeenCalled()
+    useStateSpy.mockRestore()
+  })
+
+  test('covers fallback checks for falsy interestedIn and registration values (lines 235, 284, 368, 736-744, 779-784)', async () => {
+    let callCount = 0;
+    const originalUseState = React.useState
+    const useStateSpy = (jest.spyOn(React, 'useState') as unknown as jest.Mock).mockImplementation((initVal: unknown) => {
+      const hookIndex = callCount % 12;
+      callCount++;
+      if (hookIndex === 0) {
+        return originalUseState({
+          paymentReceiptAmount: 0,
+          orderItems: [],
+          interestedIn: '',
+          registrationFee: 0,
+          quantity: undefined,
+          accommodationFee: 0,
+          note: 'test note'
+        })
+      }
+      if (hookIndex === 3) return originalUseState(0)
+      if (hookIndex === 11) return originalUseState(true)
+      return originalUseState(initVal)
+    })
+
+    const { getByRole } = setup()
+    fireEvent.click(getByRole('button', { name: /Confirm & Send/i }))
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalled()
+      const payload = onSubmit.mock.calls[0][0]
+      expect(payload.orderItems[0].description).toBe('Registration - Registration Fee')
+      expect(payload.internetHandlingFees).toBeUndefined()
+    })
+    useStateSpy.mockRestore()
+  })
+
+  test('covers accommodation value sub-branches (line 368)', () => {
+    let callCount = 0;
+    const originalUseState = React.useState
+    const useStateSpy = (jest.spyOn(React, 'useState') as unknown as jest.Mock).mockImplementation((initVal: unknown) => {
+      const hookIndex = callCount % 12;
+      callCount++;
+      if (hookIndex === 0) {
+        return originalUseState({
+          interestedIn: 'Others',
+          accommodationFee: 150,
+        })
+      }
+      if (hookIndex === 5) return originalUseState('Single Occupancy')
+      if (hookIndex === 8) return originalUseState(3)
+      return originalUseState(initVal)
+    })
+
+    const { getByText } = setup()
+    expect(getByText('$450')).toBeInTheDocument()
+    useStateSpy.mockRestore()
+  })
+
+  test('covers accommodation value branch 2 (line 368): formData.accommodationFee <= 0 and accommodationFee positive', () => {
+    let callCount = 0;
+    const originalUseState = React.useState
+    const useStateSpy = (jest.spyOn(React, 'useState') as unknown as jest.Mock).mockImplementation((initVal: unknown) => {
+      const hookIndex = callCount % 12;
+      callCount++;
+      if (hookIndex === 0) {
+        return originalUseState({
+          interestedIn: 'Others',
+          accommodationFee: 0,
+        })
+      }
+      if (hookIndex === 5) return originalUseState('Single Occupancy')
+      if (hookIndex === 8) return originalUseState(3)
+      if (hookIndex === 9) return originalUseState(120)
+      return originalUseState(initVal)
+    })
+
+    const { getByText } = setup()
+    expect(getByText('$360')).toBeInTheDocument()
+    useStateSpy.mockRestore()
+  })
+
+  test('covers accommodation value branch 3 (line 368): both accommodationFees <= 0', () => {
+    let callCount = 0;
+    const originalUseState = React.useState
+    const useStateSpy = (jest.spyOn(React, 'useState') as unknown as jest.Mock).mockImplementation((initVal: unknown) => {
+      const hookIndex = callCount % 12;
+      callCount++;
+      if (hookIndex === 0) {
+        return originalUseState({
+          interestedIn: 'Others',
+          accommodationFee: 0,
+        })
+      }
+      if (hookIndex === 5) return originalUseState('Single Occupancy')
+      if (hookIndex === 8) return originalUseState(3)
+      if (hookIndex === 9) return originalUseState(0)
+      return originalUseState(initVal)
+    })
+
+    const { getAllByText } = setup()
+    expect(getAllByText('$0').length).toBeGreaterThan(0)
     useStateSpy.mockRestore()
   })
 })
