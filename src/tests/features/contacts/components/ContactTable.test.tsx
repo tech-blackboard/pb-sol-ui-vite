@@ -22,12 +22,12 @@ describe('ContactTable', () => {
 
     it('renders loading state', () => {
         render(<ContactTable rows={[]} loading={true} onView={mockOnView} />)
-        expect(screen.getByText('Loading contact requests...')).toBeInTheDocument()
+        expect(screen.getByText('Loading contacts...')).toBeInTheDocument()
     })
 
     it('renders empty state', () => {
         render(<ContactTable rows={[]} loading={false} onView={mockOnView} />)
-        expect(screen.getByText('No requests found')).toBeInTheDocument()
+        expect(screen.getByText('No contacts found')).toBeInTheDocument()
     })
 
     it('renders data rows and all fields', () => {
@@ -61,5 +61,27 @@ describe('ContactTable', () => {
         // Specifically check the phone column fallback by title
         const phoneCells = screen.getAllByTitle('—')
         expect(phoneCells.length).toBeGreaterThan(0)
+    })
+
+    it('calls onRestore when restore button clicked and confirm is true', () => {
+        jest.spyOn(window, 'confirm').mockReturnValue(true)
+        const mockRestore = jest.fn()
+        const deletedData = [{ ...mockData[0], deletedAt: '2024-01-01' }]
+        render(<ContactTable rows={deletedData} loading={false} onView={mockOnView} onRestore={mockRestore} />)
+        
+        fireEvent.click(screen.getByTitle('Restore'))
+        expect(mockRestore).toHaveBeenCalled()
+        ;(window.confirm as jest.Mock).mockRestore()
+    })
+
+    it('does not call onRestore when confirm is false', () => {
+        jest.spyOn(window, 'confirm').mockReturnValue(false)
+        const mockRestore = jest.fn()
+        const deletedData = [{ ...mockData[0], deletedAt: '2024-01-01' }]
+        render(<ContactTable rows={deletedData} loading={false} onView={mockOnView} onRestore={mockRestore} />)
+        
+        fireEvent.click(screen.getByTitle('Restore'))
+        expect(mockRestore).not.toHaveBeenCalled()
+        ;(window.confirm as jest.Mock).mockRestore()
     })
 })

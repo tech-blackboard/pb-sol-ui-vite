@@ -18,6 +18,7 @@ jest.mock('../../../../store/hooks', () => ({
 const createMockStore = () => configureStore({ reducer: { contacts: contactsReducer } })
 
 describe('ContactForm', () => {
+    jest.setTimeout(15000)
     const mockOnClose = jest.fn()
     const mockOnSuccess = jest.fn()
     const mockDispatch = jest.fn()

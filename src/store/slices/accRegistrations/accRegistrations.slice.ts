@@ -82,6 +82,18 @@ export const deleteAccRegistrationThunk = createAsyncThunk(
     }
 );
 
+export const restoreAccRegistrationThunk = createAsyncThunk(
+    'accRegistrations/restore',
+    async (id: string | number, { rejectWithValue }) => {
+        try {
+            await import('../../../services/accRegistrations').then(m => m.restoreAccRegistration(id));
+            return id;
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to restore accommodation registration');
+        }
+    }
+);
+
 const initialState: AccRegistrationsState = {
     items: [],
     loading: false,
@@ -186,6 +198,20 @@ const accRegistrationsSlice = createSlice({
             .addCase(deleteAccRegistrationThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = (action.payload as string) || action.error.message || 'Failed to delete accommodation registration';
+            })
+            .addCase(restoreAccRegistrationThunk.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(restoreAccRegistrationThunk.fulfilled, (state, action) => {
+                state.loading = false;
+                state.items = state.items.filter((item) => item.id !== action.payload);
+                if (state.selected?.id === action.payload) {
+                    state.selected = null;
+                }
+            })
+            .addCase(restoreAccRegistrationThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = (action.payload as string) || action.error.message || 'Failed to restore accommodation registration';
             });
     },
 });

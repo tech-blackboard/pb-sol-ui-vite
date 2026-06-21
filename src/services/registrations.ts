@@ -81,6 +81,13 @@ export async function deleteRegistration(id: number | string): Promise<void> {
     });
 }
 
+export async function restoreRegistration(id: number | string): Promise<void> {
+    await api.patch(`${REGISTRATION_BASE}/${id}/restore`, {}, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+}
+
 export async function createRegistration(data: Partial<RegistrationItem>): Promise<RegistrationItem> {
     const { data: result } = await api.post(`${REGISTRATION_BASE}`, data, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },

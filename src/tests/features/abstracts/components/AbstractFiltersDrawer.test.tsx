@@ -4,6 +4,7 @@ import {
   fireEvent,
   waitFor,
   act,
+  cleanup,
 } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import AbstractFiltersDrawer from '../../../../features/abstracts/components/AbstractFiltersDrawer'
@@ -310,16 +311,39 @@ describe('AbstractFiltersDrawer – full coverage (fixed)', () => {
       search: undefined,
       name: undefined,
       email: undefined,
+      organization: undefined,
+      country: undefined,
+      title: undefined,
+      sortBy: undefined,
+      sortOrder: undefined,
     }
     await renderDrawerAndWait({ filters: emptyFilters })
 
     expect(screen.getByPlaceholderText('Keyword search...')).toHaveValue('')
     expect(screen.getByPlaceholderText('Name')).toHaveValue('')
+    expect(screen.getByPlaceholderText('Organization')).toHaveValue('')
+    expect(screen.getByPlaceholderText('Country')).toHaveValue('')
+    expect(screen.getByPlaceholderText('Title')).toHaveValue('')
   })
 
-  test('isEmailSent matches empty string when undefined', async () => {
+  test('isEmailSent matches empty string when undefined, true, or false', async () => {
     await renderDrawerAndWait({ filters: { ...baseFilters, isEmailSent: undefined } })
-    const select = screen.getAllByRole('combobox').find(s => s.innerHTML.includes('All')) as HTMLSelectElement
-    if(select) expect(select).toHaveValue('')
+    let selects = screen.getAllByRole('combobox')
+    let select = selects.find(s => s.innerHTML.includes('All')) as HTMLSelectElement
+    if (select) expect(select.value).toBe('')
+
+    cleanup()
+
+    await renderDrawerAndWait({ filters: { ...baseFilters, isEmailSent: true } })
+    selects = screen.getAllByRole('combobox')
+    select = selects.find(s => s.innerHTML.includes('All')) as HTMLSelectElement
+    if (select) expect(select.value).toBe('true')
+
+    cleanup()
+
+    await renderDrawerAndWait({ filters: { ...baseFilters, isEmailSent: false } })
+    selects = screen.getAllByRole('combobox')
+    select = selects.find(s => s.innerHTML.includes('All')) as HTMLSelectElement
+    if (select) expect(select.value).toBe('false')
   })
 })

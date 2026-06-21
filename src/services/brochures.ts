@@ -61,6 +61,13 @@ export async function deleteBrochure(id: number | string): Promise<void> {
     });
 }
 
+export async function restoreBrochure(id: number | string): Promise<void> {
+    await api.patch(`${BROCHURE_BASE}/${id}/restore`, {}, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+}
+
 export async function updateBrochure(id: number | string, data: Partial<BrochureItem>): Promise<BrochureItem> {
     const { data: result } = await api.patch(`${BROCHURE_BASE}/${id}`, data, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },

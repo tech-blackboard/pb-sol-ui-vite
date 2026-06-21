@@ -23,12 +23,12 @@ describe('SponsorshipTable', () => {
 
     it('renders loading state', () => {
         render(<SponsorshipTable rows={[]} loading={true} onView={mockOnView} />)
-        expect(screen.getByText('Loading sponsorship inquiries...')).toBeInTheDocument()
+        expect(screen.getByText('Loading sponsorships...')).toBeInTheDocument()
     })
 
     it('renders empty state', () => {
         render(<SponsorshipTable rows={[]} loading={false} onView={mockOnView} />)
-        expect(screen.getByText('No records found')).toBeInTheDocument()
+        expect(screen.getByText('No requests found')).toBeInTheDocument()
     })
 
     it('renders data rows and all fields', () => {
@@ -60,5 +60,27 @@ describe('SponsorshipTable', () => {
         render(<SponsorshipTable rows={incompleteData} loading={false} onView={mockOnView} />)
         const dashes = screen.getAllByText('—')
         expect(dashes.length).toBeGreaterThan(0)
+    })
+
+    it('calls onRestore when restore button clicked and confirm is true', () => {
+        jest.spyOn(window, 'confirm').mockReturnValue(true)
+        const mockRestore = jest.fn()
+        const deletedData = [{ ...mockData[0], deletedAt: '2024-01-01' }]
+        render(<SponsorshipTable rows={deletedData} loading={false} onView={mockOnView} onRestore={mockRestore} />)
+        
+        fireEvent.click(screen.getByTitle('Restore'))
+        expect(mockRestore).toHaveBeenCalled()
+        ;(window.confirm as jest.Mock).mockRestore()
+    })
+
+    it('does not call onRestore when confirm is false', () => {
+        jest.spyOn(window, 'confirm').mockReturnValue(false)
+        const mockRestore = jest.fn()
+        const deletedData = [{ ...mockData[0], deletedAt: '2024-01-01' }]
+        render(<SponsorshipTable rows={deletedData} loading={false} onView={mockOnView} onRestore={mockRestore} />)
+        
+        fireEvent.click(screen.getByTitle('Restore'))
+        expect(mockRestore).not.toHaveBeenCalled()
+        ;(window.confirm as jest.Mock).mockRestore()
     })
 })

@@ -2,20 +2,24 @@ jest.mock('../../../../services/registrations', () => ({
     searchRegistrations: jest.fn(),
     deleteRegistration: jest.fn(),
     createRegistration: jest.fn(),
+    updateRegistration: jest.fn(),
 }))
 
 import {
     fetchRegistrations,
     deleteRegistrationThunk,
     createRegistrationThunk,
+    updateRegistrationThunk,
 } from '../../../../store/slices/registrations/registrations.thunks'
 
 import {
     searchRegistrations,
     deleteRegistration,
     createRegistration,
+    updateRegistration,
 } from '../../../../services/registrations'
 import type { RegistrationRecord } from '../../../../features/abstracts/types'
+import type { RegistrationItem } from '../../../../services/registrations'
 
 const dispatch = jest.fn()
 const getState = jest.fn()
@@ -164,4 +168,88 @@ it('createRegistrationThunk → rejects with axios error message', async () => {
 
     expect(result.payload).toBe('Axios Create Error');
 });
+
+    /* -------------------------------------------------- */
+    /* updateRegistrationThunk                            */
+    /* -------------------------------------------------- */
+
+    it('updateRegistrationThunk → calls updateRegistration and returns result', async () => {
+        const mockItem = { id: 1, name: 'John' } as RegistrationItem;
+        (updateRegistration as jest.Mock).mockResolvedValue(mockItem);
+
+        const thunk = updateRegistrationThunk({ id: 1, data: { name: 'John' } });
+        const result = await thunk(dispatch, getState, undefined);
+
+        expect(updateRegistration).toHaveBeenCalledWith(1, { name: 'John' });
+        expect(result.payload).toEqual(mockItem);
+    });
+
+    it('updateRegistrationThunk → rejects with axios error message', async () => {
+        (updateRegistration as jest.Mock).mockRejectedValue({
+            isAxiosError: true,
+            response: { data: { message: 'Axios Update Error' } }
+        });
+
+        const thunk = updateRegistrationThunk({ id: 1, data: {} });
+        const result = await thunk(dispatch, getState, undefined);
+
+        expect(result.payload).toBe('Axios Update Error');
+    });
+
+    it('updateRegistrationThunk → rejects with default message on generic error', async () => {
+        (updateRegistration as jest.Mock).mockRejectedValue(new Error('Generic Error'));
+
+        const thunk = updateRegistrationThunk({ id: 1, data: {} });
+        const result = await thunk(dispatch, getState, undefined);
+
+        expect(result.payload).toBe('Failed to update registration');
+    });
+
+    it('fetchRegistrations → rejects with fallback message when axios error message is missing', async () => {
+        (searchRegistrations as jest.Mock).mockRejectedValue({
+            isAxiosError: true,
+            message: 'Axios thunk fallback message'
+        });
+
+        const thunk = fetchRegistrations({ page: 1, limit: 10, filters: {} });
+        const result = await thunk(dispatch, getState, undefined);
+
+        expect(result.payload).toBe('Axios thunk fallback message');
+    });
+
+    it('deleteRegistrationThunk → rejects with fallback message when axios error message is missing', async () => {
+        (deleteRegistration as jest.Mock).mockRejectedValue({
+            isAxiosError: true,
+            message: 'Axios thunk fallback message'
+        });
+
+        const thunk = deleteRegistrationThunk(1);
+        const result = await thunk(dispatch, getState, undefined);
+
+        expect(result.payload).toBe('Axios thunk fallback message');
+    });
+
+    it('createRegistrationThunk → rejects with fallback message when axios error message is missing', async () => {
+        (createRegistration as jest.Mock).mockRejectedValue({
+            isAxiosError: true,
+            message: 'Axios thunk fallback message'
+        });
+
+        const thunk = createRegistrationThunk({} as unknown as RegistrationRecord);
+        const result = await thunk(dispatch, getState, undefined);
+
+        expect(result.payload).toBe('Axios thunk fallback message');
+    });
+
+    it('updateRegistrationThunk → rejects with fallback message when axios error message is missing', async () => {
+        (updateRegistration as jest.Mock).mockRejectedValue({
+            isAxiosError: true,
+            message: 'Axios thunk fallback message'
+        });
+
+        const thunk = updateRegistrationThunk({ id: 1, data: {} });
+        const result = await thunk(dispatch, getState, undefined);
+
+        expect(result.payload).toBe('Axios thunk fallback message');
+    });
 })

@@ -3,7 +3,7 @@ import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { selectAuth } from '../../../store/slices/authSlice'
-import { fetchContacts, deleteContactThunk, setPage, setPageSize, setSelected, clearSelected, clearError, updateDraftFilter, applyFilters } from '../../../store/slices/contacts/contacts.slice'
+import { fetchContacts, deleteContactThunk, setPage, setPageSize, setSelected, clearSelected, clearError, updateDraftFilter, applyFilters, restoreContactThunk } from '../../../store/slices/contacts/contacts.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import ContactTable from '../components/ContactTable'
 import ContactDetailsModal from '../components/ContactDetailsModal'
@@ -21,6 +21,7 @@ export default function ContactsPage() {
     const { user } = useAppSelector(selectAuth)
     const canExport = user?.permissions?.includes('export:excel')
     const [isExporting, setIsExporting] = useState(false)
+    const [selectedIds, setSelectedIds] = useState<number[]>([])
 
     useEffect(() => {
         dispatch(fetchContacts({ filters: appliedFilters, page, limit: pageSize }))
@@ -30,9 +31,9 @@ export default function ContactsPage() {
         try {
             setIsExporting(true)
             const toastId = toast.loading('Exporting data to Excel...')
-            
+
             const result = await searchContacts({ ...appliedFilters, limit: 10000, page: 1 })
-            
+
             if (!result.items || result.items.length === 0) {
                 toast.error('No records found to export', { id: toastId })
                 setIsExporting(false)
@@ -54,7 +55,7 @@ export default function ContactsPage() {
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Contacts')
 
             XLSX.writeFile(workbook, 'Contacts_Export.xlsx')
-            
+
             toast.success('Export successful!', { id: toastId })
         } catch (error) {
             console.error('Export failed:', error)
@@ -63,6 +64,24 @@ export default function ContactsPage() {
             setIsExporting(false)
         }
     }
+
+    const handleDeleteSelected = async () => {
+        if (!confirm(`Are you sure you want to delete ${selectedIds.length} selected records?`)) {
+            return;
+        }
+
+        const toastId = toast.loading(`Deleting ${selectedIds.length} records...`);
+        try {
+            await Promise.all(selectedIds.map(id => dispatch(deleteContactThunk(id)).unwrap()));
+            toast.success(`Successfully deleted ${selectedIds.length} records`, { id: toastId });
+            setSelectedIds([]);
+            dispatch(fetchContacts({ filters: appliedFilters, page, limit: pageSize }));
+        } catch (err: unknown) {
+            const errorMsg = typeof err === 'string' ? err : 'Failed to delete some records';
+            toast.error(errorMsg, { id: toastId });
+            dispatch(fetchContacts({ filters: appliedFilters, page, limit: pageSize }));
+        }
+    };
 
     return (
         <div className="h-full flex flex-col">
@@ -81,6 +100,8 @@ export default function ContactsPage() {
                 }}
                 onExportClick={canExport ? handleExport : undefined}
                 isExporting={isExporting}
+                selectedCount={selectedIds.length}
+                onDeleteSelected={handleDeleteSelected}
             />
 
             {filtersOpen && (
@@ -103,6 +124,29 @@ export default function ContactsPage() {
                 onView={(row) => {
                     dispatch(setSelected(row))
                 }}
+                onRestore={appliedFilters.onlyDeleted === 'true' ? async (item) => {
+                    try {
+                        await dispatch(restoreContactThunk(item.id!)).unwrap()
+                        toast.success('Contact restored successfully')
+                    } catch (err: unknown) {
+                        const errorMessage = typeof err === 'string' ? err : 'Failed to restore contact'
+                        toast.error(errorMessage)
+                    }
+                } : undefined}
+                selectedIds={selectedIds}
+                onSelect={(id) => {
+                    setSelectedIds(prev =>
+                        prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+                    )
+                }}
+                onSelectAll={(checked) => {
+                    if (checked) {
+                        setSelectedIds(items.map(item => Number(item.id)))
+                    } else {
+                        setSelectedIds([])
+                    }
+                }}
+                hideCheckboxes={appliedFilters.onlyDeleted === 'true'}
             />
 
             <AbstractPagination

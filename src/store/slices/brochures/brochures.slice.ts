@@ -80,6 +80,18 @@ export const deleteBrochureThunk = createAsyncThunk(
     }
 );
 
+export const restoreBrochureThunk = createAsyncThunk(
+    'brochures/restore',
+    async (id: string | number, { rejectWithValue }) => {
+        try {
+            await import('../../../services/brochures').then(m => m.restoreBrochure(id));
+            return id;
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to restore brochure request');
+        }
+    }
+);
+
 const initialState: BrochuresState = {
     items: [],
     loading: false,
@@ -184,6 +196,20 @@ const brochuresSlice = createSlice({
             .addCase(deleteBrochureThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = (action.payload as string) || action.error.message || 'Failed to delete brochure request';
+            })
+            .addCase(restoreBrochureThunk.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(restoreBrochureThunk.fulfilled, (state, action) => {
+                state.loading = false;
+                state.items = state.items.filter((item) => item.id !== action.payload);
+                if (state.selected?.id === action.payload) {
+                    state.selected = null;
+                }
+            })
+            .addCase(restoreBrochureThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = (action.payload as string) || action.error.message || 'Failed to restore brochure request';
             });
     },
 });

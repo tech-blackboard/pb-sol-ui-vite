@@ -8,6 +8,7 @@ import ContactsPage from '../../../../features/contacts/pages/ContactsPage'
 import contactsReducer from '../../../../store/slices/contacts/contacts.slice'
 import type { ContactsState } from '../../../../store/slices/contacts/contacts.slice'
 import { listWebsites } from '../../../../services/sourcedb'
+import authReducer from '../../../../store/slices/authSlice'
 
 // Mock services
 jest.mock('../../../../services/sourcedb', () => ({
@@ -43,7 +44,10 @@ interface RootState {
 }
 
 const createMockStore = (initialStatePartial: Partial<ContactsState> = {}) => configureStore({
-    reducer: { contacts: contactsReducer },
+    reducer: {
+        contacts: contactsReducer,
+        auth: authReducer,
+    },
     preloadedState: {
         contacts: {
             items: [],
@@ -66,6 +70,12 @@ const createMockStore = (initialStatePartial: Partial<ContactsState> = {}) => co
             },
             selected: null,
             ...initialStatePartial
+        },
+        auth: {
+            user: { name: 'Test User', role: 'User', permissions: ['export:excel'] },
+            token: 'fake-token',
+            loading: false,
+            error: null,
         }
     }
 })
@@ -202,7 +212,7 @@ describe('Contact Feature Tests', () => {
             render(<Provider store={store}><ContactFiltersDrawer open={true} onClose={mockOnClose} /></Provider>)
 
             await waitFor(() => expect(listWebsites).toHaveBeenCalled())
-            expect(screen.getByText('Website')).toBeInTheDocument()
+            await waitFor(() => expect(screen.getByText('Website')).toBeInTheDocument())
         })
     })
 })

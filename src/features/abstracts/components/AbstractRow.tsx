@@ -9,9 +9,13 @@ interface Props {
   record: AbstractRecord
   raw: AbstractItem | null
   onView: () => void
+  onRestore?: () => void
+  isSelected: boolean
+  onToggleSelect: () => void
+  hideCheckboxes?: boolean
 }
 
-export default function AbstractRow({ record, raw, onView }: Props) {
+export default function AbstractRow({ record, raw, onView, onRestore, isSelected, onToggleSelect, hideCheckboxes }: Props) {
   const f: string | undefined = record.file
   const isAbs = !!(f && /^https?:\/\//i.test(f))
   const name = f ? f.split('/').pop() || '' : ''
@@ -72,12 +76,23 @@ export default function AbstractRow({ record, raw, onView }: Props) {
   }
 
   return (
-    <tr className="border-t border-gray-100">
-
+    <tr className="group border-t border-gray-100">
+      <td className="px-3 py-1">
+        {!hideCheckboxes && (
+            <div className="flex items-center justify-center">
+                <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={onToggleSelect}
+                    className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                />
+            </div>
+        )}
+      </td>
 
       {/* Actions */}
       <td className="px-3 py-1">
-        <div className="flex flex-wrap gap-1">
+        <div className="flex items-center gap-1">
           <button
             onClick={onView}
             className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-2 py-1  text-xs hover:bg-gray-50"
@@ -99,6 +114,23 @@ export default function AbstractRow({ record, raw, onView }: Props) {
               />
             </svg>
           </button>
+          {record.deletedAt && onRestore && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                if (confirm('Are you sure you want to restore this record?')) {
+                  onRestore()
+                }
+              }}
+              className="inline-flex items-center gap-1 rounded-md border border-green-300 bg-green-50 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
+              title="Restore"
+              aria-label="Restore"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+              </svg>
+            </button>
+          )}
         </div>
       </td>
 

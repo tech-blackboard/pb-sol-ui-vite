@@ -73,6 +73,13 @@ export async function deleteAccRegistration(id: number | string): Promise<void> 
     });
 }
 
+export async function restoreAccRegistration(id: number | string): Promise<void> {
+    await api.patch(`${ACC_REGISTRATION_BASE}/${id}/restore`, {}, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+}
+
 export async function createAccRegistration(data: Partial<AccRegistrationItem>): Promise<AccRegistrationItem> {
     const { data: responseData } = await api.post(`${ACC_REGISTRATION_BASE}`, data, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },

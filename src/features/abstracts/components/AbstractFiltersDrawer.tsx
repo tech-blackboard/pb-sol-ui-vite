@@ -148,7 +148,6 @@ export default function AbstractFiltersDrawer({ open, onClose }: Props) {
               <option value={4}>Rejected</option>
               <option value={5}>Sent Invoice</option>
               <option value={6}>Registered</option>
-              <option value={7}>Deleted</option>
             </select>
 
             <select

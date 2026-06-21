@@ -4,7 +4,8 @@ import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import type { RootState } from '../../../store';
 import { sendReplyThunk, saveDraftThunk } from '../../../store/slices/crm/crm.thunks';
 import { fetchEmailAccounts } from '../services/crmService';
-import type { Attachment, EmailAccount, MessageImportance } from '../types';
+import type { Attachment, EmailAccount, MessageImportance, NewAttachment } from '../types';
+import { uploadService } from '../../../services/upload';
 import toast from 'react-hot-toast';
 import { GmailToolbar } from './GmailToolbar';
 import { GmailReplyEditor } from './GmailReplyEditor';
@@ -72,6 +73,15 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
 
     const [attachmentIds, setAttachmentIds] = useState<number[]>(initialAttachmentIds || []);
     const [attachments, setAttachments] = useState<Attachment[]>(originalAttachments || []);
+    const [newAttachments, setNewAttachments] = useState<NewAttachment[]>([]);
+    const [uploadingFiles, setUploadingFiles] = useState<{ id: string; name: string }[]>([]);
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const newAttachmentsRef = useRef(newAttachments);
+
+    useEffect(() => {
+        newAttachmentsRef.current = newAttachments;
+    }, [newAttachments]);
 
     const [cc, setCc] = useState(initialCc || '');
     const [bcc, setBcc] = useState(initialBcc || '');
@@ -85,7 +95,11 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
 
     const importanceRef = useRef<HTMLDivElement>(null);
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const metadataSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isSavingRef = useRef(false);
+    const hasPendingSaveRef = useRef(false);
+    const pendingSaveBodyRef = useRef('');
+    const handleSaveDraftRef = useRef<((body: string, forceMetadata?: boolean) => Promise<void>) | null>(null);
     const htmlBodyRef = useRef(htmlBody);
     const lastSavedBodyRef = useRef(lastSavedBody);
     const draftIdRef = useRef(draftId);
@@ -94,6 +108,8 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
     const bccRef = useRef(bcc);
     const importanceValueRef = useRef(importance);
     const hasUserEditedRef = useRef(false);
+    // Tracks whether a metadata-only change (attachment/importance) needs saving
+    const hasMetadataChangeRef = useRef(false);
 
     const lastInitializedKeyRef = useRef('');
     const initializationKey = `${mode}|${forwardedFromId || ''}|${initialDraftId || ''}|${isExpanded}`;
@@ -141,6 +157,12 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
             setAttachments(originalAttachments || []);
             const newBody = initialHtmlBody || '';
             setHtmlBody(newBody);
+            setEmailAccountId(initialEmailAccountId);
+            setFromEmail(initialFromEmail || replyEmails[0] || '');
+            setCc(initialCc || '');
+            setBcc(initialBcc || '');
+            setShowCC(!!initialCc);
+            setShowBCC(!!initialBcc);
 
             editorInstance.commands.setContent(newBody, {
                 emitUpdate: false,
@@ -215,7 +237,12 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
         initialDraftId,
         forwardedFromId,
         event,
-        editorInstance
+        editorInstance,
+        initialFromEmail,
+        initialEmailAccountId,
+        initialCc,
+        initialBcc,
+        replyEmails
     ]);
 
     // Handle importance dropdown click outside
@@ -277,35 +304,108 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
         }
     };
 
-    const handleSaveDraft = useCallback(async (currentBody: string) => {
-        if (!currentBody.trim() || currentBody === lastSavedBody || isSavingRef.current) return;
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+
+        for (const file of files) {
+            if (file.size > MAX_FILE_SIZE) {
+                toast.error(`File size exceeds 20MB limit: ${file.name}`);
+                continue;
+            }
+
+            const tempId = Math.random().toString(36).substring(7);
+            setUploadingFiles(prev => [...prev, { id: tempId, name: file.name }]);
+
+            try {
+                const result = await uploadService.uploadFile(file);
+                setNewAttachments(prev => [...prev, {
+                    filename: file.name,
+                    s3Key: result.key,
+                    contentType: file.type || 'application/octet-stream',
+                    size: file.size
+                }]);
+            } catch (err: unknown) {
+                const error = err instanceof Error ? err : new Error(String(err));
+                console.error(`Failed to upload ${file.name}:`, error.message);
+                toast.error(`Failed to upload ${file.name}`);
+            } finally {
+                setUploadingFiles(prev => prev.filter(f => f.id !== tempId));
+            }
+        }
+
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const removeNewAttachment = (index: number) => {
+        setNewAttachments(prev => prev.filter((_, idx) => idx !== index));
+    };
+
+    const handleSaveDraft = useCallback(async (currentBody: string, forceMetadata = false) => {
+        // Allow save if body changed OR if a metadata-only change (attachment/importance) needs persisting
+        const bodyChanged = currentBody.trim() && currentBody !== lastSavedBody;
+        if (!bodyChanged && !forceMetadata) return;
+        // For metadata-only saves, still require some body content
+        if (forceMetadata && !currentBody.trim() && !lastSavedBodyRef.current.trim()) return;
+
+        if (isSavingRef.current) {
+            hasPendingSaveRef.current = true;
+            pendingSaveBodyRef.current = currentBody;
+            return;
+        }
 
         isSavingRef.current = true;
-        const result = await dispatch(saveDraftThunk({
-            contactId,
-            eventId,
-            subject: subjectRef.current,
-            htmlBody: currentBody,
-            textBody: currentBody,
-            fromEmail: fromEmail || undefined,
-            emailAccountId,
-            draftId: draftIdRef.current,
-            threadId,
-            cc: ccRef.current,
-            bcc: bccRef.current,
-            importance: importanceValueRef.current,
-            isForwarded: mode === 'forward',
-            forwardedFromId: mode === 'forward' ? forwardedFromId : undefined,
-            attachmentIds: attachmentIds,
-        }));
+        hasMetadataChangeRef.current = false;
+        try {
+            const result = await dispatch(saveDraftThunk({
+                contactId,
+                eventId,
+                subject: subjectRef.current,
+                htmlBody: currentBody,
+                textBody: currentBody,
+                fromEmail: fromEmail || undefined,
+                emailAccountId,
+                draftId: draftIdRef.current,
+                threadId,
+                cc: ccRef.current,
+                bcc: bccRef.current,
+                importance: importanceValueRef.current,
+                isForwarded: mode === 'forward',
+                forwardedFromId: mode === 'forward' ? forwardedFromId : undefined,
+                attachmentIds: attachmentIds,
+                attachments: newAttachmentsRef.current,
+            }));
 
-        if (saveDraftThunk.fulfilled.match(result)) {
-            setDraftId(result.payload.id);
-            setLastSavedBody(currentBody);
+            if (saveDraftThunk.fulfilled.match(result)) {
+                setDraftId(result.payload.id);
+                setLastSavedBody(currentBody);
+                if (result.payload.attachments) {
+                    setAttachments(result.payload.attachments);
+                    setAttachmentIds(result.payload.attachments.map(a => a.id));
+                }
+                setNewAttachments([]);
+            }
+        } finally {
+            isSavingRef.current = false;
+            if (hasPendingSaveRef.current) {
+                hasPendingSaveRef.current = false;
+                const nextBody = pendingSaveBodyRef.current;
+                if (handleSaveDraftRef.current) {
+                    handleSaveDraftRef.current(nextBody);
+                }
+            }
         }
-        isSavingRef.current = false;
     }, [contactId, eventId, fromEmail, emailAccountId, lastSavedBody, threadId, dispatch, attachmentIds, forwardedFromId, mode]);
 
+    useEffect(() => {
+        handleSaveDraftRef.current = handleSaveDraft;
+    }, [handleSaveDraft]);
+
+    // Auto-save draft when body changes
     useEffect(() => {
         const charDifference = Math.abs(htmlBody.length - lastSavedBody.length);
         const shouldSave = isExpanded && htmlBody !== lastSavedBody && (charDifference > 10 || htmlBody.length === 0);
@@ -320,6 +420,29 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
             if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         };
     }, [htmlBody, isExpanded, lastSavedBody, handleSaveDraft]);
+
+    // Mark metadata as changed when attachments or importance change
+    useEffect(() => {
+        hasMetadataChangeRef.current = true;
+    }, [newAttachments, importance]);
+
+    // Auto-save draft when attachments or importance change (even if body hasn't changed)
+    useEffect(() => {
+        if (!hasMetadataChangeRef.current) return;
+        if (!isExpanded) return;
+
+        if (metadataSaveTimeoutRef.current) clearTimeout(metadataSaveTimeoutRef.current);
+
+        metadataSaveTimeoutRef.current = setTimeout(() => {
+            if (hasMetadataChangeRef.current) {
+                handleSaveDraft(lastSavedBodyRef.current || htmlBodyRef.current, true);
+            }
+        }, 1500);
+
+        return () => {
+            if (metadataSaveTimeoutRef.current) clearTimeout(metadataSaveTimeoutRef.current);
+        };
+    }, [newAttachments, importance, isExpanded, handleSaveDraft]);
 
     // Prepare dropdown options
     const accountOptions = useMemo(() => {
@@ -363,6 +486,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                     isForwarded: s.mode === 'forward',
                     forwardedFromId: s.mode === 'forward' ? s.forwardedFromId : undefined,
                     attachmentIds: s.attachmentIds,
+                    attachments: newAttachmentsRef.current,
                 }));
             }
         };
@@ -396,6 +520,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
             isForwarded: mode === 'forward',
             forwardedFromId: mode === 'forward' ? forwardedFromId : undefined,
             attachmentIds: attachmentIds,
+            attachments: newAttachments,
             ...(mode === 'forward' && toEmail ? { toEmail } : {})
         }));
 
@@ -409,6 +534,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
             setShowBCC(false);
             setImportance('normal');
             setDraftId(undefined);
+            setNewAttachments([]);
             handleCollapse();
             if (onSuccess) onSuccess();
         } else {
@@ -794,7 +920,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                 </div>
 
                 {/* Attachments UI */}
-                {attachments.length > 0 && (
+                {(attachments.length > 0 || newAttachments.length > 0 || uploadingFiles.length > 0) && (
                     <div className="flex flex-wrap gap-2 mt-2">
                         {attachments.map(att => (
                             <div key={att.id} className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700 text-xs">
@@ -802,6 +928,7 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                                     <path strokeLinecap="round" strokeLinejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32a.75.75 0 1 1-1.06-1.06l10.94-10.94" />
                                 </svg>
                                 <span className="text-gray-700 dark:text-gray-300 max-w-[150px] truncate">{att.filename}</span>
+                                <span className="text-gray-400 dark:text-gray-500 text-[10px]">({(att.size / 1024).toFixed(1)} KB)</span>
                                 <button
                                     type="button"
                                     onClick={() => removeAttachment(att.id)}
@@ -811,6 +938,31 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                 </button>
+                            </div>
+                        ))}
+                        {newAttachments.map((att, idx) => (
+                            <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-full border border-blue-200 dark:border-blue-800/40 text-xs">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 text-blue-500">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32a.75.75 0 1 1-1.06-1.06l10.94-10.94" />
+                                </svg>
+                                <span className="text-blue-700 dark:text-blue-305 max-w-[150px] truncate">{att.filename}</span>
+                                <span className="text-blue-400 dark:text-blue-500 text-[10px]">({(att.size / 1024).toFixed(1)} KB)</span>
+                                <button
+                                    type="button"
+                                    onClick={() => removeNewAttachment(idx)}
+                                    className="p-0.5 hover:bg-blue-100 dark:hover:bg-blue-900/45 rounded-full text-blue-400 hover:text-red-500 transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        ))}
+                        {uploadingFiles.map(file => (
+                            <div key={file.id} className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700 text-xs animate-pulse">
+                                <div className="h-3 w-3 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+                                <span className="text-gray-500 dark:text-gray-400 max-w-[150px] truncate">{file.name}</span>
+                                <span className="text-gray-400 text-[10px]">Uploading...</span>
                             </div>
                         ))}
                     </div>
@@ -833,6 +985,24 @@ const ReplyForm = forwardRef<ReplyFormHandle, ReplyFormProps>(({
                             )}
                             {mode === 'forward' ? 'Forward' : (threadId ? 'Send Reply' : 'Send')}
                         </button>
+
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
+                            title="Attach files"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32a.75.75 0 1 1-1.06-1.06l10.94-10.94" />
+                            </svg>
+                        </button>
+                        <input
+                            type="file"
+                            multiple
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            className="hidden"
+                        />
 
                         {/* Formatting Toggle Button (Aa) */}
                         <button

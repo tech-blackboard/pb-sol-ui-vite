@@ -5,20 +5,34 @@ import type { Editor } from '@tiptap/react';
 describe('GmailReplyEditor Extensions and Pasting', () => {
   it('parses and renders custom extensions without crashing', async () => {
     const complexHtml = `
-      <div class="gmail-paragraph" style="color: red;">Paragraph</div>
+      <p class="gmail-paragraph" style="color: red;">Paragraph</p>
       <span class="span-class" style="color: blue;">Span</span>
+      <span style="font-size: 16px; font-family: Arial;">Styled Text</span>
       <a class="link-class" style="font-weight: bold;" href="https://test.com">Link</a>
       <img class="img-class" style="margin: 0;" width="100" height="100" src="https://test.com/img.png" />
       <div class="gmail_quote">Quote Content</div>
       <section class="section-class" style="padding: 10px;">Section</section>
       <table class="table-class" style="border: 1px;" cellpadding="0" cellspacing="0" width="100%">
-        <tr class="tr-class" style="height: 20px;">
-          <th class="th-class" style="width: 50%;" width="50%" height="20">Header</th>
-          <td class="td-class" style="width: 50%;" width="50%" height="20">Cell</td>
+        <tr class="tr-class" style="background: red;">
+          <th class="th-class" style="padding: 5px;" width="50" height="50">Header</th>
+          <td class="td-class" style="padding: 5px;" width="50" height="50">Cell</td>
         </tr>
       </table>
-      <span style="font-size: 14px;">Size</span>
-      <span style="font-family: Arial;">Family</span>
+      <blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex">
+        Nested quote
+      </blockquote>
+      <!-- Elements without attributes to cover renderHTML fallback branches -->
+      <img src="https://test.com/img2.png" />
+      <table>
+        <tr>
+          <th>H</th>
+          <td>C</td>
+        </tr>
+      </table>
+      <blockquote>Plain quote</blockquote>
+      <p>Plain</p>
+      <span>Plain</span>
+      <a href="https://test.com">Plain</a>
     `;
 
     let editorInstance: Editor | null = null;
@@ -35,17 +49,21 @@ describe('GmailReplyEditor Extensions and Pasting', () => {
     // Wait for editor to be ready
     await waitFor(() => expect(editorInstance).toBeTruthy());
 
-    // Trigger commands
+    // Insert content and apply formatting
+    editorInstance!.commands.insertContent('<p>Test Font Size and Family</p>');
+    editorInstance!.commands.selectAll();
     editorInstance!.commands.setFontSize('16px');
-    editorInstance!.commands.unsetFontSize();
     editorInstance!.commands.setFontFamily('Times New Roman');
-    editorInstance!.commands.unsetFontFamily();
 
     // Trigger renderHTML by getting HTML out
     const outputHtml = editorInstance!.getHTML();
     expect(outputHtml).toContain('gmail-paragraph');
     expect(outputHtml).toContain('color: red');
-    expect(outputHtml).toContain('gmail_quote');
+    expect(outputHtml).toContain('font-size: 16px');
+    expect(outputHtml).toContain('font-family: Times New Roman');
+
+    editorInstance!.commands.unsetFontSize();
+    editorInstance!.commands.unsetFontFamily();
 
     // Trigger transformPastedHTML
     if (editorInstance!.options.editorProps?.transformPastedHTML) {

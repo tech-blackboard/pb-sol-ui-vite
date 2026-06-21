@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import { selectAuth } from '../../../store/slices/authSlice'
 import { setSelected, clearSelected, setPage, setPageSize, clearError, updateDraftFilter, applyFilters } from '../../../store/slices/registrations/registrations.slice'
-import { fetchRegistrations, deleteRegistrationThunk } from '../../../store/slices/registrations/registrations.thunks'
+import { fetchRegistrations, deleteRegistrationThunk, restoreRegistrationThunk } from '../../../store/slices/registrations/registrations.thunks'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import RegistrationTable from '../components/RegistrationTable'
 import RegistrationDetailsModal from '../components/RegistrationDetailsModal'
@@ -24,6 +24,7 @@ export default function RegistrationsPage() {
     const { user } = useAppSelector(selectAuth)
     const canExport = user?.permissions?.includes('export:excel')
     const [isExporting, setIsExporting] = useState(false)
+    const [selectedIds, setSelectedIds] = useState<number[]>([])
 
     useEffect(() => {
         dispatch(fetchRegistrations({ filters: appliedFilters, page, limit: pageSize }))
@@ -33,9 +34,7 @@ export default function RegistrationsPage() {
         try {
             setIsExporting(true)
             const toastId = toast.loading('Exporting data to Excel...')
-            
             const result = await searchRegistrations({ ...appliedFilters, limit: 10000, page: 1 })
-            
             if (!result.items || result.items.length === 0) {
                 toast.error('No records found to export', { id: toastId })
                 setIsExporting(false)
@@ -72,7 +71,6 @@ export default function RegistrationsPage() {
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Registrations')
 
             XLSX.writeFile(workbook, 'Registrations_Export.xlsx')
-            
             toast.success('Export successful!', { id: toastId })
         } catch (error) {
             console.error('Export failed:', error)
@@ -81,6 +79,24 @@ export default function RegistrationsPage() {
             setIsExporting(false)
         }
     }
+
+    const handleDeleteSelected = async () => {
+        if (!confirm(`Are you sure you want to delete ${selectedIds.length} selected records?`)) {
+            return;
+        }
+
+        const toastId = toast.loading(`Deleting ${selectedIds.length} records...`);
+        try {
+            await Promise.all(selectedIds.map(id => dispatch(deleteRegistrationThunk(id)).unwrap()));
+            toast.success(`Successfully deleted ${selectedIds.length} records`, { id: toastId });
+            setSelectedIds([]);
+            dispatch(fetchRegistrations({ filters: appliedFilters, page, limit: pageSize }));
+        } catch (err: unknown) {
+            const errorMsg = typeof err === 'string' ? err : 'Failed to delete some records';
+            toast.error(errorMsg, { id: toastId });
+            dispatch(fetchRegistrations({ filters: appliedFilters, page, limit: pageSize }));
+        }
+    };
 
     return (
         <div className="h-full flex flex-col">
@@ -95,8 +111,9 @@ export default function RegistrationsPage() {
                 }}
                 onExportClick={canExport ? handleExport : undefined}
                 isExporting={isExporting}
+                selectedCount={selectedIds.length}
+                onDeleteSelected={handleDeleteSelected}
             />
-
 
             <RegistrationTable
                 rows={items}
@@ -104,6 +121,29 @@ export default function RegistrationsPage() {
                 onView={(row) => {
                     dispatch(setSelected(row))
                 }}
+                onRestore={appliedFilters.onlyDeleted === 'true' ? async (item) => {
+                    try {
+                        await dispatch(restoreRegistrationThunk(item.id!)).unwrap()
+                        toast.success('Registration restored successfully')
+                    } catch (err: unknown) {
+                        const errorMessage = typeof err === 'string' ? err : 'Failed to restore registration'
+                        toast.error(errorMessage)
+                    }
+                } : undefined}
+                selectedIds={selectedIds}
+                onSelect={(id) => {
+                    setSelectedIds(prev =>
+                        prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+                    )
+                }}
+                onSelectAll={(checked) => {
+                    if (checked) {
+                        setSelectedIds(items.map(item => Number(item.id)))
+                    } else {
+                        setSelectedIds([])
+                    }
+                }}
+                hideCheckboxes={appliedFilters.onlyDeleted === 'true'}
             />
 
             <AbstractPagination
@@ -126,7 +166,7 @@ export default function RegistrationsPage() {
                     }}
                     onDelete={selected.deletedAt ? undefined : async (item) => {
                         try {
-                            await dispatch(deleteRegistrationThunk(item.id)).unwrap()
+                            await dispatch(deleteRegistrationThunk(item.id!)).unwrap()
                             toast.success('Registration deleted successfully')
                             dispatch(clearSelected())
                         } catch (err: unknown) {
