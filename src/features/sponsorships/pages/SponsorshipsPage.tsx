@@ -1,22 +1,88 @@
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
+import * as XLSX from 'xlsx'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
-import { fetchSponsorships, setPage, setPageSize, setSelected, clearSelected, clearError } from '../../../store/slices/sponsorships/sponsorships.slice'
+import { selectAuth } from '../../../store/slices/authSlice'
+import { fetchSponsorships, deleteSponsorshipThunk, restoreSponsorshipThunk, setPage, setPageSize, setSelected, clearSelected, clearError, updateDraftFilter, applyFilters } from '../../../store/slices/sponsorships/sponsorships.slice'
 import AbstractPagination from '../../abstracts/components/AbstractPagination'
 import SponsorshipTable from '../components/SponsorshipTable'
 import SponsorshipDetailsModal from '../components/SponsorshipDetailsModal'
 import SectionHeader from '../../../components/SectionHeader'
 import SponsorshipFiltersDrawer from '../components/SponsorshipFiltersDrawer'
 import SponsorshipForm from '../components/SponsorshipForm'
+import { searchSponsorships } from '../../../services/sponsorships'
+import { formatDate } from '../../../utils/utils'
 
 export default function SponsorshipsPage() {
     const dispatch = useAppDispatch()
     const { items, loading, page, pageSize, total, error, appliedFilters, selected } = useAppSelector((s) => s.sponsorships)
     const [filtersOpen, setFiltersOpen] = useState(false)
     const [addOpen, setAddOpen] = useState(false)
+    const { user } = useAppSelector(selectAuth)
+    const canExport = user?.permissions?.includes('export:excel')
+    const [isExporting, setIsExporting] = useState(false)
+    const [selectedIds, setSelectedIds] = useState<number[]>([])
 
     useEffect(() => {
         dispatch(fetchSponsorships({ filters: appliedFilters, page, limit: pageSize }))
     }, [page, pageSize, appliedFilters, dispatch])
+
+    const handleExport = async () => {
+        try {
+            setIsExporting(true)
+            const toastId = toast.loading('Exporting data to Excel...')
+
+            const result = await searchSponsorships({ ...appliedFilters, limit: 10000, page: 1 })
+
+            if (!result.items || result.items.length === 0) {
+                toast.error('No records found to export', { id: toastId })
+                setIsExporting(false)
+                return
+            }
+
+            const formattedData = result.items.map(item => ({
+                'Website Name': item.website?.name || '',
+                'Name': item.name || '',
+                'Email': item.email || '',
+                'Phone': item.phone || '',
+                'Organization': item.organization || '',
+                'Country': item.country || '',
+                'Message': item.message || '',
+                'Submitted On': item.now ? formatDate(item.now) : ''
+            }))
+
+            const worksheet = XLSX.utils.json_to_sheet(formattedData)
+            const workbook = XLSX.utils.book_new()
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Sponsorships')
+
+            XLSX.writeFile(workbook, 'Sponsorships_Export.xlsx')
+
+            toast.success('Export successful!', { id: toastId })
+        } catch (error) {
+            console.error('Export failed:', error)
+            toast.error('Failed to export data')
+        } finally {
+            setIsExporting(false)
+        }
+    }
+
+    const handleDeleteSelected = async () => {
+        if (!confirm(`Are you sure you want to delete ${selectedIds.length} selected records?`)) {
+            return;
+        }
+
+        const toastId = toast.loading(`Deleting ${selectedIds.length} records...`);
+        try {
+            await Promise.all(selectedIds.map(id => dispatch(deleteSponsorshipThunk(id)).unwrap()));
+            toast.success(`Successfully deleted ${selectedIds.length} records`, { id: toastId });
+            setSelectedIds([]);
+            dispatch(fetchSponsorships({ filters: appliedFilters, page, limit: pageSize }));
+        } catch (err: unknown) {
+            const errorMsg = typeof err === 'string' ? err : 'Failed to delete some records';
+            toast.error(errorMsg, { id: toastId });
+            dispatch(fetchSponsorships({ filters: appliedFilters, page, limit: pageSize }));
+        }
+    };
 
     return (
         <div className="h-full flex flex-col">
@@ -27,6 +93,16 @@ export default function SponsorshipsPage() {
                 addButtonText="Add Sponsorship"
                 error={error}
                 onClearError={() => dispatch(clearError())}
+                onlyDeleted={appliedFilters.onlyDeleted === 'true'}
+                onToggleDeleted={() => {
+                    const isTrash = appliedFilters.onlyDeleted === 'true';
+                    dispatch(updateDraftFilter({ key: 'onlyDeleted', value: isTrash ? 'false' : 'true' }));
+                    dispatch(applyFilters());
+                }}
+                onExportClick={canExport ? handleExport : undefined}
+                isExporting={isExporting}
+                selectedCount={selectedIds.length}
+                onDeleteSelected={handleDeleteSelected}
             />
 
             {filtersOpen && (
@@ -42,6 +118,29 @@ export default function SponsorshipsPage() {
                 onView={(row) => {
                     dispatch(setSelected(row))
                 }}
+                onRestore={appliedFilters.onlyDeleted === 'true' ? async (item) => {
+                    try {
+                        await dispatch(restoreSponsorshipThunk(item.id!)).unwrap()
+                        toast.success('Sponsorship restored successfully')
+                    } catch (err: unknown) {
+                        const errorMessage = typeof err === 'string' ? err : 'Failed to restore sponsorship'
+                        toast.error(errorMessage)
+                    }
+                } : undefined}
+                selectedIds={selectedIds}
+                onSelect={(id) => {
+                    setSelectedIds(prev =>
+                        prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+                    )
+                }}
+                onSelectAll={(checked) => {
+                    if (checked) {
+                        setSelectedIds(items.map(item => Number(item.id)))
+                    } else {
+                        setSelectedIds([])
+                    }
+                }}
+                hideCheckboxes={appliedFilters.onlyDeleted === 'true'}
             />
 
             <AbstractPagination
@@ -58,6 +157,16 @@ export default function SponsorshipsPage() {
                 <SponsorshipDetailsModal
                     item={selected}
                     onClose={() => dispatch(clearSelected())}
+                    onDelete={selected.deletedAt ? undefined : async (item) => {
+                        try {
+                            await dispatch(deleteSponsorshipThunk(item.id!)).unwrap()
+                            toast.success('Sponsorship deleted successfully')
+                            dispatch(clearSelected())
+                        } catch (err: unknown) {
+                            const errorMessage = typeof err === 'string' ? err : 'Failed to delete sponsorship'
+                            toast.error(errorMessage)
+                        }
+                    }}
                 />
             )}
 

@@ -12,6 +12,9 @@ export interface RegistrationFilters {
     status_flag?: string;
     sortBy?: string;
     sortOrder?: 'ASC' | 'DESC';
+    onlyDeleted?: string;
+    fromDate?: string;
+    toDate?: string;
     [key: string]: string | number | boolean | undefined;
 }
 
@@ -20,6 +23,7 @@ export interface RegistrationsState {
     rawItems: RegistrationItem[];
     selected: RegistrationItem | null;
     loading: boolean;
+    editLoading?: boolean;
     error: string | null;
     page: number;
     pageSize: number;

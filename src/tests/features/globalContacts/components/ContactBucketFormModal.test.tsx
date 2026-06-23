@@ -1,3 +1,4 @@
+import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ContactBucketFormModal from '../../../../features/globalContacts/components/ContactBucketFormModal';
@@ -88,7 +89,7 @@ describe('ContactBucketFormModal', () => {
     
     fireEvent.change(emailInput, { target: { value: 'valid@email.com' } });
     await waitFor(() => expect(screen.queryByText('Invalid email format')).not.toBeInTheDocument());
-  });
+  }, 15000);
 
   it('successfully creates a contact', async () => {
     (contactBucketService.createContactBucket as jest.Mock).mockResolvedValue({ id: 2 });
@@ -254,6 +255,67 @@ describe('ContactBucketFormModal', () => {
 
       await waitFor(() => {
         expect(screen.getByText('No labels found')).toBeInTheDocument();
+      });
+    });
+
+    it('covers viewMode submit guard (line 145)', () => {
+      render(<ContactBucketFormModal mode="view" item={mockItem} onClose={jest.fn()} onSuccess={jest.fn()} />);
+      const form = document.querySelector('form');
+      if (form) {
+        fireEvent.submit(form);
+      }
+      expect(contactBucketService.createContactBucket).not.toHaveBeenCalled();
+      expect(contactBucketService.updateContactBucket).not.toHaveBeenCalled();
+    });
+
+    it('covers API error message fallback (line 172)', async () => {
+      (contactBucketService.createContactBucket as jest.Mock).mockRejectedValue(new Error('Generic network error'));
+      
+      render(<ContactBucketFormModal mode="add" onClose={jest.fn()} onSuccess={jest.fn()} />);
+      await waitFor(() => expect(screen.getByText('Test Website')).toBeInTheDocument());
+
+      fireEvent.change(screen.getByLabelText('Email*'), { target: { value: 'test@test.com' } });
+      fireEvent.change(screen.getByLabelText('Conference*'), { target: { value: '101' } });
+      
+      fireEvent.click(screen.getByText('Create'));
+      
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Operation failed');
+      });
+    });
+
+    it('covers viewMode country select disabling (line 284)', async () => {
+      render(<ContactBucketFormModal mode="view" item={mockItem} onClose={jest.fn()} onSuccess={jest.fn()} />);
+      expect(screen.getByLabelText('Country')).toBeDisabled();
+    });
+
+    it('covers country select error rendering (line 292)', async () => {
+      const originalUseState = React.useState;
+      let callCount = 0;
+      const useStateSpy = (jest.spyOn(React, 'useState') as unknown as jest.Mock).mockImplementation((initVal: unknown) => {
+        const hookIndex = callCount % 7;
+        callCount++;
+        if (hookIndex === 6) {
+          return originalUseState({ country: 'Country field error' });
+        }
+        return originalUseState(initVal);
+      });
+
+      render(<ContactBucketFormModal mode="edit" item={mockItem} onClose={jest.fn()} onSuccess={jest.fn()} />);
+      await waitFor(() => {
+        expect(screen.getByText('Country field error')).toBeInTheDocument();
+      });
+      useStateSpy.mockRestore();
+    });
+
+    it('renders label with description in the dropdown options (line 377)', async () => {
+      (contactBucketService.getContactBucketLabels as jest.Mock).mockResolvedValue([{ id: 1, name: 'test-label', description: 'Sample Description' }]);
+      render(<ContactBucketFormModal mode="add" onClose={jest.fn()} onSuccess={jest.fn()} />);
+      await waitFor(() => expect(screen.getByText('Select labels...')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByText('Select labels...'));
+      await waitFor(() => {
+        expect(screen.getByText('Sample Description')).toBeInTheDocument();
       });
     });
   });

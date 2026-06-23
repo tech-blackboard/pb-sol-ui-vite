@@ -78,12 +78,24 @@ describe('abstracts service', () => {
         it('handles FormData body', async () => {
             const formData = new FormData()
             formData.append('name', 'Test')
-                ; (api.post as jest.Mock).mockResolvedValue({ data: mockItem })
+            ; (api.post as jest.Mock).mockResolvedValue({ data: mockItem })
 
             await createAbstractWithFormDataFileUpload(formData)
 
             const config = (api.post as jest.Mock).mock.calls[0][2]
             expect(config.headers?.['Content-Type']).toBeUndefined() // Should let browser set it
+        })
+
+        it('handles FormData body with token', async () => {
+            const formData = new FormData()
+            formData.append('name', 'Test')
+            localStorage.setItem('accessToken', 'mock-token')
+            ; (api.post as jest.Mock).mockResolvedValue({ data: mockItem })
+
+            await createAbstractWithFormDataFileUpload(formData)
+
+            const config = (api.post as jest.Mock).mock.calls[0][2]
+            expect(config.headers?.['Authorization']).toBe('Bearer mock-token')
         })
     })
 

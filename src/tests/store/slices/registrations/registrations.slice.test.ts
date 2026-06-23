@@ -8,7 +8,7 @@ import reducer, {
     resetFilters,
     clearError
 } from '../../../../store/slices/registrations/registrations.slice';
-import { fetchRegistrations, deleteRegistrationThunk, createRegistrationThunk } from '../../../../store/slices/registrations/registrations.thunks';
+import { fetchRegistrations, deleteRegistrationThunk, createRegistrationThunk, updateRegistrationThunk, restoreRegistrationThunk } from '../../../../store/slices/registrations/registrations.thunks';
 import type { RegistrationItem } from '../../../../services/registrations';
 import type { RegistrationRecord } from '../../../../features/abstracts/types';
 import type { UnknownAction } from '@reduxjs/toolkit';
@@ -133,17 +133,86 @@ describe('registrations slice', () => {
             expect(state.error).toBe('Create Error');
         });
 
+        it('handles deleteRegistrationThunk.pending', () => {
+            const startState = { ...initialState, loading: false, error: 'some-stale-error' };
+            const state = reducer(startState, deleteRegistrationThunk.pending('', 1));
+            expect(state.loading).toBe(true);
+            expect(state.error).toBeNull();
+        });
+
         it('handles deleteRegistrationThunk.fulfilled', () => {
             const startState = {
                 ...initialState,
+                loading: true,
                 rawItems: [{ id: 1 }, { id: 2 }] as RegistrationItem[],
                 items: [{ id: 1 }, { id: 2 }] as RegistrationItem[],
                 total: 2
             };
             const state = reducer(startState, deleteRegistrationThunk.fulfilled(1, '', 1));
+            expect(state.loading).toBe(false);
             expect(state.items.length).toBe(1);
             expect(state.items[0].id).toBe(2);
             expect(state.total).toBe(1);
+        });
+
+        it('handles deleteRegistrationThunk.rejected with custom payload', () => {
+            const startState = { ...initialState, loading: true };
+            const state = reducer(startState, deleteRegistrationThunk.rejected(null, '', 1, 'Delete Failed'));
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Delete Failed');
+        });
+
+        it('handles deleteRegistrationThunk.rejected with generic message', () => {
+            const rejectedAction = {
+                type: deleteRegistrationThunk.rejected.type,
+                payload: null,
+                error: { message: 'Network Error' }
+            };
+            const startState = { ...initialState, loading: true };
+            const state = reducer(startState, rejectedAction as UnknownAction);
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Network Error');
+        });
+
+        it('handles deleteRegistrationThunk.rejected fallback', () => {
+            const action = { type: deleteRegistrationThunk.rejected.type, payload: null, error: {} };
+            const state = reducer(initialState, action as UnknownAction);
+            expect(state.error).toBe('Failed to delete registration');
+        });
+
+        it('handles restoreRegistrationThunk.pending', () => {
+            const startState = { ...initialState, loading: false, error: 'some-stale-error' };
+            const state = reducer(startState, restoreRegistrationThunk.pending('', 1));
+            expect(state.loading).toBe(true);
+            expect(state.error).toBeNull();
+        });
+
+        it('handles restoreRegistrationThunk.fulfilled', () => {
+            const startState = {
+                ...initialState,
+                loading: true,
+                rawItems: [{ id: 1 }, { id: 2 }] as RegistrationItem[],
+                items: [{ id: 1 }, { id: 2 }] as RegistrationItem[],
+                total: 2
+            };
+            const state = reducer(startState, restoreRegistrationThunk.fulfilled(1, '', 1));
+            expect(state.loading).toBe(false);
+            expect(state.items.length).toBe(1);
+            expect(state.items[0].id).toBe(2);
+            expect(state.total).toBe(1);
+        });
+
+        it('handles restoreRegistrationThunk.rejected', () => {
+            const startState = { ...initialState, loading: true };
+            const state = reducer(startState, restoreRegistrationThunk.rejected(null, '', 1, 'Restore Failed'));
+            expect(state.loading).toBe(false);
+            expect(state.error).toBe('Restore Failed');
+        });
+
+        it('handles restoreRegistrationThunk.rejected fallback', () => {
+            const action = { type: restoreRegistrationThunk.rejected.type, payload: null, error: {} };
+            const state = reducer(initialState, action as UnknownAction);
+            expect(state.error).toBe('Failed to restore registration');
         });
 
         it('handles createRegistrationThunk.pending', () => {
@@ -184,6 +253,49 @@ describe('registrations slice', () => {
             const action = { type: createRegistrationThunk.rejected.type, payload: null, error: {} };
             const state = reducer(initialState, action as UnknownAction);
             expect(state.error).toBe('Failed to create registration');
+        });
+
+        // updateRegistrationThunk extraReducers
+        it('handles updateRegistrationThunk.pending', () => {
+            const state = reducer(initialState, updateRegistrationThunk.pending('', { id: 1, data: {} }));
+            expect(state.editLoading).toBe(true);
+        });
+
+        it('handles updateRegistrationThunk.fulfilled', () => {
+            const startState = {
+                ...initialState,
+                editLoading: true,
+                rawItems: [
+                    { id: 1, name: 'Old' } as RegistrationItem,
+                    { id: 2, name: 'Other' } as RegistrationItem
+                ],
+                items: [
+                    { id: 1, name: 'Old' } as RegistrationItem,
+                    { id: 2, name: 'Other' } as RegistrationItem
+                ],
+                selected: { id: 1, name: 'Old' } as RegistrationItem
+            };
+            const updated = { id: 1, name: 'New' } as RegistrationItem;
+            const state = reducer(startState, updateRegistrationThunk.fulfilled(updated, '', { id: 1, data: {} }));
+            expect(state.editLoading).toBe(false);
+            expect(state.items[0]).toEqual(updated);
+            expect(state.items[1].name).toBe('Other');
+            expect(state.rawItems[0]).toEqual(updated);
+            expect(state.rawItems[1].name).toBe('Other');
+            expect(state.selected).toEqual(updated);
+        });
+
+        it('handles updateRegistrationThunk.rejected', () => {
+            const startState = { ...initialState, editLoading: true };
+            const state = reducer(startState, updateRegistrationThunk.rejected(null, '', { id: 1, data: {} }, 'Update Failed'));
+            expect(state.editLoading).toBe(false);
+            expect(state.error).toBe('Update Failed');
+        });
+
+        it('handles updateRegistrationThunk.rejected fallback', () => {
+            const action = { type: updateRegistrationThunk.rejected.type, payload: null, error: {} };
+            const state = reducer(initialState, action as UnknownAction);
+            expect(state.error).toBe('Failed to update registration');
         });
     });
 });

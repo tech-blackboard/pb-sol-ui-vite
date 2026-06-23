@@ -7,6 +7,8 @@ import {
   sendPaymentReceiptThunk,
   sendConfirmationEmailThunk,
   updateAbstractThunk,
+  deleteAbstractThunk,
+  restoreAbstractThunk
 } from '../../../../store/slices/abstracts/abstracts.thunks'
 
 import {
@@ -20,6 +22,8 @@ import {
   type InvoiceData,
   type PaymentReceiptData,
   type PaymentReminderData,
+  deleteAbstract,
+  restoreAbstract
 } from '../../../../services/abstracts'
 
 jest.mock('../../../../services/abstracts', () => ({
@@ -30,6 +34,8 @@ jest.mock('../../../../services/abstracts', () => ({
   sendPaymentReceipt: jest.fn(),
   sendConfirmationEmail: jest.fn(),
   updateAbstract: jest.fn(),
+  deleteAbstract: jest.fn(),
+  restoreAbstract: jest.fn(),
 }))
 
 import { STATUS_TO_ID } from '../../../../features/abstracts/status.constants'
@@ -286,6 +292,54 @@ describe('abstracts thunks', () => {
     isAxiosErrorSpy.mockRestore()
   })
 
+  it('deleteAbstractThunk → rejects with descriptive message on axios error', async () => {
+    const isAxiosErrorSpy = jest.spyOn(axios, 'isAxiosError').mockReturnValue(true)
+    ;(deleteAbstract as jest.Mock).mockRejectedValue({
+      response: { data: { message: 'Delete failed' } },
+    })
+
+    const thunk = deleteAbstractThunk('1')
+    const result = await thunk(dispatch, getState, undefined)
+
+    expect(result.payload).toBe('Delete failed')
+    isAxiosErrorSpy.mockRestore()
+  })
+
+  it('deleteAbstractThunk → rejects with fallback message on generic error', async () => {
+    const isAxiosErrorSpy = jest.spyOn(axios, 'isAxiosError').mockReturnValue(false)
+    ;(deleteAbstract as jest.Mock).mockRejectedValue(new Error('Fail'))
+
+    const thunk = deleteAbstractThunk('1')
+    const result = await thunk(dispatch, getState, undefined)
+
+    expect(result.payload).toBe('Failed to delete abstract')
+    isAxiosErrorSpy.mockRestore()
+  })
+
+  it('restoreAbstractThunk → rejects with descriptive message on axios error', async () => {
+    const isAxiosErrorSpy = jest.spyOn(axios, 'isAxiosError').mockReturnValue(true)
+    ;(restoreAbstract as jest.Mock).mockRejectedValue({
+      response: { data: { message: 'Restore failed' } },
+    })
+
+    const thunk = restoreAbstractThunk('1')
+    const result = await thunk(dispatch, getState, undefined)
+
+    expect(result.payload).toBe('Restore failed')
+    isAxiosErrorSpy.mockRestore()
+  })
+
+  it('restoreAbstractThunk → rejects with fallback message on generic error', async () => {
+    const isAxiosErrorSpy = jest.spyOn(axios, 'isAxiosError').mockReturnValue(false)
+    ;(restoreAbstract as jest.Mock).mockRejectedValue(new Error('Fail'))
+
+    const thunk = restoreAbstractThunk('1')
+    const result = await thunk(dispatch, getState, undefined)
+
+    expect(result.payload).toBe('Failed to restore abstract')
+    isAxiosErrorSpy.mockRestore()
+  })
+
   it('covers err.message fallback when response.data.message is missing for all thunks (lines 37, 52, 65, 80, 92, 118, 131)', async () => {
     const isAxiosErrorSpy = jest.spyOn(axios, 'isAxiosError').mockReturnValue(true)
     const errObj = { isAxiosError: true, message: 'Axios Fallback Message', response: { data: {} } }
@@ -297,6 +351,8 @@ describe('abstracts thunks', () => {
     ;(sendPaymentReminder as jest.Mock).mockRejectedValue(errObj)
     ;(sendPaymentReceipt as jest.Mock).mockRejectedValue(errObj)
     ;(sendConfirmationEmail as jest.Mock).mockRejectedValue(errObj)
+    ;(deleteAbstract as jest.Mock).mockRejectedValue(errObj)
+    ;(restoreAbstract as jest.Mock).mockRejectedValue(errObj)
 
     const thunks = [
       fetchAbstracts({ page: 1, limit: 10, filters: { search: '', sortBy: 'now', sortOrder: 'DESC' } }),
@@ -305,7 +361,9 @@ describe('abstracts thunks', () => {
       sendInvoiceThunk({ abstractId: '1', invoiceData: {} as InvoiceData }),
       sendPaymentReminderThunk({ abstractId: '1', paymentReminderData: {} as PaymentReminderData }),
       sendPaymentReceiptThunk({ abstractId: '1', receiptData: {} as PaymentReceiptData }),
-      sendConfirmationEmailThunk('1')
+      sendConfirmationEmailThunk('1'),
+      deleteAbstractThunk('1'),
+      restoreAbstractThunk('1')
     ]
 
     for (const t of thunks) {

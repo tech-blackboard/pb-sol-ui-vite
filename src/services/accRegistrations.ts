@@ -4,6 +4,7 @@ import { ACC_REGISTRATION_BASE } from '../config/env';
 export type AccRegistrationItem = {
     id: number;
     user_id?: number;
+    deletedAt?: string | null;
     caption?: string;
     name?: string;
     email?: string;
@@ -72,8 +73,23 @@ export async function deleteAccRegistration(id: number | string): Promise<void> 
     });
 }
 
+export async function restoreAccRegistration(id: number | string): Promise<void> {
+    await api.patch(`${ACC_REGISTRATION_BASE}/${id}/restore`, {}, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+}
+
 export async function createAccRegistration(data: Partial<AccRegistrationItem>): Promise<AccRegistrationItem> {
     const { data: responseData } = await api.post(`${ACC_REGISTRATION_BASE}`, data, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return responseData;
+}
+
+export async function updateAccRegistration(id: number | string, data: Partial<AccRegistrationItem>): Promise<AccRegistrationItem> {
+    const { data: responseData } = await api.patch(`${ACC_REGISTRATION_BASE}/${id}`, data, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });

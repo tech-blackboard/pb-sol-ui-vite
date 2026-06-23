@@ -1,31 +1,31 @@
-name: Build and Push UI to ECR (Dev)
+name: Build and Push UI to ECR (Stage)
 
 on:
   push:
     branches:
-      - release/dev
+      - release/stage
   workflow_dispatch:
 
 env:
   AWS_REGION: ap-south-2
-  AWS_ACCOUNT_ID: 483271267558
+  AWS_ACCOUNT_ID: 495417556644
   ECR_REPOSITORY: pb-sol-ui-vite
 
 jobs:
   build-and-push:
     name: Build and Push UI Image
     runs-on: ubuntu-latest
-    environment: PB-SOL-DEV
+    environment: PB-SOL-STAGE
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Create .env.production file
+      - name: Create .env.stage file
         env:
-          ENV_PRODUCTION_CONTENT: ${{ secrets.ENV_PRODUCTION_FILE }}
+          ENV_STAGE_CONTENT: ${{ secrets.ENV_STAGE_FILE }}
         run: |
-          echo "$ENV_PRODUCTION_CONTENT" > .env.production
+          echo "$ENV_STAGE_CONTENT" > .env.stage
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
@@ -43,7 +43,7 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
           TIMESTAMP: ${{ github.run_number }}-${{ github.run_attempt }}
-          BUILD_ENV: production
+          BUILD_ENV: stage
         run: |
           echo "Building UI image..."
           docker build --build-arg BUILD_ENV=$BUILD_ENV -t $ECR_REPOSITORY:latest .
@@ -75,12 +75,6 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Next steps:**" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker-compose -f docker-compose.prod.yml pull" >> $GITHUB_STEP_SUMMARY
-          echo "docker-compose -f docker-compose.prod.yml up -d" >> $GITHUB_STEP_SUMMARY
+          echo "docker-compose -f docker-compose.stage.yml pull" >> $GITHUB_STEP_SUMMARY
+          echo "docker-compose -f docker-compose.stage.yml up -d" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-
-  deploy-to-ec2:
-    name: Deploy to EC2
-    needs: build-and-push
-    uses: ./.github/workflows/deploy-dev.yml
-    secrets: inherit

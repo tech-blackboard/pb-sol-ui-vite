@@ -33,4 +33,7 @@ export interface AbstractFilters {
   sortBy?: 'now' | 'name'
   sortOrder?: 'ASC' | 'DESC'
   isEmailSent?: boolean
+  onlyDeleted?: string
+  fromDate?: string
+  toDate?: string
 }

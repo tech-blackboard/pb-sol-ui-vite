@@ -9,7 +9,7 @@ export type LoginResponse = {
   token?: string
   accessToken?: string
   access_token?: string
-  user: { id: string | number; email: string; roles?: string[] }
+  user: { id: string | number; email: string; roles?: string[]; permissions?: string[] }
   isAdmin?: boolean
   refreshToken?: string
   refresh_token?: string

@@ -10,7 +10,7 @@ import { listWebsites } from '../../../../services/sourcedb'
 
 const createMockStore = (draftFilters = {}) => configureStore({
     reducer: { accRegistrations: accRegistrationsReducer },
-    preloadedState: { accRegistrations: { items: [], loading: false, error: null, page: 1, pageSize: 10, total: 0, appliedFilters: {}, draftFilters, selected: null } },
+    preloadedState: { accRegistrations: { items: [], loading: false, editLoading: false, error: null, page: 1, pageSize: 10, total: 0, appliedFilters: {}, draftFilters, selected: null } },
 })
 
 describe('AccRegistrationFiltersDrawer', () => {

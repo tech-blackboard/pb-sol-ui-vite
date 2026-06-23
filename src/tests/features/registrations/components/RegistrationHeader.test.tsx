@@ -65,6 +65,24 @@ jest.mock('../../../../store/slices/registrations/registrations.thunks', () => (
             typePrefix: 'registrations/createRegistration'
         }
     ),
+    updateRegistrationThunk: Object.assign(
+        jest.fn(() => ({ type: 'registrations/updateRegistration/pending' })),
+        {
+            pending: { type: 'registrations/updateRegistration/pending' },
+            fulfilled: { type: 'registrations/updateRegistration/fulfilled' },
+            rejected: { type: 'registrations/updateRegistration/rejected' },
+            typePrefix: 'registrations/updateRegistration'
+        }
+    ),
+    restoreRegistrationThunk: Object.assign(
+        jest.fn(() => ({ type: 'registrations/restoreRegistration/pending' })),
+        {
+            pending: { type: 'registrations/restoreRegistration/pending' },
+            fulfilled: { type: 'registrations/restoreRegistration/fulfilled' },
+            rejected: { type: 'registrations/restoreRegistration/rejected' },
+            typePrefix: 'registrations/restoreRegistration'
+        }
+    ),
 }))
 
 const createMockStore = (initialState = {}) => {
@@ -77,6 +95,7 @@ const createMockStore = (initialState = {}) => {
                 items: [],
                 rawItems: [],
                 loading: false,
+                editLoading: false,
                 error: null,
                 page: 1,
                 pageSize: 10,

@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
-import { searchSponsorships, createSponsorship, type SponsorshipItem } from '../../../services/sponsorships';
+import { searchSponsorships, createSponsorship, updateSponsorship, deleteSponsorship, type SponsorshipItem } from '../../../services/sponsorships';
 import type { SponsorshipRecord } from '../../../features/abstracts/types';
 
 export interface SponsorshipFilters {
@@ -13,11 +13,15 @@ export interface SponsorshipFilters {
     website_id?: number | string;
     sortBy?: string;
     sortOrder?: 'ASC' | 'DESC';
+    onlyDeleted?: string;
+    fromDate?: string;
+    toDate?: string;
 }
 
 export interface SponsorshipsState {
     items: SponsorshipItem[];
     loading: boolean;
+    editLoading?: boolean;
     error: string | null;
     page: number;
     pageSize: number;
@@ -54,15 +58,52 @@ export const createSponsorshipThunk = createAsyncThunk(
     }
 );
 
+export const updateSponsorshipThunk = createAsyncThunk(
+    'sponsorships/update',
+    async ({ id, data }: { id: string | number; data: Partial<SponsorshipItem> }, { rejectWithValue }) => {
+        try {
+            return await updateSponsorship(id, data);
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to update sponsorship';
+            return rejectWithValue(message);
+        }
+    }
+);
+
+export const deleteSponsorshipThunk = createAsyncThunk(
+    'sponsorships/delete',
+    async (id: string | number, { rejectWithValue }) => {
+        try {
+            await deleteSponsorship(id);
+            return id;
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to delete sponsorship');
+        }
+    }
+);
+
+export const restoreSponsorshipThunk = createAsyncThunk(
+    'sponsorships/restore',
+    async (id: string | number, { rejectWithValue }) => {
+        try {
+            await import('../../../services/sponsorships').then(m => m.restoreSponsorship(id));
+            return id;
+        } catch (err: unknown) {
+            return rejectWithValue(axios.isAxiosError(err) ? (err.response?.data?.message || err.message) : 'Failed to restore sponsorship');
+        }
+    }
+);
+
 const initialState: SponsorshipsState = {
     items: [],
     loading: false,
+    editLoading: false,
     error: null,
     page: 1,
     pageSize: 10,
     total: 0,
-    draftFilters: { search: '', sortBy: 'now', sortOrder: 'DESC' },
-    appliedFilters: { search: '', sortBy: 'now', sortOrder: 'DESC' },
+    draftFilters: { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'false' },
+    appliedFilters: { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'false' },
     selected: null,
 };
 
@@ -93,7 +134,7 @@ const sponsorshipsSlice = createSlice({
             state.page = 1;
         },
         resetFilters(state) {
-            const initialFilters: SponsorshipFilters = { search: '', sortBy: 'now', sortOrder: 'DESC' };
+            const initialFilters: SponsorshipFilters = { search: '', sortBy: 'now', sortOrder: 'DESC', onlyDeleted: 'false' };
             state.draftFilters = initialFilters;
             state.appliedFilters = initialFilters;
             state.page = 1;
@@ -131,6 +172,46 @@ const sponsorshipsSlice = createSlice({
             .addCase(createSponsorshipThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = (action.payload as string) || action.error.message || 'Failed to create';
+            })
+            .addCase(updateSponsorshipThunk.pending, (state) => {
+                state.editLoading = true;
+            })
+            .addCase(updateSponsorshipThunk.fulfilled, (state, { payload }) => {
+                state.editLoading = false;
+                state.items = state.items.map(i => i.id === payload.id ? payload : i);
+                if (state.selected?.id === payload.id) state.selected = payload;
+            })
+            .addCase(updateSponsorshipThunk.rejected, (state, action) => {
+                state.editLoading = false;
+                state.error = (action.payload as string) || action.error.message || 'Failed to update sponsorship';
+            })
+            .addCase(deleteSponsorshipThunk.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(deleteSponsorshipThunk.fulfilled, (state, action) => {
+                state.loading = false;
+                state.items = state.items.filter((item) => item.id !== action.payload);
+                if (state.selected?.id === action.payload) {
+                    state.selected = null;
+                }
+            })
+            .addCase(deleteSponsorshipThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = (action.payload as string) || action.error.message || 'Failed to delete sponsorship';
+            })
+            .addCase(restoreSponsorshipThunk.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(restoreSponsorshipThunk.fulfilled, (state, action) => {
+                state.loading = false;
+                state.items = state.items.filter((item) => item.id !== action.payload);
+                if (state.selected?.id === action.payload) {
+                    state.selected = null;
+                }
+            })
+            .addCase(restoreSponsorshipThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = (action.payload as string) || action.error.message || 'Failed to restore sponsorship';
             });
     },
 });

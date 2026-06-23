@@ -4,6 +4,7 @@ import { REGISTRATION_BASE } from '../config/env';
 export type RegistrationItem = {
     id: number;
     user_id?: number;
+    deletedAt?: string | null;
     name: string;
     email: string;
     aemail?: string;
@@ -80,8 +81,23 @@ export async function deleteRegistration(id: number | string): Promise<void> {
     });
 }
 
+export async function restoreRegistration(id: number | string): Promise<void> {
+    await api.patch(`${REGISTRATION_BASE}/${id}/restore`, {}, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+}
+
 export async function createRegistration(data: Partial<RegistrationItem>): Promise<RegistrationItem> {
     const { data: result } = await api.post(`${REGISTRATION_BASE}`, data, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return result;
+}
+
+export async function updateRegistration(id: number | string, data: Partial<RegistrationItem>): Promise<RegistrationItem> {
+    const { data: result } = await api.put(`${REGISTRATION_BASE}/${id}`, data, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });

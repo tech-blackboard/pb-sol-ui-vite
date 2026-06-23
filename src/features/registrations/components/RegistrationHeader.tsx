@@ -8,9 +8,15 @@ import SectionHeader from '../../../components/SectionHeader'
 interface RegistrationHeaderProps {
     error?: string | null
     onClearError?: () => void
+    onlyDeleted?: boolean
+    onToggleDeleted?: () => void
+    onExportClick?: () => void
+    isExporting?: boolean
+    selectedCount?: number
+    onDeleteSelected?: () => void
 }
 
-export default function RegistrationHeader({ error, onClearError }: RegistrationHeaderProps) {
+export default function RegistrationHeader({ error, onClearError, onlyDeleted, onToggleDeleted, onExportClick, isExporting, selectedCount, onDeleteSelected }: RegistrationHeaderProps) {
     const [showForm, setShowForm] = useState(false)
     const [filtersOpen, setFiltersOpen] = useState(false)
 
@@ -27,6 +33,12 @@ export default function RegistrationHeader({ error, onClearError }: Registration
                 addButtonText="Add Registration"
                 error={error}
                 onClearError={onClearError}
+                onlyDeleted={onlyDeleted}
+                onToggleDeleted={onToggleDeleted}
+                onExportClick={onExportClick}
+                isExporting={isExporting}
+                selectedCount={selectedCount}
+                onDeleteSelected={onDeleteSelected}
             />
 
             {/* Filters Drawer */}

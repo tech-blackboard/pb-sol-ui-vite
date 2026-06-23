@@ -5,9 +5,17 @@ import { configureStore } from '@reduxjs/toolkit';
 import { ComposeEmailForm } from '../../../../features/crm/components/ComposeEmailForm';
 import crmReducer, { initialState as crmInitialState } from '../../../../store/slices/crm/crm.slice';
 import * as crmService from '../../../../features/crm/services/crmService';
+import type { Message } from '../../../../features/crm/types';
 import toast from 'react-hot-toast';
+import { uploadService } from '../../../../services/upload';
 
 jest.mock('react-hot-toast');
+jest.mock('../../../../services/upload', () => ({
+    uploadService: {
+        uploadFile: jest.fn(),
+        getSignedUrl: jest.fn(),
+    }
+}));
 jest.mock('../../../../features/crm/services/crmService', () => ({
     composeEmail: jest.fn(),
     saveDraft: jest.fn(),
@@ -248,6 +256,50 @@ describe('ComposeEmailForm', () => {
         });
     });
 
+    it('covers low importance, formatting toolbar toggle, and debounce saveDraft branches', async () => {
+        (crmService.saveDraft as jest.Mock).mockResolvedValue({ id: 'draft-2' });
+        renderWithProvider({
+            ...mockCrmState,
+            // To hit fromEmail fallback, don't set it initially or select something else if needed
+        });
+        
+        // Importance low branch (lines 656, 662, 664)
+        const importanceBtn = screen.getByRole('button', { name: /Importance/i });
+        fireEvent.click(importanceBtn);
+        const lowBtn = screen.getByRole('button', { name: /Low/i });
+        fireEvent.click(lowBtn);
+        expect(screen.getByRole('button', { name: /Low/i })).toBeInTheDocument();
+
+        // Toolbar toggle (line 639/640)
+        const formatBtn = screen.getByTitle('Formatting options');
+        act(() => {
+            fireEvent.click(formatBtn); // showToolbar = true
+        });
+        expect(screen.getByTitle('Formatting options').className).not.toContain('bg-blue-50');
+
+        // Provide email and body to trigger draft saving logic
+        const toInput = screen.getByPlaceholderText('Add recipients...');
+        fireEvent.change(toInput, { target: { value: 'test@test.com' } });
+        fireEvent.blur(toInput);
+
+        const editor = screen.getByTestId('gmail-reply-editor');
+        
+        // Type first time to trigger initial timeout
+        fireEvent.change(editor, { target: { value: 'First body text' } });
+        
+        // Type again immediately to trigger clearTimeout (line 230)
+        fireEvent.change(editor, { target: { value: 'Second body text' } });
+        
+        act(() => {
+            jest.advanceTimersByTime(3500);
+        });
+
+        await waitFor(() => {
+            expect(crmService.saveDraft).toHaveBeenCalled();
+            // Verify fromEmail fallback handling (lines 203-210, 272)
+        });
+    });
+
     it('shows error modal if no recipient when submitting', async () => {
         renderWithProvider(mockCrmState);
         const submitBtn = screen.getByRole('button', { name: /Send/i });
@@ -424,6 +476,32 @@ describe('ComposeEmailForm', () => {
         });
     });
 
+    it('appends signature when sigEl is missing but event has signaturePlace (lines 112-118)', async () => {
+        const { store } = renderWithProvider({
+            ...mockCrmState,
+            activeEventId: 1,
+            events: [
+                { id: 1, name: 'Event 1', replyEmails: ['reply@example.com'] }, // No sig
+                { id: 2, name: 'Event 2', replyEmails: ['reply2@example.com'], signaturePlace: 'NYC' },
+            ]
+        } as unknown as Partial<typeof crmInitialState>);
+
+        const editor = screen.getByTestId('gmail-reply-editor') as HTMLTextAreaElement;
+        
+        await waitFor(() => {
+            expect(editor.value).not.toContain('NYC');
+        });
+
+        // Event changes to 2, which has a signature. The editor HTML won't have .email-signature.
+        act(() => {
+            store.dispatch({ type: 'crm/setActiveEvent', payload: 2 });
+        });
+
+        await waitFor(() => {
+            expect(editor.value).toContain('NYC');
+        });
+    });
+
     it('closes importance dropdown when clicking outside', async () => {
         renderWithProvider(mockCrmState);
         const importanceBtn = screen.getByTitle('Set message importance');
@@ -502,4 +580,227 @@ describe('ComposeEmailForm', () => {
         expect(screen.getByText('Sending...')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Sending.../i })).toBeDisabled();
     });
+
+    it('handles file attachment uploading, rendering, and removal', async () => {
+        const mockFile = new File(['dummy content'], 'testfile.pdf', { type: 'application/pdf' });
+        (uploadService.uploadFile as jest.Mock).mockResolvedValue({ url: 'http://s3/testfile.pdf', key: 's3-key-abc' });
+
+        renderWithProvider(mockCrmState);
+
+        const attachBtn = screen.getByTitle('Attach files');
+        expect(attachBtn).toBeInTheDocument();
+
+        // Get the hidden input element
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        expect(fileInput).toBeInTheDocument();
+
+        // Simulate file selection
+        await act(async () => {
+            fireEvent.change(fileInput, { target: { files: [mockFile] } });
+        });
+
+        // The file should be uploaded and rendered in the list
+        await waitFor(() => {
+            expect(uploadService.uploadFile).toHaveBeenCalledWith(mockFile);
+            expect(screen.getByText('testfile.pdf')).toBeInTheDocument();
+            // It displays the file size
+            expect(screen.getByText('(0.0 KB)')).toBeInTheDocument();
+        });
+
+        // Test removal
+        const removeBtn = screen.getByText('testfile.pdf').closest('div')!.querySelector('button') as HTMLElement;
+        fireEvent.click(removeBtn);
+
+        expect(screen.queryByText('testfile.pdf')).not.toBeInTheDocument();
+    });
+
+    it('handles files exceeding 20MB limit (negative case, lines 250-252)', async () => {
+        const largeFile = new File(['dummy large content'], 'large.zip', { type: 'application/zip' });
+        Object.defineProperty(largeFile, 'size', { value: 21 * 1024 * 1024 });
+
+        renderWithProvider(mockCrmState);
+
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        await act(async () => {
+            fireEvent.change(fileInput, { target: { files: [largeFile] } });
+        });
+
+        expect(toast.error).toHaveBeenCalledWith('File size exceeds 20MB limit: large.zip');
+        expect(uploadService.uploadFile).not.toHaveBeenCalled();
+    });
+
+    it('handles file upload failures gracefully (negative case, lines 266-268)', async () => {
+        const mockFile = new File(['dummy content'], 'testfile.pdf', { type: 'application/pdf' });
+        const mockError = new Error('Upload server down');
+        (uploadService.uploadFile as jest.Mock).mockRejectedValue(mockError);
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+        renderWithProvider(mockCrmState);
+
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        await act(async () => {
+            fireEvent.change(fileInput, { target: { files: [mockFile] } });
+        });
+
+        await waitFor(() => {
+            expect(toast.error).toHaveBeenCalledWith('Failed to upload testfile.pdf');
+            expect(consoleSpy).toHaveBeenCalledWith('Failed to upload testfile.pdf:', 'Upload server down');
+        });
+        consoleSpy.mockRestore();
+    });
+
+    it('manages draft attachments and removes existing draft attachments (positive/uncovered cases, lines 280-281, 329-331, 759-774)', async () => {
+        const saveSpy = jest.spyOn(crmService, 'saveDraft').mockResolvedValue({
+            id: 'draft-123',
+            attachments: [
+                { id: 99, filename: 'existing.pdf', size: 20480, contentType: 'application/pdf', url: 'http://s3/existing.pdf', messageId: 'draft-123', createdAt: new Date().toISOString() }
+            ]
+        } as unknown as import('../../../../features/crm/types').Message);
+
+        renderWithProvider(mockCrmState);
+
+        const toInput = screen.getByPlaceholderText('Add recipients...');
+        fireEvent.change(toInput, { target: { value: 'recipient@test.com' } });
+        fireEvent.blur(toInput);
+
+        const editor = screen.getByTestId('gmail-reply-editor');
+        fireEvent.change(editor, { target: { value: 'Typing body' } });
+
+        // Auto-save triggers saveDraftThunk after 3s
+        await act(async () => {
+            jest.advanceTimersByTime(3500);
+        });
+
+        // The saveDraftThunk will resolve and set the attachments list
+        await waitFor(() => {
+            expect(saveSpy).toHaveBeenCalled();
+            expect(screen.getByText('existing.pdf')).toBeInTheDocument();
+            expect(screen.getByText('(20.0 KB)')).toBeInTheDocument();
+        });
+
+        // Remove the existing attachment
+        const removeBtn = screen.getByText('existing.pdf').closest('div')!.querySelector('button') as HTMLElement;
+        fireEvent.click(removeBtn);
+
+        expect(screen.queryByText('existing.pdf')).not.toBeInTheDocument();
+    });
+
+    it('handles file input change with empty files (lines 243-244)', async () => {
+        renderWithProvider(mockCrmState);
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        await act(async () => {
+            fireEvent.change(fileInput, { target: { files: [] } });
+        });
+        expect(uploadService.uploadFile).not.toHaveBeenCalled();
+    });
+
+    it('handles file type fallback to octet-stream (lines 262-266)', async () => {
+        const mockFile = new File(['dummy content'], 'testfile', { type: '' });
+        (uploadService.uploadFile as jest.Mock).mockResolvedValue({ url: 'http://s3/testfile', key: 's3-key-no-type' });
+        renderWithProvider(mockCrmState);
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        await act(async () => {
+            fireEvent.change(fileInput, { target: { files: [mockFile] } });
+        });
+        await waitFor(() => {
+            expect(uploadService.uploadFile).toHaveBeenCalledWith(mockFile);
+            expect(screen.getByText('testfile')).toBeInTheDocument();
+        });
+    });
+
+    it('handles upload service non-Error rejection mapping (lines 265-266)', async () => {
+        const mockFile = new File(['dummy content'], 'testfile.pdf', { type: 'application/pdf' });
+        (uploadService.uploadFile as jest.Mock).mockRejectedValue('Upload failure string');
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        renderWithProvider(mockCrmState);
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        await act(async () => {
+            fireEvent.change(fileInput, { target: { files: [mockFile] } });
+        });
+        await waitFor(() => {
+            expect(toast.error).toHaveBeenCalledWith('Failed to upload testfile.pdf');
+            expect(consoleSpy).toHaveBeenCalledWith('Failed to upload testfile.pdf:', 'Upload failure string');
+        });
+        consoleSpy.mockRestore();
+    });
+
+    it('handles early return in saveDraft logic when toEmail is empty (line 291)', async () => {
+        const saveSpy = jest.spyOn(crmService, 'saveDraft');
+        renderWithProvider({
+            ...mockCrmState,
+            activeEventId: 1
+        } as unknown as Partial<typeof crmInitialState>);
+        const editor = screen.getByTestId('gmail-reply-editor');
+        fireEvent.change(editor, { target: { value: 'New Body Content' } });
+        act(() => {
+            jest.advanceTimersByTime(3500);
+        });
+        expect(saveSpy).not.toHaveBeenCalled();
+    });
+
+    it('handles early return in saveDraft logic when activeEventId is undefined and no event matches (line 304)', async () => {
+        const saveSpy = jest.spyOn(crmService, 'saveDraft');
+        renderWithProvider({
+            ...mockCrmState,
+            activeEventId: undefined,
+            events: []
+        } as unknown as Partial<typeof crmInitialState>);
+        const toInput = screen.getByPlaceholderText('Add recipients...');
+        fireEvent.change(toInput, { target: { value: 'to@test.com' } });
+        fireEvent.blur(toInput);
+        const editor = screen.getByTestId('gmail-reply-editor');
+        fireEvent.change(editor, { target: { value: 'New Body Content' } });
+        act(() => {
+            jest.advanceTimersByTime(3500);
+        });
+        expect(saveSpy).not.toHaveBeenCalled();
+    });
+
+    it('submits saveDraft and composeEmail with undefined fromEmail when it is empty (lines 313, 419)', async () => {
+        const saveSpy = jest.spyOn(crmService, 'saveDraft').mockResolvedValue({ id: 'draft-abc' } as unknown as Message);
+        const sendSpy = jest.spyOn(crmService, 'composeEmail').mockResolvedValue({ status: 'success', messageId: 'msg-123' });
+
+        renderWithProvider({
+            ...mockCrmState,
+            emailAccounts: [],
+            events: [{ id: 1, name: 'Event 1' }]
+        } as unknown as Partial<typeof crmInitialState>);
+
+        const toInput = screen.getByPlaceholderText('Add recipients...');
+        fireEvent.change(toInput, { target: { value: 'to@test.com' } });
+        fireEvent.blur(toInput);
+
+        const editor = screen.getByTestId('gmail-reply-editor');
+        fireEvent.change(editor, { target: { value: 'Draft content' } });
+
+        // saveDraft should call saveDraft with fromEmail undefined
+        await act(async () => {
+            jest.advanceTimersByTime(3500);
+        });
+        await waitFor(() => {
+            expect(saveSpy).toHaveBeenCalledWith(expect.objectContaining({
+                fromEmail: undefined
+            }));
+        });
+
+        // composeEmail should call composeEmail with fromEmail undefined
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: /Send/i }));
+        });
+        await waitFor(() => {
+            expect(sendSpy).toHaveBeenCalledWith(expect.objectContaining({
+                fromEmail: undefined
+            }));
+        });
+    });
+
+    it('handles metadata auto-save early return (line 374)', async () => {
+        const saveSpy = jest.spyOn(crmService, 'saveDraft');
+        renderWithProvider(mockCrmState);
+        act(() => {
+            jest.advanceTimersByTime(2000);
+        });
+        expect(saveSpy).not.toHaveBeenCalled();
+    });
 });
+

@@ -3,6 +3,7 @@ import { getAuthHeaders } from './abstracts';
 import { SPONSORSHIP_BASE } from '../config/env';
 export type SponsorshipItem = {
     id?: number;
+    deletedAt?: string | null;
     name?: string;
     email?: string;
     phone?: string;
@@ -58,4 +59,19 @@ export async function deleteSponsorship(id: number | string): Promise<void> {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });
+}
+
+export async function restoreSponsorship(id: number | string): Promise<void> {
+    await api.patch(`${SPONSORSHIP_BASE}/${id}/restore`, {}, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+}
+
+export async function updateSponsorship(id: number | string, data: Partial<SponsorshipItem>): Promise<SponsorshipItem> {
+    const { data: result } = await api.patch(`${SPONSORSHIP_BASE}/${id}`, data, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return result;
 }

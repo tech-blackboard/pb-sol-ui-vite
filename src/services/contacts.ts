@@ -3,6 +3,7 @@ import { getAuthHeaders } from './abstracts';
 import { CONTACT_BASE } from '../config/env';
 export type ContactItem = {
     id: number;
+    deletedAt?: string | null;
     name?: string;
     email?: string;
     phone?: string;
@@ -57,4 +58,19 @@ export async function deleteContact(id: number | string): Promise<void> {
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         withCredentials: true,
     });
+}
+
+export async function restoreContact(id: number | string): Promise<void> {
+    await api.patch(`${CONTACT_BASE}/${id}/restore`, {}, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+}
+
+export async function updateContact(id: number | string, data: Partial<ContactItem>): Promise<ContactItem> {
+    const { data: result } = await api.patch(`${CONTACT_BASE}/${id}`, data, {
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        withCredentials: true,
+    });
+    return result;
 }

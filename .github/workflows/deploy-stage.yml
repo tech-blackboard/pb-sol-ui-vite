@@ -1,0 +1,75 @@
+name: Deploy UI to EC2 (Stage)
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-south-2
+  AWS_ACCOUNT_ID: 495417556644
+
+jobs:
+  deploy-to-ec2:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    environment: PB-SOL-STAGE
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Get ECR Password
+        id: ecr-password
+        run: |
+          echo "password=$(aws ecr get-login-password --region ${{ env.AWS_REGION }})" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_PASSWORD: ${{ steps.ecr-password.outputs.password }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_PORT || 22 }}
+          envs: ECR_REGISTRY,ECR_PASSWORD
+          script: |
+            set -e
+            
+            echo "Logging into Amazon ECR on EC2..."
+            if ! echo "$ECR_PASSWORD" | docker login --username AWS --password-stdin "$ECR_REGISTRY"; then
+              echo "❌ ECR Login failed!" >&2
+              exit 1
+            fi
+            
+            # Navigate to the UI folder on EC2
+            cd app
+            
+            echo "Stopping existing containers..."
+            docker compose -f docker-compose.stage.yml down
+            
+            echo "Pulling latest ECR images..."
+            if ! docker compose -f docker-compose.stage.yml pull; then
+              echo "❌ Failed to pull new images from ECR!" >&2
+              exit 1
+            fi
+            
+            echo "Starting containers..."
+            if ! docker compose -f docker-compose.stage.yml up -d; then
+              echo "❌ Failed to start containers!" >&2
+              exit 1
+            fi
+            
+            echo "Cleaning up unused docker images..."
+            docker image prune -f
+            
+            echo "✅ Deployment completed successfully!"

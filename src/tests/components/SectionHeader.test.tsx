@@ -114,4 +114,58 @@ describe('SectionHeader', () => {
         expect(filterButton).toHaveAttribute('aria-label', 'Open filters')
         expect(filterButton).toHaveAttribute('title', 'Filters')
     })
+
+    it('renders with trash styling when onlyDeleted is true or false', () => {
+        const mockToggleDeleted = jest.fn()
+        const { rerender } = render(
+            <SectionHeader
+                title="Test"
+                onFilterClick={mockOnFilterClick}
+                onToggleDeleted={mockToggleDeleted}
+                onlyDeleted={true}
+            />
+        )
+        const trashButton1 = screen.getByTitle('Viewing Deleted Records')
+        expect(trashButton1).toHaveClass('border-red-500')
+        fireEvent.click(trashButton1)
+        expect(mockToggleDeleted).toHaveBeenCalled()
+
+        rerender(
+            <SectionHeader
+                title="Test"
+                onFilterClick={mockOnFilterClick}
+                onToggleDeleted={mockToggleDeleted}
+                onlyDeleted={false}
+            />
+        )
+        const trashButton2 = screen.getByTitle('View Deleted Records')
+        expect(trashButton2).toHaveClass('border-gray-300')
+    })
+
+    it('renders and disables export button based on isExporting', () => {
+        const mockExportClick = jest.fn()
+        const { rerender } = render(
+            <SectionHeader
+                title="Test"
+                onFilterClick={mockOnFilterClick}
+                onExportClick={mockExportClick}
+                isExporting={false}
+            />
+        )
+        const exportButton = screen.getByTitle('Export to Excel')
+        expect(exportButton).toBeEnabled()
+        fireEvent.click(exportButton)
+        expect(mockExportClick).toHaveBeenCalled()
+
+        rerender(
+            <SectionHeader
+                title="Test"
+                onFilterClick={mockOnFilterClick}
+                onExportClick={mockExportClick}
+                isExporting={true}
+            />
+        )
+        expect(screen.getByText('Exporting...')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /Exporting/ })).toBeDisabled()
+    })
 })

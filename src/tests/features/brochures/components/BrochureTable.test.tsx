@@ -64,4 +64,26 @@ describe('BrochureTable', () => {
         const dashes = screen.getAllByText('—')
         expect(dashes.length).toBeGreaterThan(0)
     })
+
+    it('calls onRestore when restore button clicked and confirm is true', () => {
+        jest.spyOn(window, 'confirm').mockReturnValue(true)
+        const mockRestore = jest.fn()
+        const deletedData = [{ ...mockData[0], deletedAt: '2024-01-01' }]
+        render(<BrochureTable rows={deletedData} loading={false} onView={mockOnView} onRestore={mockRestore} />)
+        
+        fireEvent.click(screen.getByTitle('Restore'))
+        expect(mockRestore).toHaveBeenCalled()
+        ;(window.confirm as jest.Mock).mockRestore()
+    })
+
+    it('does not call onRestore when confirm is false', () => {
+        jest.spyOn(window, 'confirm').mockReturnValue(false)
+        const mockRestore = jest.fn()
+        const deletedData = [{ ...mockData[0], deletedAt: '2024-01-01' }]
+        render(<BrochureTable rows={deletedData} loading={false} onView={mockOnView} onRestore={mockRestore} />)
+        
+        fireEvent.click(screen.getByTitle('Restore'))
+        expect(mockRestore).not.toHaveBeenCalled()
+        ;(window.confirm as jest.Mock).mockRestore()
+    })
 })

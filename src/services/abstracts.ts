@@ -51,6 +51,7 @@ export type AbstractItem = {
   fileS3Url?: string
   uuid?: string
   website_id?: number | string
+  deletedAt?: string
 }
 
 
@@ -379,5 +380,20 @@ export async function fetchDashboard(filters: DashboardFilters): Promise<Dashboa
     headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     withCredentials: true,
   })
+  return data
+}
+
+export async function restoreAbstract(id: string | number): Promise<{ success: boolean; message: string }> {
+  const { data } = await api.patch<{ success: boolean; message: string }>(
+    `${ABSTRACT_BASE}/${id}/restore`,
+    {},
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      withCredentials: true,
+    }
+  )
   return data
 }

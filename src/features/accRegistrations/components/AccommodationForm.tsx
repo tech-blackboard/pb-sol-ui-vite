@@ -2,15 +2,17 @@ import { useState, useEffect, useRef } from 'react'
 import { X, CheckCircle, Info, AlertCircle } from 'lucide-react'
 import AlertBanner from '../../../components/AlertBanner'
 import { useAppDispatch } from '../../../store/hooks'
-import { createAccRegistrationThunk } from '../../../store/slices/accRegistrations/accRegistrations.slice'
+import { createAccRegistrationThunk, updateAccRegistrationThunk } from '../../../store/slices/accRegistrations/accRegistrations.slice'
 import { listWebsites, type SourceWebsite } from '../../../services/sourcedb'
 import toast from 'react-hot-toast'
 import type { accRegistrationRecord } from '../../abstracts/types'
+import type { AccRegistrationItem } from '../../../services/accRegistrations'
 
 interface AccommodationFormProps {
     websiteId?: number
     onClose: () => void
     onSuccess?: () => void
+    editData?: AccRegistrationItem | null
 }
 
 // const COUNTRIES = [
@@ -49,32 +51,87 @@ const OCCUPANCY_OPTIONS = [
     'Triple Occupancy',
 ]
 
-export default function AccommodationForm({ websiteId, onClose, onSuccess }: AccommodationFormProps) {
+// Helper to parse date string (like MM/DD/YYYY) for input[type=date]
+function formatDateForInput(dateStr?: string): string {
+    if (!dateStr) return '';
+    // If it already starts with YYYY-MM-DD, return that part
+    const isoMatch = dateStr.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (isoMatch) return isoMatch[1];
+
+    // The CRM uses MM/DD/YYYY or MM-DD-YYYY format
+    const mmddyyyyMatch = dateStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+    if (mmddyyyyMatch) {
+        const month = mmddyyyyMatch[1].padStart(2, '0');
+        const day = mmddyyyyMatch[2].padStart(2, '0');
+        const year = mmddyyyyMatch[3];
+        return `${year}-${month}-${day}`;
+    }
+
+    try {
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+            // Check if it's an ISO timestamp
+            if (dateStr.includes('T')) return dateStr.split('T')[0];
+            
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+    } catch {
+        // ignore
+    }
+    return dateStr;
+}
+
+export default function AccommodationForm({ websiteId, onClose, onSuccess, editData }: AccommodationFormProps) {
+    const isEditMode = !!editData
     const dispatch = useAppDispatch()
     const formRef = useRef<HTMLFormElement>(null)
     const [submitting, setSubmitting] = useState(false)
     const [websites, setWebsites] = useState<SourceWebsite[]>([])
     const [webLoading, setWebLoading] = useState(false)
 
+    const getInitialFormData = () => {
+        if (editData) {
+            return {
+                caption: editData.caption || '',
+                name: editData.name || '',
+                email: editData.email || '',
+                aemail: editData.aemail || '',
+                phone: editData.phone || '',
+                wphone: editData.wphone || '',
+                institution: editData.institution || '',
+                country: editData.country || '',
+                website_id: editData.website_id || editData.website?.id || websiteId || undefined,
+                accomm: editData.accomm || '',
+                accm: editData.accm || '',
+                checkin: formatDateForInput(editData.checkin),
+                checkout: formatDateForInput(editData.checkout),
+                acc_pr: editData.acc_pr || '',
+                tot_price: editData.tot_price || '0',
+            }
+        }
+        return {
+            caption: '',
+            name: '',
+            email: '',
+            aemail: '',
+            phone: '',
+            wphone: '',
+            institution: '',
+            country: '',
+            website_id: websiteId || undefined,
+            accomm: '',
+            accm: '',
+            checkin: '',
+            checkout: '',
+            acc_pr: '',
+            tot_price: '0',
+        }
+    }
 
-
-    const [formData, setFormData] = useState({
-        caption: '',
-        name: '',
-        email: '',
-        aemail: '',
-        phone: '',
-        wphone: '',
-        institution: '',
-        country: '',
-        website_id: websiteId || undefined,
-        accomm: '',
-        accm: '',
-        checkin: '',
-        checkout: '',
-        acc_pr: '',
-        tot_price: '0',
-    })
+    const [formData, setFormData] = useState(getInitialFormData)
 
     const [errors, setErrors] = useState<Record<string, string>>({})
     const [submitError, setSubmitError] = useState<string | null>(null)
@@ -133,13 +190,13 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
     const validate = () => {
         const newErrors: Record<string, string> = {}
 
-        if (!formData.caption) newErrors.caption = 'Caption is required'
+        if (!isEditMode && !formData.caption) newErrors.caption = 'Caption is required'
         if (!formData.name.trim()) newErrors.name = 'Name is required'
         if (!formData.email.trim()) newErrors.email = 'Email is required'
         if (!formData.phone.trim()) newErrors.phone = 'Phone is required'
         // if (!formData.country) newErrors.country = 'Country is required'
         // if (!formData.institution.trim()) newErrors.institution = 'Institution is required'
-        if (!formData.website_id) newErrors.website_id = 'Website is required'
+        if (!isEditMode && !formData.website_id) newErrors.website_id = 'Website is required'
         if (!formData.accomm) newErrors.accomm = 'Accommodation price is required'
         if (!formData.checkin) newErrors.checkin = 'Check-in date is required'
         if (!formData.checkout) newErrors.checkout = 'Check-out date is required'
@@ -184,16 +241,32 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
                 regtype: '',
                 participants: '1'
             }
-            const result = await dispatch(createAccRegistrationThunk(payload))
-            if (createAccRegistrationThunk.fulfilled.match(result)) {
-                toast.success('Accommodation Registration created successfully')
-                onSuccess?.()
-                onClose()
+
+            let result;
+            if (isEditMode && editData) {
+                result = await dispatch(updateAccRegistrationThunk({ id: editData.id, data: payload }))
+                if (updateAccRegistrationThunk.fulfilled.match(result)) {
+                    toast.success('Accommodation Registration updated successfully')
+                    onSuccess?.()
+                    onClose()
+                } else {
+                    const errorMsg = (result.payload as string) || 'Failed to update accommodation registration';
+                    setSubmitError(errorMsg);
+                    toast.error(errorMsg);
+                    formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+                }
             } else {
-                const errorMsg = (result.payload as string) || 'Failed to create registration';
-                setSubmitError(errorMsg);
-                toast.error(errorMsg);
-                formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+                result = await dispatch(createAccRegistrationThunk(payload))
+                if (createAccRegistrationThunk.fulfilled.match(result)) {
+                    toast.success('Accommodation Registration created successfully')
+                    onSuccess?.()
+                    onClose()
+                } else {
+                    const errorMsg = (result.payload as string) || 'Failed to create registration';
+                    setSubmitError(errorMsg);
+                    toast.error(errorMsg);
+                    formRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+                }
             }
         } catch {
             toast.error('An error occurred')
@@ -209,7 +282,7 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        Add New Accommodation
+                        {isEditMode ? 'Edit Accommodation' : 'Add New Accommodation'}
                     </h2>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                         <X className="w-5 h-5" />
@@ -227,34 +300,48 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
                             <Info className="w-4 h-4" />
                             Personal & Professional Information
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div>
-                                <label htmlFor="caption-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Caption*
-                                </label>
-                                <select
-                                    id="caption-select"
-                                    value={formData.caption}
-                                    onChange={(e) => handleChange('caption', e.target.value)}
-                                    className={`w-full px-4 py-2.5 rounded-lg border ${errors.caption
-                                        ? 'border-red-500 focus:ring-red-500'
-                                        : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
-                                        } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
-                                >
-                                    <option value="">--Caption*--</option>
-                                    {CAPTIONS.map((cap) => (
-                                        <option key={cap} value={cap}>
-                                            {cap}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.caption && (
-                                    <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                                        <AlertCircle className="w-4 h-4" />
-                                        {errors.caption}
-                                    </p>
-                                )}
+                        {isEditMode && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700 mb-4">
+                                <div>
+                                    <span className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">ID</span>
+                                    <span className="text-gray-900 dark:text-white font-semibold text-base">{editData?.id}</span>
+                                </div>
+                                <div>
+                                    <span className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Website/Conference</span>
+                                    <span className="text-gray-900 dark:text-white font-semibold text-base">{editData?.website?.name ?? '—'}</span>
+                                </div>
                             </div>
+                        )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {!isEditMode && (
+                                <div>
+                                    <label htmlFor="caption-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Caption*
+                                    </label>
+                                    <select
+                                        id="caption-select"
+                                        value={formData.caption}
+                                        onChange={(e) => handleChange('caption', e.target.value)}
+                                        className={`w-full px-4 py-2.5 rounded-lg border ${errors.caption
+                                            ? 'border-red-500 focus:ring-red-500'
+                                            : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
+                                            } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2`}
+                                    >
+                                        <option value="">--Caption*--</option>
+                                        {CAPTIONS.map((cap) => (
+                                            <option key={cap} value={cap}>
+                                                {cap}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.caption && (
+                                        <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                                            <AlertCircle className="w-4 h-4" />
+                                            {errors.caption}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                             <InputField label="Full Name*" name="name" value={formData.name} onChange={handleChange} error={errors.name} />
                             <InputField label="Email*" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} />
                             <InputField label="Alternate Email" name="aemail" type="email" value={formData.aemail} onChange={handleChange} />
@@ -263,36 +350,38 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
                             {/* <InputField label="Institution/Organization*" name="institution" value={formData.institution} onChange={handleChange} error={errors.institution} />
 
                             <SelectField label="Country*" name="country" value={formData.country} options={COUNTRIES} onChange={handleChange} error={errors.country} /> */}
-                            <div className="md:col-span-2">
-                                <label htmlFor="website-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Website/Conference*
-                                </label>
-                                <select
-                                    id="website-select"
-                                    value={formData.website_id || ''}
-                                    onChange={(e) => handleChange('website_id', e.target.value)}
-                                    disabled={webLoading}
-                                    className={`w-full px-4 py-2.5 rounded-lg border ${errors.website_id
-                                        ? 'border-red-500 focus:ring-red-500'
-                                        : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
-                                        } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed`}
-                                >
-                                    <option value="">
-                                        {webLoading ? 'Loading websites...' : 'Select Website/Conference*'}
-                                    </option>
-                                    {websites.map((w) => (
-                                        <option key={w.id} value={Number(w.id)}>
-                                            {w.name}
+                            {!isEditMode && (
+                                <div className="md:col-span-2">
+                                    <label htmlFor="website-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Website/Conference*
+                                    </label>
+                                    <select
+                                        id="website-select"
+                                        value={formData.website_id || ''}
+                                        onChange={(e) => handleChange('website_id', e.target.value)}
+                                        disabled={webLoading}
+                                        className={`w-full px-4 py-2.5 rounded-lg border ${errors.website_id
+                                            ? 'border-red-500 focus:ring-red-500'
+                                            : 'border-gray-300 dark:border-gray-600 focus:ring-purple-500'
+                                            } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    >
+                                        <option value="">
+                                            {webLoading ? 'Loading websites...' : 'Select Website/Conference*'}
                                         </option>
-                                    ))}
-                                </select>
-                                {errors.website_id && (
-                                    <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                                        <AlertCircle className="w-4 h-4" />
-                                        {errors.website_id}
-                                    </p>
-                                )}
-                            </div>
+                                        {websites.map((w) => (
+                                            <option key={w.id} value={Number(w.id)}>
+                                                {w.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.website_id && (
+                                        <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                                            <AlertCircle className="w-4 h-4" />
+                                            {errors.website_id}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -383,7 +472,7 @@ export default function AccommodationForm({ websiteId, onClose, onSuccess }: Acc
                             </button>
                             <button type="submit" disabled={submitting}
                                 className="px-8 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow-lg shadow-purple-600/20 transition-all flex items-center gap-2 disabled:opacity-50">
-                                {submitting ? 'Adding...' : 'Add Accommodation'}
+                                {submitting ? (isEditMode ? 'Updating...' : 'Adding...') : (isEditMode ? 'Update Accommodation' : 'Add Accommodation')}
                             </button>
                         </div>
 

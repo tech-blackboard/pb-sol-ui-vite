@@ -11,6 +11,7 @@ jest.mock('../../lib/api', () => ({
         get: jest.fn(),
         post: jest.fn(),
         delete: jest.fn(),
+        patch: jest.fn(),
     },
 }))
 
@@ -167,6 +168,24 @@ describe('accRegistrations service', () => {
                 })
 
             const result = await createAccRegistration(newAccReg)
+            expect(result).toEqual(mockAccRegistration)
+        })
+    })
+
+    describe('updateAccRegistration', () => {
+        it('updates accommodation registration by ID', async () => {
+            (api.patch as jest.Mock).mockResolvedValue({ data: mockAccRegistration })
+
+            const result = await import('../../services/accRegistrations').then(m => m.updateAccRegistration(1, { name: 'Updated Name' }))
+
+            expect(api.patch).toHaveBeenCalledWith(
+                expect.stringContaining('/1'),
+                { name: 'Updated Name' },
+                expect.objectContaining({
+                    headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
+                    withCredentials: true,
+                })
+            )
             expect(result).toEqual(mockAccRegistration)
         })
     })

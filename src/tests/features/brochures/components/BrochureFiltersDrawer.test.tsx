@@ -17,6 +17,7 @@ const createMockStore = (draftFilters = {}) => configureStore({
         brochures: {
             items: [],
             loading: false,
+            editLoading: false,
             error: null,
             page: 1,
             pageSize: 10,

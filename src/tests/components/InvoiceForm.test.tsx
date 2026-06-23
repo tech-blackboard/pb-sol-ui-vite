@@ -395,4 +395,26 @@ describe('InvoiceForm', () => {
     expect(sendingButton).toBeInTheDocument()
     expect(sendingButton).toBeDisabled()
   })
+
+  test('typing note and paymentLink triggers handleChange, and selects option clears interestedIn error', async () => {
+    renderForm()
+    
+    // Type in payment link & note to cover handleChange
+    const payInput = screen.getByPlaceholderText('https://payment.example.com/...')
+    fireEvent.change(payInput, { target: { value: 'https://new-pay.link' } })
+    
+    const noteInput = screen.getByPlaceholderText(/Add any additional notes/i)
+    fireEvent.change(noteInput, { target: { value: 'This is a test note.' } })
+    
+    // Select option to clear interestedIn error
+    // First trigger error
+    fireEvent.click(screen.getByText('Preview Invoice'))
+    expect(await screen.findByText('Please select an option')).toBeInTheDocument()
+    
+    // Change option
+    fireEvent.change(screen.getAllByRole('combobox')[0], {
+      target: { value: 'Listener (Virtual)' }
+    })
+    expect(screen.queryByText('Please select an option')).not.toBeInTheDocument()
+  })
 })

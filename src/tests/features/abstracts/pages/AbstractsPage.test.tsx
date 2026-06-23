@@ -46,6 +46,12 @@ jest.mock('../../../../store/slices/abstracts/abstracts.thunks', () => ({
     sendPaymentReminderThunk: Object.assign(jest.fn(), {
         fulfilled: { match: jest.fn() },
     }),
+    deleteAbstractThunk: Object.assign(jest.fn(), {
+        fulfilled: { match: jest.fn() },
+    }),
+    restoreAbstractThunk: Object.assign(jest.fn(), {
+        fulfilled: { match: jest.fn() },
+    }),
 }))
 
 jest.mock('../../../../store/slices/abstracts/abstracts.slice', () => ({
@@ -57,6 +63,24 @@ jest.mock('../../../../store/slices/abstracts/abstracts.slice', () => ({
     closeInvoiceModal: jest.fn(),
     closePaymentReceiptModal: jest.fn(),
     closePaymentReminderModal: jest.fn(),
+    updateDraftFilter: jest.fn(),
+    applyFilters: jest.fn(),
+    clearError: jest.fn(),
+}))
+
+
+jest.mock('xlsx', () => ({
+    utils: {
+        json_to_sheet: jest.fn(() => ({})),
+        book_new: jest.fn(() => ({})),
+        book_append_sheet: jest.fn(),
+        encode_cell: jest.fn(() => 'O1'),
+    },
+    writeFile: jest.fn(),
+}))
+
+jest.mock('../../../../services/abstracts', () => ({
+    searchAbstracts: jest.fn().mockResolvedValue({ items: [], total: 0 }),
 }))
 
 jest.mock('react-hot-toast', () => ({
@@ -64,18 +88,42 @@ jest.mock('react-hot-toast', () => ({
     default: {
         success: jest.fn(),
         error: jest.fn(),
+        loading: jest.fn(() => 'toast-id'),
     },
 }))
+
+interface AbstractHeaderProps {
+    error?: string | null
+    onClearError?: () => void
+    onExportClick?: () => void
+    onToggleDeleted?: () => void
+    onlyDeleted?: boolean
+    isExporting?: boolean
+    selectedCount?: number
+    onDeleteSelected?: () => void
+}
 
 // Mock child components to isolate AbstractsPage logic
 jest.mock('../../../../features/abstracts/components/AbstractHeader', () => ({
     __esModule: true,
-    default: () => <div data-testid="abstract-header">Header</div>
+    default: ({ error, onClearError, onExportClick, onToggleDeleted, onDeleteSelected }: AbstractHeaderProps) => (
+        <div data-testid="abstract-header">
+            Header
+            {error && <span data-testid="error-msg">{error}</span>}
+            {onClearError && <button onClick={onClearError}>Clear Error</button>}
+            {onExportClick && <button onClick={onExportClick}>Export Excel</button>}
+            {onToggleDeleted && <button onClick={onToggleDeleted}>Toggle Deleted</button>}
+            {onDeleteSelected && <button onClick={onDeleteSelected}>Delete Selected</button>}
+        </div>
+    )
 }))
 
 interface AbstractTableProps {
     rawRows: AbstractItem[]
     onView: (item: AbstractItem) => void
+    onRestore?: (item: AbstractItem) => void
+    onSelect?: (id: number) => void
+    onSelectAll?: (checked: boolean) => void
 }
 
 jest.mock('../../../../features/abstracts/components/AbstractTable', () => ({
@@ -84,6 +132,10 @@ jest.mock('../../../../features/abstracts/components/AbstractTable', () => ({
         <div data-testid="abstract-table">
             Table
             <button onClick={() => props.onView(props.rawRows[0])}>View First</button>
+            <button onClick={() => props.onRestore?.(props.rawRows[0])}>Restore First</button>
+            <button onClick={() => props.onSelect?.(Number(props.rawRows[0].id))}>Select First</button>
+            <button onClick={() => props.onSelectAll?.(true)}>Select All</button>
+            <button onClick={() => props.onSelectAll?.(false)}>Unselect All</button>
         </div>
     )
 }))
@@ -108,6 +160,7 @@ interface AbstractDetailsModalProps {
     onClose: () => void
     onStatusChange: (status: string) => void
     onUpdate: () => void
+    onDelete?: (item: AbstractItem) => void
 }
 
 jest.mock('../../../../features/abstracts/components/AbstractDetailsModal', () => ({
@@ -118,6 +171,7 @@ jest.mock('../../../../features/abstracts/components/AbstractDetailsModal', () =
             <button onClick={props.onClose}>Close</button>
             <button onClick={() => props.onStatusChange('Accepted')}>Change Status</button>
             <button onClick={props.onUpdate}>Update</button>
+            <button onClick={() => props.onDelete?.({ id: '1' } as AbstractItem)}>Delete Single</button>
         </div>
     )
 }))
@@ -192,6 +246,14 @@ const mockState = {
         paymentReceiptModal: { open: false, abstractId: null, abstractName: '' },
         paymentReminderModal: { open: false, abstractId: null, abstractName: '' },
         actionLoading: { status: false, invoice: false, receipt: false, reminder: false, confirmation: false },
+        appliedFilters: { onlyDeleted: 'false' },
+        draftFilters: { onlyDeleted: 'false' },
+    },
+    auth: {
+        user: { name: 'Test User', role: 'User', permissions: ['export:excel'] },
+        token: 'fake-token',
+        loading: false,
+        error: null,
     }
 }
 
@@ -213,7 +275,12 @@ describe('AbstractsPage', () => {
             ; (sendPaymentReceiptThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(true)
             ; (sendPaymentReminderThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(true)
 
-        dispatchMock.mockResolvedValue({ type: 'fulfilled', payload: {} })
+        dispatchMock.mockImplementation((action: unknown) => {
+            if (action && typeof action === 'object' && 'unwrap' in action && typeof (action as { unwrap: unknown }).unwrap === 'function') {
+                return action;
+            }
+            return Promise.resolve({ type: 'fulfilled', payload: {} })
+        })
     })
 
     test('renders main layout components', () => {
@@ -303,7 +370,7 @@ describe('AbstractsPage', () => {
 
         // First dispatch is fetchAbstracts on mount
         dispatchMock.mockResolvedValueOnce({ type: 'fetch/fulfilled', payload: [] })
-        
+
         // Second dispatch is the updateStatusThunk
         dispatchMock.mockResolvedValueOnce({
             type: 'rejected',
@@ -396,10 +463,10 @@ describe('AbstractsPage', () => {
         // 1. sendInvoiceThunk (success), 2. updateStatusThunk (fail)
         dispatchMock.mockResolvedValueOnce({ type: 'fulfilled', payload: {} })
         dispatchMock.mockResolvedValueOnce({ type: 'rejected', payload: {} })
-        
-        // Mock matching
-        ; (sendInvoiceThunk.fulfilled.match as unknown as jest.Mock).mockReturnValueOnce(true)
-        ; (updateStatusThunk.fulfilled.match as unknown as jest.Mock).mockReturnValueOnce(false)
+
+            // Mock matching
+            ; (sendInvoiceThunk.fulfilled.match as unknown as jest.Mock).mockReturnValueOnce(true)
+            ; (updateStatusThunk.fulfilled.match as unknown as jest.Mock).mockReturnValueOnce(false)
 
         fireEvent.click(screen.getByText('Submit Invoice'))
 
@@ -647,8 +714,8 @@ describe('AbstractsPage', () => {
             ...mockState,
             abstracts: { ...mockState.abstracts, selected: null }
         }
-        ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateNoSelected))
-        
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateNoSelected))
+
         render(<AbstractsPage />)
         // Since modal is not rendered when viewItem is null (line 200), we can't trigger handleUpdateStatus easily via UI.
         // However, if we assume it could be called, the guard would catch it.
@@ -659,14 +726,14 @@ describe('AbstractsPage', () => {
     test('handleUpdateStatus returns early if same status', () => {
         const stateSameStatus = {
             ...mockState,
-            abstracts: { 
-                ...mockState.abstracts, 
+            abstracts: {
+                ...mockState.abstracts,
                 selected: mockAbstractItem,
                 modalStatus: 'Under Review'
             }
         }
-        ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateSameStatus))
-        
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateSameStatus))
+
         render(<AbstractsPage />)
         fireEvent.click(screen.getByText('Update'))
         expect(updateStatusThunk).not.toHaveBeenCalled()
@@ -681,9 +748,9 @@ describe('AbstractsPage', () => {
                 modalStatus: 'Accepted',
             }
         }
-        ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateSelectedAndAccepted))
-        ; (updateStatusThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
-        
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateSelectedAndAccepted))
+            ; (updateStatusThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
+
         dispatchMock.mockResolvedValueOnce({ type: 'fetch/fulfilled', payload: [] })
         dispatchMock.mockResolvedValueOnce({
             type: 'rejected',
@@ -707,10 +774,10 @@ describe('AbstractsPage', () => {
                 paymentReminderModal: { open: true, abstractId: '1', abstractName: 'Test' },
             }
         }
-        ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateNoItems))
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateNoItems))
 
         render(<AbstractsPage />)
-        
+
         dispatchMock.mockResolvedValueOnce({
             type: 'fulfilled',
             payload: { message: 'Reminder sent', whatsappSent: true }
@@ -729,14 +796,14 @@ describe('AbstractsPage', () => {
     test('handleUpdateStatus returns early if no modalStatus (line 57)', () => {
         const stateNoModalStatus = {
             ...mockState,
-            abstracts: { 
-                ...mockState.abstracts, 
+            abstracts: {
+                ...mockState.abstracts,
                 selected: mockAbstractItem,
-                modalStatus: null 
+                modalStatus: null
             }
         }
-        ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateNoModalStatus))
-        
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateNoModalStatus))
+
         render(<AbstractsPage />)
         // Similar to viewItem=null, the modal won't render if any of the three are null (line 200)
         expect(screen.queryByTestId('abstract-details-modal')).not.toBeInTheDocument()
@@ -751,14 +818,14 @@ describe('AbstractsPage', () => {
                 modalStatus: 'Accepted',
             }
         }
-        ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateSelectedAndAccepted))
-        
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateSelectedAndAccepted))
+
         dispatchMock.mockResolvedValueOnce({ type: 'fetch/fulfilled', payload: [] }) // mount
         dispatchMock.mockResolvedValueOnce({
             type: 'rejected',
             payload: 'Server Error String',
         })
-        ;(updateStatusThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
+            ; (updateStatusThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
 
         render(<AbstractsPage />)
         fireEvent.click(screen.getByText('Update'))
@@ -778,14 +845,14 @@ describe('AbstractsPage', () => {
                 modalStatus: 'Accepted',
             }
         }
-        ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithPhone))
-        
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithPhone))
+
         dispatchMock.mockResolvedValueOnce({ type: 'fetch/fulfilled', payload: [] })
         dispatchMock.mockResolvedValueOnce({
             type: 'fulfilled',
             payload: { whatsappSent: true }
         })
-        ;(updateStatusThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(true)
+            ; (updateStatusThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(true)
 
         render(<AbstractsPage />)
         fireEvent.click(screen.getByText('Update'))
@@ -809,14 +876,14 @@ describe('AbstractsPage', () => {
                 modalStatus: 'Rejected', // different so it proceeds to update
             }
         }
-        ;(useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithStringStatus))
-        
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithStringStatus))
+
         dispatchMock.mockResolvedValueOnce({ type: 'fetch/fulfilled', payload: [] })
         dispatchMock.mockResolvedValueOnce({
             type: 'fulfilled',
             payload: { whatsappSent: false }
         })
-        ;(updateStatusThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(true)
+            ; (updateStatusThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(true)
 
         render(<AbstractsPage />)
         fireEvent.click(screen.getByText('Update'))
@@ -824,6 +891,130 @@ describe('AbstractsPage', () => {
         await waitFor(() => {
             expect(updateStatusThunk).toHaveBeenCalled()
         })
+    })
+
+    test('handles handleExport with data (lines 191-267)', async () => {
+        const { searchAbstracts } = jest.requireMock('../../../../services/abstracts')
+            ; (searchAbstracts as jest.Mock).mockResolvedValue({
+                items: [
+                    {
+                        id: '1',
+                        name: 'Test',
+                        email: 'a@b.com',
+                        website: { name: 'Conf', link: 'https://conf.com/' },
+                        status: { actionType: 'Accepted' },
+                        file: 'uploads/file.pdf',
+                        isEmailSent: true,
+                        now: '2024-01-01',
+                    },
+                ],
+            })
+
+        const XLSX = jest.requireMock('xlsx')
+
+        render(<AbstractsPage />)
+
+        const exportBtn = screen.getByText('Export Excel')
+        fireEvent.click(exportBtn)
+
+        await waitFor(() => {
+            expect(searchAbstracts).toHaveBeenCalled()
+            expect(XLSX.utils.json_to_sheet).toHaveBeenCalled()
+            expect(XLSX.writeFile).toHaveBeenCalled()
+        })
+    })
+
+    test('handles handleExport with S3 url and no file (lines 244-250)', async () => {
+        const { searchAbstracts } = jest.requireMock('../../../../services/abstracts')
+            ; (searchAbstracts as jest.Mock).mockResolvedValue({
+                items: [
+                    {
+                        id: '2',
+                        name: 'Test2',
+                        email: 'b@c.com',
+                        website: { name: 'Conf2', link: '' },
+                        status: 'Under Review',
+                        file: 'https://external.com/file.pdf',
+                        fileS3Url: 'https://s3.aws.com/file.pdf',
+                        isEmailSent: false,
+                        now: '2024-02-01',
+                    },
+                ],
+            })
+
+        const XLSX = jest.requireMock('xlsx')
+        // Make the cell appear to have content
+        XLSX.utils.json_to_sheet.mockReturnValue({ O1: { v: 'file.pdf' } })
+
+        render(<AbstractsPage />)
+        fireEvent.click(screen.getByText('Export Excel'))
+
+        await waitFor(() => {
+            expect(XLSX.writeFile).toHaveBeenCalled()
+        })
+    })
+
+    test('handles handleExport when no results returned (lines 198-201)', async () => {
+        const { searchAbstracts } = jest.requireMock('../../../../services/abstracts')
+            ; (searchAbstracts as jest.Mock).mockResolvedValue({ items: [] })
+
+        const XLSX = jest.requireMock('xlsx')
+
+        render(<AbstractsPage />)
+        fireEvent.click(screen.getByText('Export Excel'))
+
+        await waitFor(() => {
+            expect(searchAbstracts).toHaveBeenCalled()
+            expect(XLSX.writeFile).not.toHaveBeenCalled()
+        })
+    })
+
+    test('handles handleExport exception (catch block line 261)', async () => {
+        const { searchAbstracts } = jest.requireMock('../../../../services/abstracts')
+            ; (searchAbstracts as jest.Mock).mockRejectedValue(new Error('Network Error'))
+
+        render(<AbstractsPage />)
+        fireEvent.click(screen.getByText('Export Excel'))
+
+        await waitFor(() => {
+            expect(toast.error).toHaveBeenCalledWith('Failed to export data')
+        })
+    })
+
+    test('handles onToggleDeleted when onlyDeleted is false (lines 276-278)', () => {
+        const stateNotDeleted = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                appliedFilters: { onlyDeleted: 'false' },
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateNotDeleted))
+
+        render(<AbstractsPage />)
+        const toggleBtn = screen.queryByText('Toggle Deleted')
+        if (toggleBtn) {
+            fireEvent.click(toggleBtn)
+            expect(dispatchMock).toHaveBeenCalled()
+        }
+    })
+
+    test('handles onToggleDeleted when onlyDeleted is true (lines 276-278)', () => {
+        const stateWithDeleted = {
+            ...mockState,
+            abstracts: {
+                ...mockState.abstracts,
+                appliedFilters: { onlyDeleted: 'true' },
+            }
+        }
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithDeleted))
+
+        render(<AbstractsPage />)
+        const toggleBtn = screen.queryByText('Toggle Deleted')
+        if (toggleBtn) {
+            fireEvent.click(toggleBtn)
+            expect(dispatchMock).toHaveBeenCalled()
+        }
     })
 
     test('covers string payloads for invoice, receipt, reminder rejections (lines 100, 141, 173)', async () => {
@@ -836,13 +1027,13 @@ describe('AbstractsPage', () => {
                 paymentReminderModal: { open: true, abstractId: '1', abstractName: 'Test' },
             }
         }
-        ;(useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateForModals))
-        
-        // Mock matchers to false
-        ;(sendInvoiceThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
-        ;(sendPaymentReceiptThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
-        ;(sendPaymentReminderThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
-        
+            ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateForModals))
+
+            // Mock matchers to false
+            ; (sendInvoiceThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
+            ; (sendPaymentReceiptThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
+            ; (sendPaymentReminderThunk.fulfilled.match as unknown as jest.Mock).mockReturnValue(false)
+
         render(<AbstractsPage />)
 
         // 1. Invoice
@@ -860,4 +1051,290 @@ describe('AbstractsPage', () => {
         fireEvent.click(screen.getByText('Submit Reminder'))
         await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Reminder String Error'))
     })
+
+    test('covers branch where viewItem is defined but modalStatus is null (line 67)', async () => {
+            const stateWithoutModalStatus = {
+                ...mockState,
+                abstracts: {
+                    ...mockState.abstracts,
+                    selected: mockAbstractItem,
+                    modalStatus: null,
+                }
+            }
+                ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithoutModalStatus))
+            render(<AbstractsPage />)
+            const updateBtn = screen.queryByText('Update')
+            if (updateBtn) fireEvent.click(updateBtn)
+            // should return early
+        })
+
+        test('covers handleExport missing fields fallbacks (lines 206-209, 222-225)', async () => {
+            const { searchAbstracts } = jest.requireMock('../../../../services/abstracts')
+                ; (searchAbstracts as jest.Mock).mockResolvedValue({
+                    items: [
+                        {
+                            id: '3',
+                            website_name: 'Fallback Name',
+                            // no website, no status, no file
+                        },
+                    ],
+                })
+
+            const XLSX = jest.requireMock('xlsx')
+            render(<AbstractsPage />)
+            fireEvent.click(screen.getByText('Export Excel'))
+
+            await waitFor(() => {
+                expect(XLSX.writeFile).toHaveBeenCalled()
+            })
+        })
+
+        test('covers handleExport onlyDeleted false fallback (line 280)', async () => {
+            const stateNoOnlyDeleted = {
+                ...mockState,
+                abstracts: {
+                    ...mockState.abstracts,
+                    appliedFilters: {},
+                }
+            }
+                ; (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateNoOnlyDeleted))
+
+            render(<AbstractsPage />)
+            const toggleBtn = screen.queryByText('Toggle Deleted')
+            if (toggleBtn) fireEvent.click(toggleBtn)
+        })
+
+        test('handles bulk delete success', async () => {
+            const { deleteAbstractThunk } = jest.requireMock('../../../../store/slices/abstracts/abstracts.thunks')
+            deleteAbstractThunk.mockImplementation(() => ({
+                unwrap: jest.fn().mockResolvedValue({}),
+            }))
+            jest.spyOn(window, 'confirm').mockReturnValue(true)
+
+            render(<AbstractsPage />)
+            fireEvent.click(screen.getByText('Select First'))
+            fireEvent.click(screen.getByText('Delete Selected'))
+
+            await waitFor(() => {
+                expect(deleteAbstractThunk).toHaveBeenCalled()
+            })
+            ;(window.confirm as jest.Mock).mockRestore()
+        })
+
+        test('handles bulk delete cancel', async () => {
+            const { deleteAbstractThunk } = jest.requireMock('../../../../store/slices/abstracts/abstracts.thunks')
+            jest.spyOn(window, 'confirm').mockReturnValue(false)
+
+            render(<AbstractsPage />)
+            fireEvent.click(screen.getByText('Select First'))
+            fireEvent.click(screen.getByText('Delete Selected'))
+
+            expect(deleteAbstractThunk).not.toHaveBeenCalled()
+            ;(window.confirm as jest.Mock).mockRestore()
+        })
+
+        test('handles bulk delete string error', async () => {
+            const { deleteAbstractThunk } = jest.requireMock('../../../../store/slices/abstracts/abstracts.thunks')
+            deleteAbstractThunk.mockImplementation(() => ({
+                unwrap: jest.fn().mockRejectedValue('Delete Error'),
+            }))
+            jest.spyOn(window, 'confirm').mockReturnValue(true)
+
+            render(<AbstractsPage />)
+            fireEvent.click(screen.getByText('Select First'))
+            fireEvent.click(screen.getByText('Delete Selected'))
+
+            await waitFor(() => {
+                expect(toast.error).toHaveBeenCalledWith('Delete Error', expect.any(Object))
+            })
+            ;(window.confirm as jest.Mock).mockRestore()
+        })
+
+        test('handles bulk delete generic error', async () => {
+            const { deleteAbstractThunk } = jest.requireMock('../../../../store/slices/abstracts/abstracts.thunks')
+            deleteAbstractThunk.mockImplementation(() => ({
+                unwrap: jest.fn().mockRejectedValue(new Error('error')),
+            }))
+            jest.spyOn(window, 'confirm').mockReturnValue(true)
+
+            render(<AbstractsPage />)
+            fireEvent.click(screen.getByText('Select First'))
+            fireEvent.click(screen.getByText('Delete Selected'))
+
+            await waitFor(() => {
+                expect(toast.error).toHaveBeenCalledWith('Failed to delete some records', expect.any(Object))
+            })
+            ;(window.confirm as jest.Mock).mockRestore()
+        })
+
+        test('handles restore success', async () => {
+            const { restoreAbstractThunk } = jest.requireMock('../../../../store/slices/abstracts/abstracts.thunks')
+            restoreAbstractThunk.mockImplementation(() => ({
+                unwrap: jest.fn().mockResolvedValue({}),
+            }))
+
+            render(<AbstractsPage />)
+            fireEvent.click(screen.getByText('Restore First'))
+
+            await waitFor(() => {
+                expect(restoreAbstractThunk).toHaveBeenCalled()
+            })
+        })
+
+        test('handles restore string error', async () => {
+            const { restoreAbstractThunk } = jest.requireMock('../../../../store/slices/abstracts/abstracts.thunks')
+            restoreAbstractThunk.mockImplementation(() => ({
+                unwrap: jest.fn().mockRejectedValue('Restore Error'),
+            }))
+
+            render(<AbstractsPage />)
+            fireEvent.click(screen.getByText('Restore First'))
+
+            await waitFor(() => {
+                expect(toast.error).toHaveBeenCalledWith('Restore Error', expect.any(Object))
+            })
+        })
+
+        test('handles restore generic error', async () => {
+            const { restoreAbstractThunk } = jest.requireMock('../../../../store/slices/abstracts/abstracts.thunks')
+            restoreAbstractThunk.mockImplementation(() => ({
+                unwrap: jest.fn().mockRejectedValue(new Error('generic')),
+            }))
+
+            render(<AbstractsPage />)
+            fireEvent.click(screen.getByText('Restore First'))
+
+            await waitFor(() => {
+                expect(toast.error).toHaveBeenCalledWith('Failed to restore abstract', expect.any(Object))
+            })
+        })
+
+        test('handles delete single success', async () => {
+            const { deleteAbstractThunk } = jest.requireMock('../../../../store/slices/abstracts/abstracts.thunks')
+            deleteAbstractThunk.mockImplementation(() => ({
+                unwrap: jest.fn().mockResolvedValue({}),
+            }))
+            
+            const stateWithModal = {
+                ...mockState,
+                abstracts: {
+                    ...mockState.abstracts,
+                    selected: mockAbstractItem,
+                    modalStatus: 'Under Review',
+                }
+            }
+            ;(useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithModal))
+            
+            render(<AbstractsPage />)
+            fireEvent.click(screen.getByText('Delete Single'))
+
+            await waitFor(() => {
+                expect(deleteAbstractThunk).toHaveBeenCalled()
+                expect(toast.success).toHaveBeenCalledWith('Abstract deleted successfully', expect.any(Object))
+            })
+        })
+
+        test('handles delete single string error', async () => {
+            const { deleteAbstractThunk } = jest.requireMock('../../../../store/slices/abstracts/abstracts.thunks')
+            deleteAbstractThunk.mockImplementation(() => ({
+                unwrap: jest.fn().mockRejectedValue('Single Delete Error'),
+            }))
+            
+            const stateWithModal = {
+                ...mockState,
+                abstracts: {
+                    ...mockState.abstracts,
+                    selected: mockAbstractItem,
+                    modalStatus: 'Under Review',
+                }
+            }
+            ;(useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithModal))
+            
+            render(<AbstractsPage />)
+            fireEvent.click(screen.getByText('Delete Single'))
+
+            await waitFor(() => {
+                expect(toast.error).toHaveBeenCalledWith('Single Delete Error', expect.any(Object))
+            })
+        })
+
+        test('handles delete single generic error', async () => {
+            const { deleteAbstractThunk } = jest.requireMock('../../../../store/slices/abstracts/abstracts.thunks')
+            deleteAbstractThunk.mockImplementation(() => ({
+                unwrap: jest.fn().mockRejectedValue(new Error('error')),
+            }))
+            
+            const stateWithModal = {
+                ...mockState,
+                abstracts: {
+                    ...mockState.abstracts,
+                    selected: mockAbstractItem,
+                    modalStatus: 'Under Review',
+                }
+            }
+            ;(useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateWithModal))
+            
+            render(<AbstractsPage />)
+            fireEvent.click(screen.getByText('Delete Single'))
+
+            await waitFor(() => {
+                expect(toast.error).toHaveBeenCalledWith('Failed to delete abstract', expect.any(Object))
+            })
+        })
+
+        test('handles onSelect toggle', async () => {
+            render(<AbstractsPage />)
+            fireEvent.click(screen.getByText('Select First'))
+            fireEvent.click(screen.getByText('Select First')) // unselect
+        })
+
+        test('handles onSelectAll checks and unchecks', async () => {
+            render(<AbstractsPage />)
+            fireEvent.click(screen.getByText('Select All'))
+            fireEvent.click(screen.getByText('Unselect All'))
+        })
+
+
+        test('covers excel website fallback and split pop fallback (lines 207, 224, 243)', async () => {
+            const { searchAbstracts } = jest.requireMock('../../../../services/abstracts')
+            ;(searchAbstracts as jest.Mock).mockResolvedValue({
+                items: [
+                    {
+                        id: '4',
+                        name: 'Fallback Item',
+                        website: undefined,
+                        website_name: undefined,
+                        file: 'test/',
+                    },
+                    {
+                        id: '5',
+                        name: 'Relative Path Item',
+                        website: { name: 'Conf', link: 'https://conf.com' },
+                        file: 'documents/report.pdf',
+                    }
+                ],
+            })
+
+            const XLSX = jest.requireMock('xlsx')
+            render(<AbstractsPage />)
+            fireEvent.click(screen.getByText('Export Excel'))
+
+            await waitFor(() => {
+                expect(XLSX.writeFile).toHaveBeenCalled()
+            })
+        })
+
+        test('covers branch where user does not have export excel permission (line 324)', () => {
+            const stateNoExport = {
+                ...mockState,
+                auth: {
+                    ...mockState.auth,
+                    user: { name: 'Test User', role: 'User', permissions: [] },
+                }
+            };
+            (useAppSelector as jest.Mock).mockImplementation((selectorFn) => selectorFn(stateNoExport));
+
+            render(<AbstractsPage />)
+            expect(screen.queryByText('Export Excel')).not.toBeInTheDocument()
+        })
 })

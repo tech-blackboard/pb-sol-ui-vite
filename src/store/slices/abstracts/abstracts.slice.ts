@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { AbstractFilters } from './abstracts.types'
-import { fetchAbstracts, sendConfirmationEmailThunk, sendInvoiceThunk, sendPaymentReceiptThunk, sendPaymentReminderThunk, updateAbstractThunk, updateStatusThunk } from './abstracts.thunks'
+import { fetchAbstracts, sendConfirmationEmailThunk, sendInvoiceThunk, sendPaymentReceiptThunk, sendPaymentReminderThunk, updateAbstractThunk, updateStatusThunk, deleteAbstractThunk, restoreAbstractThunk } from './abstracts.thunks'
 import { normalizeAbstract } from '../../../features/abstracts/utils/normalizeAbstract'
 import type { AbstractStatus, AbstractRecord } from '../../../features/abstracts/types'
 import type { AbstractItem } from '../../../services/abstracts'
@@ -238,7 +238,9 @@ const abstractsSlice = createSlice({
         }
 
         // 🔥 keep modal + table in sync
-        state.selected = updatedAbstract
+        if (state.selected && String(state.selected.id) === String(updatedAbstract.id)) {
+          state.selected = updatedAbstract
+        }
       })
       .addCase(updateAbstractThunk.rejected, (state) => {
         state.actionLoading.edit = false
@@ -263,8 +265,10 @@ const abstractsSlice = createSlice({
         }
 
         // 🔥 keep modal + table in sync
-        state.selected = updatedAbstract
-        state.modalStatus = (updatedAbstract.status?.actionType ?? updatedAbstract.status ?? 'Under Review') as AbstractStatus
+        if (state.selected && String(state.selected.id) === String(updatedAbstract.id)) {
+          state.selected = updatedAbstract
+          state.modalStatus = (updatedAbstract.status?.actionType ?? updatedAbstract.status ?? 'Under Review') as AbstractStatus
+        }
       })
       .addCase(updateStatusThunk.rejected, (state) => {
         state.actionLoading.status = false
@@ -329,8 +333,10 @@ const abstractsSlice = createSlice({
           state.items[idx] = normalizeAbstract(updatedAbstract)
         }
 
-        state.selected = updatedAbstract
-        state.modalStatus = 'Registered'
+        if (state.selected && String(state.selected.id) === String(updatedAbstract.id)) {
+          state.selected = updatedAbstract
+          state.modalStatus = 'Registered'
+        }
 
         state.paymentReceiptModal.open = false
         state.paymentReceiptModal.abstractId = null
@@ -373,6 +379,28 @@ const abstractsSlice = createSlice({
 
       .addCase(sendConfirmationEmailThunk.rejected, (state) => {
         state.actionLoading.confirmation = false
+      })
+
+      /* ---------- delete abstract ---------- */
+      .addCase(deleteAbstractThunk.fulfilled, (state, { payload }) => {
+        state.rawItems = state.rawItems.filter((x) => String(x.id) !== String(payload))
+        state.items = state.items.filter((x) => String(x.id) !== String(payload))
+        state.total = Math.max(0, state.total - 1)
+      })
+
+      /* ---------- restore abstract ---------- */
+      .addCase(restoreAbstractThunk.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(restoreAbstractThunk.fulfilled, (state, { payload }) => {
+        state.loading = false
+        state.rawItems = state.rawItems.filter((x) => String(x.id) !== String(payload))
+        state.items = state.items.filter((x) => String(x.id) !== String(payload))
+        state.total = Math.max(0, state.total - 1)
+      })
+      .addCase(restoreAbstractThunk.rejected, (state, action) => {
+        state.loading = false
+        state.error = (action.payload as string) || action.error.message || 'Failed to restore abstract'
       })
   },
 })

@@ -1,6 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import * as XLSX from 'xlsx'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
+import { selectAuth } from '../../../store/slices/authSlice'
 import {
   setPage,
   setPageSize,
@@ -11,8 +13,10 @@ import {
   closePaymentReceiptModal,
   closePaymentReminderModal,
   clearError,
+  updateDraftFilter,
+  applyFilters,
 } from '../../../store/slices/abstracts/abstracts.slice'
-import { fetchAbstracts, sendInvoiceThunk, sendPaymentReceiptThunk, sendPaymentReminderThunk, updateStatusThunk } from '../../../store/slices/abstracts/abstracts.thunks'
+import { fetchAbstracts, sendInvoiceThunk, sendPaymentReceiptThunk, sendPaymentReminderThunk, updateStatusThunk, deleteAbstractThunk, restoreAbstractThunk } from '../../../store/slices/abstracts/abstracts.thunks'
 import {
   selectAppliedFilters,
   selectModalStatus,
@@ -27,9 +31,11 @@ import AbstractDetailsModal from '../components/AbstractDetailsModal'
 import { STATUS_TO_ID } from '../status.constants'
 import type { AbstractStatus } from '../types'
 import { InvoiceForm } from '../../../components/InvoiceForm'
-import type { InvoiceData, PaymentReceiptData, PaymentReminderData } from '../../../services/abstracts'
+import type { AbstractItem, InvoiceData, PaymentReceiptData, PaymentReminderData } from '../../../services/abstracts'
+import { searchAbstracts } from '../../../services/abstracts'
 import { PaymentReceiptForm } from '../../../components/PaymentReceipt'
 import { PaymentReminderModal } from '../../../components/PaymentReminderModal'
+import { formatDate } from '../../../utils/utils'
 
 export default function AbstractsPage() {
   const dispatch = useAppDispatch()
@@ -48,6 +54,11 @@ export default function AbstractsPage() {
   const actionLoading = useAppSelector(selectActionLoading)
   const paymentReceiptModal = useAppSelector((s) => s.abstracts.paymentReceiptModal)
   const paymentReminderModal = useAppSelector((s) => s.abstracts.paymentReminderModal)
+
+  const { user } = useAppSelector(selectAuth)
+  const canExport = user?.permissions?.includes('export:excel')
+  const [isExporting, setIsExporting] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
 
   useEffect(() => {
     dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }))
@@ -177,15 +188,165 @@ export default function AbstractsPage() {
     dispatch(closePaymentReminderModal())
   }
 
+  const handleExport = async () => {
+    try {
+      setIsExporting(true)
+      const toastId = toast.loading('Exporting data to Excel...')
+
+      // Fetch all matching records (large limit)
+      const result = await searchAbstracts({ ...appliedFilters, limit: 10000, page: 1 })
+
+      if (!result.items || result.items.length === 0) {
+        toast.error('No records found to export', { id: toastId })
+        setIsExporting(false)
+        return
+      }
+
+      // Format data for Excel
+      const formattedData = result.items.map(item => ({
+        'Website': item.website?.name || item.website_name || '',
+        'Name': item.name || '',
+        'Email': item.email || '',
+        'Status': (typeof item.status === 'object' ? item.status?.actionType : item.status) || 'Under Review',
+        'Email Sent': item.isEmailSent ? 'Yes' : 'No',
+        'Alternate Email': item.aemail || '',
+        'Phone': item.phone || '',
+        'WhatsApp': item.wphone || '',
+        'City': item.city || '',
+        'Country': item.country || '',
+        'University': item.organization || '',
+        'Title': item.title || '',
+        'Message': item.message || '',
+        'Presentation': item.intrested || '',
+        'Abstract File': (() => {
+          const f = item.file;
+          if (!f) return '';
+          return f.split('/').pop() || '';
+        })(),
+        'Submitted On': item.now ? formatDate(item.now) : ''
+      }))
+
+      // Create Worksheet and Workbook
+      const worksheet = XLSX.utils.json_to_sheet(formattedData)
+
+      // Make 'Abstract File' column (Column O, index 14) clickable
+      for (let i = 0; i < result.items.length; i++) {
+        const item = result.items[i];
+        const cellAddress = XLSX.utils.encode_cell({ c: 14, r: i + 1 }) // c=14 for 15th column, r=i+1 to skip header
+        const cell = worksheet[cellAddress]
+
+        if (cell && cell.v) {
+          const f = item.file;
+          const isAbs = !!(f && /^https?:\/\//i.test(f));
+          const base = item.website?.link || item.website_name || '';
+          const baseUrl = base.replace(/\/$/, '/');
+          let href = f ? (isAbs ? f : `${baseUrl}${f.startsWith('uploads') ? '' : 'uploads/'}${f}`) : undefined;
+
+          if (item.fileS3Url) {
+            href = item.fileS3Url;
+          }
+
+          if (href) {
+            cell.l = { Target: href, Tooltip: 'View Abstract File' }
+          }
+        }
+      }
+
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Abstracts')
+
+      // Save to file
+      XLSX.writeFile(workbook, 'Abstracts_Export.xlsx')
+
+      toast.success('Export successful!', { id: toastId })
+    } catch (error) {
+      console.error('Export failed:', error)
+      toast.error('Failed to export data')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleDeleteSelected = async () => {
+    if (!confirm(`Are you sure you want to delete ${selectedIds.length} selected records?`)) {
+      return;
+    }
+
+    const toastId = toast.loading(`Deleting ${selectedIds.length} records...`);
+    try {
+      await Promise.all(selectedIds.map(id => dispatch(deleteAbstractThunk(id)).unwrap()));
+      toast.success(`Successfully deleted ${selectedIds.length} records`, { id: toastId });
+      setSelectedIds([]);
+      dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }));
+    } catch (err: unknown) {
+      const errorMsg = typeof err === 'string' ? err : 'Failed to delete some records';
+      toast.error(errorMsg, { id: toastId });
+      dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }));
+    }
+  };
+
+  const handleRestore = async (item: AbstractItem) => {
+    const toastId = toast.loading('Restoring abstract...');
+    try {
+      await dispatch(restoreAbstractThunk(item.id)).unwrap();
+      toast.success('Abstract restored successfully', { id: toastId });
+      dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }));
+    } catch (err: unknown) {
+      const errorMsg = typeof err === 'string' ? err : 'Failed to restore abstract';
+      toast.error(errorMsg, { id: toastId });
+    }
+  };
+
+  const handleDeleteSingle = async (item: AbstractItem) => {
+    const toastId = toast.loading('Deleting abstract...');
+    try {
+      await dispatch(deleteAbstractThunk(item.id)).unwrap();
+      toast.success('Abstract deleted successfully', { id: toastId });
+      dispatch(clearSelected());
+      dispatch(fetchAbstracts({ filters: appliedFilters, page, limit: pageSize }));
+    } catch (err: unknown) {
+      const errorMsg = typeof err === 'string' ? err : 'Failed to delete abstract';
+      toast.error(errorMsg, { id: toastId });
+    }
+  };
+
   return (
     <div className="h-full flex flex-col ">
-      <AbstractHeader error={error} onClearError={() => dispatch(clearError())} />
+      <AbstractHeader
+        error={error}
+        onClearError={() => dispatch(clearError())}
+        onlyDeleted={appliedFilters.onlyDeleted === 'true'}
+        onToggleDeleted={() => {
+          const isTrash = appliedFilters.onlyDeleted === 'true';
+          dispatch(updateDraftFilter({ key: 'onlyDeleted', value: isTrash ? 'false' : 'true' }));
+          dispatch(applyFilters());
+        }}
+        onExportClick={canExport ? handleExport : undefined}
+        isExporting={isExporting}
+        selectedCount={selectedIds.length}
+        onDeleteSelected={handleDeleteSelected}
+      />
 
       < AbstractTable
         rows={items}
         rawRows={rawItems}
         loading={loading}
         onView={(item) => item && dispatch(setSelected(item))}
+        onRestore={handleRestore}
+        selectedIds={selectedIds}
+        onSelect={(id) => {
+          setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+          )
+        }}
+        onSelectAll={(checked) => {
+          if (checked) {
+            setSelectedIds(items.map(item => Number(item.id)))
+          } else {
+            setSelectedIds([])
+          }
+        }}
+        hideCheckboxes={appliedFilters.onlyDeleted === 'true'}
       />
       <AbstractPagination
         totalPages={Math.ceil(total / pageSize)}
@@ -205,6 +366,7 @@ export default function AbstractsPage() {
           onClose={() => dispatch(clearSelected())}
           onStatusChange={(s) => dispatch(setModalStatus(s))}
           onUpdate={() => handleUpdateStatus()}
+          onDelete={handleDeleteSingle}
         />
       )}
 
