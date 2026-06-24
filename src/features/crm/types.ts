@@ -5,6 +5,7 @@ export type ContactStatus = 'active' | 'unsubscribed' | 'bounced' | 'complained'
 
 export interface CrmEvent {
     id: number;
+    sourcedbId?: number;
     name: string;
     slug: string;
     replyDomain: string;

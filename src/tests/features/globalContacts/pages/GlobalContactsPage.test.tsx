@@ -3,6 +3,9 @@ import '@testing-library/jest-dom';
 import GlobalContactsPage from '../../../../features/globalContacts/pages/GlobalContactsPage';
 import * as contactBucketService from '../../../../services/contactBucket';
 import * as sourcedbService from '../../../../services/sourcedb';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
+import crmReducer from '../../../../store/slices/crm/crm.slice';
 
 jest.mock('../../../../services/contactBucket');
 jest.mock('../../../../services/sourcedb');
@@ -18,6 +21,16 @@ const mockItems = [
     notes: 'Some notes',
   },
 ];
+
+const createMockStore = (preloadedState?: any) =>
+  configureStore({
+    reducer: { crm: crmReducer } as any,
+    preloadedState,
+  });
+
+const renderComponent = (ui: React.ReactElement, store = createMockStore()) => {
+  return render(<Provider store={store}>{ui}</Provider>);
+};
 
 describe('GlobalContactsPage', () => {
   beforeEach(() => {
@@ -37,13 +50,13 @@ describe('GlobalContactsPage', () => {
   });
 
   it('renders page title and add button', async () => {
-    render(<GlobalContactsPage />);
+    renderComponent(<GlobalContactsPage />);
     expect(screen.getByText('Global Contacts')).toBeInTheDocument();
     expect(screen.getByText('Add Contact')).toBeInTheDocument();
   });
 
   it('loads and displays contacts in the table', async () => {
-    render(<GlobalContactsPage />);
+    renderComponent(<GlobalContactsPage />);
     await waitFor(() => {
       expect(screen.getByText('john@example.com')).toBeInTheDocument();
       expect(screen.getByRole('cell', { name: 'Web A' })).toBeInTheDocument();
@@ -53,7 +66,7 @@ describe('GlobalContactsPage', () => {
   });
 
   it('handles search input and search button click', async () => {
-    render(<GlobalContactsPage />);
+    renderComponent(<GlobalContactsPage />);
     const input = screen.getByPlaceholderText(/Name, email, phone/);
     fireEvent.change(input, { target: { value: 'search-query' } });
     fireEvent.click(screen.getByRole('button', { name: 'Search' }));
@@ -71,7 +84,7 @@ describe('GlobalContactsPage', () => {
   });
 
   it('handles filters (Conference and Label)', async () => {
-    render(<GlobalContactsPage />);
+    renderComponent(<GlobalContactsPage />);
     
     await waitFor(() => expect(screen.getByRole('option', { name: 'Web A' })).toBeInTheDocument());
     // Conference filter
@@ -94,13 +107,13 @@ describe('GlobalContactsPage', () => {
   });
 
   it('opens add modal on button click', async () => {
-    render(<GlobalContactsPage />);
+    renderComponent(<GlobalContactsPage />);
     fireEvent.click(screen.getByText('Add Contact'));
     expect(screen.getByText('Add New Contact')).toBeInTheDocument();
   });
 
   it('opens view modal on row action click', async () => {
-    render(<GlobalContactsPage />);
+    renderComponent(<GlobalContactsPage />);
     await waitFor(() => screen.getByTitle('View Details'));
     fireEvent.click(screen.getByTitle('View Details'));
     expect(screen.getByText('Contact Details')).toBeInTheDocument();
@@ -115,7 +128,7 @@ describe('GlobalContactsPage', () => {
 
   it('shows error message when fetching data fails', async () => {
     (contactBucketService.searchContactBucket as jest.Mock).mockRejectedValue(new Error('Fetch Fail'));
-    render(<GlobalContactsPage />);
+    renderComponent(<GlobalContactsPage />);
     
     await waitFor(() => {
       expect(screen.getByText('Failed to load contacts')).toBeInTheDocument();
@@ -130,7 +143,7 @@ describe('GlobalContactsPage', () => {
       limit: 25,
       totalPages: 1,
     });
-    render(<GlobalContactsPage />);
+    renderComponent(<GlobalContactsPage />);
     await waitFor(() => {
       expect(screen.getByText('No labels')).toBeInTheDocument();
     });
@@ -144,7 +157,7 @@ describe('GlobalContactsPage', () => {
       limit: 25,
       totalPages: 1,
     });
-    render(<GlobalContactsPage />);
+    renderComponent(<GlobalContactsPage />);
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
@@ -152,7 +165,7 @@ describe('GlobalContactsPage', () => {
 
   describe('filters and search interactions', () => {
     it('searches on Enter key press', async () => {
-      render(<GlobalContactsPage />);
+      renderComponent(<GlobalContactsPage />);
       const searchInput = screen.getByPlaceholderText(/Name, email, phone/i);
       fireEvent.change(searchInput, { target: { value: 'test search' } });
       fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
@@ -162,7 +175,7 @@ describe('GlobalContactsPage', () => {
     });
 
     it('changes conference and label filters including clearing them', async () => {
-      render(<GlobalContactsPage />);
+      renderComponent(<GlobalContactsPage />);
       const confSelect = screen.getByLabelText('Conference');
       const labelSelect = screen.getByLabelText('Label');
 
@@ -207,7 +220,7 @@ describe('GlobalContactsPage', () => {
         }],
         total: 1, page: 1, limit: 25, totalPages: 1
       });
-      render(<GlobalContactsPage />);
+      renderComponent(<GlobalContactsPage />);
       // the table rows will have '—'
       const dashes = await screen.findAllByText('—');
       expect(dashes.length).toBeGreaterThan(0);
@@ -215,7 +228,7 @@ describe('GlobalContactsPage', () => {
   });
 
   it('handles label refresh error silently', async () => {
-    render(<GlobalContactsPage />);
+    renderComponent(<GlobalContactsPage />);
     await waitFor(() => screen.getByTitle('View Details'));
     
     fireEvent.click(screen.getByText('Add Contact'));
@@ -239,7 +252,7 @@ describe('GlobalContactsPage', () => {
   });
 
   it('handles page size change', async () => {
-    render(<GlobalContactsPage />);
+    renderComponent(<GlobalContactsPage />);
     await waitFor(() => screen.getByText('john@example.com'));
     const sizeSelect = screen.getAllByRole('combobox').find(el => (el as HTMLSelectElement).value === '25');
     if (sizeSelect) {
@@ -248,5 +261,45 @@ describe('GlobalContactsPage', () => {
     await waitFor(() => {
         expect(contactBucketService.searchContactBucket).toHaveBeenCalledWith(expect.objectContaining({ limit: 50 }));
     });
+  });
+
+  it('navigates to crm mailbox and triggers search on email click', async () => {
+    const store = createMockStore({
+      crm: {
+        ...crmReducer(undefined, { type: '@@INIT' }),
+        events: [{ id: 99, sourcedbId: 101, name: 'Event A', slug: 'event-a', replyDomain: 'test.com', domains: ['test.com'], replyEmails: ['info@test.com'], isActive: true, createdAt: '' }],
+      }
+    });
+    
+    const dispatchSpy = jest.spyOn(store, 'dispatch');
+    const dispatchEventSpy = jest.spyOn(window, 'dispatchEvent');
+
+    renderComponent(<GlobalContactsPage />, store);
+    
+    await waitFor(() => {
+      expect(screen.getByText('john@example.com')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('john@example.com'));
+
+    expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'crm/setActiveEvent',
+      payload: 99,
+    }));
+    expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'crm/setActiveFolder',
+      payload: 'Inbox',
+    }));
+    expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'crm/setSearchTerm',
+      payload: 'john@example.com',
+    }));
+    expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'crm/triggerSearch',
+    }));
+    expect(dispatchEventSpy).toHaveBeenCalledWith(expect.any(CustomEvent));
+    
+    dispatchSpy.mockRestore();
+    dispatchEventSpy.mockRestore();
   });
 });
