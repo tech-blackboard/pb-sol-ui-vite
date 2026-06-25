@@ -13,6 +13,7 @@ import RegistrationForm from '../components/RegistrationForm'
 import type { RegistrationItem } from '../../../services/registrations'
 import { searchRegistrations } from '../../../services/registrations'
 import { formatDate } from '../../../utils/utils'
+import { handleGroupMailClick } from '../../../utils/groupMail'
 
 export default function RegistrationsPage() {
     const dispatch = useAppDispatch()
@@ -98,6 +99,10 @@ export default function RegistrationsPage() {
         }
     };
 
+    const handleGroupMail = () => {
+        handleGroupMailClick({ items, selectedIds, dispatch });
+    };
+
     return (
         <div className="h-full flex flex-col">
             <RegistrationHeader
@@ -113,6 +118,7 @@ export default function RegistrationsPage() {
                 isExporting={isExporting}
                 selectedCount={selectedIds.length}
                 onDeleteSelected={handleDeleteSelected}
+                onGroupMailClick={handleGroupMail}
             />
 
             <RegistrationTable

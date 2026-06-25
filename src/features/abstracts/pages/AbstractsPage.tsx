@@ -36,6 +36,7 @@ import { searchAbstracts } from '../../../services/abstracts'
 import { PaymentReceiptForm } from '../../../components/PaymentReceipt'
 import { PaymentReminderModal } from '../../../components/PaymentReminderModal'
 import { formatDate } from '../../../utils/utils'
+import { handleGroupMailClick } from '../../../utils/groupMail'
 
 export default function AbstractsPage() {
   const dispatch = useAppDispatch()
@@ -285,6 +286,10 @@ export default function AbstractsPage() {
     }
   };
 
+  const handleGroupMail = () => {
+    handleGroupMailClick({ items: rawItems, selectedIds, dispatch });
+  };
+
   const handleRestore = async (item: AbstractItem) => {
     const toastId = toast.loading('Restoring abstract...');
     try {
@@ -325,6 +330,7 @@ export default function AbstractsPage() {
         isExporting={isExporting}
         selectedCount={selectedIds.length}
         onDeleteSelected={handleDeleteSelected}
+        onGroupMailClick={handleGroupMail}
       />
 
       < AbstractTable

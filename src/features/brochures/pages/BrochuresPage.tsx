@@ -12,6 +12,7 @@ import BrochureFiltersDrawer from '../components/BrochureFiltersDrawer'
 import BrochureForm from '../components/BrochureForm'
 import { searchBrochures } from '../../../services/brochures'
 import { formatDate } from '../../../utils/utils'
+import { handleGroupMailClick } from '../../../utils/groupMail'
 
 export default function BrochuresPage() {
     const dispatch = useAppDispatch()
@@ -87,6 +88,10 @@ export default function BrochuresPage() {
         }
     };
 
+    const handleGroupMail = () => {
+        handleGroupMailClick({ items, selectedIds, dispatch });
+    };
+
     return (
         <div className="h-full flex flex-col">
             <SectionHeader
@@ -106,6 +111,7 @@ export default function BrochuresPage() {
                 isExporting={isExporting}
                 selectedCount={selectedIds.length}
                 onDeleteSelected={handleDeleteSelected}
+                onGroupMailClick={handleGroupMail}
             />
 
             {filtersOpen && (

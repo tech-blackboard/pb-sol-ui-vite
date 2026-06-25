@@ -5,7 +5,7 @@ import * as contactBucketService from '../../../../services/contactBucket';
 import * as sourcedbService from '../../../../services/sourcedb';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
-import crmReducer from '../../../../store/slices/crm/crm.slice';
+import crmReducer, { type CrmState, initialState } from '../../../../store/slices/crm/crm.slice';
 
 jest.mock('../../../../services/contactBucket');
 jest.mock('../../../../services/sourcedb');
@@ -22,11 +22,18 @@ const mockItems = [
   },
 ];
 
-const createMockStore = (preloadedState?: any) =>
-  configureStore({
-    reducer: { crm: crmReducer } as any,
-    preloadedState,
+const createMockStore = (preloadedState?: Partial<{ crm: CrmState }>) => {
+  const preloaded = {
+    crm: {
+      ...initialState,
+      ...preloadedState?.crm,
+    },
+  };
+  return configureStore({
+    reducer: { crm: crmReducer },
+    preloadedState: preloaded,
   });
+};
 
 const renderComponent = (ui: React.ReactElement, store = createMockStore()) => {
   return render(<Provider store={store}>{ui}</Provider>);

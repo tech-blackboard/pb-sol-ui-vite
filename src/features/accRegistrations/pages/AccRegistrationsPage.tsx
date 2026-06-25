@@ -13,6 +13,7 @@ import AccommodationForm from '../components/AccommodationForm'
 import type { AccRegistrationItem } from '../../../services/accRegistrations'
 import { searchAccRegistrations } from '../../../services/accRegistrations'
 import { formatDate } from '../../../utils/utils'
+import { handleGroupMailClick } from '../../../utils/groupMail'
 
 export default function AccRegistrationsPage() {
     const dispatch = useAppDispatch()
@@ -98,6 +99,10 @@ export default function AccRegistrationsPage() {
         }
     };
 
+    const handleGroupMail = () => {
+        handleGroupMailClick({ items, selectedIds, dispatch });
+    };
+
     return (
         <div className="h-full flex flex-col">
             <SectionHeader
@@ -117,6 +122,7 @@ export default function AccRegistrationsPage() {
                 isExporting={isExporting}
                 selectedCount={selectedIds.length}
                 onDeleteSelected={handleDeleteSelected}
+                onGroupMailClick={handleGroupMail}
             />
 
             {filtersOpen && (

@@ -23,6 +23,7 @@ import AccRegistrationsPage from './features/accRegistrations/pages/AccRegistrat
 import ContactsPage from './features/contacts/pages/ContactsPage'
 import MailboxPage from './features/crm/pages/MailboxPage'
 import GlobalContactsPage from './features/globalContacts/pages/GlobalContactsPage'
+import ComposeEmailModal from './features/crm/components/ComposeEmailModal'
 
 
 function App() {
@@ -163,6 +164,7 @@ function App() {
           success: { iconTheme: { primary: '#16a34a', secondary: 'white' } },
         }}
       />
+      <ComposeEmailModal />
       <Header
         user={user}
         onLogout={handleLogout}

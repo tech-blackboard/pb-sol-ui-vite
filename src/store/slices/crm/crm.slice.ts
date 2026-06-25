@@ -55,6 +55,12 @@ export interface CrmState {
         sending: boolean;
         savingDraft: boolean;
     };
+    composeInitialValues?: {
+        to?: string;
+        subject?: string;
+        eventId?: number | null;
+        disableDraft?: boolean;
+    } | null;
     error: string | null;
 }
 
@@ -110,6 +116,7 @@ export const initialState: CrmState = {
         sending: false,
         savingDraft: false,
     },
+    composeInitialValues: null,
     error: null,
 };
 
@@ -184,11 +191,19 @@ const crmSlice = createSlice({
         toggleSidebarCollapse(state) {
             state.isSidebarCollapsed = !state.isSidebarCollapsed;
         },
-        openComposeModal(state) {
+        openComposeModal(state, action: PayloadAction<{ to?: string; subject?: string; eventId?: number | null; disableDraft?: boolean } | undefined>) {
             state.isComposeModalOpen = true;
+            state.composeInitialValues = action.payload || null;
+            if (state.composeInitialValues?.eventId) {
+                const matchingEvent = state.events.find(e => e.sourcedbId === state.composeInitialValues!.eventId);
+                if (matchingEvent) {
+                    state.composeInitialValues.eventId = matchingEvent.id;
+                }
+            }
         },
         closeComposeModal(state) {
             state.isComposeModalOpen = false;
+            state.composeInitialValues = null;
         },
         clearError(state) {
             state.error = null;
@@ -227,6 +242,20 @@ const crmSlice = createSlice({
                 state.loading.events = false;
                 if (Array.isArray(payload)) {
                     state.events = payload;
+                    // Resolve activeEventId if it is currently a sourcedbId (website_id)
+                    if (state.activeEventId !== null) {
+                        const matchingEvent = payload.find(e => e.sourcedbId === state.activeEventId);
+                        if (matchingEvent) {
+                            state.activeEventId = matchingEvent.id;
+                        }
+                    }
+                    // Resolve composeInitialValues.eventId if it is currently a sourcedbId (website_id)
+                    if (state.composeInitialValues?.eventId) {
+                        const matchingEvent = payload.find(e => e.sourcedbId === state.composeInitialValues!.eventId);
+                        if (matchingEvent) {
+                            state.composeInitialValues.eventId = matchingEvent.id;
+                        }
+                    }
                 } else {
                     console.error('CRM: fetchEvents returned non-array payload', payload);
                     state.events = [];
