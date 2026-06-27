@@ -12,6 +12,7 @@ import ContactFiltersDrawer from '../components/ContactFiltersDrawer'
 import ContactForm from '../components/ContactForm'
 import { searchContacts } from '../../../services/contacts'
 import { formatDate } from '../../../utils/utils'
+import { handleGroupMailClick } from '../../../utils/groupMail'
 
 export default function ContactsPage() {
     const dispatch = useAppDispatch()
@@ -83,6 +84,10 @@ export default function ContactsPage() {
         }
     };
 
+    const handleGroupMail = () => {
+        handleGroupMailClick({ items, selectedIds, dispatch });
+    };
+
     return (
         <div className="h-full flex flex-col">
             <SectionHeader
@@ -102,6 +107,7 @@ export default function ContactsPage() {
                 isExporting={isExporting}
                 selectedCount={selectedIds.length}
                 onDeleteSelected={handleDeleteSelected}
+                onGroupMailClick={handleGroupMail}
             />
 
             {filtersOpen && (

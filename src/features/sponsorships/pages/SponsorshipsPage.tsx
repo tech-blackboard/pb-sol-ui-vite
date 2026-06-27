@@ -12,6 +12,7 @@ import SponsorshipFiltersDrawer from '../components/SponsorshipFiltersDrawer'
 import SponsorshipForm from '../components/SponsorshipForm'
 import { searchSponsorships } from '../../../services/sponsorships'
 import { formatDate } from '../../../utils/utils'
+import { handleGroupMailClick } from '../../../utils/groupMail'
 
 export default function SponsorshipsPage() {
     const dispatch = useAppDispatch()
@@ -84,6 +85,10 @@ export default function SponsorshipsPage() {
         }
     };
 
+    const handleGroupMail = () => {
+        handleGroupMailClick({ items, selectedIds, dispatch });
+    };
+
     return (
         <div className="h-full flex flex-col">
             <SectionHeader
@@ -103,6 +108,7 @@ export default function SponsorshipsPage() {
                 isExporting={isExporting}
                 selectedCount={selectedIds.length}
                 onDeleteSelected={handleDeleteSelected}
+                onGroupMailClick={handleGroupMail}
             />
 
             {filtersOpen && (

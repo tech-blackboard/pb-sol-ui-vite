@@ -14,9 +14,10 @@ interface RegistrationHeaderProps {
     isExporting?: boolean
     selectedCount?: number
     onDeleteSelected?: () => void
+    onGroupMailClick?: () => void
 }
 
-export default function RegistrationHeader({ error, onClearError, onlyDeleted, onToggleDeleted, onExportClick, isExporting, selectedCount, onDeleteSelected }: RegistrationHeaderProps) {
+export default function RegistrationHeader({ error, onClearError, onlyDeleted, onToggleDeleted, onExportClick, isExporting, selectedCount, onDeleteSelected, onGroupMailClick }: RegistrationHeaderProps) {
     const [showForm, setShowForm] = useState(false)
     const [filtersOpen, setFiltersOpen] = useState(false)
 
@@ -39,6 +40,7 @@ export default function RegistrationHeader({ error, onClearError, onlyDeleted, o
                 isExporting={isExporting}
                 selectedCount={selectedCount}
                 onDeleteSelected={onDeleteSelected}
+                onGroupMailClick={onGroupMailClick}
             />
 
             {/* Filters Drawer */}

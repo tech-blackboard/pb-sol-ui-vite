@@ -168,4 +168,33 @@ describe('SectionHeader', () => {
         expect(screen.getByText('Exporting...')).toBeInTheDocument()
         expect(screen.getByRole('button', { name: /Exporting/ })).toBeDisabled()
     })
+
+    it('renders delete selected and group mail buttons when selectedCount > 0 and callbacks are provided, and hides view trash', () => {
+        const mockDeleteSelected = jest.fn()
+        const mockGroupMailClick = jest.fn()
+        const mockToggleDeleted = jest.fn()
+
+        render(
+            <SectionHeader
+                title="Test Section"
+                onFilterClick={mockOnFilterClick}
+                onDeleteSelected={mockDeleteSelected}
+                onGroupMailClick={mockGroupMailClick}
+                onToggleDeleted={mockToggleDeleted}
+                selectedCount={2}
+            />
+        )
+
+        expect(screen.getByText('Delete Selected (2)')).toBeInTheDocument()
+        
+        const groupMailButton = screen.getByTitle('Group Mail')
+        expect(groupMailButton).toBeInTheDocument()
+
+        fireEvent.click(groupMailButton)
+        expect(mockGroupMailClick).toHaveBeenCalledTimes(1)
+
+        // View Trash should be hidden because selectedCount > 0
+        expect(screen.queryByTitle('View Deleted Records')).not.toBeInTheDocument()
+        expect(screen.queryByTitle('Viewing Deleted Records')).not.toBeInTheDocument()
+    })
 })

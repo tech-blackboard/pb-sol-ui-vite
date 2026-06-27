@@ -6,6 +6,9 @@ import type { SourceWebsite } from '../../../services/sourcedb';
 import { formatDate } from '../../../utils/utils';
 import AbstractPagination from '../../abstracts/components/AbstractPagination';
 import ContactBucketFormModal from '../components/ContactBucketFormModal';
+import { useAppDispatch, useAppSelector } from '../../../store/hooks';
+import { fetchEventsThunk } from '../../../store/slices/crm/crm.thunks';
+import { setActiveEvent, setActiveFolder, setSearchTerm, triggerSearch } from '../../../store/slices/crm/crm.slice';
 
 const LABEL_COLORS: Record<string, string> = {
     'Abstract Submitted': 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
@@ -17,6 +20,9 @@ const LABEL_COLORS: Record<string, string> = {
 };
 
 export default function GlobalContactsPage() {
+    const dispatch = useAppDispatch();
+    const { events } = useAppSelector((state) => state.crm);
+
     const [items, setItems] = useState<ContactBucketItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [total, setTotal] = useState(0);
@@ -37,6 +43,22 @@ export default function GlobalContactsPage() {
         listWebsites().then(setWebsites).catch(() => { });
         getContactBucketLabels().then(setLabels).catch(() => { });
     }, []);
+
+    // Fetch CRM events if not already loaded
+    useEffect(() => {
+        if (events.length === 0) {
+            dispatch(fetchEventsThunk());
+        }
+    }, [dispatch, events.length]);
+
+    const handleEmailClick = (email: string, websiteId?: number) => {
+        const matchingEvent = events.find((e) => e.sourcedbId === websiteId);
+        dispatch(setActiveEvent(matchingEvent ? matchingEvent.id : null));
+        dispatch(setActiveFolder('Inbox'));
+        dispatch(setSearchTerm(email));
+        dispatch(triggerSearch());
+        window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'crm' }));
+    };
 
     const refreshLabels = () => {
         getContactBucketLabels().then(setLabels).catch(() => { });
@@ -238,7 +260,12 @@ export default function GlobalContactsPage() {
                                         {item.name ?? '—'}
                                     </td>
                                     <td className="px-3 py-1.5" title={item.email}>
-                                        <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">{item.email}</a>
+                                        <button
+                                            onClick={() => handleEmailClick(item.email, item.website?.id)}
+                                            className="text-blue-600 hover:underline text-left font-normal"
+                                        >
+                                            {item.email}
+                                        </button>
                                     </td>
                                     <td className="px-3 py-1.5">
                                         <div className="flex flex-wrap gap-1">

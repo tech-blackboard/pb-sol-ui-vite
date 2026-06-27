@@ -17,6 +17,7 @@ interface SectionHeaderProps {
     isExporting?: boolean
     selectedCount?: number
     onDeleteSelected?: () => void
+    onGroupMailClick?: () => void
 }
 
 export default function SectionHeader({
@@ -35,6 +36,7 @@ export default function SectionHeader({
     isExporting = false,
     selectedCount = 0,
     onDeleteSelected,
+    onGroupMailClick,
 }: SectionHeaderProps) {
     return (
         <div className="flex flex-col gap-2 my-1.5">
@@ -68,6 +70,29 @@ export default function SectionHeader({
                         </button>
                     )}
 
+                    {/* Group Mail Action */}
+                    {selectedCount > 0 && onGroupMailClick && (
+                        <button
+                            onClick={onGroupMailClick}
+                            className="
+                  inline-flex flex-1 sm:flex-none
+                  items-center justify-center gap-2
+                  rounded-md border border-blue-600
+                  bg-blue-600 text-white
+                  px-3 py-1 text-sm font-medium
+                  hover:bg-blue-700 transition-colors
+                            "
+                            title="Group Mail"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                            </svg>
+
+                            <span className="hidden sm:inline">Group Mail</span>
+                            <span className="sm:hidden">Mail</span>
+                        </button>
+                    )}
+
                     {/* Add Action (Optional) */}
                     {onAddClick && selectedCount === 0 && (
                         <button
@@ -97,7 +122,7 @@ export default function SectionHeader({
                     )}
 
                     {/* View Trash Action */}
-                    {onToggleDeleted && (
+                    {onToggleDeleted && selectedCount === 0 && (
                         <button
                             onClick={onToggleDeleted}
                             className={`

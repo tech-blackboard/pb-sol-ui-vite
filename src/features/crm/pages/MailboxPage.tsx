@@ -8,7 +8,6 @@ import CrmSidebar from '../components/CrmSidebar';
 import ThreadTable from '../components/ThreadTable';
 import ThreadView from '../components/ThreadView';
 import EmailAccountsPage from './EmailAccountsPage';
-import ComposeEmailModal from '../components/ComposeEmailModal';
 
 import ContactBucketView from '../components/ContactBucketView';
 import toast from 'react-hot-toast';
@@ -257,8 +256,6 @@ export default function MailboxPage() {
                     )}
                 </div>
             </div>
-            
-            <ComposeEmailModal />
         </div>
     );
 }

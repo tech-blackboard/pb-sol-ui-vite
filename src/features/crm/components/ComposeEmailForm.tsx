@@ -12,9 +12,13 @@ import { GmailReplyEditor } from './GmailReplyEditor';
 
 export const ComposeEmailForm = () => {
     const dispatch = useAppDispatch();
-    const { loading, emailAccounts, activeEventId, events } = useAppSelector((state: RootState) => state.crm);
+    const { loading, emailAccounts, activeEventId, events, composeInitialValues } = useAppSelector((state: RootState) => state.crm);
 
-
+    const composeEventId = useMemo(() => {
+        return (composeInitialValues && composeInitialValues.eventId !== undefined)
+            ? composeInitialValues.eventId
+            : activeEventId;
+    }, [composeInitialValues, activeEventId]);
 
     // TipTap Editor States
     const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
@@ -28,11 +32,11 @@ export const ComposeEmailForm = () => {
 
     // Select the current event for defaults
     const currentEvent = useMemo(() => {
-        return events.find(e => e.id === activeEventId) || events.find(e => e.replyEmails?.includes(fromEmail));
-    }, [events, activeEventId, fromEmail]);
+        return events.find(e => e.id === composeEventId) || events.find(e => e.replyEmails?.includes(fromEmail));
+    }, [events, composeEventId, fromEmail]);
 
-    const [subject, setSubject] = useState('');
-    const [toEmail, setToEmail] = useState('');
+    const [subject, setSubject] = useState(composeInitialValues?.subject || '');
+    const [toEmail, setToEmail] = useState(composeInitialValues?.to || '');
     const [cc, setCc] = useState('');
     const [bcc, setBcc] = useState('');
     const [showCC, setShowCC] = useState(false);
@@ -86,7 +90,7 @@ export const ComposeEmailForm = () => {
     const ccRef = useRef(cc);
     const bccRef = useRef(bcc);
     const importanceValueRef = useRef(importance);
-    const activeEventIdRef = useRef(activeEventId);
+    const composeEventIdRef = useRef(composeEventId);
     const handleSaveDraftRef = useRef<((body: string) => Promise<void>) | null>(null);
 
     // Initialize or update signature
@@ -173,7 +177,7 @@ export const ComposeEmailForm = () => {
     useEffect(() => { ccRef.current = cc; }, [cc]);
     useEffect(() => { bccRef.current = bcc; }, [bcc]);
     useEffect(() => { importanceValueRef.current = importance; }, [importance]);
-    useEffect(() => { activeEventIdRef.current = activeEventId; }, [activeEventId]);
+    useEffect(() => { composeEventIdRef.current = composeEventId; }, [composeEventId]);
 
     // Prepare dropdown options for 'From'
     const accountOptions = useMemo(() => {
@@ -182,7 +186,7 @@ export const ComposeEmailForm = () => {
 
         let allowedReplyEmails: string[] = [];
 
-        if (activeEventId && currentEvent) {
+        if (composeEventId && currentEvent) {
             allowedReplyEmails = currentEvent.replyEmails || [];
         } else {
             // Gather reply emails from ALL events
@@ -206,7 +210,7 @@ export const ComposeEmailForm = () => {
         });
 
         return options;
-    }, [emailAccounts, currentEvent, events, activeEventId]);
+    }, [emailAccounts, currentEvent, events, composeEventId]);
 
     // Update default sender when options change
     useEffect(() => {
@@ -286,6 +290,7 @@ export const ComposeEmailForm = () => {
     };
 
     const handleSaveDraft = useCallback(async (currentBody: string, forceMetadata = false) => {
+        if (composeInitialValues?.disableDraft) return;
         // Allow save if body changed OR if a metadata-only change (attachment/importance) needs persisting
         const bodyChanged = currentBody !== lastSavedBodyRef.current;
         if (!toEmailRef.current.trim() || (!bodyChanged && !forceMetadata)) return;
@@ -296,7 +301,7 @@ export const ComposeEmailForm = () => {
             return;
         }
 
-        let targetEventId = activeEventIdRef.current;
+        let targetEventId = composeEventIdRef.current;
         if (!targetEventId) {
             const matchingEvent = events.find(e => e.replyEmails?.includes(fromEmailRef.current));
             if (matchingEvent) targetEventId = matchingEvent.id;
@@ -349,6 +354,7 @@ export const ComposeEmailForm = () => {
 
     // Auto-save draft when body changes
     useEffect(() => {
+        if (composeInitialValues?.disableDraft) return;
         if (!htmlBody || htmlBody === lastSavedBody || !toEmail.trim()) return;
 
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -362,15 +368,17 @@ export const ComposeEmailForm = () => {
         return () => {
             if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         };
-    }, [htmlBody, lastSavedBody, toEmail, handleSaveDraft]);
+    }, [htmlBody, lastSavedBody, toEmail, handleSaveDraft, composeInitialValues]);
 
     // Auto-save draft when attachments or importance change (even if body hasn't changed)
     useEffect(() => {
+        if (composeInitialValues?.disableDraft) return;
         // Skip on initial mount — only react to actual changes
         hasMetadataChangeRef.current = true;
-    }, [newAttachments, importance]);
+    }, [newAttachments, importance, composeInitialValues]);
 
     useEffect(() => {
+        if (composeInitialValues?.disableDraft) return;
         if (!hasMetadataChangeRef.current) return;
         if (!toEmail.trim()) return;
 
@@ -385,12 +393,12 @@ export const ComposeEmailForm = () => {
         return () => {
             if (metadataSaveTimeoutRef.current) clearTimeout(metadataSaveTimeoutRef.current);
         };
-    }, [newAttachments, importance, toEmail, handleSaveDraft]);
+    }, [newAttachments, importance, toEmail, handleSaveDraft, composeInitialValues]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        let targetEventId = activeEventId;
+        let targetEventId = composeEventId;
 
         if (!targetEventId) {
             // Infer eventId from the selected fromEmail
